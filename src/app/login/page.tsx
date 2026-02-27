@@ -64,10 +64,48 @@ export default function LoginPage() {
                     </button>
 
                     <button
-                        onClick={() => router.push('/onboarding')}
-                        className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-[#9F1239] active:scale-95 flex items-center justify-center gap-3"
+                        onClick={async () => {
+                            const { doc, setDoc } = require("firebase/firestore");
+                            const { db } = require("@/lib/firebase/config");
+                            await setDoc(doc(db, "users", "dummy_male"), {
+                                name: "Murtaza Test",
+                                gender: "male",
+                                itsNumber: "12345678",
+                                isItsVerified: true,
+                                isPremium: true,
+                                status: "verified",
+                                jamaat: "Test Jamaat Male",
+                                dob: "1995-01-01"
+                            });
+                            // Usually youd use AuthContext, but for dummy we just push to dashboard 
+                            // and the dashboard will pick up if we mock the auth. Let's redirect to onboarding instead so they can set it up, but wait they want to test dashboard directly.
+                            // To bypass auth strictly we might need to adjust AuthContext or bypass it.
+                            router.push('/admin/approvals');
+                        }}
+                        className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-blue-700 active:scale-95 flex items-center justify-center gap-3 mb-3"
                     >
-                        Skip Login (Testing Only)
+                        Login as Dummy Male (Test)
+                    </button>
+
+                    <button
+                        onClick={async () => {
+                            const { doc, setDoc } = require("firebase/firestore");
+                            const { db } = require("@/lib/firebase/config");
+                            await setDoc(doc(db, "users", "dummy_female"), {
+                                name: "Zahra Test",
+                                gender: "female",
+                                itsNumber: "87654321",
+                                isItsVerified: true,
+                                isPremium: true,
+                                status: "verified",
+                                jamaat: "Test Jamaat Female",
+                                dob: "1996-01-01"
+                            });
+                            router.push('/admin/approvals');
+                        }}
+                        className="w-full bg-pink-600 text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-pink-700 active:scale-95 flex items-center justify-center gap-3"
+                    >
+                        Login as Dummy Female (Test)
                     </button>
 
                     <p className="text-xs text-center text-gray-400 mt-6">

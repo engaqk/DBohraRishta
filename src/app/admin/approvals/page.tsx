@@ -12,6 +12,7 @@ interface PendingUser {
     itsNumber: string;
     jamaat: string;
     itsImageUrl: string | null;
+    libasImageUrl: string | null;
     status: string;
 }
 
@@ -95,6 +96,17 @@ export default function AdminVerificationPage() {
                                     ) : (
                                         <div className="aspect-[1.58] w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm font-bold text-gray-400">
                                             No Image Uploaded
+                                        </div>
+                                    )}
+                                    <h3 className="font-bold text-xs uppercase tracking-wider text-gray-400 mt-4">Qaumi Libas Photo</h3>
+                                    {user.libasImageUrl ? (
+                                        <div className="relative aspect-[1] w-full max-w-[200px] mx-auto rounded-xl overflow-hidden shadow-inner border-2 border-gray-100 bg-gray-100 flex items-center justify-center">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={user.libasImageUrl} alt="Libas Photo" className="object-cover w-full h-full" />
+                                        </div>
+                                    ) : (
+                                        <div className="aspect-[1] w-full max-w-[200px] mx-auto rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm font-bold text-gray-400 text-center p-4">
+                                            No Libas Photo
                                         </div>
                                     )}
                                 </div>

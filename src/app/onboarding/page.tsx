@@ -14,6 +14,7 @@ export default function OnboardingPage() {
 
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     // Data State
     const [formData, setFormData] = useState({
@@ -44,6 +45,10 @@ export default function OnboardingPage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        // Clear error when user starts typing
+        if (errors[e.target.name]) {
+            setErrors({ ...errors, [e.target.name]: "" });
+        }
     };
 
     const handleImageCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,38 +78,40 @@ export default function OnboardingPage() {
     };
 
     const handleNext = () => {
+        let newErrors: { [key: string]: string } = {};
+
         if (step === 1) {
-            if (!formData.name || !formData.dob || !formData.gender || !formData.email || !formData.mobile) {
-                toast.error("Please fill in all basic profile fields.");
-                return;
+            if (!formData.name) newErrors.name = "Full Name is required.";
+            if (!formData.email) {
+                newErrors.email = "Email is required.";
+            } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+                newErrors.email = "Please enter a valid email address.";
             }
-            if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-                toast.error("Please enter a valid email address.");
-                return;
+            if (!formData.mobile) {
+                newErrors.mobile = "Mobile Number is required.";
+            } else if (!/^\+?\d+$/.test(formData.mobile) || formData.mobile.length < 8 || formData.mobile.length > 15) {
+                newErrors.mobile = "Please enter a valid mobile number with optional + country code (max 15 characters).";
             }
-            if (!/^\+?\d+$/.test(formData.mobile) || formData.mobile.length < 8 || formData.mobile.length > 15) {
-                toast.error("Please enter a valid mobile number with optional + country code (max 15 characters).");
-                return;
-            }
+            if (!formData.gender) newErrors.gender = "Gender is required.";
+            if (!formData.dob) newErrors.dob = "Date of Birth is required.";
         }
         if (step === 2) {
-            if (!/^\d{8}$/.test(formData.itsNumber)) {
-                toast.error("ITS Number must be exactly 8 digits.");
-                return;
+            if (!formData.itsNumber) {
+                newErrors.itsNumber = "ITS Number is required.";
+            } else if (!/^\d{8}$/.test(formData.itsNumber)) {
+                newErrors.itsNumber = "ITS Number must be exactly 8 digits.";
             }
-            if (!formData.jamaat) {
-                toast.error("Please specify your Primary Jamaat.");
-                return;
-            }
-            if (!itsImage) {
-                toast.error("Please upload or capture your ITS card.");
-                return;
-            }
-            if (!libasImage) {
-                toast.error(`Please upload a photo in ${formData.gender === 'female' ? 'Rida' : 'Kurta Saya'}.`);
-                return;
-            }
+            if (!formData.jamaat) newErrors.jamaat = "Primary Jamaat is required.";
+            if (!itsImage) newErrors.itsImage = "Please upload or capture your ITS card.";
+            if (!libasImage) newErrors.libasImage = `Please upload a photo in ${formData.gender === 'female' ? 'Rida' : 'Kurta Saya'}.`;
         }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            toast.error("Please fix the errors before proceeding.");
+            return;
+        }
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
         setStep(step + 1);
     };
@@ -141,7 +148,14 @@ export default function OnboardingPage() {
     };
 
     const handleSubmit = async () => {
-        if (!formData.education || !formData.hizratLocation || !formData.bio) {
+        let newErrors: { [key: string]: string } = {};
+
+        if (!formData.education) newErrors.education = "Education details are required.";
+        if (!formData.hizratLocation) newErrors.hizratLocation = "Location is required.";
+        if (!formData.bio) newErrors.bio = "About me is required.";
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             toast.error("Please complete your Dunyawi details.");
             return;
         }
@@ -214,30 +228,35 @@ export default function OnboardingPage() {
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Full Name</label>
-                                <input name="name" onChange={handleChange} value={formData.name} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. Murtaza Ali" />
+                                <input name="name" onChange={handleChange} value={formData.name} className={`w-full bg-gray-50 border ${errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. Murtaza Ali" />
+                                {errors.name && <p className="text-red-500 text-xs font-bold mt-1">{errors.name}</p>}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
-                                    <input type="email" name="email" onChange={handleChange} value={formData.email} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="abc@example.com" />
+                                    <input type="email" name="email" onChange={handleChange} value={formData.email} className={`w-full bg-gray-50 border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="abc@example.com" />
+                                    {errors.email && <p className="text-red-500 text-xs font-bold mt-1">{errors.email}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number</label>
-                                    <input type="tel" name="mobile" onChange={handleChange} value={formData.mobile} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. 919876543210" />
+                                    <input type="tel" name="mobile" onChange={handleChange} value={formData.mobile} className={`w-full bg-gray-50 border ${errors.mobile ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. 919876543210" />
+                                    {errors.mobile && <p className="text-red-500 text-xs font-bold mt-1">{errors.mobile}</p>}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Gender</label>
-                                    <select name="gender" onChange={handleChange} value={formData.gender} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]">
+                                    <select name="gender" onChange={handleChange} value={formData.gender} className={`w-full bg-gray-50 border ${errors.gender ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`}>
                                         <option value="">Select Gender</option>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
                                     </select>
+                                    {errors.gender && <p className="text-red-500 text-xs font-bold mt-1">{errors.gender}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Date of Birth</label>
-                                    <input type="date" name="dob" max="2005-01-01" onChange={handleChange} value={formData.dob} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" />
+                                    <input type="date" name="dob" max="2005-01-01" onChange={handleChange} value={formData.dob} className={`w-full bg-gray-50 border ${errors.dob ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} />
+                                    {errors.dob && <p className="text-red-500 text-xs font-bold mt-1">{errors.dob}</p>}
                                 </div>
                             </div>
                             <div className="flex justify-end pt-4">
@@ -261,12 +280,14 @@ export default function OnboardingPage() {
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">ITS Number</label>
-                                <input name="itsNumber" onChange={handleChange} value={formData.itsNumber} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. 2045612" />
+                                <input name="itsNumber" onChange={handleChange} value={formData.itsNumber} className={`w-full bg-gray-50 border ${errors.itsNumber ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. 2045612" />
+                                {errors.itsNumber && <p className="text-red-500 text-xs font-bold mt-1">{errors.itsNumber}</p>}
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Primary Jamaat</label>
-                                <input name="jamaat" onChange={handleChange} value={formData.jamaat} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. Husaini Jamaat, London" />
+                                <input name="jamaat" onChange={handleChange} value={formData.jamaat} className={`w-full bg-gray-50 border ${errors.jamaat ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. Husaini Jamaat, London" />
+                                {errors.jamaat && <p className="text-red-500 text-xs font-bold mt-1">{errors.jamaat}</p>}
                             </div>
 
                             {/* Mobile Real-time Camera Capture for ITS */}

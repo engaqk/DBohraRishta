@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2, CreditCard } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -378,10 +378,16 @@ export default function NisbatDashboard() {
                     <button onClick={() => setActiveTab('requests')} className={`transition-colors pb-1 border-b-2 hover:border-[#D4AF37] ${activeTab === 'requests' ? 'text-[#D4AF37] border-[#D4AF37]' : 'text-[#881337] border-transparent'}`}>Requests</button>
                     <button onClick={() => setActiveTab('messages')} className={`transition-colors pb-1 border-b-2 hover:border-[#D4AF37] ${activeTab === 'messages' ? 'text-[#D4AF37] border-[#D4AF37]' : 'text-[#881337] border-transparent'}`}>Messages</button>
                     {user ? (
-                        <button onClick={logout} className="ml-4 text-red-500 hover:text-red-600 transition-colors flex items-center gap-2">
-                            <LogOut className="w-4 h-4" />
-                            <span className="hidden lg:inline">Logout</span>
-                        </button>
+                        <>
+                            <button onClick={() => router.push('/admin/approvals')} className="ml-2 text-indigo-500 hover:text-indigo-600 transition-colors flex items-center gap-2">
+                                <ShieldAlert className="w-4 h-4" />
+                                <span className="hidden lg:inline">Admin</span>
+                            </button>
+                            <button onClick={logout} className="ml-4 text-red-500 hover:text-red-600 transition-colors flex items-center gap-2">
+                                <LogOut className="w-4 h-4" />
+                                <span className="hidden lg:inline">Logout</span>
+                            </button>
+                        </>
                     ) : (
                         <button onClick={() => router.push('/login')} className="ml-4 text-[#D4AF37] hover:text-[#c29e2f] transition-colors flex items-center gap-2 font-bold">
                             Login / Setup

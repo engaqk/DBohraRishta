@@ -15,9 +15,10 @@ interface DiscoveryCardProps {
     hizratLocation?: string;
     itsImageUrl?: string;
     matchScore?: number;
+    isMyProfileVerified?: boolean;
 }
 
-export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, matchScore = 85 }: DiscoveryCardProps) {
+export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, matchScore = 85, isMyProfileVerified = false }: DiscoveryCardProps) {
     const { user } = useAuth();
     const [requestSent, setRequestSent] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -45,6 +46,11 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
     const handleSendRequest = async () => {
         if (!user) {
             toast.error("You must be logged in to send a request");
+            return;
+        }
+
+        if (!isMyProfileVerified) {
+            toast.error("Your profile must be approved by an Admin before sending Nisbat requests.");
             return;
         }
 
@@ -104,11 +110,14 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
 
                 <button
                     onClick={handleSendRequest}
-                    disabled={requestSent || loading}
-                    className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' : 'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
+                    disabled={requestSent || loading || !isMyProfileVerified}
+                    className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 
+                    ${!isMyProfileVerified ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200' :
+                            requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' :
+                                'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
                 >
                     {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                    {requestSent ? 'Nisbat Request Sent' : 'Send Nisbat Request'}
+                    {!isMyProfileVerified ? 'Awaiting Verification' : requestSent ? 'Nisbat Request Sent' : 'Send Nisbat Request'}
                 </button>
             </div>
         </div>

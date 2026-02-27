@@ -59,7 +59,14 @@ export default function NisbatDashboard() {
                     router.push('/onboarding');
                     return;
                 }
-                setMyProfile(meRef.data());
+                const profileData = meRef.data();
+                setMyProfile(profileData);
+
+                if (profileData.status === 'rejected') {
+                    // Stop loading anything else if rejected
+                    setDataLoading(false);
+                    return;
+                }
 
                 // Load Profiles...
                 let profiles: UserProfile[] = [];
@@ -173,6 +180,18 @@ export default function NisbatDashboard() {
             );
         }
 
+        if (myProfile?.status === 'rejected') {
+            return (
+                <section className="lg:col-span-3 flex items-center justify-center p-12">
+                    <div className="bg-red-50 p-12 rounded-3xl shadow-sm text-center border border-red-100 flex flex-col items-center">
+                        <X className="w-16 h-16 text-red-500 mb-4" />
+                        <h2 className="text-2xl font-bold text-red-700 mb-2">Profile Verification Rejected</h2>
+                        <p className="text-red-600 max-w-md">Your ITS verification was rejected by an administrator. Please contact support or retry the verification process if you believe this is an error.</p>
+                    </div>
+                </section>
+            );
+        }
+
         switch (activeTab) {
             case 'requests':
                 const pendingRequests = allRequests.filter(r => r.status === "pending_response");
@@ -275,7 +294,7 @@ export default function NisbatDashboard() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
                                 {availableProfiles.map((p) => (
-                                    <DiscoveryCard key={p.id} {...p} matchScore={Math.floor(Math.random() * 20) + 75} />
+                                    <DiscoveryCard key={p.id} {...p} matchScore={Math.floor(Math.random() * 20) + 75} isMyProfileVerified={myProfile?.isItsVerified || false} />
                                 ))}
                             </div>
                         )}

@@ -29,19 +29,18 @@ export default function OnboardingPage() {
         bio: "",
     });
 
-    // Auto-fill email if user is logged in
-    React.useEffect(() => {
-        if (user?.email && !formData.email) {
-            setFormData(prev => ({ ...prev, email: user.email || "" }));
-        }
-    }, [user]);
+    // Email will be intentionally kept blank for the user to fill out.
 
     // Image State
     const [itsImage, setItsImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+    const [libasImage, setLibasImage] = useState<File | null>(null);
+    const [libasImagePreview, setLibasImagePreview] = useState<string | null>(null);
+
     // File Input Ref for Mobile Camera explicitly
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const libasFileInputRef = useRef<HTMLInputElement>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -60,6 +59,19 @@ export default function OnboardingPage() {
         }
     };
 
+    const handleLibasImageCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                toast.error("Image must be less than 5MB");
+                return;
+            }
+            setLibasImage(file);
+            setLibasImagePreview(URL.createObjectURL(file));
+            toast.success("Profile photo captured successfully!");
+        }
+    };
+
     const handleNext = () => {
         if (step === 1) {
             if (!formData.name || !formData.dob || !formData.gender || !formData.email || !formData.mobile) {
@@ -70,8 +82,8 @@ export default function OnboardingPage() {
                 toast.error("Please enter a valid email address.");
                 return;
             }
-            if (!/^\d{8,15}$/.test(formData.mobile)) {
-                toast.error("Please enter a valid mobile number (digits only).");
+            if (!/^\+?\d+$/.test(formData.mobile) || formData.mobile.length < 8 || formData.mobile.length > 15) {
+                toast.error("Please enter a valid mobile number with optional + country code (max 15 characters).");
                 return;
             }
         }
@@ -86,6 +98,10 @@ export default function OnboardingPage() {
             }
             if (!itsImage) {
                 toast.error("Please upload or capture your ITS card.");
+                return;
+            }
+            if (!libasImage) {
+                toast.error(`Please upload a photo in ${formData.gender === 'female' ? 'Rida' : 'Kurta Saya'}.`);
                 return;
             }
         }
@@ -132,6 +148,7 @@ export default function OnboardingPage() {
 
         setLoading(true);
         let itsImageUrl = null;
+        let libasImageUrl = null;
 
         // Fallback ID for testing UI without strict login required
         const userId = user?.uid || `guest_${Date.now()}`;
@@ -141,12 +158,16 @@ export default function OnboardingPage() {
             if (itsImage) {
                 itsImageUrl = await compressImage(itsImage);
             }
+            if (libasImage) {
+                libasImageUrl = await compressImage(libasImage);
+            }
 
             // 2. Save complete profile to Firestore
             await setDoc(doc(db, "users", userId), {
                 ...formData,
                 userId: userId,
                 itsImageUrl: itsImageUrl || null,
+                libasImageUrl: libasImageUrl || null,
                 isItsVerified: false, // Default to false, explicitly requires an Admin to flip this!
                 status: "pending_verification",
                 createdAt: new Date().toISOString()
@@ -293,6 +314,62 @@ export default function OnboardingPage() {
                                                 el.setAttribute("type", "file");
                                                 el.setAttribute("accept", "image/*");
                                                 el.onchange = (e: any) => handleImageCapture(e);
+                                                el.click();
+                                            }}
+                                            className="flex-1 border border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors py-4 rounded-xl flex flex-col items-center justify-center gap-2"
+                                        >
+                                            <UploadCloud className="w-6 h-6" />
+                                            <span className="text-sm font-bold">Upload Gallery</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Qaumi Libas Photo Upload */}
+                            <div className="mt-6 border border-gray-200 rounded-xl p-5 bg-white shadow-sm flex flex-col items-center">
+                                <label className="text-center w-full block mb-4 font-bold text-sm text-[#881337]">
+                                    Upload Profile Photo (in {formData.gender === 'female' ? 'Rida' : 'Kurta Saya'})
+                                </label>
+
+                                {libasImagePreview ? (
+                                    <div className="relative w-full max-w-[250px] aspect-[1] rounded-xl overflow-hidden shadow-lg border-2 border-[#D4AF37]">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={libasImagePreview} alt="Libas Capture" className="object-cover w-full h-full" />
+                                        <button
+                                            onClick={() => { setLibasImage(null); setLibasImagePreview(null); }}
+                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all"
+                                        >
+                                            Retake
+                                        </button>
+                                        <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-md rounded-lg p-2 flex items-center justify-center gap-2">
+                                            <CheckCircle2 className="w-4 h-4 text-[#D4AF37]" />
+                                            <span className="text-white text-xs font-bold">Image Locked</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="w-full flex gap-3">
+                                        {/* Hidden Native File Input supporting Mobile Cameras via capture="environment" */}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            capture="environment"
+                                            ref={libasFileInputRef}
+                                            className="hidden"
+                                            onChange={handleLibasImageCapture}
+                                        />
+                                        <button
+                                            onClick={() => libasFileInputRef.current?.click()}
+                                            className="flex-1 border-2 border-dashed border-[#881337] bg-rose-50 text-[#881337] hover:bg-rose-100 transition-colors py-4 rounded-xl flex flex-col items-center justify-center gap-2"
+                                        >
+                                            <Camera className="w-6 h-6" />
+                                            <span className="text-sm font-bold">Open Camera</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const el = document.createElement("input");
+                                                el.setAttribute("type", "file");
+                                                el.setAttribute("accept", "image/*");
+                                                el.onchange = (e: any) => handleLibasImageCapture(e);
                                                 el.click();
                                             }}
                                             className="flex-1 border border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors py-4 rounded-xl flex flex-col items-center justify-center gap-2"

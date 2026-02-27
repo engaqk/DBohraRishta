@@ -262,9 +262,20 @@ export default function NisbatDashboard() {
                                                 <span className={`text-xs ${msg.isIncoming ? 'text-[#881337] font-bold' : 'text-gray-400'}`}>New Match!</span>
                                             </div>
                                             <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'} mb-3`}>Alhamdulillah, Nisbat Request Accepted!</p>
-                                            <button className="bg-[#881337] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-[#9F1239] transition-all flex items-center gap-2">
-                                                <MessageCircle className="w-4 h-4" /> Start Chat
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button className="bg-[#881337] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-[#9F1239] transition-all flex items-center gap-2">
+                                                    <MessageCircle className="w-4 h-4" /> Start Chat
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm("Are you sure you want to end this connection?")) {
+                                                            handleRequestAction(msg.id, "rejected");
+                                                        }
+                                                    }}
+                                                    className="bg-white border text-red-600 border-red-100 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-red-50 transition-all flex items-center gap-2">
+                                                    <X className="w-4 h-4" /> End Connection
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

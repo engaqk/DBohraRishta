@@ -10,7 +10,7 @@ export default function PrivacyToggle() {
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                     <Shield className="w-6 h-6 text-[#881337] mr-2" />
-                    <h3 className="text-lg font-bold text-[#881337] font-serif">Bohri Cupid+ Privacy</h3>
+                    <h3 className="text-lg font-bold text-[#881337] font-serif">dBohra Match Privacy</h3>
                 </div>
                 <button
                     onClick={() => setIsPrivate(!isPrivate)}

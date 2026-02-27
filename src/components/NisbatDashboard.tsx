@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
-import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2 } from 'lucide-react';
+import ChatWindow from './ChatWindow';
+import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2, CreditCard } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -43,6 +44,11 @@ export default function NisbatDashboard() {
     const [discoveryProfiles, setDiscoveryProfiles] = useState<UserProfile[]>([]);
     const [allRequests, setAllRequests] = useState<NisbatRequest[]>([]);
     const [myProfile, setMyProfile] = useState<any>(null);
+
+    // Feature Modules State
+    const [activeChat, setActiveChat] = useState<{ id: string, name: string } | null>(null);
+    const [showPremiumModal, setShowPremiumModal] = useState(false);
+    const [paying, setPaying] = useState(false);
 
     useEffect(() => {
         if (loading) return;
@@ -171,6 +177,24 @@ export default function NisbatDashboard() {
     };
 
 
+    const handleUpgradeToPremium = async () => {
+        if (!user) return;
+        try {
+            setPaying(true);
+            // MOCK TRANSACTION DB CALL
+            await updateDoc(doc(db, "users", user.uid), {
+                isPremium: true,
+                premiumSince: new Date().toISOString()
+            });
+            toast.success("Payment Successful! ₹53/mo plan active.", { icon: '🎉' });
+            setShowPremiumModal(false);
+        } catch (err: any) {
+            toast.error("Payment failed: " + err.message);
+        } finally {
+            setPaying(false);
+        }
+    };
+
     const renderTabContent = () => {
         if (dataLoading) {
             return (
@@ -237,6 +261,19 @@ export default function NisbatDashboard() {
                 );
             case 'messages':
                 const acceptedRequests = allRequests.filter(r => r.status === "accepted");
+
+                if (activeChat) {
+                    return (
+                        <section className="lg:col-span-3">
+                            <ChatWindow
+                                connectionId={activeChat.id}
+                                otherUserName={activeChat.name}
+                                onClose={() => setActiveChat(null)}
+                            />
+                        </section>
+                    );
+                }
+
                 return (
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <h2 className="text-2xl font-bold font-serif mb-6">Unblurred Alignments</h2>
@@ -263,7 +300,15 @@ export default function NisbatDashboard() {
                                             </div>
                                             <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'} mb-3`}>Alhamdulillah, Nisbat Request Accepted!</p>
                                             <div className="flex gap-2">
-                                                <button className="bg-[#881337] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-[#9F1239] transition-all flex items-center gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        if (myProfile?.isPremium) {
+                                                            setActiveChat({ id: msg.id, name: msg.otherUserName });
+                                                        } else {
+                                                            setShowPremiumModal(true);
+                                                        }
+                                                    }}
+                                                    className="bg-[#881337] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-[#9F1239] transition-all flex items-center gap-2">
                                                     <MessageCircle className="w-4 h-4" /> Start Chat
                                                 </button>
                                                 <button
@@ -325,7 +370,7 @@ export default function NisbatDashboard() {
                     </div>
                     <div>
                         <h1 className="text-3xl font-bold font-serif text-[#881337]">dbohranisbat.com</h1>
-                        <p className="text-sm font-medium text-gray-500 tracking-wide uppercase">Nisbat over Shaadi</p>
+                        <p className="text-sm font-medium text-gray-500 tracking-wide uppercase">Nisbat Matching</p>
                     </div>
                 </div>
                 <nav className="hidden md:flex gap-6 items-center font-bold text-sm">
@@ -413,6 +458,39 @@ export default function NisbatDashboard() {
                     {allRequests.filter(r => r.status === 'accepted' && r.isIncoming).length > 0 && <span className="absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full"></span>}
                 </button>
             </nav>
+
+            {/* Premium Paywall Modal */}
+            {showPremiumModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white max-w-sm w-full rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="bg-gradient-to-r from-[#D4AF37] to-[#F1D16A] p-6 text-center shadow-sm relative">
+                            <button onClick={() => setShowPremiumModal(false)} className="absolute top-4 right-4 bg-black/10 rounded-full p-2 hover:bg-black/20 text-[#881337]"><X className="w-4 h-4" /></button>
+                            <Sparkles className="w-12 h-12 text-[#881337] mx-auto mb-3" />
+                            <h2 className="text-2xl font-bold text-[#881337] font-serif mb-1">dBohra Match Premium</h2>
+                            <p className="text-[#881337] opacity-90 text-sm font-medium">Unlock Unlimited Halal Chats</p>
+                        </div>
+                        <div className="p-8 text-center space-y-6">
+                            <h3 className="text-4xl font-extrabold text-[#881337] flex justify-center items-start">
+                                <span className="text-xl mt-1">₹</span>53<span className="text-base text-gray-500 font-normal mt-auto mb-1">/mo</span>
+                            </h3>
+                            <ul className="text-left text-sm text-gray-600 space-y-3 font-medium">
+                                <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> Open private encrypted end-to-end chat</li>
+                                <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> Dynamic profile photo unblurring</li>
+                                <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> See who viewed your profile</li>
+                            </ul>
+                            <button
+                                onClick={handleUpgradeToPremium}
+                                disabled={paying}
+                                className="w-full bg-[#881337] hover:bg-[#9F1239] text-white py-4 rounded-xl font-bold shadow-md transition-all active:scale-95 flex justify-center items-center gap-2">
+                                {paying ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Pay Now (Mock)</>}
+                            </button>
+                            <p className="text-xs text-gray-400 mt-4 leading-normal">
+                                Secure local Indian Gateway via PhonePe/Razorpay placeholder. Recurring charge. Cancel anytime.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -11,7 +11,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (!loading && user) {
-            router.push("/onboarding"); // Or check if they have a profile first! For now, direct to onboarding logic.
+            router.push("/onboarding");
         }
     }, [user, loading, router]);
 

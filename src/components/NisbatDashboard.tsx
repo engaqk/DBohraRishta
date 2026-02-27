@@ -52,12 +52,17 @@ export default function NisbatDashboard() {
 
         const loadDiscovery = async () => {
             try {
-                // Production level: Real queries would paginate.
-                // We're querying users who are ITS Verified, and optionally excluding ourselves.
-                // For safety in this mockup without strict indexing yet, we'll fetch verified and filter client side.
+                // Ensure profile is completed, or send to onboarding!
+                const meRef = await getDoc(doc(db, "users", user.uid));
+                if (!meRef.exists()) {
+                    router.push('/onboarding');
+                    return;
+                }
+
+                // Load Profiles...
+                let profiles: UserProfile[] = [];
                 const q = query(collection(db, "users"), where("isItsVerified", "==", true));
                 const snap = await getDocs(q);
-                let profiles: UserProfile[] = [];
                 snap.forEach(doc => {
                     if (doc.id !== user.uid) {
                         profiles.push({ id: doc.id, ...doc.data() } as UserProfile);

@@ -6,13 +6,28 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 import { ShieldCheck, Heart } from "lucide-react";
 
 export default function LoginPage() {
-    const { user, loading, signInWithGoogle } = useAuth();
+    const { user, loading, signInWithGoogle, setDummyUser } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
-        if (!loading && user) {
-            router.push("/onboarding");
-        }
+        const checkUserStatus = async () => {
+            if (!loading && user) {
+                const { doc, getDoc } = require("firebase/firestore");
+                const { db } = require("@/lib/firebase/config");
+                try {
+                    const userDoc = await getDoc(doc(db, "users", user.uid));
+                    if (userDoc.exists()) {
+                        router.push("/");
+                    } else {
+                        router.push("/onboarding");
+                    }
+                } catch (e) {
+                    console.error("Error checking user doc", e);
+                    router.push("/onboarding");
+                }
+            }
+        };
+        checkUserStatus();
     }, [user, loading, router]);
 
     const handleGoogleLogin = async () => {
@@ -77,10 +92,7 @@ export default function LoginPage() {
                                 jamaat: "Test Jamaat Male",
                                 dob: "1995-01-01"
                             });
-                            // Usually youd use AuthContext, but for dummy we just push to dashboard 
-                            // and the dashboard will pick up if we mock the auth. Let's redirect to onboarding instead so they can set it up, but wait they want to test dashboard directly.
-                            // To bypass auth strictly we might need to adjust AuthContext or bypass it.
-                            router.push('/admin/approvals');
+                            setDummyUser("dummy_male", "dummy_male@test.com");
                         }}
                         className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-blue-700 active:scale-95 flex items-center justify-center gap-3 mb-3"
                     >
@@ -101,7 +113,7 @@ export default function LoginPage() {
                                 jamaat: "Test Jamaat Female",
                                 dob: "1996-01-01"
                             });
-                            router.push('/admin/approvals');
+                            setDummyUser("dummy_female", "dummy_female@test.com");
                         }}
                         className="w-full bg-pink-600 text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-pink-700 active:scale-95 flex items-center justify-center gap-3"
                     >

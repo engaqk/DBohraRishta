@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-emerald: #064E3B;
+  --color-brand-gold: #D4AF37;
+  --color-brand-marble: #F9FAFB;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-brand-marble);
+    color: var(--color-brand-emerald);
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: Georgia, serif; /* Elegant Serif for headings */
+  }
+}

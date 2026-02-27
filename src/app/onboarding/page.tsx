@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { User, ShieldCheck, Camera, UploadCloud, CheckCircle2, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { doc, setDoc } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebase/config";
+import { db } from "@/lib/firebase/config";
 import toast from "react-hot-toast";
 
 export default function OnboardingPage() {
@@ -61,6 +60,37 @@ export default function OnboardingPage() {
         setStep(step + 1);
     };
 
+    const compressImage = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    // Downscale heavily to fit under Firestore 1MB Limits
+                    const MAX_WIDTH = 600;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    if (scaleSize < 1) {
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                    } else {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                    }
+
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.5); // 50% Quality JPEG
+                    resolve(dataUrl);
+                };
+                img.onerror = error => reject(error);
+            };
+            reader.onerror = error => reject(error);
+        });
+    };
+
     const handleSubmit = async () => {
         if (!formData.education || !formData.hizratLocation || !formData.bio) {
             toast.error("Please complete your Dunyawi details.");
@@ -74,11 +104,9 @@ export default function OnboardingPage() {
         const userId = user?.uid || `guest_${Date.now()}`;
 
         try {
-            // 1. Upload the ITS image if provided
+            // 1. Convert Image to Lightweight DataURL String
             if (itsImage) {
-                const imageRef = ref(storage, `profiles/${userId}/its_card_${Date.now()}`);
-                const uploadTask = await uploadBytesResumable(imageRef, itsImage);
-                itsImageUrl = await getDownloadURL(uploadTask.ref);
+                itsImageUrl = await compressImage(itsImage);
             }
 
             // 2. Save complete profile to Firestore

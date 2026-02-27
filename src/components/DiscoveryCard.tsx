@@ -1,18 +1,69 @@
 "use client";
-import React, { useState } from 'react';
-import { CameraOff, Info, CheckCircle, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Info, CheckCircle, ShieldCheck, Loader2 } from 'lucide-react';
+import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 interface DiscoveryCardProps {
+    id: string; // The target user's ID
     name: string;
-    age: number;
-    jamaat: string;
-    education: string;
-    location: string;
-    matchScore: number;
+    dob?: string;
+    jamaat?: string;
+    education?: string;
+    hizratLocation?: string;
+    itsImageUrl?: string;
+    matchScore?: number;
 }
 
-export default function DiscoveryCard({ name, age, jamaat, education, location, matchScore }: DiscoveryCardProps) {
+export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, matchScore = 85 }: DiscoveryCardProps) {
+    const { user } = useAuth();
     const [requestSent, setRequestSent] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    // Calculate approximate age
+    const age = dob ? Math.floor((new Date().getTime() - new Date(dob).getTime()) / 31557600000) : 25;
+
+    // Check if request already sent
+    useEffect(() => {
+        const checkExistingRequest = async () => {
+            if (!user) return;
+            const q = query(
+                collection(db, "nisbat_requests"),
+                where("from", "==", user.uid),
+                where("to", "==", id)
+            );
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+                setRequestSent(true);
+            }
+        };
+        checkExistingRequest();
+    }, [user, id]);
+
+    const handleSendRequest = async () => {
+        if (!user) {
+            toast.error("You must be logged in to send a request");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            await addDoc(collection(db, "nisbat_requests"), {
+                from: user.uid,
+                to: id,
+                status: "pending_response",
+                timestamp: serverTimestamp()
+            });
+            setRequestSent(true);
+            toast.success("Nisbat Request sent successfully!");
+        } catch (error: any) {
+            toast.error("Failed to send request: " + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="bg-[#F9FAFB] rounded-2xl shadow-xl border border-gray-100 overflow-hidden max-w-sm w-full transition-transform hover:scale-[1.02] flex flex-col">
@@ -32,8 +83,8 @@ export default function DiscoveryCard({ name, age, jamaat, education, location, 
             <div className="p-6 flex flex-col flex-grow">
                 <div className="flex justify-between items-start mb-4">
                     <div>
-                        <h3 className="text-2xl font-bold text-[#064E3B] font-serif">{name}, {age}</h3>
-                        <p className="text-gray-600 font-sans text-sm mt-1">{jamaat} • {location}</p>
+                        <h3 className="text-2xl font-bold text-[#064E3B] font-serif">{name || 'Verified Member'}, {age}</h3>
+                        <p className="text-gray-600 font-sans text-sm mt-1">{jamaat || 'Community Member'} • {hizratLocation || 'Unknown'}</p>
                     </div>
                     <div className="bg-[#064E3B] text-[#D4AF37] px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-md">
                         <span>{matchScore}% Match</span>
@@ -47,15 +98,16 @@ export default function DiscoveryCard({ name, age, jamaat, education, location, 
                     </div>
                     <div className="flex items-center text-sm">
                         <Info className="w-5 h-5 text-[#D4AF37] mr-3" />
-                        <span className="text-gray-700">{education}</span>
+                        <span className="text-gray-700">{education || 'Graduated'}</span>
                     </div>
                 </div>
 
                 <button
-                    onClick={() => setRequestSent(true)}
-                    disabled={requestSent}
-                    className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95 ${requestSent ? 'bg-gray-100 text-[#064E3B] cursor-not-allowed border border-gray-200' : 'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
+                    onClick={handleSendRequest}
+                    disabled={requestSent || loading}
+                    className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${requestSent ? 'bg-gray-100 text-[#064E3B] cursor-not-allowed border border-gray-200 shadow-none' : 'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
                 >
+                    {loading && <Loader2 className="w-5 h-5 animate-spin" />}
                     {requestSent ? 'Nisbat Request Sent' : 'Send Nisbat Request'}
                 </button>
             </div>

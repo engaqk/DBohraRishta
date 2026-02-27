@@ -102,7 +102,7 @@ export default function OnboardingPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center p-6 text-[#064E3B] pt-12 pb-24">
+        <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center p-6 text-[#881337] pt-12 pb-24">
             <div className="max-w-xl w-full">
                 {/* Progress Bar */}
                 <div className="flex justify-between items-center mb-8 relative">
@@ -114,7 +114,7 @@ export default function OnboardingPage() {
                     {[1, 2, 3].map((num) => (
                         <div
                             key={num}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-4 transition-colors ${step >= num ? 'bg-[#064E3B] text-white border-white shadow-md' : 'bg-white text-gray-400 border-gray-100'}`}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-4 transition-colors ${step >= num ? 'bg-[#881337] text-white border-white shadow-md' : 'bg-white text-gray-400 border-gray-100'}`}
                         >
                             {num}
                         </div>
@@ -132,12 +132,12 @@ export default function OnboardingPage() {
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Full Name</label>
-                                <input name="name" onChange={handleChange} value={formData.name} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#064E3B]" placeholder="e.g. Murtaza Ali" />
+                                <input name="name" onChange={handleChange} value={formData.name} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. Murtaza Ali" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Gender</label>
-                                    <select name="gender" onChange={handleChange} value={formData.gender} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#064E3B]">
+                                    <select name="gender" onChange={handleChange} value={formData.gender} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]">
                                         <option value="">Select Gender</option>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
@@ -145,11 +145,11 @@ export default function OnboardingPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Date of Birth</label>
-                                    <input type="date" name="dob" max="2005-01-01" onChange={handleChange} value={formData.dob} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#064E3B]" />
+                                    <input type="date" name="dob" max="2005-01-01" onChange={handleChange} value={formData.dob} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" />
                                 </div>
                             </div>
                             <div className="flex justify-end pt-4">
-                                <button onClick={handleNext} className="bg-[#064E3B] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#0a6b52] transition-colors shadow-md">Next</button>
+                                <button onClick={handleNext} className="bg-[#881337] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#9F1239] transition-colors shadow-md">Next</button>
                             </div>
                         </div>
                     )}
@@ -169,17 +169,17 @@ export default function OnboardingPage() {
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">ITS Number</label>
-                                <input name="itsNumber" onChange={handleChange} value={formData.itsNumber} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#064E3B]" placeholder="e.g. 2045612" />
+                                <input name="itsNumber" onChange={handleChange} value={formData.itsNumber} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. 2045612" />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Primary Jamaat</label>
-                                <input name="jamaat" onChange={handleChange} value={formData.jamaat} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#064E3B]" placeholder="e.g. Husaini Jamaat, London" />
+                                <input name="jamaat" onChange={handleChange} value={formData.jamaat} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. Husaini Jamaat, London" />
                             </div>
 
                             {/* Mobile Real-time Camera Capture for ITS */}
                             <div className="mt-6 border border-gray-200 rounded-xl p-5 bg-white shadow-sm flex flex-col items-center">
-                                <label className="text-center w-full block mb-2 font-bold text-sm text-[#064E3B]">Capture ITS Card Verification</label>
+                                <label className="text-center w-full block mb-2 font-bold text-sm text-[#881337]">Capture ITS Card Verification</label>
                                 <p className="text-xs text-gray-500 text-center mb-4 leading-relaxed">
                                     We need to see your physical ITS card. This picture will only be viewed by an admin and will never be shown to other users.
                                 </p>
@@ -212,7 +212,7 @@ export default function OnboardingPage() {
                                         />
                                         <button
                                             onClick={() => fileInputRef.current?.click()}
-                                            className="flex-1 border-2 border-dashed border-[#064E3B] bg-emerald-50 text-[#064E3B] hover:bg-emerald-100 transition-colors py-4 rounded-xl flex flex-col items-center justify-center gap-2"
+                                            className="flex-1 border-2 border-dashed border-[#881337] bg-rose-50 text-[#881337] hover:bg-rose-100 transition-colors py-4 rounded-xl flex flex-col items-center justify-center gap-2"
                                         >
                                             <Camera className="w-6 h-6" />
                                             <span className="text-sm font-bold">Open Camera</span>
@@ -238,7 +238,7 @@ export default function OnboardingPage() {
 
                             <div className="flex justify-between pt-6">
                                 <button onClick={() => setStep(1)} className="text-gray-500 px-6 py-3 font-bold hover:text-gray-700">Back</button>
-                                <button onClick={handleNext} className="bg-[#064E3B] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#0a6b52] transition-colors shadow-md flex items-center gap-2">
+                                <button onClick={handleNext} className="bg-[#881337] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#9F1239] transition-colors shadow-md flex items-center gap-2">
                                     Next State
                                 </button>
                             </div>
@@ -254,15 +254,15 @@ export default function OnboardingPage() {
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Highest Education</label>
-                                <input name="education" onChange={handleChange} value={formData.education} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#064E3B]" placeholder="e.g. MBA in Finance" />
+                                <input name="education" onChange={handleChange} value={formData.education} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. MBA in Finance" />
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Current Location</label>
-                                <input name="hizratLocation" onChange={handleChange} value={formData.hizratLocation} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#064E3B]" placeholder="e.g. Dubai, UAE" />
+                                <input name="hizratLocation" onChange={handleChange} value={formData.hizratLocation} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. Dubai, UAE" />
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Bio (Be Intentional)</label>
-                                <textarea name="bio" onChange={handleChange} value={formData.bio} rows={4} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#064E3B] resize-none" placeholder="Share your expectations for an alliance..." />
+                                <textarea name="bio" onChange={handleChange} value={formData.bio} rows={4} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337] resize-none" placeholder="Share your expectations for an alliance..." />
                             </div>
                             <div className="flex justify-between pt-4">
                                 <button onClick={() => setStep(2)} className="text-gray-500 px-6 py-3 font-bold hover:text-gray-700" disabled={loading}>Back</button>

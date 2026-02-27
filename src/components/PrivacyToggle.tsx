@@ -9,12 +9,12 @@ export default function PrivacyToggle() {
         <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                    <Shield className="w-6 h-6 text-[#064E3B] mr-2" />
-                    <h3 className="text-lg font-bold text-[#064E3B] font-serif">Bohri Cupid+ Privacy</h3>
+                    <Shield className="w-6 h-6 text-[#881337] mr-2" />
+                    <h3 className="text-lg font-bold text-[#881337] font-serif">Bohri Cupid+ Privacy</h3>
                 </div>
                 <button
                     onClick={() => setIsPrivate(!isPrivate)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isPrivate ? 'bg-[#064E3B]' : 'bg-gray-200'}`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isPrivate ? 'bg-[#881337]' : 'bg-gray-200'}`}
                 >
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isPrivate ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>

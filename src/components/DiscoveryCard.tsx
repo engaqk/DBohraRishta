@@ -69,12 +69,12 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
         <div className="bg-[#F9FAFB] rounded-2xl shadow-xl border border-gray-100 overflow-hidden max-w-sm w-full transition-transform hover:scale-[1.02] flex flex-col">
             {/* Blurred Photo Placeholder */}
             <div className="relative h-72 bg-gray-200 flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#064E3B] to-[#D4AF37] blur-3xl opacity-20"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-[#881337] to-[#D4AF37] blur-3xl opacity-20"></div>
                 <div className="z-10 flex flex-col items-center bg-white/60 p-5 rounded-2xl backdrop-blur-md border border-white/40 shadow-sm text-center">
-                    <ShieldCheck className="w-10 h-10 text-[#064E3B] mb-2" />
-                    <span className="text-md font-bold text-[#064E3B] leading-tight flex flex-col gap-1">
+                    <ShieldCheck className="w-10 h-10 text-[#881337] mb-2" />
+                    <span className="text-md font-bold text-[#881337] leading-tight flex flex-col gap-1">
                         <span>Dynamic Privacy</span>
-                        <span className="text-xs font-normal text-[#064E3B]/80 max-w-[120px]">Unblurs after accepted Nisbat Request</span>
+                        <span className="text-xs font-normal text-[#881337]/80 max-w-[120px]">Unblurs after accepted Nisbat Request</span>
                     </span>
                 </div>
             </div>
@@ -83,10 +83,10 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
             <div className="p-6 flex flex-col flex-grow">
                 <div className="flex justify-between items-start mb-4">
                     <div>
-                        <h3 className="text-2xl font-bold text-[#064E3B] font-serif">{name || 'Verified Member'}, {age}</h3>
+                        <h3 className="text-2xl font-bold text-[#881337] font-serif">{name || 'Verified Member'}, {age}</h3>
                         <p className="text-gray-600 font-sans text-sm mt-1">{jamaat || 'Community Member'} • {hizratLocation || 'Unknown'}</p>
                     </div>
-                    <div className="bg-[#064E3B] text-[#D4AF37] px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-md">
+                    <div className="bg-[#881337] text-[#D4AF37] px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-md">
                         <span>{matchScore}% Match</span>
                     </div>
                 </div>
@@ -105,7 +105,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                 <button
                     onClick={handleSendRequest}
                     disabled={requestSent || loading}
-                    className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${requestSent ? 'bg-gray-100 text-[#064E3B] cursor-not-allowed border border-gray-200 shadow-none' : 'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
+                    className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 ${requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' : 'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
                 >
                     {loading && <Loader2 className="w-5 h-5 animate-spin" />}
                     {requestSent ? 'Nisbat Request Sent' : 'Send Nisbat Request'}

@@ -184,19 +184,19 @@ export default function NisbatDashboard() {
                                 {pendingRequests.map((req) => (
                                     <div key={req.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-gradient-to-br from-[#064E3B] to-[#D4AF37] opacity-80 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-sm text-xl relative overflow-hidden shrink-0">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-[#881337] to-[#D4AF37] opacity-80 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-sm text-xl relative overflow-hidden shrink-0">
                                                 <div className="absolute inset-0 backdrop-blur-md"></div>
                                                 <span className="z-10">{req.otherUserName.charAt(0)}</span>
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-lg text-[#064E3B]">{req.otherUserName}, {req.otherUserAge}</h4>
+                                                <h4 className="font-bold text-lg text-[#881337]">{req.otherUserName}, {req.otherUserAge}</h4>
                                                 <p className="text-sm text-gray-500">{req.otherUserLocation}</p>
                                             </div>
                                         </div>
                                         {req.isIncoming ? (
                                             <div className="flex gap-2">
                                                 <button onClick={() => handleRequestAction(req.id, "rejected")} className="bg-red-50 text-red-600 p-3 rounded-full hover:bg-red-100 transition-colors shadow-sm"><X className="w-5 h-5" /></button>
-                                                <button onClick={() => handleRequestAction(req.id, "accepted")} className="bg-[#064E3B] text-white p-3 rounded-full hover:bg-[#0a6b52] transition-colors shadow-md"><Check className="w-5 h-5" /></button>
+                                                <button onClick={() => handleRequestAction(req.id, "accepted")} className="bg-[#881337] text-white p-3 rounded-full hover:bg-[#9F1239] transition-colors shadow-md"><Check className="w-5 h-5" /></button>
                                             </div>
                                         ) : (
                                             <div className="flex gap-2 items-center text-gray-500 text-sm font-bold bg-gray-50 px-4 py-2 rounded-full border border-gray-200">
@@ -225,15 +225,15 @@ export default function NisbatDashboard() {
                                 {acceptedRequests.map((msg) => (
                                     <div key={msg.id} className="p-5 flex items-center gap-5 hover:bg-gray-50 cursor-pointer transition-colors relative">
 
-                                        <div className="w-14 h-14 bg-emerald-50 text-[#064E3B] rounded-full flex items-center justify-center text-xl font-bold border border-emerald-100 relative shrink-0">
+                                        <div className="w-14 h-14 bg-rose-50 text-[#881337] rounded-full flex items-center justify-center text-xl font-bold border border-rose-100 relative shrink-0">
                                             {/* Because it is ACCEPTED, photos would technically unblur here in a full app */}
                                             {msg.otherUserName.charAt(0)}
                                             {msg.isIncoming && <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white"></span>}
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex justify-between items-center mb-1">
-                                                <h4 className="font-bold text-lg text-[#064E3B]">{msg.otherUserName}</h4>
-                                                <span className={`text-xs ${msg.isIncoming ? 'text-[#064E3B] font-bold' : 'text-gray-400'}`}>New Match!</span>
+                                                <h4 className="font-bold text-lg text-[#881337]">{msg.otherUserName}</h4>
+                                                <span className={`text-xs ${msg.isIncoming ? 'text-[#881337] font-bold' : 'text-gray-400'}`}>New Match!</span>
                                             </div>
                                             <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'}`}>Alhamdulillah, Nisbat Request Accepted!</p>
                                         </div>
@@ -277,21 +277,21 @@ export default function NisbatDashboard() {
     if (loading) return null;
 
     return (
-        <div className="min-h-screen bg-[#F9FAFB] text-[#064E3B] p-6 pb-24 md:p-12 md:pb-12">
+        <div className="min-h-screen bg-[#F9FAFB] text-[#881337] p-6 pb-24 md:p-12 md:pb-12">
             <header className="max-w-7xl mx-auto mb-12 flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#064E3B] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg border-2 border-[#D4AF37]">
+                    <div className="w-12 h-12 bg-[#881337] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg border-2 border-[#D4AF37]">
                         DN
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold font-serif text-[#064E3B]">dbohranisbat.com</h1>
+                        <h1 className="text-3xl font-bold font-serif text-[#881337]">dbohranisbat.com</h1>
                         <p className="text-sm font-medium text-gray-500 tracking-wide uppercase">Nisbat over Shaadi</p>
                     </div>
                 </div>
                 <nav className="hidden md:flex gap-6 items-center font-bold text-sm">
-                    <button onClick={() => setActiveTab('discovery')} className={`transition-colors pb-1 border-b-2 hover:border-[#D4AF37] ${activeTab === 'discovery' ? 'text-[#D4AF37] border-[#D4AF37]' : 'text-[#064E3B] border-transparent'}`}>Discovery</button>
-                    <button onClick={() => setActiveTab('requests')} className={`transition-colors pb-1 border-b-2 hover:border-[#D4AF37] ${activeTab === 'requests' ? 'text-[#D4AF37] border-[#D4AF37]' : 'text-[#064E3B] border-transparent'}`}>Requests</button>
-                    <button onClick={() => setActiveTab('messages')} className={`transition-colors pb-1 border-b-2 hover:border-[#D4AF37] ${activeTab === 'messages' ? 'text-[#D4AF37] border-[#D4AF37]' : 'text-[#064E3B] border-transparent'}`}>Messages</button>
+                    <button onClick={() => setActiveTab('discovery')} className={`transition-colors pb-1 border-b-2 hover:border-[#D4AF37] ${activeTab === 'discovery' ? 'text-[#D4AF37] border-[#D4AF37]' : 'text-[#881337] border-transparent'}`}>Discovery</button>
+                    <button onClick={() => setActiveTab('requests')} className={`transition-colors pb-1 border-b-2 hover:border-[#D4AF37] ${activeTab === 'requests' ? 'text-[#D4AF37] border-[#D4AF37]' : 'text-[#881337] border-transparent'}`}>Requests</button>
+                    <button onClick={() => setActiveTab('messages')} className={`transition-colors pb-1 border-b-2 hover:border-[#D4AF37] ${activeTab === 'messages' ? 'text-[#D4AF37] border-[#D4AF37]' : 'text-[#881337] border-transparent'}`}>Messages</button>
                     {user ? (
                         <button onClick={logout} className="ml-4 text-red-500 hover:text-red-600 transition-colors flex items-center gap-2">
                             <LogOut className="w-4 h-4" />
@@ -311,7 +311,7 @@ export default function NisbatDashboard() {
                 <aside className="lg:col-span-1 space-y-6">
                     <PrivacyToggle />
 
-                    <div className="bg-gradient-to-br from-[#064E3B] to-[#0a6b52] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-[#881337] to-[#9F1239] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-20">
                             <Sparkles className="w-16 h-16" />
                         </div>
@@ -337,15 +337,15 @@ export default function NisbatDashboard() {
 
             {/* Mobile Bottom Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-safe flex justify-around items-center z-50 shadow-2xl">
-                <button onClick={() => setActiveTab('discovery')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'discovery' ? 'text-[#064E3B]' : 'text-gray-400 hover:text-[#064E3B]'}`}>
+                <button onClick={() => setActiveTab('discovery')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'discovery' ? 'text-[#881337]' : 'text-gray-400 hover:text-[#881337]'}`}>
                     <Heart className="w-6 h-6" />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Discovery</span>
                 </button>
-                <button onClick={() => setActiveTab('requests')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'requests' ? 'text-[#064E3B]' : 'text-gray-400 hover:text-[#064E3B]'}`}>
+                <button onClick={() => setActiveTab('requests')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'requests' ? 'text-[#881337]' : 'text-gray-400 hover:text-[#881337]'}`}>
                     <ShieldCheck className="w-6 h-6" />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Requests</span>
                 </button>
-                <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-1 transition-colors relative ${activeTab === 'messages' ? 'text-[#064E3B]' : 'text-gray-400 hover:text-[#064E3B]'}`}>
+                <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-1 transition-colors relative ${activeTab === 'messages' ? 'text-[#881337]' : 'text-gray-400 hover:text-[#881337]'}`}>
                     <MessageCircle className="w-6 h-6" />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Chat</span>
                     {/* Tiny Notification Dot Example */}

@@ -26,11 +26,11 @@ export default function LoginPage() {
     if (loading) return null;
 
     return (
-        <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center p-6 text-[#064E3B]">
+        <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center p-6 text-[#881337]">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] opacity-5 pointer-events-none"></div>
 
             <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 z-10 relative">
-                <div className="bg-[#064E3B] p-10 text-center relative overflow-hidden">
+                <div className="bg-[#881337] p-10 text-center relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10">
                         <Heart className="w-24 h-24" />
                     </div>
@@ -46,7 +46,7 @@ export default function LoginPage() {
 
                     <div className="space-y-4 mb-8">
                         <div className="flex items-start text-sm">
-                            <ShieldCheck className="w-5 h-5 text-[#064E3B] mr-3 mt-0.5 shrink-0" />
+                            <ShieldCheck className="w-5 h-5 text-[#881337] mr-3 mt-0.5 shrink-0" />
                             <p className="text-gray-600">Exclusive community matchmaking with ITS Verification for trust.</p>
                         </div>
                         <div className="flex items-start text-sm">
@@ -65,7 +65,7 @@ export default function LoginPage() {
 
                     <button
                         onClick={() => router.push('/onboarding')}
-                        className="w-full bg-[#064E3B] text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-[#0a6b52] active:scale-95 flex items-center justify-center gap-3"
+                        className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-[#9F1239] active:scale-95 flex items-center justify-center gap-3"
                     >
                         Skip Login (Testing Only)
                     </button>

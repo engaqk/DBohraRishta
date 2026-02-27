@@ -64,7 +64,7 @@ export default function AdminVerificationPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6 text-[#064E3B] pt-12">
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6 text-[#881337] pt-12">
             <div className="max-w-4xl w-full">
                 <div className="flex items-center gap-3 mb-8">
                     <ShieldAlert className="w-8 h-8 text-red-600" />
@@ -75,7 +75,7 @@ export default function AdminVerificationPage() {
                     <div className="text-center p-12 text-gray-500 font-bold animate-pulse">Scanning database...</div>
                 ) : pendingUsers.length === 0 ? (
                     <div className="bg-white p-12 rounded-3xl shadow-sm border border-gray-100 text-center flex flex-col items-center gap-4">
-                        <CheckCircle className="w-16 h-16 text-emerald-500" />
+                        <CheckCircle className="w-16 h-16 text-rose-500" />
                         <p className="text-xl font-bold text-gray-700">All caught up!</p>
                         <p className="text-gray-500">There are no pending ITS verifications right now.</p>
                     </div>
@@ -125,7 +125,7 @@ export default function AdminVerificationPage() {
                                         </button>
                                         <button
                                             onClick={() => handleVerification(user.id, true)}
-                                            className="flex-1 py-3 bg-[#064E3B] text-white hover:bg-[#0a6b52] font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md shadow-emerald-900/10"
+                                            className="flex-1 py-3 bg-[#881337] text-white hover:bg-[#9F1239] font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md shadow-rose-900/10"
                                         >
                                             <CheckCircle className="w-5 h-5" /> Approve & Verify
                                         </button>

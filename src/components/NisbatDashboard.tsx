@@ -42,6 +42,7 @@ export default function NisbatDashboard() {
     // Live Data State
     const [discoveryProfiles, setDiscoveryProfiles] = useState<UserProfile[]>([]);
     const [allRequests, setAllRequests] = useState<NisbatRequest[]>([]);
+    const [myProfile, setMyProfile] = useState<any>(null);
 
     useEffect(() => {
         if (loading) return;
@@ -58,6 +59,7 @@ export default function NisbatDashboard() {
                     router.push('/onboarding');
                     return;
                 }
+                setMyProfile(meRef.data());
 
                 // Load Profiles...
                 let profiles: UserProfile[] = [];
@@ -240,7 +242,10 @@ export default function NisbatDashboard() {
                                                 <h4 className="font-bold text-lg text-[#881337]">{msg.otherUserName}</h4>
                                                 <span className={`text-xs ${msg.isIncoming ? 'text-[#881337] font-bold' : 'text-gray-400'}`}>New Match!</span>
                                             </div>
-                                            <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'}`}>Alhamdulillah, Nisbat Request Accepted!</p>
+                                            <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'} mb-3`}>Alhamdulillah, Nisbat Request Accepted!</p>
+                                            <button className="bg-[#881337] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-[#9F1239] transition-all flex items-center gap-2">
+                                                <MessageCircle className="w-4 h-4" /> Start Chat
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -314,6 +319,27 @@ export default function NisbatDashboard() {
 
                 {/* Left Sidebar / Privacy & AI Coaching */}
                 <aside className="lg:col-span-1 space-y-6">
+                    {myProfile && (
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
+                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-rose-50 mb-4 shadow-sm relative">
+                                {myProfile.itsImageUrl ? (
+                                    <img src={myProfile.itsImageUrl} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-3xl">
+                                        {myProfile.name?.charAt(0)}
+                                    </div>
+                                )}
+                            </div>
+                            <h3 className="font-bold text-xl text-[#881337] text-center">{myProfile.name}</h3>
+                            <p className="text-sm text-gray-500 mb-1">ITS: {myProfile.itsNumber}</p>
+                            {myProfile.isItsVerified ? (
+                                <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 mt-2 border border-emerald-100"><Check className="w-3 h-3" /> Verified</span>
+                            ) : (
+                                <span className="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 mt-2 border border-yellow-100"><Clock className="w-3 h-3" /> Pending Review</span>
+                            )}
+                        </div>
+                    )}
+
                     <PrivacyToggle />
 
                     <div className="bg-gradient-to-br from-[#881337] to-[#9F1239] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">

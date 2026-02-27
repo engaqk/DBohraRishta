@@ -18,6 +18,8 @@ export default function OnboardingPage() {
     // Data State
     const [formData, setFormData] = useState({
         name: "",
+        email: "",
+        mobile: "",
         gender: "",
         dob: "",
         itsNumber: "",
@@ -26,6 +28,13 @@ export default function OnboardingPage() {
         hizratLocation: "",
         bio: "",
     });
+
+    // Auto-fill email if user is logged in
+    React.useEffect(() => {
+        if (user?.email && !formData.email) {
+            setFormData(prev => ({ ...prev, email: user.email || "" }));
+        }
+    }, [user]);
 
     // Image State
     const [itsImage, setItsImage] = useState<File | null>(null);
@@ -52,9 +61,33 @@ export default function OnboardingPage() {
     };
 
     const handleNext = () => {
-        if (step === 1 && (!formData.name || !formData.dob || !formData.gender)) {
-            toast.error("Please fill in all basic profile fields.");
-            return;
+        if (step === 1) {
+            if (!formData.name || !formData.dob || !formData.gender || !formData.email || !formData.mobile) {
+                toast.error("Please fill in all basic profile fields.");
+                return;
+            }
+            if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+                toast.error("Please enter a valid email address.");
+                return;
+            }
+            if (!/^\d{8,15}$/.test(formData.mobile)) {
+                toast.error("Please enter a valid mobile number (digits only).");
+                return;
+            }
+        }
+        if (step === 2) {
+            if (!/^\d{8}$/.test(formData.itsNumber)) {
+                toast.error("ITS Number must be exactly 8 digits.");
+                return;
+            }
+            if (!formData.jamaat) {
+                toast.error("Please specify your Primary Jamaat.");
+                return;
+            }
+            if (!itsImage) {
+                toast.error("Please upload or capture your ITS card.");
+                return;
+            }
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
         setStep(step + 1);
@@ -164,6 +197,16 @@ export default function OnboardingPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
+                                    <input type="email" name="email" onChange={handleChange} value={formData.email} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="abc@example.com" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number</label>
+                                    <input type="tel" name="mobile" onChange={handleChange} value={formData.mobile} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. 919876543210" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Gender</label>
                                     <select name="gender" onChange={handleChange} value={formData.gender} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]">
                                         <option value="">Select Gender</option>
@@ -207,10 +250,7 @@ export default function OnboardingPage() {
 
                             {/* Mobile Real-time Camera Capture for ITS */}
                             <div className="mt-6 border border-gray-200 rounded-xl p-5 bg-white shadow-sm flex flex-col items-center">
-                                <label className="text-center w-full block mb-2 font-bold text-sm text-[#881337]">Capture ITS Card Verification</label>
-                                <p className="text-xs text-gray-500 text-center mb-4 leading-relaxed">
-                                    We need to see your physical ITS card. This picture will only be viewed by an admin and will never be shown to other users.
-                                </p>
+                                <label className="text-center w-full block mb-4 font-bold text-sm text-[#881337]">Capture ITS Card Verification</label>
 
                                 {imagePreview ? (
                                     <div className="relative w-full max-w-[250px] aspect-[1.58] rounded-xl overflow-hidden shadow-lg border-2 border-[#D4AF37]">

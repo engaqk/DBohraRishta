@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { ShieldCheck, Heart, Mail, Lock } from "lucide-react";
 import toast from "react-hot-toast";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 
 export default function LoginPage() {
     const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, setDummyUser } = useAuth();
@@ -18,8 +20,6 @@ export default function LoginPage() {
     useEffect(() => {
         const checkUserStatus = async () => {
             if (!loading && user) {
-                const { doc, getDoc } = require("firebase/firestore");
-                const { db } = require("@/lib/firebase/config");
                 try {
                     const userDoc = await getDoc(doc(db, "users", user.uid));
                     if (userDoc.exists()) {
@@ -77,8 +77,8 @@ export default function LoginPage() {
                     <div className="absolute top-0 right-0 p-4 opacity-10">
                         <Heart className="w-24 h-24" />
                     </div>
-                    <div className="w-16 h-16 bg-gradient-to-br from-white to-rose-100 text-[#881337] rounded-full flex items-center justify-center font-bold text-2xl shadow-[0_0_30px_rgba(212,175,55,0.5)] mx-auto mb-4 border-2 border-[#D4AF37] ring-4 ring-white/20">
-                        DR
+                    <div className="w-16 h-16 bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] rounded-full flex items-center justify-center font-bold text-3xl shadow-[0_0_30px_rgba(212,175,55,0.5)] mx-auto mb-4 border-2 border-[#D4AF37] ring-4 ring-white/20">
+                        53
                     </div>
                     <h1 className="text-4xl font-extrabold font-serif text-white mb-1 tracking-tight drop-shadow-md">
                         DBohra<span className="text-[#D4AF37] font-medium italic">Rishta</span>
@@ -156,8 +156,6 @@ export default function LoginPage() {
 
                     <button
                         onClick={async () => {
-                            const { doc, setDoc } = require("firebase/firestore");
-                            const { db } = require("@/lib/firebase/config");
                             await setDoc(doc(db, "users", "dummy_male"), {
                                 name: "Murtaza Test",
                                 gender: "male",
@@ -172,6 +170,7 @@ export default function LoginPage() {
                                 libasImageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop"
                             });
                             setDummyUser("dummy_male", "dummy_male@test.com");
+                            router.push("/");
                         }}
                         className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-blue-700 active:scale-95 flex items-center justify-center gap-3 mb-3"
                     >
@@ -180,8 +179,6 @@ export default function LoginPage() {
 
                     <button
                         onClick={async () => {
-                            const { doc, setDoc } = require("firebase/firestore");
-                            const { db } = require("@/lib/firebase/config");
                             await setDoc(doc(db, "users", "dummy_female"), {
                                 name: "Zahra Test",
                                 gender: "female",
@@ -196,6 +193,7 @@ export default function LoginPage() {
                                 libasImageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop"
                             });
                             setDummyUser("dummy_female", "dummy_female@test.com");
+                            router.push("/");
                         }}
                         className="w-full bg-pink-600 text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-pink-700 active:scale-95 flex items-center justify-center gap-3"
                     >

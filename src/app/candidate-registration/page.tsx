@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { User, Heart, Loader2, BookOpen } from "lucide-react";
 import toast from "react-hot-toast";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 
 export default function CandidateRegistrationPage() {
     const router = useRouter();
@@ -23,7 +25,7 @@ export default function CandidateRegistrationPage() {
 
         // Family
         jamaat: "",
-        nearestTnc: "",
+        siblings: "0",
         fatherName: "",
         motherName: "",
         maritalStatus: "single",
@@ -78,9 +80,27 @@ export default function CandidateRegistrationPage() {
         e.preventDefault();
 
         let newErrors: { [key: string]: string } = {};
-        if (!formData.ejamaatId) newErrors.ejamaatId = "eJamaat ID (ITS) is required";
+
+        // eJamaat / ITS validation (Strictly 8 digits)
+        if (!formData.ejamaatId) {
+            newErrors.ejamaatId = "eJamaat ID (ITS) is required";
+        } else if (!/^\d{8}$/.test(formData.ejamaatId)) {
+            newErrors.ejamaatId = "ITS Number must be exactly 8 numeric digits";
+        }
+
         if (!formData.firstName) newErrors.firstName = "First Name is required";
-        if (!formData.mobile) newErrors.mobile = "Mobile number is required";
+
+        // Email optional, but validated if present
+        if (formData.email && !/^\S+@\S+\.\S+$/.test(formData.email)) {
+            newErrors.email = "Please enter a valid email address";
+        }
+
+        // Mobile validation
+        if (!formData.mobile) {
+            newErrors.mobile = "Mobile number is required";
+        } else if (!/^\d+$/.test(formData.mobile) || formData.mobile.length < 8 || formData.mobile.length > 15) {
+            newErrors.mobile = "Please enter a valid mobile number (digits only, length 8-15)";
+        }
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -91,6 +111,24 @@ export default function CandidateRegistrationPage() {
 
         setLoading(true);
         try {
+            // Check for Duplicate Profile logic based on First Name, Last Name, and DOB
+            if (formData.firstName && formData.lastName && formData.dob) {
+                const usersRef = collection(db, "users");
+                // Capitalize query strings assuming DB stores exact or we standardise it (here exact match for simplicity)
+                const duplicateQuery = query(usersRef,
+                    where("firstName", "==", formData.firstName.trim()),
+                    where("lastName", "==", formData.lastName.trim()),
+                    where("dob", "==", formData.dob)
+                );
+                const duplicateSnapshot = await getDocs(duplicateQuery);
+
+                if (!duplicateSnapshot.empty) {
+                    toast.error("A profile with this First Name, Last Name, and Date of Birth already exists.");
+                    setLoading(false);
+                    return;
+                }
+            }
+
             // Because this is a mock save for the separate registration page, 
             // we will simulate an API delay then redirect them to login/onboarding.
             await new Promise(r => setTimeout(r, 2000));
@@ -177,8 +215,8 @@ export default function CandidateRegistrationPage() {
                                     <input name="jamaat" onChange={handleChange} value={formData.jamaat} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Nearest TNC</label>
-                                    <input name="nearestTnc" onChange={handleChange} value={formData.nearestTnc} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none" />
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Number of Siblings</label>
+                                    <input type="number" min="0" name="siblings" onChange={handleChange} value={formData.siblings} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Father's Name</label>
@@ -214,6 +252,35 @@ export default function CandidateRegistrationPage() {
                                         <input placeholder="Citizen Of" name="citizenOf" onChange={handleChange} value={formData.citizenOf} className="w-1/2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none" />
                                         <input placeholder="Ancestral Watan" name="ancestralWatan" onChange={handleChange} value={formData.ancestralWatan} className="w-1/2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none" />
                                     </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 3. CONTACT */}
+                        <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                            <div className="flex items-center gap-3 border-b-2 border-gray-100 pb-3 mb-6">
+                                <span className="bg-[#D4AF37] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">3</span>
+                                <h2 className="text-xl font-bold font-serif text-[#881337]">CONTACT</h2>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number *</label>
+                                    <div className="flex gap-2">
+                                        <input name="mobileCode" onChange={handleChange} value={formData.mobileCode} className="w-1/4 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none" placeholder="+91" />
+                                        <input name="mobile" onChange={handleChange} value={formData.mobile} className={`w-3/4 bg-gray-50 border ${errors.mobile ? 'border-red-500' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]`} placeholder="e.g. 9876543210" />
+                                    </div>
+                                    {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Landline (Optional)</label>
+                                    <div className="flex gap-2">
+                                        <input name="landlineCode" onChange={handleChange} value={formData.landlineCode} className="w-1/4 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none" placeholder="022" />
+                                        <input name="landline" onChange={handleChange} value={formData.landline} className="w-3/4 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. 2345678" />
+                                    </div>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Residential Address</label>
+                                    <textarea name="address" onChange={handleChange} value={formData.address} rows={2} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none resize-none focus:ring-2 focus:ring-[#881337]" />
                                 </div>
                             </div>
                         </section>

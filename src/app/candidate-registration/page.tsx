@@ -148,9 +148,20 @@ export default function CandidateRegistrationPage() {
             newErrors.mobile = "Please enter a valid mobile number (digits only, length 8-15)";
         }
 
+        // Additional Required Form Validation Check
+        if (!formData.jamaat) newErrors.jamaat = "Jamaat is required";
+        if (!formData.dob) newErrors.dob = "Date of Birth is required";
+        if (!formData.gender) newErrors.gender = "Gender is required";
+        if (!formData.educationDetails && !formData.professionType) {
+            newErrors.general = "Please provide education or profession details";
+        }
+        if (!libasImageUrl) {
+            newErrors.photo = "Profile Photo (Kaumi Libas) is required";
+        }
+
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            toast.error("Please fill in the required fields correctly.");
+            toast.error(newErrors.general || newErrors.photo || "Please fill in all the required fields correctly.");
             window.scrollTo({ top: 0, behavior: "smooth" });
             return;
         }
@@ -194,6 +205,13 @@ export default function CandidateRegistrationPage() {
                     itsNumber: formData.ejamaatId,
                     isCandidateFormComplete: true
                 });
+                // Email Notification Call (Mock fetch placeholder for serverless function/email trigger)
+                // In production, an API route or Firebase Extension would handle actually dispatching this email.
+                try {
+                    console.log("Sending email notification to abdulqadirkhanji52@gmail.com for exact new verification request from", fullName);
+                    // fetch("/api/notify-admin", { method: "POST", body: JSON.stringify({ email: "abdulqadirkhanji52@gmail.com", user: fullName }) })
+                } catch (e) { }
+
                 toast.success("Profile Details Updated Successfully!");
                 router.push("/");
             } else {

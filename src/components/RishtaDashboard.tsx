@@ -32,6 +32,9 @@ interface RishtaRequest {
     otherUserName: string;
     otherUserAge: number;
     otherUserLocation: string;
+    otherUserEducation: string;
+    otherUserMobile: string;
+    otherUserEmail: string;
     otherUserLibasUrl: string | null;
 }
 
@@ -135,6 +138,9 @@ export default function RishtaDashboard() {
                                 otherUserName: targetId === "dummy1" ? "Aliya" : targetId === "dummy2" ? "Fatima" : "Zahra",
                                 otherUserAge: 25,
                                 otherUserLocation: "Global",
+                                otherUserEducation: "General",
+                                otherUserMobile: "+91 0000000000",
+                                otherUserEmail: "dummy@example.com",
                                 otherUserLibasUrl: null,
                             });
                             continue;
@@ -148,6 +154,9 @@ export default function RishtaDashboard() {
                                 otherUserName: uData.name || "Unknown Member",
                                 otherUserAge: uData.dob ? Math.floor((new Date().getTime() - new Date(uData.dob).getTime()) / 31557600000) : 25,
                                 otherUserLocation: uData.hizratLocation || "Global Network",
+                                otherUserEducation: uData.education || uData.profession || "Graduated",
+                                otherUserMobile: uData.mobile ? `${uData.mobileCode || ''} ${uData.mobile}` : "Not Shared",
+                                otherUserEmail: uData.email || "Not Shared",
                                 otherUserLibasUrl: uData.libasImageUrl || null,
                             });
                         }
@@ -297,24 +306,38 @@ export default function RishtaDashboard() {
                         ) : (
                             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden divide-y divide-gray-100">
                                 {acceptedRequests.map((msg) => (
-                                    <div key={msg.id} className="p-5 flex items-center gap-5 hover:bg-gray-50 cursor-pointer transition-colors relative">
+                                    <div key={msg.id} className="p-5 flex flex-col md:flex-row items-start md:items-center gap-5 hover:bg-gray-50 transition-colors relative">
 
-                                        <div className="w-14 h-14 bg-rose-50 text-[#881337] rounded-full flex items-center justify-center text-xl font-bold border border-rose-100 relative shrink-0 overflow-hidden">
-                                            {/* Because it is ACCEPTED, photos unblur and are shown! */}
-                                            {msg.otherUserLibasUrl ? (
-                                                <img src={msg.otherUserLibasUrl} alt="Match" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span>{msg.otherUserName.charAt(0)}</span>
-                                            )}
-                                            {msg.isIncoming && <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white"></span>}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <h4 className="font-bold text-lg text-[#881337]">{msg.otherUserName}</h4>
-                                                <span className={`text-xs ${msg.isIncoming ? 'text-[#881337] font-bold' : 'text-gray-400'}`}>New Match!</span>
+                                        <div className="flex flex-col items-center shrink-0">
+                                            <div className="w-20 h-20 bg-rose-50 text-[#881337] rounded-full flex items-center justify-center text-xl font-bold border border-rose-100 relative overflow-hidden mb-2">
+                                                {/* Because it is ACCEPTED, photos unblur and are shown! */}
+                                                {msg.otherUserLibasUrl ? (
+                                                    <img src={msg.otherUserLibasUrl} alt="Match" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span>{msg.otherUserName.charAt(0)}</span>
+                                                )}
+                                                {msg.isIncoming && <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white"></span>}
                                             </div>
-                                            <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'} mb-3`}>Alhamdulillah, Rishta Request Accepted!</p>
-                                            <div className="flex gap-2">
+                                            <div className="text-center">
+                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{msg.otherUserLocation.split(',')[0]}</p>
+                                                <p className="text-xs text-[#881337] font-medium max-w-[100px] truncate">{msg.otherUserEducation}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-1 w-full mt-4 md:mt-0">
+                                            <div className="flex justify-between items-start md:items-center mb-1">
+                                                <div>
+                                                    <h4 className="font-bold text-lg text-[#881337]">{msg.otherUserName}</h4>
+                                                    <div className="flex items-center gap-3 text-sm text-gray-600 font-medium mt-1">
+                                                        <span>📞 {msg.otherUserMobile}</span>
+                                                        <span className="hidden sm:inline">|</span>
+                                                        <span>✉️ {msg.otherUserEmail}</span>
+                                                    </div>
+                                                </div>
+                                                <span className={`text-xs ${msg.isIncoming ? 'text-[#D4AF37] font-bold bg-[#D4AF37]/10 px-2 py-1 rounded-full' : 'text-gray-400'}`}>Accepted Matched</span>
+                                            </div>
+                                            <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'} mb-4 mt-2`}>Alhamdulillah, Rishta Request Accepted! Direct contact info is now visible.</p>
+                                            <div className="flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => {
                                                         if (myProfile?.isPremium) {
@@ -324,7 +347,7 @@ export default function RishtaDashboard() {
                                                         }
                                                     }}
                                                     className="bg-[#881337] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-[#9F1239] transition-all flex items-center gap-2">
-                                                    <MessageCircle className="w-4 h-4" /> Start Chat
+                                                    <MessageCircle className="w-4 h-4" /> Start Protected Chat
                                                 </button>
                                                 <button
                                                     onClick={() => {
@@ -561,7 +584,7 @@ export default function RishtaDashboard() {
                         <div className="bg-gradient-to-r from-[#D4AF37] to-[#F1D16A] p-6 text-center shadow-sm relative">
                             <button onClick={() => setShowPremiumModal(false)} className="absolute top-4 right-4 bg-black/10 rounded-full p-2 hover:bg-black/20 text-[#881337]"><X className="w-4 h-4" /></button>
                             <Sparkles className="w-12 h-12 text-[#881337] mx-auto mb-3" />
-                            <h2 className="text-2xl font-bold text-[#881337] font-serif mb-1">dBohra Match Premium</h2>
+                            <h2 className="text-2xl font-bold text-[#881337] font-serif mb-1">DBohraRishta match privacy update</h2>
                             <p className="text-[#881337] opacity-90 text-sm font-medium">Unlock Unlimited Halal Chats</p>
                         </div>
                         <div className="p-8 text-center space-y-6">

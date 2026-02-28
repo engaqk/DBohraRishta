@@ -77,8 +77,12 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
         <div className="bg-[#F9FAFB] rounded-2xl shadow-xl border border-gray-100 overflow-hidden max-w-sm w-full transition-transform hover:scale-[1.02] flex flex-col">
             {/* Blurred Photo Placeholder */}
             <div className="relative h-72 bg-gray-200 flex items-center justify-center overflow-hidden">
-                {libasImageUrl && (
+                {libasImageUrl ? (
                     <img src={libasImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-60" />
+                ) : (
+                    <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-300 blur-2xl scale-110 opacity-40">
+                        <span className="text-4xl">📸</span>
+                    </div>
                 )}
 
                 {/* For Female Profiles, show a small, somewhat clear thumbnail snippet if requested by user for 'testing visual differences', or similar feature */}

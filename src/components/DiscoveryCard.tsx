@@ -14,11 +14,12 @@ interface DiscoveryCardProps {
     education?: string;
     hizratLocation?: string;
     itsImageUrl?: string;
+    libasImageUrl?: string;
     matchScore?: number;
     isMyProfileVerified?: boolean;
 }
 
-export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, matchScore = 85, isMyProfileVerified = false }: DiscoveryCardProps) {
+export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, matchScore = 85, isMyProfileVerified = false }: DiscoveryCardProps) {
     const { user } = useAuth();
     const [requestSent, setRequestSent] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -75,6 +76,9 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
         <div className="bg-[#F9FAFB] rounded-2xl shadow-xl border border-gray-100 overflow-hidden max-w-sm w-full transition-transform hover:scale-[1.02] flex flex-col">
             {/* Blurred Photo Placeholder */}
             <div className="relative h-72 bg-gray-200 flex items-center justify-center overflow-hidden">
+                {libasImageUrl && (
+                    <img src={libasImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-60" />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#881337] to-[#D4AF37] blur-3xl opacity-20"></div>
                 <div className="z-10 flex flex-col items-center bg-white/60 p-5 rounded-2xl backdrop-blur-md border border-white/40 shadow-sm text-center">
                     <ShieldCheck className="w-10 h-10 text-[#881337] mb-2" />

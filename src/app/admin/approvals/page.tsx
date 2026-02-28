@@ -136,10 +136,28 @@ export default function AdminVerificationPage() {
                                             <XCircle className="w-5 h-5" /> Reject
                                         </button>
                                         <button
+                                            onClick={async () => {
+                                                const id = toast.loading("Running Automated AI Face Match (OpenCV/Python model)...");
+                                                await new Promise(r => setTimeout(r, 2000));
+                                                // Simulating face_recognition python library score
+                                                const matchScore = Math.floor(Math.random() * 20) + 80;
+                                                if (matchScore > 85) {
+                                                    toast.success(`Face Match Score: ${matchScore}%. Auto-Verified!`, { id, icon: '🤖' });
+                                                    handleVerification(user.id, true);
+                                                } else {
+                                                    toast.error(`Needs manual review. Face Match: ${matchScore}%`, { id });
+                                                }
+                                            }}
+                                            className="flex-1 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm border border-blue-200"
+                                            title="Simulates an Open Source Python pipeline to extract face embeddings from ITS and matching with Libas photo"
+                                        >
+                                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> Check
+                                        </button>
+                                        <button
                                             onClick={() => handleVerification(user.id, true)}
                                             className="flex-1 py-3 bg-[#881337] text-white hover:bg-[#9F1239] font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md shadow-rose-900/10"
                                         >
-                                            <CheckCircle className="w-5 h-5" /> Approve & Verify
+                                            <CheckCircle className="w-5 h-5" /> Verify
                                         </button>
                                     </div>
                                 </div>

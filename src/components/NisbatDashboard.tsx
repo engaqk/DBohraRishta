@@ -18,6 +18,8 @@ interface UserProfile {
     education?: string;
     hizratLocation?: string;
     isItsVerified?: boolean;
+    gender?: string;
+    libasImageUrl?: string;
 }
 
 interface NisbatRequest {
@@ -30,6 +32,7 @@ interface NisbatRequest {
     otherUserName: string;
     otherUserAge: number;
     otherUserLocation: string;
+    otherUserLibasUrl: string | null;
 }
 
 export default function NisbatDashboard() {
@@ -76,11 +79,16 @@ export default function NisbatDashboard() {
 
                 // Load Profiles...
                 let profiles: UserProfile[] = [];
+                const oppositeGender = profileData.gender === 'male' ? 'female' : 'male';
+
+                // Firestore queries must have composite index if using multiple fields, but for a prototype we can filter client side
+                // Or if we only rely on a single where for the prototype:
                 const q = query(collection(db, "users"), where("isItsVerified", "==", true));
                 const snap = await getDocs(q);
                 snap.forEach(doc => {
-                    if (doc.id !== user.uid) {
-                        profiles.push({ id: doc.id, ...doc.data() } as UserProfile);
+                    const data = doc.data();
+                    if (doc.id !== user.uid && data.gender === oppositeGender) {
+                        profiles.push({ id: doc.id, ...data } as UserProfile);
                     }
                 });
 
@@ -119,13 +127,14 @@ export default function NisbatDashboard() {
 
                     for (const req of requestsRaw) {
                         const targetId = req.isIncoming ? req.from : req.to;
-                        // Don't query dummy IDs
-                        if (targetId.startsWith("dummy")) {
+                        // Don't query dummy IDs if they aren't in DB
+                        if (targetId === "dummy1" || targetId === "dummy2" || targetId === "dummy3") {
                             resolvedRequests.push({
                                 ...req,
                                 otherUserName: targetId === "dummy1" ? "Aliya" : targetId === "dummy2" ? "Fatima" : "Zahra",
                                 otherUserAge: 25,
                                 otherUserLocation: "Global",
+                                otherUserLibasUrl: null,
                             });
                             continue;
                         }
@@ -137,7 +146,8 @@ export default function NisbatDashboard() {
                                 ...req,
                                 otherUserName: uData.name || "Unknown Member",
                                 otherUserAge: uData.dob ? Math.floor((new Date().getTime() - new Date(uData.dob).getTime()) / 31557600000) : 25,
-                                otherUserLocation: uData.hizratLocation || "Global Network"
+                                otherUserLocation: uData.hizratLocation || "Global Network",
+                                otherUserLibasUrl: uData.libasImageUrl || null,
                             });
                         }
                     }
@@ -288,9 +298,13 @@ export default function NisbatDashboard() {
                                 {acceptedRequests.map((msg) => (
                                     <div key={msg.id} className="p-5 flex items-center gap-5 hover:bg-gray-50 cursor-pointer transition-colors relative">
 
-                                        <div className="w-14 h-14 bg-rose-50 text-[#881337] rounded-full flex items-center justify-center text-xl font-bold border border-rose-100 relative shrink-0">
-                                            {/* Because it is ACCEPTED, photos would technically unblur here in a full app */}
-                                            {msg.otherUserName.charAt(0)}
+                                        <div className="w-14 h-14 bg-rose-50 text-[#881337] rounded-full flex items-center justify-center text-xl font-bold border border-rose-100 relative shrink-0 overflow-hidden">
+                                            {/* Because it is ACCEPTED, photos unblur and are shown! */}
+                                            {msg.otherUserLibasUrl ? (
+                                                <img src={msg.otherUserLibasUrl} alt="Match" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span>{msg.otherUserName.charAt(0)}</span>
+                                            )}
                                             {msg.isIncoming && <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white"></span>}
                                         </div>
                                         <div className="flex-1">

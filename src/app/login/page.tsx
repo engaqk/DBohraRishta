@@ -90,7 +90,10 @@ export default function LoginPage() {
                                 isPremium: true,
                                 status: "verified",
                                 jamaat: "Test Jamaat Male",
-                                dob: "1995-01-01"
+                                dob: "1995-01-01",
+                                hizratLocation: "Mumbai, India",
+                                education: "B.Tech Computer Science",
+                                libasImageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop"
                             });
                             setDummyUser("dummy_male", "dummy_male@test.com");
                         }}
@@ -111,7 +114,10 @@ export default function LoginPage() {
                                 isPremium: true,
                                 status: "verified",
                                 jamaat: "Test Jamaat Female",
-                                dob: "1996-01-01"
+                                dob: "1996-01-01",
+                                hizratLocation: "Dubai, UAE",
+                                education: "B.Sc Interior Design",
+                                libasImageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop"
                             });
                             setDummyUser("dummy_female", "dummy_female@test.com");
                         }}

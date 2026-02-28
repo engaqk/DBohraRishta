@@ -17,9 +17,10 @@ interface DiscoveryCardProps {
     libasImageUrl?: string;
     matchScore?: number;
     isMyProfileVerified?: boolean;
+    gender?: string;
 }
 
-export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, matchScore = 85, isMyProfileVerified = false }: DiscoveryCardProps) {
+export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, gender, matchScore = 85, isMyProfileVerified = false }: DiscoveryCardProps) {
     const { user } = useAuth();
     const [requestSent, setRequestSent] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -79,6 +80,14 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                 {libasImageUrl && (
                     <img src={libasImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-60" />
                 )}
+
+                {/* For Female Profiles, show a small, somewhat clear thumbnail snippet if requested by user for 'testing visual differences', or similar feature */}
+                {gender === 'female' && libasImageUrl && (
+                    <div className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white/50 shadow-lg overflow-hidden opacity-90 backdrop-blur-sm pointer-events-none">
+                        <img src={libasImageUrl} alt="Preview" className="w-full h-full object-cover blur-[2px]" />
+                    </div>
+                )}
+
                 <div className="absolute inset-0 bg-gradient-to-br from-[#881337] to-[#D4AF37] blur-3xl opacity-20"></div>
                 <div className="z-10 flex flex-col items-center bg-white/60 p-5 rounded-2xl backdrop-blur-md border border-white/40 shadow-sm text-center">
                     <ShieldCheck className="w-10 h-10 text-[#881337] mb-2" />

@@ -13,6 +13,7 @@ export default function CandidateRegistrationPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [libasImageUrl, setLibasImageUrl] = useState<string | null>(null);
+    const [itsImageUrl, setItsImageUrl] = useState<string | null>(null);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     // Full ITNC Candidate Form Data State
@@ -88,6 +89,7 @@ export default function CandidateRegistrationPage() {
                     }
 
                     setLibasImageUrl(data.libasImageUrl || null);
+                    setItsImageUrl(data.itsImageUrl || null);
 
                     setFormData(prev => ({
                         ...prev,
@@ -221,14 +223,24 @@ export default function CandidateRegistrationPage() {
                             <h1 className="text-3xl font-bold font-serif mb-2">Candidate Registration Form</h1>
                             <p className="text-[#D4AF37] font-medium tracking-wide text-sm">International Taiseer un Nikah Committee (I.T.NC.) Format</p>
                         </div>
-                        {libasImageUrl && (
-                            <div className="relative z-10 hidden md:block">
-                                <div className="w-24 h-24 rounded-full border-4 border-[#D4AF37] shadow-xl overflow-hidden bg-white/10 flex items-center justify-center">
-                                    <img src={libasImageUrl} alt="Kaumi Libas" className="w-full h-full object-cover" />
+                        <div className="flex gap-4 relative z-10 hidden md:flex">
+                            {itsImageUrl && (
+                                <div className="flex flex-col items-center">
+                                    <div className="w-24 h-24 rounded-full border-4 border-white/50 shadow-xl overflow-hidden bg-white/10 flex items-center justify-center">
+                                        <img src={itsImageUrl} alt="ITS Photo" className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="text-center mt-2 text-xs text-white/80 font-bold tracking-widest uppercase">Verified ITS</div>
                                 </div>
-                                <div className="text-center mt-2 text-xs text-white/80 font-bold tracking-widest uppercase">Profile Photo</div>
-                            </div>
-                        )}
+                            )}
+                            {libasImageUrl && (
+                                <div className="flex flex-col items-center">
+                                    <div className="w-24 h-24 rounded-full border-4 border-[#D4AF37] shadow-xl overflow-hidden bg-white/10 flex items-center justify-center">
+                                        <img src={libasImageUrl} alt="Kaumi Libas" className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="text-center mt-2 text-xs text-white/80 font-bold tracking-widest uppercase">Profile Photo</div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-8 space-y-12">
@@ -242,12 +254,11 @@ export default function CandidateRegistrationPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">eJamaat Id (ITS) *</label>
-                                    <input name="ejamaatId" onChange={handleChange} value={formData.ejamaatId} className={`w-full bg-gray-50 border ${errors.ejamaatId ? 'border-red-500' : 'border-gray-200'} rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none`} />
-                                    {errors.ejamaatId && <p className="text-red-500 text-xs mt-1">{errors.ejamaatId}</p>}
+                                    <input disabled title="Verified ITS Number cannot be changed" name="ejamaatId" onChange={handleChange} value={formData.ejamaatId} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none`} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Email address</label>
-                                    <input type="email" name="email" onChange={handleChange} value={formData.email} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none" />
+                                    <input disabled type="email" name="email" onChange={handleChange} value={formData.email} className="w-full bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none" />
                                 </div>
                                 <div className="grid grid-cols-[1fr_2fr] gap-4">
                                     <div>
@@ -258,12 +269,12 @@ export default function CandidateRegistrationPage() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-2">First Name *</label>
-                                        <input name="firstName" onChange={handleChange} value={formData.firstName} className={`w-full bg-gray-50 border ${errors.firstName ? 'border-red-500' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} />
+                                        <input disabled name="firstName" onChange={handleChange} value={formData.firstName} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none`} />
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Last Name</label>
-                                    <input name="lastName" onChange={handleChange} value={formData.lastName} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none" />
+                                    <input disabled name="lastName" onChange={handleChange} value={formData.lastName} className="w-full bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Gender</label>
@@ -342,10 +353,9 @@ export default function CandidateRegistrationPage() {
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number *</label>
                                     <div className="flex gap-2">
-                                        <input name="mobileCode" onChange={handleChange} value={formData.mobileCode} className="w-1/4 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none" placeholder="+91" />
-                                        <input name="mobile" onChange={handleChange} value={formData.mobile} className={`w-3/4 bg-gray-50 border ${errors.mobile ? 'border-red-500' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]`} placeholder="e.g. 9876543210" />
+                                        <input disabled name="mobileCode" onChange={handleChange} value={formData.mobileCode} className="w-1/4 bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none" placeholder="+91" />
+                                        <input disabled name="mobile" onChange={handleChange} value={formData.mobile} className={`w-3/4 bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none`} placeholder="e.g. 9876543210" />
                                     </div>
-                                    {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Landline (Optional)</label>

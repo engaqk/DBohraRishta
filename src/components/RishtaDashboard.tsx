@@ -42,6 +42,7 @@ export default function RishtaDashboard() {
     // UI State
     const [activeTab, setActiveTab] = useState<'discovery' | 'requests' | 'messages'>('discovery');
     const [dataLoading, setDataLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
 
     // Live Data State
     const [discoveryProfiles, setDiscoveryProfiles] = useState<UserProfile[]>([]);
@@ -352,22 +353,36 @@ export default function RishtaDashboard() {
 
                 const availableProfiles = discoveryProfiles.filter(p => !hiddenToIds.includes(p.id));
 
+                const filteredProfiles = availableProfiles.filter(p =>
+                    !searchQuery ||
+                    p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    p.jamaat?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    p.hizratLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    p.education?.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+
                 return (
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex justify-between items-center mb-6">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                             <h2 className="text-2xl font-bold font-serif">Community Discovery</h2>
-                            <div className="flex gap-2">
-                                <button className="bg-white px-4 py-2 rounded-full text-sm font-medium border border-gray-200 shadow-sm hover:border-[#D4AF37] transition-colors">Filters</button>
+                            <div className="flex gap-2 w-full md:w-auto">
+                                <input
+                                    type="text"
+                                    placeholder="Search by name, jamaat, education..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="px-4 py-2 rounded-xl text-sm border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] w-full md:w-64"
+                                />
                             </div>
                         </div>
 
-                        {availableProfiles.length === 0 ? (
+                        {filteredProfiles.length === 0 ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100">
-                                <p className="text-gray-500 font-bold">No new profiles to discover in your area right now.</p>
+                                <p className="text-gray-500 font-bold">No new profiles found dynamically.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
-                                {availableProfiles.map((p) => (
+                                {filteredProfiles.map((p) => (
                                     <DiscoveryCard key={p.id} {...p} matchScore={Math.floor(Math.random() * 20) + 75} isMyProfileVerified={myProfile?.isItsVerified || false} />
                                 ))}
                             </div>
@@ -397,10 +412,12 @@ export default function RishtaDashboard() {
                     <button onClick={() => setActiveTab('messages')} className={`transition-colors pb-1 border-b-2 hover:border-[#D4AF37] ${activeTab === 'messages' ? 'text-[#D4AF37] border-[#D4AF37]' : 'text-[#881337] border-transparent'}`}>Messages</button>
                     {user ? (
                         <>
-                            <button onClick={() => router.push('/admin/approvals')} className="ml-2 text-indigo-500 hover:text-indigo-600 transition-colors flex items-center gap-2">
-                                <ShieldAlert className="w-4 h-4" />
-                                <span className="hidden lg:inline">Admin</span>
-                            </button>
+                            {myProfile?.isAdmin && (
+                                <button onClick={() => router.push('/admin/approvals')} className="ml-2 text-indigo-500 hover:text-indigo-600 transition-colors flex items-center gap-2">
+                                    <ShieldAlert className="w-4 h-4" />
+                                    <span className="hidden lg:inline">Admin</span>
+                                </button>
+                            )}
                             <button onClick={logout} className="ml-4 text-red-500 hover:text-red-600 transition-colors flex items-center gap-2">
                                 <LogOut className="w-4 h-4" />
                                 <span className="hidden lg:inline">Logout</span>
@@ -431,11 +448,26 @@ export default function RishtaDashboard() {
                             </div>
                             <h3 className="font-bold text-xl text-[#881337] text-center">{myProfile.name}</h3>
                             <p className="text-sm text-gray-500 mb-1">ITS: {myProfile.itsNumber}</p>
-                            {myProfile.isItsVerified ? (
-                                <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 mt-2 border border-emerald-100"><Check className="w-3 h-3" /> Verified</span>
-                            ) : (
-                                <span className="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 mt-2 border border-yellow-100"><Clock className="w-3 h-3" /> Pending Review</span>
-                            )}
+                            <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                                {myProfile.isItsVerified ? (
+                                    <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-emerald-100"><Check className="w-3 h-3" /> ITS Verified</span>
+                                ) : (
+                                    <span className="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-yellow-100"><Clock className="w-3 h-3" /> ITS Pending</span>
+                                )}
+
+                                {/* Assuming email verification uses either user.emailVerified or a db flag */}
+                                {user?.emailVerified || myProfile.isEmailVerified ? (
+                                    <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-blue-100"><Check className="w-3 h-3" /> Email Verified</span>
+                                ) : (
+                                    <span onClick={async () => {
+                                        const { sendEmailVerification } = require("firebase/auth");
+                                        if (user) {
+                                            try { await sendEmailVerification(user); toast.success("Verification Email Sent!"); }
+                                            catch (e: any) { toast.error("Too many requests or error. Try later."); }
+                                        }
+                                    }} className="bg-gray-50 text-gray-600 px-3 py-1 cursor-pointer hover:bg-gray-100 transition-colors rounded-full text-xs font-bold flex items-center gap-1 border border-gray-200" title="Click to send verification link"><Clock className="w-3 h-3" /> Verify Email</span>
+                                )}
+                            </div>
 
                             {/* Profile Completeness Section */}
                             {(() => {
@@ -462,10 +494,15 @@ export default function RishtaDashboard() {
                                         <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-3">
                                             <div className="h-full bg-gradient-to-r from-[#D4AF37] to-[#881337] transition-all duration-1000" style={{ width: `${completeness}%` }}></div>
                                         </div>
-                                        {completeness < 100 && (
+                                        {completeness < 100 && myProfile.isItsVerified && (
                                             <button onClick={() => router.push('/candidate-registration')} className="w-full bg-[#881337] text-white py-2 rounded-lg text-xs font-bold shadow hover:bg-[#9F1239] transition-all tracking-wide">
                                                 Complete Registration Form
                                             </button>
+                                        )}
+                                        {completeness < 100 && !myProfile.isItsVerified && (
+                                            <div className="w-full bg-yellow-50 text-yellow-700 py-2 rounded-lg text-xs font-bold text-center border border-yellow-200 tracking-wide mt-1">
+                                                Verify ITS to Complete Profile
+                                            </div>
                                         )}
                                     </div>
                                 );

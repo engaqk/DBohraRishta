@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "dbohranisbat | Intentional Matchmaking for the Dawoodi Bohra Community",
-  description: "A high-performance, community-centric matchmaking platform for the Dawoodi Bohra community, focusing on Nisbat (Alliance) as the primary goal.",
+  title: "DBohraRishta | Intentional Matchmaking for the Dawoodi Bohra Community",
+  description: "A high-performance, community-centric matchmaking platform for the Dawoodi Bohra community, focusing on Rishta (Alliance) as the primary goal.",
 };
 
 export default function RootLayout({

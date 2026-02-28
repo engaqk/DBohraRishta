@@ -383,12 +383,12 @@ export default function NisbatDashboard() {
         <div className="min-h-screen bg-[#F9FAFB] text-[#881337] p-6 pb-24 md:p-12 md:pb-12">
             <header className="max-w-7xl mx-auto mb-12 flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#881337] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg border-2 border-[#D4AF37]">
-                        DN
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#881337] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg border-2 border-white ring-2 ring-[#D4AF37]">
+                        DR
                     </div>
-                    <div>
-                        <h1 className="text-3xl font-bold font-serif text-[#881337]">dbohranisbat.com</h1>
-                        <p className="text-sm font-medium text-gray-500 tracking-wide uppercase">Nisbat Matching</p>
+                    <div className="flex flex-col justify-center">
+                        <h1 className="text-3xl font-bold font-serif bg-clip-text text-transparent bg-gradient-to-r from-[#881337] to-[#D4AF37] tracking-tight">DBohra<span className="font-light italic">Rishta</span></h1>
+                        <p className="text-[10px] font-bold text-[#D4AF37] tracking-[0.2em] uppercase mt-0.5">Premium Matchmaking</p>
                     </div>
                 </div>
                 <nav className="hidden md:flex gap-6 items-center font-bold text-sm">

@@ -51,7 +51,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
         }
 
         if (!isMyProfileVerified) {
-            toast.error("Your profile must be approved by an Admin before sending Nisbat requests.");
+            toast.error("Your profile must be approved by an Admin before sending Rishta requests.");
             return;
         }
 
@@ -64,7 +64,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                 timestamp: serverTimestamp()
             });
             setRequestSent(true);
-            toast.success("Nisbat Request sent successfully!");
+            toast.success("Rishta Request sent successfully!");
         } catch (error: any) {
             toast.error("Failed to send request: " + error.message);
         } finally {
@@ -84,7 +84,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                     <ShieldCheck className="w-10 h-10 text-[#881337] mb-2" />
                     <span className="text-md font-bold text-[#881337] leading-tight flex flex-col gap-1">
                         <span>Dynamic Privacy</span>
-                        <span className="text-xs font-normal text-[#881337]/80 max-w-[120px]">Unblurs after accepted Nisbat Request</span>
+                        <span className="text-xs font-normal text-[#881337]/80 max-w-[120px]">Unblurs after accepted Rishta Request</span>
                     </span>
                 </div>
             </div>
@@ -121,7 +121,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                                 'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
                 >
                     {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                    {!isMyProfileVerified ? 'Awaiting Verification' : requestSent ? 'Nisbat Request Sent' : 'Send Nisbat Request'}
+                    {!isMyProfileVerified ? 'Awaiting Verification' : requestSent ? 'Rishta Request Sent' : 'Send Rishta Request'}
                 </button>
             </div>
         </div>

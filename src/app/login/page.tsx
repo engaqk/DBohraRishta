@@ -77,11 +77,15 @@ export default function LoginPage() {
                     <div className="absolute top-0 right-0 p-4 opacity-10">
                         <Heart className="w-24 h-24" />
                     </div>
-                    <div className="w-16 h-16 bg-[#D4AF37] text-white rounded-full flex items-center justify-center font-bold text-2xl shadow-lg mx-auto mb-4 border-2 border-white">
-                        DN
+                    <div className="w-16 h-16 bg-gradient-to-br from-white to-rose-100 text-[#881337] rounded-full flex items-center justify-center font-bold text-2xl shadow-[0_0_30px_rgba(212,175,55,0.5)] mx-auto mb-4 border-2 border-[#D4AF37] ring-4 ring-white/20">
+                        DR
                     </div>
-                    <h1 className="text-3xl font-bold font-serif text-white mb-2">dbohranisbat</h1>
-                    <p className="text-[#D4AF37] font-medium tracking-wide uppercase text-xs">Nisbat over Shaadi</p>
+                    <h1 className="text-4xl font-extrabold font-serif text-white mb-1 tracking-tight drop-shadow-md">
+                        DBohra<span className="text-[#D4AF37] font-medium italic">Rishta</span>
+                    </h1>
+                    <p className="text-white/80 font-bold tracking-[0.25em] uppercase text-[10px] mt-2 mb-2 border-t border-white/20 pt-2 inline-block">
+                        Intentional Matches
+                    </p>
                 </div>
 
                 <div className="p-8">

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -57,6 +57,7 @@ export default function RishtaDashboard() {
     const [activeChat, setActiveChat] = useState<{ id: string, name: string } | null>(null);
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [paying, setPaying] = useState(false);
+    const [showMyProfileModal, setShowMyProfileModal] = useState(false);
 
     useEffect(() => {
         if (loading) return;
@@ -521,7 +522,7 @@ export default function RishtaDashboard() {
                                             <div className="h-full bg-gradient-to-r from-[#D4AF37] to-[#881337] transition-all duration-1000" style={{ width: `${completeness}%` }}></div>
                                         </div>
                                         {completeness < 100 && myProfile.isItsVerified && (
-                                            <button onClick={() => router.push('/candidate-registration')} className="w-full bg-[#881337] text-white py-2 rounded-lg text-xs font-bold shadow hover:bg-[#9F1239] transition-all tracking-wide">
+                                            <button onClick={() => router.push('/candidate-registration')} className="w-full bg-[#881337] text-white py-2 rounded-lg text-xs font-bold shadow hover:bg-[#9F1239] transition-all tracking-wide mt-1">
                                                 Complete Registration Form
                                             </button>
                                         )}
@@ -530,6 +531,12 @@ export default function RishtaDashboard() {
                                                 Verify ITS to Complete Profile
                                             </div>
                                         )}
+                                        <button
+                                            onClick={() => setShowMyProfileModal(true)}
+                                            className="w-full bg-white text-[#881337] border border-[#881337]/20 hover:bg-rose-50 py-2 rounded-lg text-xs font-bold shadow-sm transition-all tracking-wide mt-3 flex items-center justify-center gap-1"
+                                        >
+                                            <Sparkles className="w-3 h-3" /> Preview Public Profile
+                                        </button>
                                     </div>
                                 );
                             })()}
@@ -608,6 +615,78 @@ export default function RishtaDashboard() {
                             <p className="text-xs text-gray-400 mt-4 leading-normal">
                                 Secure local Indian Gateway via PhonePe/Razorpay placeholder. Recurring charge. Cancel anytime.
                             </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showMyProfileModal && myProfile && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 sm:mt-0 mt-10" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setShowMyProfileModal(false)}>
+                    <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+
+                        <div className="relative h-48 bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                            {myProfile.libasImageUrl ? (
+                                <img src={myProfile.libasImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-80" />
+                            ) : myProfile.itsImageUrl ? (
+                                <img src={myProfile.itsImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-50" />
+                            ) : (
+                                <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-300"></div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/20"></div>
+
+                            <button onClick={() => setShowMyProfileModal(false)} className="absolute top-4 right-4 bg-black/40 text-white rounded-full p-2 hover:bg-black/60 transition-colors z-20">
+                                <span className="sr-only">Close</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                            </button>
+
+                            <div className="absolute bottom-6 left-6 z-10">
+                                <h2 className="text-3xl font-bold font-serif text-white">{myProfile.name}, {myProfile.dob ? Math.floor((new Date().getTime() - new Date(myProfile.dob).getTime()) / 31557600000) : '--'}</h2>
+                                <p className="text-[#D4AF37] font-medium flex items-center gap-2 mt-1">
+                                    <CheckCircle className="w-4 h-4" /> {myProfile.isItsVerified ? 'ITS Verified' : 'Unverified'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="p-6 sm:p-8 overflow-y-auto space-y-6">
+
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Core Details</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        <p className="text-gray-500 text-xs font-bold mb-1">Jamaat</p>
+                                        <p className="text-[#881337] font-semibold">{myProfile.jamaat || 'Not specified'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        <p className="text-gray-500 text-xs font-bold mb-1">Location</p>
+                                        <p className="text-[#881337] font-semibold">{myProfile.hizratLocation || 'Not specified'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 col-span-2">
+                                        <p className="text-gray-500 text-xs font-bold mb-1">Education / Profession</p>
+                                        <p className="text-[#881337] font-semibold">{myProfile.education || myProfile.profession || 'Not specified'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100 flex gap-4 items-start">
+                                <Info className="w-8 h-8 text-blue-700 shrink-0 mt-1" />
+                                <div>
+                                    <h4 className="font-bold text-blue-800 mb-1">This is how others see you</h4>
+                                    <p className="text-sm text-blue-700/80 leading-relaxed">Your photos and direct contact info remain blurred/hidden to other members until an Interest Request is mutually accepted.</p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div className="p-6 border-t border-gray-100 bg-gray-50/50 shrink-0">
+                            <button
+                                onClick={() => {
+                                    setShowMyProfileModal(false);
+                                    router.push('/candidate-registration');
+                                }}
+                                className="w-full py-4 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-lg bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg"
+                            >
+                                Edit Profile Details
+                            </button>
                         </div>
                     </div>
                 </div>

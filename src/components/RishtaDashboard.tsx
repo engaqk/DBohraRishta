@@ -20,6 +20,7 @@ interface UserProfile {
     isItsVerified?: boolean;
     gender?: string;
     libasImageUrl?: string;
+    isDummy?: boolean;
 }
 
 interface RishtaRequest {
@@ -156,9 +157,9 @@ export default function RishtaDashboard() {
 
                 if (profiles.length === 0) {
                     profiles = [
-                        { id: "dummy1", name: "Aliya", dob: "1998-05-15", jamaat: "Colpetty Jamaat, Colombo", education: "MBA in Finance", hizratLocation: "Colombo, LK", isItsVerified: true },
-                        { id: "dummy2", name: "Fatima", dob: "2000-02-10", jamaat: "Saifee Park Jamaat, Dubai", education: "Software Engineer", hizratLocation: "Dubai, UAE", isItsVerified: true },
-                        { id: "dummy3", name: "Zahra", dob: "1999-11-20", jamaat: "Husaini Jamaat, London", education: "Doctor of Medicine", hizratLocation: "London, UK", isItsVerified: true }
+                        { id: "dummy1", name: "Aliya", dob: "1998-05-15", jamaat: "Colpetty Jamaat, Colombo", education: "MBA in Finance", hizratLocation: "Colombo, LK", isItsVerified: true, isDummy: true },
+                        { id: "dummy2", name: "Fatima", dob: "2000-02-10", jamaat: "Saifee Park Jamaat, Dubai", education: "Software Engineer", hizratLocation: "Dubai, UAE", isItsVerified: true, isDummy: true },
+                        { id: "dummy3", name: "Zahra", dob: "1999-11-20", jamaat: "Husaini Jamaat, London", education: "Doctor of Medicine", hizratLocation: "London, UK", isItsVerified: true, isDummy: true }
                     ];
                 }
                 setDiscoveryProfiles(profiles);
@@ -179,6 +180,13 @@ export default function RishtaDashboard() {
 
 
     const handleRequestAction = async (requestId: string, newStatus: string) => {
+        // Mock action for dummy requests, don't execute transaction
+        if (requestId.includes('dummy')) {
+            toast.success(`Demo Request ${newStatus}!`);
+            setAllRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
+            return;
+        }
+
         try {
             await updateDoc(doc(db, "rishta_requests", requestId), {
                 status: newStatus
@@ -237,7 +245,7 @@ export default function RishtaDashboard() {
                 return (
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold font-serif">Rishta Requests</h2>
+                            <h2 className="text-2xl font-bold font-serif">Interest Requests</h2>
                         </div>
                         {pendingRequests.length === 0 ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100 flex flex-col items-center">
@@ -295,7 +303,7 @@ export default function RishtaDashboard() {
                         {acceptedRequests.length === 0 ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100 flex flex-col items-center">
                                 <MessageCircle className="w-12 h-12 text-gray-300 mb-4" />
-                                <p className="text-gray-500 font-bold">No accepted Rishta requests yet.</p>
+                                <p className="text-gray-500 font-bold">No accepted interest requests yet.</p>
                                 <p className="text-gray-400 text-sm mt-2">When a request is approved, their photos unblur and you can chat here!</p>
                             </div>
                         ) : (
@@ -331,7 +339,7 @@ export default function RishtaDashboard() {
                                                 </div>
                                                 <span className={`text-xs ${msg.isIncoming ? 'text-[#D4AF37] font-bold bg-[#D4AF37]/10 px-2 py-1 rounded-full' : 'text-gray-400'}`}>Accepted Matched</span>
                                             </div>
-                                            <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'} mb-4 mt-2`}>Alhamdulillah, Rishta Request Accepted! Direct contact info is now visible.</p>
+                                            <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'} mb-4 mt-2`}>Alhamdulillah, Interest Request Accepted! Direct contact info is now visible.</p>
                                             <div className="flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => {
@@ -401,7 +409,7 @@ export default function RishtaDashboard() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
                                 {filteredProfiles.map((p) => (
-                                    <DiscoveryCard key={p.id} {...p} matchScore={Math.floor(Math.random() * 20) + 75} isMyProfileVerified={myProfile?.isItsVerified || false} />
+                                    <DiscoveryCard key={p.id} {...p} isDummy={(p as any).isDummy} matchScore={Math.floor(Math.random() * 20) + 75} isMyProfileVerified={myProfile?.isItsVerified || false} />
                                 ))}
                             </div>
                         )}

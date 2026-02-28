@@ -22,7 +22,7 @@ interface UserProfile {
     libasImageUrl?: string;
 }
 
-interface NisbatRequest {
+interface RishtaRequest {
     id: string;
     from: string;
     to: string;
@@ -35,7 +35,7 @@ interface NisbatRequest {
     otherUserLibasUrl: string | null;
 }
 
-export default function NisbatDashboard() {
+export default function RishtaDashboard() {
     const { user, loading, logout } = useAuth();
     const router = useRouter();
 
@@ -45,7 +45,7 @@ export default function NisbatDashboard() {
 
     // Live Data State
     const [discoveryProfiles, setDiscoveryProfiles] = useState<UserProfile[]>([]);
-    const [allRequests, setAllRequests] = useState<NisbatRequest[]>([]);
+    const [allRequests, setAllRequests] = useState<RishtaRequest[]>([]);
     const [myProfile, setMyProfile] = useState<any>(null);
 
     // Feature Modules State
@@ -112,8 +112,8 @@ export default function NisbatDashboard() {
             // We'll fetch normally for simplicity in UI testing.
             const fetchRequests = async () => {
                 try {
-                    const outgoingQ = query(collection(db, "nisbat_requests"), where("from", "==", user.uid));
-                    const incomingQ = query(collection(db, "nisbat_requests"), where("to", "==", user.uid));
+                    const outgoingQ = query(collection(db, "rishta_requests"), where("from", "==", user.uid));
+                    const incomingQ = query(collection(db, "rishta_requests"), where("to", "==", user.uid));
 
                     const [outSnap, inSnap] = await Promise.all([getDocs(outgoingQ), getDocs(incomingQ)]);
 
@@ -123,7 +123,7 @@ export default function NisbatDashboard() {
                     inSnap.forEach(d => requestsRaw.push({ id: d.id, isIncoming: true, ...d.data() }));
 
                     // Resolve the other user's names
-                    const resolvedRequests: NisbatRequest[] = [];
+                    const resolvedRequests: RishtaRequest[] = [];
 
                     for (const req of requestsRaw) {
                         const targetId = req.isIncoming ? req.from : req.to;
@@ -175,7 +175,7 @@ export default function NisbatDashboard() {
 
     const handleRequestAction = async (requestId: string, newStatus: string) => {
         try {
-            await updateDoc(doc(db, "nisbat_requests", requestId), {
+            await updateDoc(doc(db, "rishta_requests", requestId), {
                 status: newStatus
             });
             toast.success(`Request ${newStatus}!`);
@@ -232,7 +232,7 @@ export default function NisbatDashboard() {
                 return (
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold font-serif">Nisbat Requests</h2>
+                            <h2 className="text-2xl font-bold font-serif">Rishta Requests</h2>
                         </div>
                         {pendingRequests.length === 0 ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100 flex flex-col items-center">
@@ -290,7 +290,7 @@ export default function NisbatDashboard() {
                         {acceptedRequests.length === 0 ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100 flex flex-col items-center">
                                 <MessageCircle className="w-12 h-12 text-gray-300 mb-4" />
-                                <p className="text-gray-500 font-bold">No accepted Nisbat requests yet.</p>
+                                <p className="text-gray-500 font-bold">No accepted Rishta requests yet.</p>
                                 <p className="text-gray-400 text-sm mt-2">When a request is approved, their photos unblur and you can chat here!</p>
                             </div>
                         ) : (
@@ -312,7 +312,7 @@ export default function NisbatDashboard() {
                                                 <h4 className="font-bold text-lg text-[#881337]">{msg.otherUserName}</h4>
                                                 <span className={`text-xs ${msg.isIncoming ? 'text-[#881337] font-bold' : 'text-gray-400'}`}>New Match!</span>
                                             </div>
-                                            <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'} mb-3`}>Alhamdulillah, Nisbat Request Accepted!</p>
+                                            <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'} mb-3`}>Alhamdulillah, Rishta Request Accepted!</p>
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => {

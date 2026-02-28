@@ -32,7 +32,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
         const checkExistingRequest = async () => {
             if (!user) return;
             const q = query(
-                collection(db, "nisbat_requests"),
+                collection(db, "rishta_requests"),
                 where("from", "==", user.uid),
                 where("to", "==", id)
             );
@@ -57,7 +57,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
 
         try {
             setLoading(true);
-            await addDoc(collection(db, "nisbat_requests"), {
+            await addDoc(collection(db, "rishta_requests"), {
                 from: user.uid,
                 to: id,
                 status: "pending_response",

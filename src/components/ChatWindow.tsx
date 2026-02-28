@@ -29,7 +29,7 @@ export default function ChatWindow({ connectionId, otherUserName, onClose }: Cha
         if (!user) return;
 
         const q = query(
-            collection(db, "nisbat_requests", connectionId, "messages"),
+            collection(db, "rishta_requests", connectionId, "messages"),
             orderBy("timestamp", "asc")
         );
 
@@ -56,7 +56,7 @@ export default function ChatWindow({ connectionId, otherUserName, onClose }: Cha
         const text = newMessage;
         setNewMessage("");
 
-        await addDoc(collection(db, "nisbat_requests", connectionId, "messages"), {
+        await addDoc(collection(db, "rishta_requests", connectionId, "messages"), {
             text,
             senderId: user.uid,
             timestamp: serverTimestamp()

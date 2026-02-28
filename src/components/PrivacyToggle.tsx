@@ -21,7 +21,7 @@ export default function PrivacyToggle() {
             </div>
 
             <p className="text-sm text-gray-600 mb-4">
-                {isPrivate ? "Your photos are currently blurred to everyone until you accept a Nisbat Request." : "Your photos are visible to all verified members. (Not Recommended)"}
+                {isPrivate ? "Your photos are currently blurred to everyone until you accept a Rishta Request." : "Your photos are visible to all verified members. (Not Recommended)"}
             </p>
 
             <div className="bg-gray-50 rounded-xl p-4 text-xs text-gray-700 flex flex-col gap-2 border border-gray-100">

@@ -1,9 +1,9 @@
-import NisbatDashboard from '@/components/NisbatDashboard';
+import RishtaDashboard from '@/components/RishtaDashboard';
 
 export default function Home() {
   return (
     <main>
-      <NisbatDashboard />
+      <RishtaDashboard />
     </main>
   );
 }

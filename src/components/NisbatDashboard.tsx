@@ -344,9 +344,13 @@ export default function NisbatDashboard() {
                 );
             case 'discovery':
             default:
-                // Filter out profiles we already requested!
-                const pendingOrAcceptedTo = allRequests.map(r => r.to);
-                const availableProfiles = discoveryProfiles.filter(p => !pendingOrAcceptedTo.includes(p.id));
+                // Only filter out profiles that have ACCEPTED or REJECTED statuses, or incoming requests.
+                // Leave pending outgoing requests in the list so users can see who they've already requested.
+                const hiddenToIds = allRequests
+                    .filter(r => r.status === "accepted" || r.status === "rejected" || r.isIncoming)
+                    .map(r => r.to);
+
+                const availableProfiles = discoveryProfiles.filter(p => !hiddenToIds.includes(p.id));
 
                 return (
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">

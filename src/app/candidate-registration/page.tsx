@@ -1,15 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, Heart, Loader2, BookOpen } from "lucide-react";
 import toast from "react-hot-toast";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import { useAuth } from "@/lib/contexts/AuthContext";
 
 export default function CandidateRegistrationPage() {
+    const { user } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [libasImageUrl, setLibasImageUrl] = useState<string | null>(null);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     // Full ITNC Candidate Form Data State
@@ -69,6 +72,47 @@ export default function CandidateRegistrationPage() {
         informationProvidedBy: "Myself (Candidate)",
     });
 
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+
+                    let fName = data.firstName || "";
+                    let lName = data.lastName || "";
+                    if (!fName && !lName && data.name) {
+                        const parts = data.name.split(" ");
+                        fName = parts[0] || "";
+                        lName = parts.slice(1).join(" ") || "";
+                    }
+
+                    setLibasImageUrl(data.libasImageUrl || null);
+
+                    setFormData(prev => ({
+                        ...prev,
+                        ...data, // merge existing data if any
+                        ejamaatId: data.ejamaatId || data.itsNumber || prev.ejamaatId,
+                        email: data.email || user.email || prev.email,
+                        firstName: fName,
+                        lastName: lName,
+                        gender: data.gender || prev.gender,
+                        dob: data.dob || prev.dob,
+                        jamaat: data.jamaat || prev.jamaat,
+                        fatherName: data.fatherName || prev.fatherName,
+                        motherName: data.motherName || prev.motherName,
+                        maritalStatus: data.maritalStatus || prev.maritalStatus,
+                        mobile: data.mobile || prev.mobile,
+                        educationDetails: data.education || prev.educationDetails,
+                        professionType: data.profession || prev.professionType,
+                        bio: data.bio || prev.bio,
+                    }));
+                }
+            }
+        };
+        fetchUserData();
+    }, [user]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         if (errors[e.target.name]) {
@@ -123,17 +167,39 @@ export default function CandidateRegistrationPage() {
                 const duplicateSnapshot = await getDocs(duplicateQuery);
 
                 if (!duplicateSnapshot.empty) {
-                    toast.error("A profile with this First Name, Last Name, and Date of Birth already exists.");
-                    setLoading(false);
-                    return;
+                    // Make sure it's not the current user's own duplicate check triggering
+                    let isOnlyMe = true;
+                    duplicateSnapshot.forEach(d => {
+                        if (user && d.id !== user.uid) isOnlyMe = false;
+                        if (!user) isOnlyMe = false;
+                    });
+
+                    if (!isOnlyMe) {
+                        toast.error("A profile with this First Name, Last Name, and Date of Birth already exists.");
+                        setLoading(false);
+                        return;
+                    }
                 }
             }
 
-            // Because this is a mock save for the separate registration page, 
-            // we will simulate an API delay then redirect them to login/onboarding.
-            await new Promise(r => setTimeout(r, 2000));
-            toast.success("Candidate Registration Submitted Successfully!");
-            router.push("/login");
+            if (user) {
+                // Determine full name
+                const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+
+                await updateDoc(doc(db, "users", user.uid), {
+                    ...formData,
+                    name: fullName,
+                    itsNumber: formData.ejamaatId,
+                    isCandidateFormComplete: true
+                });
+                toast.success("Profile Details Updated Successfully!");
+                router.push("/");
+            } else {
+                await new Promise(r => setTimeout(r, 2000));
+                toast.success("Candidate Registration Submitted Successfully!");
+                router.push("/login");
+            }
+
         } catch (error: any) {
             toast.error("Failed to submit: " + error.message);
         } finally {
@@ -147,12 +213,22 @@ export default function CandidateRegistrationPage() {
                 <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
 
                     {/* Header */}
-                    <div className="bg-[#881337] p-8 text-white text-center relative overflow-hidden">
+                    <div className="bg-[#881337] p-8 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
                         <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                             <BookOpen className="w-48 h-48 -mr-10 -mt-10" />
                         </div>
-                        <h1 className="text-3xl font-bold font-serif relative z-10">Candidate Registration Form</h1>
-                        <p className="text-[#D4AF37] font-medium tracking-wide text-sm mt-2 relative z-10">International Taiseer un Nikah Committee (I.T.NC.) Format</p>
+                        <div className="flex-1 text-center md:text-left relative z-10">
+                            <h1 className="text-3xl font-bold font-serif mb-2">Candidate Registration Form</h1>
+                            <p className="text-[#D4AF37] font-medium tracking-wide text-sm">International Taiseer un Nikah Committee (I.T.NC.) Format</p>
+                        </div>
+                        {libasImageUrl && (
+                            <div className="relative z-10 hidden md:block">
+                                <div className="w-24 h-24 rounded-full border-4 border-[#D4AF37] shadow-xl overflow-hidden bg-white/10 flex items-center justify-center">
+                                    <img src={libasImageUrl} alt="Kaumi Libas" className="w-full h-full object-cover" />
+                                </div>
+                                <div className="text-center mt-2 text-xs text-white/80 font-bold tracking-widest uppercase">Profile Photo</div>
+                            </div>
+                        )}
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-8 space-y-12">

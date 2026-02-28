@@ -436,6 +436,40 @@ export default function NisbatDashboard() {
                             ) : (
                                 <span className="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 mt-2 border border-yellow-100"><Clock className="w-3 h-3" /> Pending Review</span>
                             )}
+
+                            {/* Profile Completeness Section */}
+                            {(() => {
+                                const requiredDetailedFields = [
+                                    'name', 'itsNumber', 'gender', 'dob', 'jamaat', 'education', 'hizratLocation',
+                                    'libasImageUrl', 'fatherName', 'motherName', 'maritalStatus', 'mobile',
+                                    'address', 'professionType'
+                                ];
+                                let filled = 0;
+                                requiredDetailedFields.forEach(f => {
+                                    if (myProfile[f] || (f === 'professionType' && myProfile['profession']) || (f === 'education' && myProfile['educationDetails'])) {
+                                        filled++;
+                                    }
+                                });
+                                let completeness = Math.floor((filled / requiredDetailedFields.length) * 100);
+                                if (myProfile.isCandidateFormComplete) completeness = 100;
+
+                                return (
+                                    <div className="w-full mt-6 bg-gray-50 p-4 border border-gray-100 rounded-xl flex flex-col items-center">
+                                        <div className="w-full flex justify-between text-xs font-bold text-gray-500 mb-2">
+                                            <span>Profile Completeness</span>
+                                            <span className="text-[#881337]">{completeness}%</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-3">
+                                            <div className="h-full bg-gradient-to-r from-[#D4AF37] to-[#881337] transition-all duration-1000" style={{ width: `${completeness}%` }}></div>
+                                        </div>
+                                        {completeness < 100 && (
+                                            <button onClick={() => router.push('/candidate-registration')} className="w-full bg-[#881337] text-white py-2 rounded-lg text-xs font-bold shadow hover:bg-[#9F1239] transition-all tracking-wide">
+                                                Complete Registration Form
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     )}
 

@@ -121,7 +121,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                                 'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
                 >
                     {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                    {!isMyProfileVerified ? 'Awaiting Verification' : requestSent ? 'Rishta Request Sent' : 'Send Rishta Request'}
+                    {!isMyProfileVerified ? 'Awaiting Verification' : requestSent ? 'Request Sent' : 'Send Request'}
                 </button>
             </div>
         </div>

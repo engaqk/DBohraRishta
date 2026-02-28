@@ -383,8 +383,8 @@ export default function NisbatDashboard() {
         <div className="min-h-screen bg-[#F9FAFB] text-[#881337] p-6 pb-24 md:p-12 md:pb-12">
             <header className="max-w-7xl mx-auto mb-12 flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#881337] text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg border-2 border-white ring-2 ring-[#D4AF37]">
-                        DR
+                    <div className="w-12 h-12 bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] rounded-full flex items-center justify-center font-extrabold text-2xl shadow-[0_0_15px_rgba(212,175,55,0.4)] border-2 border-[#D4AF37] ring-4 ring-rose-50 tracking-tighter">
+                        53
                     </div>
                     <div className="flex flex-col justify-center">
                         <h1 className="text-3xl font-bold font-serif bg-clip-text text-transparent bg-gradient-to-r from-[#881337] to-[#D4AF37] tracking-tight">DBohra<span className="font-light italic">Rishta</span></h1>

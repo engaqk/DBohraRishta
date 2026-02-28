@@ -64,10 +64,71 @@ export default function RishtaDashboard() {
             return;
         }
 
-        const loadDiscovery = async () => {
+        let unsubOutgoing: (() => void) | null = null;
+        let unsubIncoming: (() => void) | null = null;
+        let currentOutSnap: any = null;
+        let currentInSnap: any = null;
+
+        const resolveAndSetRequests = async (outSnap: any, inSnap: any) => {
+            let requestsRaw: any[] = [];
+            if (outSnap) { outSnap.forEach((d: any) => requestsRaw.push({ id: d.id, isIncoming: false, ...d.data() })); }
+            if (inSnap) { inSnap.forEach((d: any) => requestsRaw.push({ id: d.id, isIncoming: true, ...d.data() })); }
+
+            const resolvedRequests: RishtaRequest[] = [];
+            for (const req of requestsRaw) {
+                const targetId = req.isIncoming ? req.from : req.to;
+                if (targetId === "dummy1" || targetId === "dummy2" || targetId === "dummy3") {
+                    resolvedRequests.push({
+                        ...req,
+                        otherUserName: targetId === "dummy1" ? "Aliya" : targetId === "dummy2" ? "Fatima" : "Zahra",
+                        otherUserAge: 25,
+                        otherUserLocation: "Global",
+                        otherUserEducation: "General",
+                        otherUserMobile: "+91 0000000000",
+                        otherUserEmail: "dummy@example.com",
+                        otherUserLibasUrl: null,
+                    });
+                    continue;
+                }
+
+                try {
+                    const uRef = await getDoc(doc(db, "users", targetId));
+                    if (uRef.exists()) {
+                        const uData = uRef.data();
+                        resolvedRequests.push({
+                            ...req,
+                            otherUserName: uData.name || "Unknown Member",
+                            otherUserAge: uData.dob ? Math.floor((new Date().getTime() - new Date(uData.dob).getTime()) / 31557600000) : 25,
+                            otherUserLocation: uData.hizratLocation || "Global Network",
+                            otherUserEducation: uData.education || uData.profession || "Graduated",
+                            otherUserMobile: uData.mobile ? `${uData.mobileCode || ''} ${uData.mobile}` : "Not Shared",
+                            otherUserEmail: uData.email || "Not Shared",
+                            otherUserLibasUrl: uData.libasImageUrl || null,
+                        });
+                    }
+                } catch (e) { }
+            }
+
+            setAllRequests(resolvedRequests.sort((a, b) => b.status.localeCompare(a.status)));
+            setDataLoading(false);
+        };
+
+        const setupRequestsListeners = () => {
+            const outgoingQ = query(collection(db, "rishta_requests"), where("from", "==", user.uid));
+            const incomingQ = query(collection(db, "rishta_requests"), where("to", "==", user.uid));
+
+            unsubOutgoing = onSnapshot(outgoingQ, (snap) => {
+                currentOutSnap = snap;
+                if (currentInSnap) resolveAndSetRequests(currentOutSnap, currentInSnap);
+            });
+            unsubIncoming = onSnapshot(incomingQ, (snap) => {
+                currentInSnap = snap;
+                if (currentOutSnap) resolveAndSetRequests(currentOutSnap, currentInSnap);
+            });
+        };
+
+        const unsubMe = onSnapshot(doc(db, "users", user.uid), async (meRef) => {
             try {
-                // Ensure profile is completed, or send to onboarding!
-                const meRef = await getDoc(doc(db, "users", user.uid));
                 if (!meRef.exists()) {
                     router.push('/onboarding');
                     return;
@@ -76,27 +137,23 @@ export default function RishtaDashboard() {
                 setMyProfile(profileData);
 
                 if (profileData.status === 'rejected') {
-                    // Stop loading anything else if rejected
                     setDataLoading(false);
                     return;
                 }
 
-                // Load Profiles...
                 let profiles: UserProfile[] = [];
                 const oppositeGender = profileData.gender === 'male' ? 'female' : 'male';
 
-                // Firestore queries must have composite index if using multiple fields, but for a prototype we can filter client side
-                // Or if we only rely on a single where for the prototype:
+                // Real-time on discovery not usually done as it fetches too much, but we getDocs again if our own profile changes
                 const q = query(collection(db, "users"), where("isItsVerified", "==", true));
                 const snap = await getDocs(q);
-                snap.forEach(doc => {
-                    const data = doc.data();
-                    if (doc.id !== user.uid && data.gender === oppositeGender) {
-                        profiles.push({ id: doc.id, ...data } as UserProfile);
+                snap.forEach(d => {
+                    const data = d.data();
+                    if (d.id !== user.uid && data.gender === oppositeGender) {
+                        profiles.push({ id: d.id, ...data } as UserProfile);
                     }
                 });
 
-                // If the user isn't verified or there are none, we fallback to our dummy profiles to ensure the UI ALWAYS shines for demo purposes!
                 if (profiles.length === 0) {
                     profiles = [
                         { id: "dummy1", name: "Aliya", dob: "1998-05-15", jamaat: "Colpetty Jamaat, Colombo", education: "MBA in Finance", hizratLocation: "Colombo, LK", isItsVerified: true },
@@ -108,77 +165,15 @@ export default function RishtaDashboard() {
             } catch (err) {
                 console.error("Discovery Error", err);
             }
+        });
+
+        setupRequestsListeners();
+
+        return () => {
+            unsubMe();
+            if (unsubOutgoing) unsubOutgoing();
+            if (unsubIncoming) unsubIncoming();
         };
-
-        const subscribeToRequests = () => {
-            // To simplify index requirements on Firebase free tier without creating composite indexes, 
-            // we will use onSnapshot to listen to incoming separately, or fetch normally.
-            // We'll fetch normally for simplicity in UI testing.
-            const fetchRequests = async () => {
-                try {
-                    const outgoingQ = query(collection(db, "rishta_requests"), where("from", "==", user.uid));
-                    const incomingQ = query(collection(db, "rishta_requests"), where("to", "==", user.uid));
-
-                    const [outSnap, inSnap] = await Promise.all([getDocs(outgoingQ), getDocs(incomingQ)]);
-
-                    let requestsRaw: any[] = [];
-
-                    outSnap.forEach(d => requestsRaw.push({ id: d.id, isIncoming: false, ...d.data() }));
-                    inSnap.forEach(d => requestsRaw.push({ id: d.id, isIncoming: true, ...d.data() }));
-
-                    // Resolve the other user's names
-                    const resolvedRequests: RishtaRequest[] = [];
-
-                    for (const req of requestsRaw) {
-                        const targetId = req.isIncoming ? req.from : req.to;
-                        // Don't query dummy IDs if they aren't in DB
-                        if (targetId === "dummy1" || targetId === "dummy2" || targetId === "dummy3") {
-                            resolvedRequests.push({
-                                ...req,
-                                otherUserName: targetId === "dummy1" ? "Aliya" : targetId === "dummy2" ? "Fatima" : "Zahra",
-                                otherUserAge: 25,
-                                otherUserLocation: "Global",
-                                otherUserEducation: "General",
-                                otherUserMobile: "+91 0000000000",
-                                otherUserEmail: "dummy@example.com",
-                                otherUserLibasUrl: null,
-                            });
-                            continue;
-                        }
-
-                        const uRef = await getDoc(doc(db, "users", targetId));
-                        if (uRef.exists()) {
-                            const uData = uRef.data();
-                            resolvedRequests.push({
-                                ...req,
-                                otherUserName: uData.name || "Unknown Member",
-                                otherUserAge: uData.dob ? Math.floor((new Date().getTime() - new Date(uData.dob).getTime()) / 31557600000) : 25,
-                                otherUserLocation: uData.hizratLocation || "Global Network",
-                                otherUserEducation: uData.education || uData.profession || "Graduated",
-                                otherUserMobile: uData.mobile ? `${uData.mobileCode || ''} ${uData.mobile}` : "Not Shared",
-                                otherUserEmail: uData.email || "Not Shared",
-                                otherUserLibasUrl: uData.libasImageUrl || null,
-                            });
-                        }
-                    }
-
-                    setAllRequests(resolvedRequests.sort((a, b) => b.status.localeCompare(a.status)));
-                } catch (err) {
-                    console.error("Requests Error", err);
-                } finally {
-                    setDataLoading(false);
-                }
-            };
-
-            fetchRequests();
-            // Normally we'd use onSnapshot, but intervals or manual refreshes are safer out-of-the-box for unconfigured indexes
-            const interval = setInterval(fetchRequests, 15000);
-            return () => clearInterval(interval);
-        };
-
-        loadDiscovery();
-        const unsubRequests = subscribeToRequests();
-        return () => unsubRequests();
 
     }, [user, loading, router]);
 

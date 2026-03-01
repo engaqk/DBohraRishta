@@ -23,8 +23,8 @@ export default function GlobalNav() {
                         className="flex items-center gap-2 cursor-pointer"
                         onClick={() => router.push('/')}
                     >
-                        <div className="w-8 h-8 rounded-full bg-[#881337] text-white flex items-center justify-center font-bold text-sm">
-                            DBR
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] border-2 border-[#D4AF37] flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-[#881337]/5">
+                            53
                         </div>
                         <span className="font-serif font-bold text-[#881337] tracking-tight text-lg">DBohra<span className="font-light italic">Rishta</span></span>
                     </div>

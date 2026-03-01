@@ -23,9 +23,10 @@ interface DiscoveryCardProps {
     heightInch?: string;
     hobbies?: string;
     partnerQualities?: string;
+    isBlurSecurityEnabled?: boolean;
 }
 
-export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, gender, matchScore = 85, isMyProfileVerified = false, isDummy = false, heightFeet, heightInch, hobbies, partnerQualities }: DiscoveryCardProps) {
+export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, gender, matchScore = 85, isMyProfileVerified = false, isDummy = false, heightFeet, heightInch, hobbies, partnerQualities, isBlurSecurityEnabled = true }: DiscoveryCardProps) {
     const { user } = useAuth();
     const [requestSent, setRequestSent] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -120,28 +121,32 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                 {/* Blurred Photo Placeholder */}
                 <div className="relative h-72 bg-gray-200 flex items-center justify-center overflow-hidden">
                     {libasImageUrl ? (
-                        <img src={libasImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-60" />
+                        <img src={libasImageUrl} alt="Profile" className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${isBlurSecurityEnabled ? 'blur-2xl scale-110 opacity-60' : 'opacity-100 scale-100'}`} />
                     ) : (
-                        <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-300 blur-2xl scale-110 opacity-40">
+                        <div className={`absolute inset-0 w-full h-full flex items-center justify-center bg-gray-300 transition-all duration-300 ${isBlurSecurityEnabled ? 'blur-2xl scale-110 opacity-40' : 'opacity-100'}`}>
                             <span className="text-4xl">📸</span>
                         </div>
                     )}
 
                     {/* For Female Profiles, show a small, somewhat clear thumbnail snippet if requested by user for 'testing visual differences', or similar feature */}
-                    {gender === 'female' && libasImageUrl && (
+                    {gender === 'female' && libasImageUrl && isBlurSecurityEnabled && (
                         <div className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white/50 shadow-lg overflow-hidden opacity-90 backdrop-blur-sm pointer-events-none">
                             <img src={libasImageUrl} alt="Preview" className="w-full h-full object-cover blur-[2px]" />
                         </div>
                     )}
 
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#881337] to-[#D4AF37] blur-3xl opacity-20 hover:opacity-10 transition-opacity"></div>
-                    <div className="z-10 flex flex-col items-center bg-white/60 p-5 rounded-2xl backdrop-blur-md border border-white/40 shadow-sm text-center">
-                        <ShieldCheck className="w-10 h-10 text-[#881337] mb-2" />
-                        <span className="text-md font-bold text-[#881337] leading-tight flex flex-col gap-1">
-                            <span>Dynamic Privacy</span>
-                            <span className="text-xs font-normal text-[#881337]/80 max-w-[120px]">Unblurs after accepted Interest</span>
-                        </span>
-                    </div>
+                    {isBlurSecurityEnabled && (
+                        <>
+                            <div className="absolute inset-0 bg-gradient-to-br from-[#881337] to-[#D4AF37] blur-3xl opacity-20 hover:opacity-10 transition-opacity"></div>
+                            <div className="z-10 flex flex-col items-center bg-white/60 p-5 rounded-2xl backdrop-blur-md border border-white/40 shadow-sm text-center">
+                                <ShieldCheck className="w-10 h-10 text-[#881337] mb-2" />
+                                <span className="text-md font-bold text-[#881337] leading-tight flex flex-col gap-1">
+                                    <span>Dynamic Privacy</span>
+                                    <span className="text-xs font-normal text-[#881337]/80 max-w-[120px]">Unblurs after accepted Interest</span>
+                                </span>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Content */}
@@ -210,13 +215,15 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                         <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
 
                             <div className="relative h-48 bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
-                                {libasImageUrl ? (
-                                    <img src={libasImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-3xl scale-125 opacity-70" />
-                                ) : (
-                                    <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-300"></div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-
+                                <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                                    {libasImageUrl ? (
+                                        <img src={libasImageUrl} alt="Profile" className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${isBlurSecurityEnabled ? 'blur-3xl scale-125 opacity-70' : 'opacity-100 scale-100'}`} />
+                                    ) : (
+                                        <span className="text-7xl">📸</span>
+                                    )}
+                                    {isBlurSecurityEnabled && <ShieldCheck className="w-24 h-24 text-gray-300 relative z-10" />}
+                                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent"></div>
+                                </div>
                                 <button onClick={() => setShowDetails(false)} className="absolute top-4 right-4 bg-black/40 text-white rounded-full p-2 hover:bg-black/60 transition-colors z-20">
                                     <span className="sr-only">Close</span>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>

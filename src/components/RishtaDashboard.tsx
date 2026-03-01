@@ -41,6 +41,7 @@ interface RishtaRequest {
     otherUserMobile: string;
     otherUserEmail: string;
     otherUserLibasUrl: string | null;
+    otherUserBlurSecurityEnabled: boolean;
 }
 
 export default function RishtaDashboard() {
@@ -99,6 +100,7 @@ export default function RishtaDashboard() {
                         otherUserMobile: "+91 0000000000",
                         otherUserEmail: "dummy@example.com",
                         otherUserLibasUrl: null,
+                        otherUserBlurSecurityEnabled: true,
                     });
                     continue;
                 }
@@ -116,6 +118,7 @@ export default function RishtaDashboard() {
                             otherUserMobile: uData.mobile ? `${uData.mobileCode || ''} ${uData.mobile}` : "Not Shared",
                             otherUserEmail: uData.email || "Not Shared",
                             otherUserLibasUrl: uData.libasImageUrl || null,
+                            otherUserBlurSecurityEnabled: uData.isBlurSecurityEnabled !== false,
                         });
                     }
                 } catch (e) { }
@@ -296,8 +299,12 @@ export default function RishtaDashboard() {
                                     <div key={req.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
                                         <div className="flex items-center gap-4">
                                             <div className="w-14 h-14 bg-gradient-to-br from-[#881337] to-[#D4AF37] opacity-80 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-sm text-xl relative overflow-hidden shrink-0">
-                                                <div className="absolute inset-0 backdrop-blur-md"></div>
-                                                <span className="z-10">{req.otherUserName.charAt(0)}</span>
+                                                {req.otherUserLibasUrl ? (
+                                                    <img src={req.otherUserLibasUrl} alt="User" className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${req.otherUserBlurSecurityEnabled ? 'blur-md scale-110 opacity-70' : 'opacity-100 scale-100'}`} />
+                                                ) : (
+                                                    <span className="z-10 relative">{req.otherUserName.charAt(0)}</span>
+                                                )}
+                                                {req.otherUserBlurSecurityEnabled && !req.otherUserLibasUrl && <div className="absolute inset-0 backdrop-blur-md"></div>}
                                             </div>
                                             <div>
                                                 <h4 className="font-bold text-lg text-[#881337]">{req.otherUserName}, {req.otherUserAge}</h4>

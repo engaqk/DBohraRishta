@@ -21,6 +21,10 @@ interface UserProfile {
     gender?: string;
     libasImageUrl?: string;
     isDummy?: boolean;
+    heightFeet?: string;
+    heightInch?: string;
+    hobbies?: string;
+    partnerQualities?: string;
 }
 
 interface RishtaRequest {
@@ -58,6 +62,12 @@ export default function RishtaDashboard() {
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [paying, setPaying] = useState(false);
     const [showMyProfileModal, setShowMyProfileModal] = useState(false);
+
+    // Accept Request Contact Modal
+    const [acceptingRequest, setAcceptingRequest] = useState<RishtaRequest | null>(null);
+    const [acceptMobile, setAcceptMobile] = useState('');
+    const [acceptEmail, setAcceptEmail] = useState('');
+    const [acceptError, setAcceptError] = useState('');
 
     useEffect(() => {
         if (loading) return;
@@ -158,9 +168,9 @@ export default function RishtaDashboard() {
 
                 if (profiles.length === 0) {
                     profiles = [
-                        { id: "dummy1", name: "Aliya", dob: "1998-05-15", jamaat: "Colpetty Jamaat, Colombo", education: "MBA in Finance", hizratLocation: "Colombo, LK", isItsVerified: true, isDummy: true },
-                        { id: "dummy2", name: "Fatima", dob: "2000-02-10", jamaat: "Saifee Park Jamaat, Dubai", education: "Software Engineer", hizratLocation: "Dubai, UAE", isItsVerified: true, isDummy: true },
-                        { id: "dummy3", name: "Zahra", dob: "1999-11-20", jamaat: "Husaini Jamaat, London", education: "Doctor of Medicine", hizratLocation: "London, UK", isItsVerified: true, isDummy: true }
+                        { id: "dummy1", name: "Aliya", dob: "1998-05-15", jamaat: "Colpetty Jamaat, Colombo", education: "MBA in Finance", hizratLocation: "Colombo, LK", isItsVerified: true, isDummy: true, hobbies: "Traveling, Cooking", partnerQualities: "Looking for a well-educated partner with good Deeni understanding.", heightFeet: "5", heightInch: "4" },
+                        { id: "dummy2", name: "Fatima", dob: "2000-02-10", jamaat: "Saifee Park Jamaat, Dubai", education: "Software Engineer", hizratLocation: "Dubai, UAE", isItsVerified: true, isDummy: true, hobbies: "Reading, Painting", partnerQualities: "Respectful, caring, and financially stable.", heightFeet: "5", heightInch: "6" },
+                        { id: "dummy3", name: "Zahra", dob: "1999-11-20", jamaat: "Husaini Jamaat, London", education: "Doctor of Medicine", hizratLocation: "London, UK", isItsVerified: true, isDummy: true, hobbies: "Photography, Swimming", partnerQualities: "Family-oriented and supportive.", heightFeet: "5", heightInch: "2" }
                     ];
                 }
                 setDiscoveryProfiles(profiles);
@@ -197,6 +207,33 @@ export default function RishtaDashboard() {
             setAllRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
         } catch (error: any) {
             toast.error("Action failed: " + error.message);
+        }
+    };
+
+    const handleAcceptClick = (req: RishtaRequest) => {
+        setAcceptError('');
+        setAcceptMobile(myProfile?.mobile ? `${myProfile.mobileCode || ''} ${myProfile.mobile}`.trim() : '');
+        setAcceptEmail(myProfile?.email || '');
+        setAcceptingRequest(req);
+    };
+
+    const confirmAcceptRequest = async () => {
+        setAcceptError('');
+        if (!acceptMobile || !acceptEmail) {
+            setAcceptError("Mobile and Email are compulsory to share when accepting.");
+            return;
+        }
+        if (!user || !acceptingRequest) return;
+
+        try {
+            await updateDoc(doc(db, "users", user.uid), {
+                mobile: acceptMobile,
+                email: acceptEmail
+            });
+            await handleRequestAction(acceptingRequest.id, "accepted");
+            setAcceptingRequest(null);
+        } catch (err: any) {
+            toast.error("Failed to accept: " + err.message);
         }
     };
 
@@ -270,7 +307,7 @@ export default function RishtaDashboard() {
                                         {req.isIncoming ? (
                                             <div className="flex gap-2">
                                                 <button onClick={() => handleRequestAction(req.id, "rejected")} className="bg-red-50 text-red-600 p-3 rounded-full hover:bg-red-100 transition-colors shadow-sm"><X className="w-5 h-5" /></button>
-                                                <button onClick={() => handleRequestAction(req.id, "accepted")} className="bg-[#881337] text-white p-3 rounded-full hover:bg-[#9F1239] transition-colors shadow-md"><Check className="w-5 h-5" /></button>
+                                                <button onClick={() => handleAcceptClick(req)} className="bg-[#881337] text-white p-3 rounded-full hover:bg-[#9F1239] transition-colors shadow-md"><Check className="w-5 h-5" /></button>
                                             </div>
                                         ) : (
                                             <div className="flex gap-2 items-center text-gray-500 text-sm font-bold bg-gray-50 px-4 py-2 rounded-full border border-gray-200">
@@ -373,10 +410,51 @@ export default function RishtaDashboard() {
             case 'discovery':
             default:
                 // Only filter out profiles that have ACCEPTED or REJECTED statuses, or incoming requests.
-                // Leave pending outgoing requests in the list so users can see who they've already requested.
                 const hiddenToIds = allRequests
                     .filter(r => r.status === "accepted" || r.status === "rejected" || r.isIncoming)
                     .map(r => r.to);
+
+                const computeMatchScore = (me: any, them: any) => {
+                    let score = 50;
+                    if (!me || !them) return score;
+
+                    if (me.country && them.country && me.country.toLowerCase() === them.country.toLowerCase()) score += 10;
+                    if (me.state && them.state && me.state.toLowerCase() === them.state.toLowerCase()) score += 10;
+                    if (me.city && them.city && me.city.toLowerCase() === them.city.toLowerCase()) score += 10;
+
+                    const myAge = me.dob ? new Date().getFullYear() - new Date(me.dob).getFullYear() : 25;
+                    const theirAge = them.dob ? new Date().getFullYear() - new Date(them.dob).getFullYear() : 25;
+                    const ageDiff = Math.abs(myAge - theirAge);
+
+                    if (me.gender === 'male' && theirAge <= myAge && theirAge >= myAge - 6) score += 15;
+                    else if (me.gender === 'female' && myAge <= theirAge && myAge >= theirAge - 6) score += 15;
+                    else score -= Math.max(0, (ageDiff - 6) * 2);
+
+                    const myHobbies = (me.hobbies || '').toLowerCase();
+                    const theirHobbies = (them.hobbies || '').toLowerCase();
+                    const myReqs = (me.partnerQualities || '').toLowerCase();
+                    const theirReqs = (them.partnerQualities || '').toLowerCase();
+
+                    if (myHobbies && theirHobbies) {
+                        const hWords = myHobbies.split(/[,\s]+/).filter((w: string) => w.length > 3);
+                        hWords.forEach((w: string) => {
+                            if (theirHobbies.includes(w)) score += 5;
+                        });
+                    }
+
+                    if (myReqs && (them.education || them.profession)) {
+                        const rWords = myReqs.split(/[,\s]+/).filter((w: string) => w.length > 3);
+                        let matched = false;
+                        rWords.forEach((w: string) => {
+                            if ((them.education || '').toLowerCase().includes(w) || (them.profession || '').toLowerCase().includes(w) || theirHobbies.includes(w)) {
+                                matched = true;
+                            }
+                        });
+                        if (matched) score += 10;
+                    }
+
+                    return Math.min(99, Math.max(30, score));
+                };
 
                 const availableProfiles = discoveryProfiles.filter(p => !hiddenToIds.includes(p.id));
 
@@ -410,7 +488,7 @@ export default function RishtaDashboard() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
                                 {filteredProfiles.map((p) => (
-                                    <DiscoveryCard key={p.id} {...p} isDummy={(p as any).isDummy} matchScore={Math.floor(Math.random() * 20) + 75} isMyProfileVerified={myProfile?.isItsVerified || false} />
+                                    <DiscoveryCard key={p.id} {...p} isDummy={(p as any).isDummy} matchScore={computeMatchScore(myProfile, p)} isMyProfileVerified={myProfile?.isItsVerified || false} />
                                 ))}
                             </div>
                         )}
@@ -423,38 +501,22 @@ export default function RishtaDashboard() {
 
     return (
         <div className="min-h-screen bg-[#F9FAFB] text-[#881337] p-6 pb-24 md:p-12 md:pb-12">
-            <header className="max-w-7xl mx-auto mb-12 flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] rounded-full flex items-center justify-center font-extrabold text-2xl shadow-[0_0_15px_rgba(212,175,55,0.4)] border-2 border-[#D4AF37] ring-4 ring-rose-50 tracking-tighter">
-                        53
-                    </div>
-                    <div className="flex flex-col justify-center">
-                        <h1 className="text-3xl font-bold font-serif bg-clip-text text-transparent bg-gradient-to-r from-[#881337] to-[#D4AF37] tracking-tight">DBohra<span className="font-light italic">Rishta</span></h1>
-                        <p className="text-[10px] font-bold text-[#D4AF37] tracking-[0.2em] uppercase mt-0.5">Premium Matchmaking</p>
-                    </div>
-                </div>
-                <nav className="hidden md:flex gap-6 items-center font-bold text-sm">
-                    <button onClick={() => setActiveTab('discovery')} className={`transition-colors pb-1 border-b-2 hover:border-[#D4AF37] ${activeTab === 'discovery' ? 'text-[#D4AF37] border-[#D4AF37]' : 'text-[#881337] border-transparent'}`}>Discovery</button>
-                    <button onClick={() => setActiveTab('requests')} className={`transition-colors pb-1 border-b-2 hover:border-[#D4AF37] ${activeTab === 'requests' ? 'text-[#D4AF37] border-[#D4AF37]' : 'text-[#881337] border-transparent'}`}>Requests</button>
-                    <button onClick={() => setActiveTab('messages')} className={`transition-colors pb-1 border-b-2 hover:border-[#D4AF37] ${activeTab === 'messages' ? 'text-[#D4AF37] border-[#D4AF37]' : 'text-[#881337] border-transparent'}`}>Messages</button>
-                    {user ? (
-                        <>
-                            {myProfile?.isAdmin && (
-                                <button onClick={() => router.push('/admin/approvals')} className="ml-2 text-indigo-500 hover:text-indigo-600 transition-colors flex items-center gap-2">
-                                    <ShieldAlert className="w-4 h-4" />
-                                    <span className="hidden lg:inline">Admin</span>
-                                </button>
-                            )}
-                            <button onClick={logout} className="ml-4 text-red-500 hover:text-red-600 transition-colors flex items-center gap-2">
-                                <LogOut className="w-4 h-4" />
-                                <span className="hidden lg:inline">Logout</span>
-                            </button>
-                        </>
-                    ) : (
-                        <button onClick={() => router.push('/login')} className="ml-4 text-[#D4AF37] hover:text-[#c29e2f] transition-colors flex items-center gap-2 font-bold">
-                            Login / Setup
+            <header className="max-w-7xl mx-auto mb-8 flex justify-center items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100 max-w-sm">
+                <nav className="flex w-full relative">
+                    {['discovery', 'requests', 'messages'].map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab as any)}
+                            className={`flex-1 py-3 text-sm font-bold capitalize transition-all rounded-xl relative z-10 ${activeTab === tab ? 'text-white shadow-sm' : 'text-gray-500 hover:text-[#881337]'}`}
+                        >
+                            {tab}
                         </button>
-                    )}
+                    ))}
+                    {/* Active Background Pill */}
+                    <div
+                        className="absolute top-0 bottom-0 w-1/3 bg-[#881337] rounded-xl transition-all duration-300 ease-out shadow-sm"
+                        style={{ left: `${['discovery', 'requests', 'messages'].indexOf(activeTab) * 33.33}%` }}
+                    />
                 </nav>
             </header>
 
@@ -664,6 +726,18 @@ export default function RishtaDashboard() {
                                         <p className="text-gray-500 text-xs font-bold mb-1">Education / Profession</p>
                                         <p className="text-[#881337] font-semibold">{myProfile.education || myProfile.profession || 'Not specified'}</p>
                                     </div>
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 col-span-2 md:col-span-1">
+                                        <p className="text-gray-500 text-xs font-bold mb-1">Height</p>
+                                        <p className="text-[#881337] font-semibold">{myProfile.heightFeet || myProfile.heightInch ? `${myProfile.heightFeet || 0}' ${myProfile.heightInch || 0}"` : 'Not specified'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 col-span-2">
+                                        <p className="text-gray-500 text-xs font-bold mb-1">Hobbies & Interests</p>
+                                        <p className="text-[#881337] font-semibold text-sm leading-relaxed">{myProfile.hobbies || 'Not specified'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 col-span-2">
+                                        <p className="text-gray-500 text-xs font-bold mb-1">Partner Expectations</p>
+                                        <p className="text-[#881337] font-semibold text-sm leading-relaxed">{myProfile.partnerQualities || 'Not specified'}</p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -687,6 +761,42 @@ export default function RishtaDashboard() {
                             >
                                 Edit Profile Details
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {acceptingRequest && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 sm:mt-0 mt-10" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95">
+                        <h3 className="text-2xl font-bold font-serif text-[#881337] mb-2">Accept Interest Request</h3>
+                        <p className="text-sm text-gray-600 mb-6">You are about to accept an interest request from <span className="font-bold">{acceptingRequest.otherUserName}</span>. Please confirm your contact details to share.</p>
+
+                        <div className="space-y-4 mb-6">
+                            {acceptError && (
+                                <div className="p-3 bg-red-50 text-red-600 text-sm font-bold rounded-xl border border-red-100 mb-2">
+                                    {acceptError}
+                                </div>
+                            )}
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Mobile Number *</label>
+                                <input value={acceptMobile} onChange={e => { setAcceptMobile(e.target.value); setAcceptError(''); }} className={`w-full bg-gray-50 border ${!acceptMobile && acceptError ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]`} placeholder="e.g. +91 9876543210" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Email Address *</label>
+                                <input type="email" value={acceptEmail} onChange={e => { setAcceptEmail(e.target.value); setAcceptError(''); }} className={`w-full bg-gray-50 border ${!acceptEmail && acceptError ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]`} placeholder="e.g. you@example.com" />
+                            </div>
+                            <div className="flex items-start gap-3 bg-red-50 p-3 rounded-lg border border-red-100">
+                                <Info className="w-5 h-5 text-[#881337] shrink-0 mt-0.5" />
+                                <p className="text-xs text-[#881337] font-medium leading-relaxed">
+                                    These details are strictly compulsory and will be shared mutually with this candidate upon acceptance.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button onClick={() => setAcceptingRequest(null)} className="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
+                            <button onClick={confirmAcceptRequest} className="flex-1 py-3 bg-[#D4AF37] text-white font-bold rounded-xl hover:bg-[#c29e2f] transition-colors shadow-md">Confirm & Accept</button>
                         </div>
                     </div>
                 </div>

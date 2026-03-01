@@ -16,6 +16,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [isRegistering, setIsRegistering] = useState(false);
     const [authLoading, setAuthLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
 
     useEffect(() => {
         const checkUserStatus = async () => {
@@ -46,8 +47,9 @@ export default function LoginPage() {
 
     const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrorMsg("");
         if (!email || !password) {
-            toast.error("Please enter email and password");
+            setErrorMsg("Please enter email and password");
             return;
         }
         setAuthLoading(true);
@@ -60,7 +62,7 @@ export default function LoginPage() {
                 toast.success("Looking good! Redirecting...");
             }
         } catch (error: any) {
-            toast.error(error.message.replace("Firebase: ", ""));
+            setErrorMsg(error.message.replace("Firebase: ", ""));
         } finally {
             setAuthLoading(false);
         }
@@ -103,6 +105,7 @@ export default function LoginPage() {
                     </div>
 
                     <form onSubmit={handleEmailAuth} className="space-y-4 mb-6">
+                        {errorMsg && <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100">{errorMsg}</div>}
                         <div className="relative">
                             <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                             <input

@@ -19,13 +19,18 @@ interface DiscoveryCardProps {
     isMyProfileVerified?: boolean;
     gender?: string;
     isDummy?: boolean;
+    heightFeet?: string;
+    heightInch?: string;
+    hobbies?: string;
+    partnerQualities?: string;
 }
 
-export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, gender, matchScore = 85, isMyProfileVerified = false, isDummy = false }: DiscoveryCardProps) {
+export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, gender, matchScore = 85, isMyProfileVerified = false, isDummy = false, heightFeet, heightInch, hobbies, partnerQualities }: DiscoveryCardProps) {
     const { user } = useAuth();
     const [requestSent, setRequestSent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
+    const [rejectCount, setRejectCount] = useState(0);
 
     // Calculate approximate age
     const age = dob ? Math.floor((new Date().getTime() - new Date(dob).getTime()) / 31557600000) : 25;
@@ -34,15 +39,36 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
     useEffect(() => {
         const checkExistingRequest = async () => {
             if (!user) return;
-            const q = query(
+            const qOut = query(
                 collection(db, "rishta_requests"),
                 where("from", "==", user.uid),
                 where("to", "==", id)
             );
-            const snap = await getDocs(q);
-            if (!snap.empty) {
-                setRequestSent(true);
-            }
+            const qIn = query(
+                collection(db, "rishta_requests"),
+                where("from", "==", id),
+                where("to", "==", user.uid)
+            );
+
+            const [snapOut, snapIn] = await Promise.all([getDocs(qOut), getDocs(qIn)]);
+
+            let activeReq = false;
+            let rejects = 0;
+
+            const checkDoc = (doc: any) => {
+                const s = doc.data().status;
+                if (s === "rejected" || s === "ended") {
+                    rejects++;
+                } else {
+                    activeReq = true;
+                }
+            };
+
+            snapOut.forEach(checkDoc);
+            snapIn.forEach(checkDoc);
+
+            setRequestSent(activeReq);
+            setRejectCount(rejects);
         };
         checkExistingRequest();
     }, [user, id]);
@@ -127,8 +153,16 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                     )}
                     <div className="flex justify-between items-start mb-4">
                         <div>
-                            <h3 className="text-2xl font-bold text-[#881337] font-serif group-hover:underline">{name || 'Verified Member'}, {age}</h3>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-2xl font-bold text-[#881337] font-serif group-hover:underline cursor-pointer" onClick={() => setShowDetails(true)}>{name || 'Verified Member'}, {age}</h3>
+                                {rejectCount > 0 && !requestSent && (
+                                    <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold border border-red-100 uppercase mt-1">
+                                        Not Accepted
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-gray-600 font-sans text-sm mt-1">{jamaat || 'Community Member'} • {hizratLocation || 'Unknown'}</p>
+                            <button onClick={() => setShowDetails(true)} className="text-xs text-[#D4AF37] font-bold hover:underline mt-1">View Full Profile →</button>
                         </div>
                         <div className="bg-[#881337] text-[#D4AF37] px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-md shrink-0">
                             <span>{matchScore}% Match</span>
@@ -146,20 +180,26 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                         </div>
                     </div>
 
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleSendRequest();
-                        }}
-                        disabled={requestSent || loading || !isMyProfileVerified}
-                        className={`w-full z-20 py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 
-                        ${!isMyProfileVerified ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200' :
-                                requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' :
-                                    'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
-                    >
-                        {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                        {!isMyProfileVerified ? 'Awaiting Verification' : requestSent ? 'Request Sent' : 'Send Request'}
-                    </button>
+                    {rejectCount >= 2 && !requestSent ? (
+                        <div className="w-full z-20 py-3.5 bg-gray-50 text-gray-400 font-bold rounded-xl border border-gray-100 text-sm text-center shadow-sm">
+                            Maximum request limit reached for this profile
+                        </div>
+                    ) : (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleSendRequest();
+                            }}
+                            disabled={requestSent || loading || !isMyProfileVerified}
+                            className={`w-full z-20 py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 
+                            ${!isMyProfileVerified ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200' :
+                                    requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' :
+                                        'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
+                        >
+                            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+                            {!isMyProfileVerified ? 'Awaiting Verification' : requestSent ? 'Request Sent' : rejectCount === 1 ? 'Retry Send Request' : 'Send Request'}
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -183,10 +223,19 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                                 </button>
 
                                 <div className="absolute bottom-6 left-6 z-10">
-                                    <h2 className="text-3xl font-bold font-serif text-white">{name}, {age}</h2>
-                                    <p className="text-[#D4AF37] font-medium flex items-center gap-2 mt-1">
-                                        <CheckCircle className="w-4 h-4" /> ITS Verified
-                                    </p>
+                                    <div className="flex flex-col">
+                                        <h2 className="text-3xl font-bold font-serif text-white">{name}, {age}</h2>
+                                        <div className="flex items-center gap-3">
+                                            <p className="text-[#D4AF37] font-medium flex items-center gap-2 mt-1">
+                                                <CheckCircle className="w-4 h-4" /> ITS Verified
+                                            </p>
+                                            {rejectCount > 0 && !requestSent && (
+                                                <span className="bg-red-500/80 text-white backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-bold border border-red-500/50 uppercase">
+                                                    Not Accepted
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -207,6 +256,18 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                                             <p className="text-gray-500 text-xs font-bold mb-1">Education / Profession</p>
                                             <p className="text-[#881337] font-semibold">{education || 'Not specified'}</p>
                                         </div>
+                                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 col-span-2 md:col-span-1">
+                                            <p className="text-gray-500 text-xs font-bold mb-1">Height</p>
+                                            <p className="text-[#881337] font-semibold">{heightFeet || heightInch ? `${heightFeet || 0}' ${heightInch || 0}"` : 'Not specified'}</p>
+                                        </div>
+                                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 col-span-2">
+                                            <p className="text-gray-500 text-xs font-bold mb-1">Hobbies & Interests</p>
+                                            <p className="text-[#881337] font-semibold text-sm leading-relaxed">{hobbies || 'Not specified'}</p>
+                                        </div>
+                                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 col-span-2">
+                                            <p className="text-gray-500 text-xs font-bold mb-1">Partner Expectations</p>
+                                            <p className="text-[#881337] font-semibold text-sm leading-relaxed">{partnerQualities || 'Not specified'}</p>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -221,17 +282,23 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                             </div>
 
                             <div className="p-6 border-t border-gray-100 bg-gray-50/50 shrink-0">
-                                <button
-                                    onClick={handleSendRequest}
-                                    disabled={requestSent || loading || !isMyProfileVerified}
-                                    className={`w-full py-4 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-lg
-                                ${!isMyProfileVerified ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200' :
-                                            requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' :
-                                                'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
-                                >
-                                    {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                                    {!isMyProfileVerified ? 'Awaiting Admin Verification' : requestSent ? 'Request Already Sent' : 'Send Interest Request'}
-                                </button>
+                                {rejectCount >= 2 && !requestSent ? (
+                                    <div className="w-full py-4 text-center bg-gray-100 text-gray-500 font-bold rounded-xl border border-gray-200 shadow-inner">
+                                        Maximum request limit reached for this profile
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={handleSendRequest}
+                                        disabled={requestSent || loading || !isMyProfileVerified}
+                                        className={`w-full py-4 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-lg
+                                        ${!isMyProfileVerified ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200' :
+                                                requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' :
+                                                    'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
+                                    >
+                                        {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+                                        {!isMyProfileVerified ? 'Awaiting Admin Verification' : requestSent ? 'Request Already Sent' : rejectCount === 1 ? 'Retry Send Interest Request' : 'Send Interest Request'}
+                                    </button>
+                                )}
                             </div>
 
                         </div>

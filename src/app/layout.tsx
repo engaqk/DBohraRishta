@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import GlobalNav from "@/components/GlobalNav";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -53,7 +55,10 @@ export default function RootLayout({
           `
         }} />
         <Providers>
-          {children}
+          <GlobalNav />
+          <div className="pt-16">
+            {children}
+          </div>
         </Providers>
       </body>
     </html>

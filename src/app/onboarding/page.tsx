@@ -108,7 +108,6 @@ export default function OnboardingPage() {
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            toast.error("Please fix the errors before proceeding.");
             return;
         }
 
@@ -156,7 +155,6 @@ export default function OnboardingPage() {
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            toast.error("Please complete your Dunyawi details.");
             return;
         }
 
@@ -291,7 +289,7 @@ export default function OnboardingPage() {
                             </div>
 
                             {/* Mobile Real-time Camera Capture for ITS */}
-                            <div className="mt-6 border border-gray-200 rounded-xl p-5 bg-white shadow-sm flex flex-col items-center">
+                            <div className={`mt-6 border ${errors.itsImage ? 'border-red-500' : 'border-gray-200'} rounded-xl p-5 bg-white shadow-sm flex flex-col items-center`}>
                                 <label className="text-center w-full block mb-4 font-bold text-sm text-[#881337]">Capture ITS Card Verification</label>
 
                                 {imagePreview ? (
@@ -344,10 +342,11 @@ export default function OnboardingPage() {
                                         </button>
                                     </div>
                                 )}
+                                {errors.itsImage && <p className="text-red-500 text-xs font-bold mt-2 w-full text-center">{errors.itsImage}</p>}
                             </div>
 
                             {/* Qaumi Libas Photo Upload */}
-                            <div className="mt-6 border border-gray-200 rounded-xl p-5 bg-white shadow-sm flex flex-col items-center">
+                            <div className={`mt-6 border ${errors.libasImage ? 'border-red-500' : 'border-gray-200'} rounded-xl p-5 bg-white shadow-sm flex flex-col items-center`}>
                                 <label className="text-center w-full block mb-4 font-bold text-sm text-[#881337]">
                                     Upload Profile Photo (in {formData.gender === 'female' ? 'Rida' : 'Kurta Saya'})
                                 </label>
@@ -400,6 +399,7 @@ export default function OnboardingPage() {
                                         </button>
                                     </div>
                                 )}
+                                {errors.libasImage && <p className="text-red-500 text-xs font-bold mt-2 w-full text-center">{errors.libasImage}</p>}
                             </div>
 
                             <div className="flex justify-between pt-6">
@@ -420,15 +420,18 @@ export default function OnboardingPage() {
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Highest Education</label>
-                                <input name="education" onChange={handleChange} value={formData.education} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. MBA in Finance" />
+                                <input name="education" onChange={handleChange} value={formData.education} className={`w-full bg-gray-50 border ${errors.education ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. MBA in Finance" />
+                                {errors.education && <p className="text-red-500 text-xs font-bold mt-1">{errors.education}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Current Location</label>
-                                <input name="hizratLocation" onChange={handleChange} value={formData.hizratLocation} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. Dubai, UAE" />
+                                <input name="hizratLocation" onChange={handleChange} value={formData.hizratLocation} className={`w-full bg-gray-50 border ${errors.hizratLocation ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. Dubai, UAE" />
+                                {errors.hizratLocation && <p className="text-red-500 text-xs font-bold mt-1">{errors.hizratLocation}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Bio (Be Intentional)</label>
-                                <textarea name="bio" onChange={handleChange} value={formData.bio} rows={4} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#881337] resize-none" placeholder="Share your expectations for an alliance..." />
+                                <textarea name="bio" onChange={handleChange} value={formData.bio} rows={4} className={`w-full bg-gray-50 border ${errors.bio ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 resize-none`} placeholder="Share your expectations for an alliance..." />
+                                {errors.bio && <p className="text-red-500 text-xs font-bold mt-1">{errors.bio}</p>}
                             </div>
                             <div className="flex justify-between pt-4">
                                 <button onClick={() => setStep(2)} className="text-gray-500 px-6 py-3 font-bold hover:text-gray-700" disabled={loading}>Back</button>

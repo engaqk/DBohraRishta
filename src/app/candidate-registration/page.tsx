@@ -8,6 +8,8 @@ import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "fireb
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/contexts/AuthContext";
 
+const ErrorMsg = ({ msg }: { msg?: string }) => msg ? <p className="text-red-500 text-xs mt-1 font-semibold animate-in fade-in">{msg}</p> : null;
+
 export default function CandidateRegistrationPage() {
     const { user } = useAuth();
     const router = useRouter();
@@ -15,6 +17,7 @@ export default function CandidateRegistrationPage() {
     const [libasImageUrl, setLibasImageUrl] = useState<string | null>(null);
     const [itsImageUrl, setItsImageUrl] = useState<string | null>(null);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    const [submitError, setSubmitError] = useState("");
 
     // Full ITNC Candidate Form Data State
     const [formData, setFormData] = useState({
@@ -115,6 +118,22 @@ export default function CandidateRegistrationPage() {
         fetchUserData();
     }, [user]);
 
+    // Auto Save Logic
+    useEffect(() => {
+        const timeout = setTimeout(async () => {
+            if (user && Object.keys(formData).length > 0 && formData.firstName !== "") {
+                try {
+                    await updateDoc(doc(db, "users", user.uid), {
+                        ...formData
+                    });
+                } catch (e) {
+                    console.error("Auto save error", e);
+                }
+            }
+        }, 3000);
+        return () => clearTimeout(timeout);
+    }, [formData, user]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         if (errors[e.target.name]) {
@@ -124,6 +143,7 @@ export default function CandidateRegistrationPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSubmitError("");
 
         let newErrors: { [key: string]: string } = {};
 
@@ -161,7 +181,7 @@ export default function CandidateRegistrationPage() {
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            toast.error(newErrors.general || newErrors.photo || "Please fill in all the required fields correctly.");
+            setSubmitError("Please fix the highlighted fields to continue.");
             window.scrollTo({ top: 0, behavior: "smooth" });
             return;
         }
@@ -188,7 +208,7 @@ export default function CandidateRegistrationPage() {
                     });
 
                     if (!isOnlyMe) {
-                        toast.error("A profile with this First Name, Last Name, and Date of Birth already exists.");
+                        setSubmitError("A profile with this First Name, Last Name, and Date of Birth already exists.");
                         setLoading(false);
                         return;
                     }
@@ -221,7 +241,7 @@ export default function CandidateRegistrationPage() {
             }
 
         } catch (error: any) {
-            toast.error("Failed to submit: " + error.message);
+            setSubmitError("Failed to submit: " + error.message);
         } finally {
             setLoading(false);
         }
@@ -262,6 +282,11 @@ export default function CandidateRegistrationPage() {
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-8 space-y-12">
+                        {submitError && (
+                            <div className="p-4 bg-red-50 text-red-600 font-bold rounded-xl border border-red-200 shadow-sm flex items-center gap-3">
+                                <span>{submitError}</span>
+                            </div>
+                        )}
 
                         {/* 1. PRIMARY */}
                         <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
@@ -272,11 +297,13 @@ export default function CandidateRegistrationPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">eJamaat Id (ITS) *</label>
-                                    <input disabled title="Verified ITS Number cannot be changed" name="ejamaatId" onChange={handleChange} value={formData.ejamaatId} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none`} />
+                                    <input disabled title="Verified ITS Number cannot be changed" name="ejamaatId" onChange={handleChange} value={formData.ejamaatId} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.ejamaatId ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} />
+                                    <ErrorMsg msg={errors.ejamaatId} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Email address</label>
-                                    <input disabled type="email" name="email" onChange={handleChange} value={formData.email} className="w-full bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none" />
+                                    <input disabled type="email" name="email" onChange={handleChange} value={formData.email} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.email ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} />
+                                    <ErrorMsg msg={errors.email} />
                                 </div>
                                 <div className="grid grid-cols-[1fr_2fr] gap-4">
                                     <div>
@@ -287,7 +314,8 @@ export default function CandidateRegistrationPage() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-2">First Name *</label>
-                                        <input disabled name="firstName" onChange={handleChange} value={formData.firstName} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none`} />
+                                        <input disabled name="firstName" onChange={handleChange} value={formData.firstName} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.firstName ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} />
+                                        <ErrorMsg msg={errors.firstName} />
                                     </div>
                                 </div>
                                 <div>
@@ -296,14 +324,13 @@ export default function CandidateRegistrationPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Gender</label>
-                                    <select name="gender" onChange={handleChange} value={formData.gender} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none">
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                    </select>
+                                    <input disabled value={formData.gender === 'male' ? 'Male' : 'Female'} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.gender ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} />
+                                    <ErrorMsg msg={errors.gender} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Date of Birth</label>
-                                    <input type="date" name="dob" onChange={handleChange} value={formData.dob} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none" />
+                                    <input type="date" name="dob" onChange={handleChange} value={formData.dob} className={`w-full bg-gray-50 border ${errors.dob ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:ring-2 outline-none`} />
+                                    <ErrorMsg msg={errors.dob} />
                                 </div>
                             </div>
                         </section>
@@ -317,7 +344,8 @@ export default function CandidateRegistrationPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Jamaat (Mauze)</label>
-                                    <input name="jamaat" onChange={handleChange} value={formData.jamaat} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none" />
+                                    <input name="jamaat" onChange={handleChange} value={formData.jamaat} className={`w-full bg-gray-50 border ${errors.jamaat ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:ring-2 outline-none`} />
+                                    <ErrorMsg msg={errors.jamaat} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Number of Siblings</label>
@@ -372,8 +400,9 @@ export default function CandidateRegistrationPage() {
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number *</label>
                                     <div className="flex gap-2">
                                         <input disabled name="mobileCode" onChange={handleChange} value={formData.mobileCode} className="w-1/4 bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none" placeholder="+91" />
-                                        <input disabled name="mobile" onChange={handleChange} value={formData.mobile} className={`w-3/4 bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none`} placeholder="e.g. 9876543210" />
+                                        <input disabled name="mobile" onChange={handleChange} value={formData.mobile} className={`w-3/4 bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.mobile ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} placeholder="e.g. 9876543210" />
                                     </div>
+                                    <ErrorMsg msg={errors.mobile} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Landline (Optional)</label>
@@ -411,7 +440,8 @@ export default function CandidateRegistrationPage() {
                                 </div>
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Education Details</label>
-                                    <textarea name="educationDetails" onChange={handleChange} value={formData.educationDetails} rows={2} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none resize-none" placeholder="Elaborate on your degrees..." />
+                                    <textarea name="educationDetails" onChange={handleChange} value={formData.educationDetails} rows={2} className={`w-full bg-gray-50 border ${errors.general ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:ring-2 outline-none resize-none`} placeholder="Elaborate on your degrees..." />
+                                    <ErrorMsg msg={errors.general} />
                                 </div>
                             </div>
                         </section>
@@ -464,6 +494,14 @@ export default function CandidateRegistrationPage() {
                         </section>
 
                         <div className="pt-6 border-t border-gray-200">
+                            {errors.photo && (
+                                <div className="mb-4 p-4 bg-red-50 border border-red-100 rounded-xl">
+                                    <p className="text-red-700 text-sm font-bold flex items-center gap-2">
+                                        {errors.photo}
+                                    </p>
+                                    <p className="text-red-600/80 text-xs mt-1">Please make sure your Kaumi Libas profile photo is uploaded properly.</p>
+                                </div>
+                            )}
                             <button
                                 type="submit"
                                 disabled={loading}

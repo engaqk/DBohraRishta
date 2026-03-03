@@ -16,6 +16,7 @@ export default function CandidateRegistrationPage() {
     const [loading, setLoading] = useState(false);
     const [libasImageUrl, setLibasImageUrl] = useState<string | null>(null);
     const [itsImageUrl, setItsImageUrl] = useState<string | null>(null);
+    const [isItsVerified, setIsItsVerified] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [submitError, setSubmitError] = useState("");
 
@@ -93,6 +94,7 @@ export default function CandidateRegistrationPage() {
 
                     setLibasImageUrl(data.libasImageUrl || null);
                     setItsImageUrl(data.itsImageUrl || null);
+                    setIsItsVerified(data.isItsVerified === true);
 
                     setFormData(prev => ({
                         ...prev,
@@ -176,7 +178,7 @@ export default function CandidateRegistrationPage() {
             newErrors.general = "Please provide education or profession details";
         }
         if (!libasImageUrl) {
-            newErrors.photo = "Profile Photo (Kaumi Libas) is required";
+            newErrors.photo = "Biodata Photo (Kaumi Libas) is required";
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -232,7 +234,7 @@ export default function CandidateRegistrationPage() {
                     // fetch("/api/notify-admin", { method: "POST", body: JSON.stringify({ email: "abdulqadirkhanji52@gmail.com", user: fullName }) })
                 } catch (e) { }
 
-                toast.success("Profile Details Updated Successfully!");
+                toast.success("Biodata Updated Successfully!");
                 router.push("/");
             } else {
                 await new Promise(r => setTimeout(r, 2000));
@@ -267,7 +269,12 @@ export default function CandidateRegistrationPage() {
                                     <div className="w-24 h-24 rounded-full border-4 border-white/50 shadow-xl overflow-hidden bg-white/10 flex items-center justify-center">
                                         <img src={itsImageUrl} alt="ITS Photo" className="w-full h-full object-cover" />
                                     </div>
-                                    <div className="text-center mt-2 text-xs text-white/80 font-bold tracking-widest uppercase">Verified ITS</div>
+                                    <div className="text-center mt-2 text-xs font-bold tracking-widest uppercase">
+                                        {isItsVerified
+                                            ? <span className="text-emerald-300">✓ ITS Verified</span>
+                                            : <span className="text-yellow-300">⏳ ITS Pending</span>
+                                        }
+                                    </div>
                                 </div>
                             )}
                             {libasImageUrl && (
@@ -275,7 +282,7 @@ export default function CandidateRegistrationPage() {
                                     <div className="w-24 h-24 rounded-full border-4 border-[#D4AF37] shadow-xl overflow-hidden bg-white/10 flex items-center justify-center">
                                         <img src={libasImageUrl} alt="Kaumi Libas" className="w-full h-full object-cover" />
                                     </div>
-                                    <div className="text-center mt-2 text-xs text-white/80 font-bold tracking-widest uppercase">Profile Photo</div>
+                                    <div className="text-center mt-2 text-xs text-white/80 font-bold tracking-widest uppercase">Biodata Photo</div>
                                 </div>
                             )}
                         </div>
@@ -499,7 +506,7 @@ export default function CandidateRegistrationPage() {
                                     <p className="text-red-700 text-sm font-bold flex items-center gap-2">
                                         {errors.photo}
                                     </p>
-                                    <p className="text-red-600/80 text-xs mt-1">Please make sure your Kaumi Libas profile photo is uploaded properly.</p>
+                                    <p className="text-red-600/80 text-xs mt-1">Please make sure your Kaumi Libas biodata photo is uploaded properly.</p>
                                 </div>
                             )}
                             <button

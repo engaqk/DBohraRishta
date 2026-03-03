@@ -314,7 +314,7 @@ export default function RishtaDashboard() {
                 <section className="lg:col-span-3 flex items-center justify-center p-12">
                     <div className="bg-red-50 p-12 rounded-3xl shadow-sm text-center border border-red-100 flex flex-col items-center">
                         <X className="w-16 h-16 text-red-500 mb-4" />
-                        <h2 className="text-2xl font-bold text-red-700 mb-2">Profile Verification Rejected</h2>
+                        <h2 className="text-2xl font-bold text-red-700 mb-2">Biodata Verification Rejected</h2>
                         <p className="text-red-600 max-w-md">Your ITS verification was rejected by an administrator. Please contact support or retry the verification process if you believe this is an error.</p>
                     </div>
                 </section>
@@ -536,7 +536,7 @@ export default function RishtaDashboard() {
 
                         {filteredProfiles.length === 0 ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100">
-                                <p className="text-gray-500 font-bold">No new profiles found dynamically.</p>
+                                <p className="text-gray-500 font-bold">No new biodatas found dynamically.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
@@ -600,7 +600,7 @@ export default function RishtaDashboard() {
                         <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
                             <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-rose-50 mb-4 shadow-sm relative">
                                 {myProfile.itsImageUrl ? (
-                                    <img src={myProfile.itsImageUrl} alt="Profile" className="w-full h-full object-cover" />
+                                    <img src={myProfile.itsImageUrl} alt="Biodata" className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-3xl">
                                         {myProfile.name?.charAt(0)}
@@ -649,7 +649,7 @@ export default function RishtaDashboard() {
                                 return (
                                     <div className="w-full mt-6 bg-gray-50 p-4 border border-gray-100 rounded-xl flex flex-col items-center">
                                         <div className="w-full flex justify-between text-xs font-bold text-gray-500 mb-2">
-                                            <span>Profile Completeness</span>
+                                            <span>Biodata Completeness</span>
                                             <span className="text-[#881337]">{completeness}%</span>
                                         </div>
                                         <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-3">
@@ -662,14 +662,14 @@ export default function RishtaDashboard() {
                                         )}
                                         {completeness < 100 && !myProfile.isItsVerified && (
                                             <div className="w-full bg-yellow-50 text-yellow-700 py-2 rounded-lg text-xs font-bold text-center border border-yellow-200 tracking-wide mt-1">
-                                                Verify ITS to Complete Profile
+                                                Verify ITS to Complete Biodata
                                             </div>
                                         )}
                                         <button
                                             onClick={() => setShowMyProfileModal(true)}
                                             className="w-full bg-white text-[#881337] border border-[#881337]/20 hover:bg-rose-50 py-2 rounded-lg text-xs font-bold shadow-sm transition-all tracking-wide mt-3 flex items-center justify-center gap-1"
                                         >
-                                            <Sparkles className="w-3 h-3" /> Preview Public Profile
+                                            <Sparkles className="w-3 h-3" /> Preview My Biodata
                                         </button>
                                     </div>
                                 );

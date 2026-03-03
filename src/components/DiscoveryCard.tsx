@@ -256,7 +256,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                             {isItsVerified ? (
                                 <>
                                     <CheckCircle className="w-5 h-5 text-[#D4AF37] mr-3 shrink-0" />
-                                    <span className="text-gray-700 font-medium">ITS Verified Profile</span>
+                                    <span className="text-gray-700 font-medium">ITS Verified Biodata</span>
                                 </>
                             ) : (
                                 <>

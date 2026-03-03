@@ -15,7 +15,7 @@ import {
 import { auth } from "../firebase/config";
 
 interface AuthContextType {
-    user: any | null; // Using `any` explicitly to support mocked user objects easily
+    user: any | null;
     loading: boolean;
     signInWithGoogle: () => Promise<void>;
     signInWithEmail: (e: string, p: string) => Promise<void>;
@@ -27,6 +27,7 @@ interface AuthContextType {
     verifyOtp: (otp: string) => Promise<void>;
     resetPassword: (email: string) => Promise<void>;
     verifyEmail: () => Promise<void>;
+    totpQr: { phone: string; qrDataUrl: string; manualKey: string } | null;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -34,7 +35,7 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
-    const [customOtpPayload, setCustomOtpPayload] = useState<{ hash: string, expiry: number, phone: string } | null>(null);
+    const [customOtpPayload, setCustomOtpPayload] = useState<{ phone: string; qrDataUrl: string; manualKey: string } | null>(null);
 
     useEffect(() => {
         const dummyUserStr = localStorage.getItem('dummy_user_id');
@@ -107,18 +108,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             });
 
             const data = await resp.json();
-            if (!resp.ok) throw new Error(data.error || "Failed to send OTP");
+            if (!resp.ok) throw new Error(data.error || 'Failed to generate TOTP QR code');
 
-            setCustomOtpPayload({ hash: data.hash, expiry: data.expiry, phone: phoneNumber });
-            return data; // return so caller can inspect status
+            // Store QR code data for display in login UI
+            setCustomOtpPayload({
+                phone: phoneNumber,
+                qrDataUrl: data.qrDataUrl,
+                manualKey: data.manualKey,
+            });
+            return data;
         } catch (error: any) {
-            console.error("Error sending custom OTP", error);
+            console.error('Error generating TOTP setup', error);
             throw error;
         }
     };
 
-    const verifyOtp = async (otp: string) => {
-        if (!customOtpPayload) throw new Error("No pending OTP request");
+    const verifyOtp = async (code: string) => {
+        if (!customOtpPayload) throw new Error('No pending TOTP session — please enter your phone first');
 
         try {
             const resp = await fetch('/api/otp/verify', {
@@ -126,31 +132,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     phone: customOtpPayload.phone,
-                    otp,
-                    hash: customOtpPayload.hash,
-                    expiry: customOtpPayload.expiry
+                    code,
                 })
             });
 
             const data = await resp.json();
-            if (!resp.ok) throw new Error(data.error || "Failed to verify OTP");
+            if (!resp.ok) throw new Error(data.error || 'Invalid TOTP code');
 
-            // Complete Custom Integration: Securely login to Firebase using deterministic internal credentials
-            // This is completely free forever.
+            // Sign in to Firebase using deterministic credentials (completely free, no SMS)
             try {
-                // Try sign in first
                 await signInWithEmailAndPassword(auth, data.internalEmail, data.internalPassword);
             } catch (authError: any) {
-                // If user doesn't exist internally yet, create the deterministic record!
-                if (authError.message.includes('auth/invalid-credential') || authError.message.includes('auth/user-not-found') || authError.message.includes('auth/invalid-login-credentials')) {
+                if (
+                    authError.message.includes('auth/invalid-credential') ||
+                    authError.message.includes('auth/user-not-found') ||
+                    authError.message.includes('auth/invalid-login-credentials')
+                ) {
                     await createUserWithEmailAndPassword(auth, data.internalEmail, data.internalPassword);
                 } else {
-                    throw authError; // bubble up
+                    throw authError;
                 }
             }
-
         } catch (error: any) {
-            console.error("Error verifying custom OTP", error);
+            console.error('Error verifying TOTP', error);
             throw error;
         }
     };
@@ -178,7 +182,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, setDummyUser, setupRecaptcha, sendOtp, verifyOtp, resetPassword, verifyEmail }}>
+        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, setDummyUser, setupRecaptcha, sendOtp, verifyOtp, resetPassword, verifyEmail, totpQr: customOtpPayload }}>
             {children}
         </AuthContext.Provider>
     );

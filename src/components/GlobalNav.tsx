@@ -49,7 +49,7 @@ export default function GlobalNav() {
                                     <Home className="w-4 h-4" /> Dashboard
                                 </button>
                                 <button onClick={() => router.push('/candidate-registration')} className={`flex items-center gap-1.5 transition font-medium text-sm px-3 py-1.5 rounded-lg ${isActive('/candidate-registration') ? 'text-[#881337] bg-rose-50 font-bold' : 'text-gray-600 hover:text-[#881337] hover:bg-gray-50'}`}>
-                                    <User className="w-4 h-4" /> My Profile
+                                    <User className="w-4 h-4" /> My Biodata
                                 </button>
                                 <button onClick={handleLogout} className="text-red-600 flex items-center gap-1 hover:text-red-700 transition font-bold text-sm bg-red-50 px-3 py-1.5 rounded-full">
                                     <LogOut className="w-4 h-4" /> Logout
@@ -80,7 +80,7 @@ export default function GlobalNav() {
                                 <Home className="w-5 h-5 text-[#D4AF37]" /> Dashboard
                             </button>
                             <button onClick={() => router.push('/candidate-registration')} className={`w-full text-left flex items-center gap-3 font-semibold text-lg p-3 rounded-xl transition-colors ${isActive('/candidate-registration') ? 'text-[#881337] bg-rose-50' : 'text-gray-800 hover:text-[#881337] hover:bg-gray-50'}`}>
-                                <User className="w-5 h-5 text-[#D4AF37]" /> Edit Profile
+                                <User className="w-5 h-5 text-[#D4AF37]" /> Edit Biodata
                             </button>
                             <button onClick={handleLogout} className="w-full text-left text-red-600 flex items-center gap-3 font-bold text-lg p-3 bg-red-50 rounded-xl mt-2">
                                 <LogOut className="w-5 h-5" /> Logout

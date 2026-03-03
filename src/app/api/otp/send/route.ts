@@ -1,7 +1,36 @@
 import { NextResponse } from 'next/server';
+import * as OTPAuth from 'otpauth';
+import QRCode from 'qrcode';
 import crypto from 'crypto';
 
-const OTP_SECRET = process.env.OTP_SECRET || 'dbohrarishta_super_secret_otp_key_2026';
+const TOTP_MASTER_SECRET = process.env.TOTP_MASTER_SECRET || 'dbohrarishta_totp_master_2026';
+
+/**
+ * Given a phone number, deterministically derive a TOTP secret.
+ * This means the same phone always gets the same QR code — no DB needed.
+ */
+function deriveSecret(phone: string): string {
+    const cleanPhone = phone.replace(/[\s\-\+()]/g, '');
+    // Create a 20-byte HMAC-SHA1 (perfect size for TOTP base32 secret)
+    const hmac = crypto.createHmac('sha1', TOTP_MASTER_SECRET).update(cleanPhone).digest();
+    // Encode as base32 (required by TOTP/Google Authenticator)
+    const base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let bits = 0;
+    let value = 0;
+    let output = '';
+    for (const byte of hmac) {
+        value = (value << 8) | byte;
+        bits += 8;
+        while (bits >= 5) {
+            output += base32Chars[(value >>> (bits - 5)) & 31];
+            bits -= 5;
+        }
+    }
+    if (bits > 0) {
+        output += base32Chars[(value << (5 - bits)) & 31];
+    }
+    return output;
+}
 
 export async function POST(req: Request) {
     try {
@@ -11,70 +40,44 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
         }
 
-        // 1. Generate 6-digit OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-        // 2. Compute Expiry (10 minutes)
-        const expiry = Date.now() + 10 * 60 * 1000;
-
-        // 3. Create a verification hash (OTP + Phone + Expiry)
-        const data = `${phone}.${otp}.${expiry}`;
-        const hash = crypto.createHmac('sha256', OTP_SECRET).update(data).digest('hex');
-
-        // 4. Integrations (Fully Free Alternatives)
-        // Here we attempt to use Fast2SMS (Free Testing SMS in India)
-        // If the key is missing or fails, it will still work via internal console logging!
-        const FAST2SMS_KEY = process.env.FAST2SMS_API_KEY; // Optional
-        let smsStatus = "Simulated (Free Mode)";
-
-        if (FAST2SMS_KEY) {
-            try {
-                // Remove +91 or spaces for Fast2SMS generic format
-                const cleanPhone = phone.replace(/[\s\-\+]/g, '').slice(-10);
-                const resp = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-                    method: 'POST',
-                    headers: {
-                        'authorization': FAST2SMS_KEY,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        variables_values: otp,
-                        route: "otp",
-                        numbers: cleanPhone,
-                    }),
-                });
-                const result = await resp.json();
-                if (result.return) {
-                    smsStatus = "Sent via Fast2SMS";
-                } else {
-                    console.error("Fast2SMS Error", result);
-                    smsStatus = "Fast2SMS Failed, fallback to Simulated";
-                }
-            } catch (err) {
-                console.error("SMS Provider Error", err);
-            }
+        const cleanPhone = phone.replace(/[\s\-\+()]/g, '');
+        if (cleanPhone.length < 10) {
+            return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 });
         }
 
-        // Log to console for 100% completely free development
-        if (smsStatus.includes("Simulated")) {
-            console.log(`\n============================`);
-            console.log(`📱 SMS OTP INTERCEPTED`);
-            console.log(`📞 To: ${phone}`);
-            console.log(`🔑 OTP: ${otp}`);
-            console.log(`(Configure FAST2SMS_API_KEY for real SMS)`);
-            console.log(`============================\n`);
-        }
+        // 1. Derive deterministic secret for this phone number
+        const secretStr = deriveSecret(phone);
 
-        // 5. Send Hash to Frontend (NOT the OTP itself)
+        // 2. Build the TOTP URL (otpauth:// URI)
+        const totp = new OTPAuth.TOTP({
+            issuer: 'DBohraRishta',
+            label: cleanPhone,
+            algorithm: 'SHA1',
+            digits: 6,
+            period: 30,
+            secret: OTPAuth.Secret.fromBase32(secretStr),
+        });
+
+        const otpauthUrl = totp.toString();
+
+        // 3. Generate QR code as a base64 data URL
+        const qrDataUrl = await QRCode.toDataURL(otpauthUrl, {
+            width: 256,
+            margin: 2,
+            color: { dark: '#881337', light: '#FFFFFF' },
+        });
+
         return NextResponse.json({
             success: true,
-            hash,
-            expiry,
+            qrDataUrl,
+            otpauthUrl,
             phone,
-            status: smsStatus
+            // Hint: secretStr can be shown as manual entry fallback
+            manualKey: secretStr,
         });
 
     } catch (error: any) {
+        console.error('TOTP setup error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

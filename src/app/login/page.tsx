@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { ShieldCheck, Heart, Mail, Lock, Phone, Smartphone, Copy, CheckCircle, Loader2, MessageSquare } from "lucide-react";
+import { ShieldCheck, Heart, Mail, Lock, Phone, Smartphone, Copy, CheckCircle, Loader2, MessageSquare, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -89,7 +89,7 @@ export default function LoginPage() {
     const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, setDummyUser, resetPassword } = useAuth();
     const router = useRouter();
 
-    type AuthTab = "email" | "totp" | "phone";
+    type AuthTab = "email" | "totp"; // "phone" is hidden (billing required) but code is kept
     const [authMode, setAuthMode] = useState<AuthTab>("email");
 
     // Email tab state
@@ -105,18 +105,23 @@ export default function LoginPage() {
     const [qrUrl, setQrUrl] = useState("");
     const [manualKey, setManualKey] = useState("");
     const [keyCopied, setKeyCopied] = useState(false);
+    const [isMobileDevice, setIsMobileDevice] = useState(false);
 
-    // Firebase Phone Auth (SMS) tab state
+    // Firebase Phone Auth (SMS) tab state — HIDDEN (requires Blaze billing), code kept for future use
     const [smsPhone, setSmsPhone] = useState("+91");
     const [smsCode, setSmsCode] = useState("");
     const [smsSent, setSmsSent] = useState(false);
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
-    const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
     // Shared
     const [authLoading, setAuthLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+
+    // Detect if running on a mobile/touch device
+    useEffect(() => {
+        setIsMobileDevice(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+    }, []);
 
     useEffect(() => {
         const checkUserStatus = async () => {
@@ -130,18 +135,6 @@ export default function LoginPage() {
         checkUserStatus();
     }, [user, loading, router]);
 
-    // Clean up reCAPTCHA when switching tabs
-    useEffect(() => {
-        if (authMode !== "phone") {
-            recaptchaVerifierRef.current?.clear();
-            recaptchaVerifierRef.current = null;
-            setSmsSent(false);
-            setSmsCode("");
-            setConfirmationResult(null);
-        }
-    }, [authMode]);
-
-    // ── Shared: clear errors when switching tabs ──────────────────────────────
     const switchTab = (tab: AuthTab) => {
         setAuthMode(tab);
         setErrorMsg("");
@@ -202,7 +195,7 @@ export default function LoginPage() {
         setAuthLoading(true);
         const secret = deriveBase32Secret(totpPhone);
         if (!verifyTOTP(secret, totpCode)) {
-            setErrorMsg("Incorrect code. Make sure your phone clock is synced and try again.");
+            setErrorMsg("Incorrect code. Make sure your phone clock is synced and try the latest code shown.");
             setAuthLoading(false);
             return;
         }
@@ -237,85 +230,52 @@ export default function LoginPage() {
         } finally { setAuthLoading(false); }
     };
 
-    // ── Firebase Phone Auth (SMS): Setup reCAPTCHA ───────────────────────────
+    // ── Firebase Phone Auth (SMS) — Hidden/disabled (requires Blaze billing) ──
+    // Code kept below for future activation when billing is enabled.
     const setupRecaptcha = (): RecaptchaVerifier => {
-        if (recaptchaVerifierRef.current) {
-            recaptchaVerifierRef.current.clear();
-        }
+        if (recaptchaVerifierRef.current) recaptchaVerifierRef.current.clear();
         const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
             size: 'invisible',
-            callback: () => { /* reCAPTCHA solved */ },
-            'expired-callback': () => {
-                setErrorMsg("reCAPTCHA expired. Please try again.");
-                recaptchaVerifierRef.current = null;
-            },
+            callback: () => { },
+            'expired-callback': () => { setErrorMsg("reCAPTCHA expired. Please try again."); recaptchaVerifierRef.current = null; },
         });
         recaptchaVerifierRef.current = verifier;
         return verifier;
     };
-
-    // ── Firebase Phone Auth: Send SMS ─────────────────────────────────────────
     const handleSendSms = async () => {
         const clean = smsPhone.replace(/[\s\-()]/g, '');
-        if (!clean || clean.length < 10 || !clean.startsWith('+')) {
-            setErrorMsg("Enter a valid number with country code, e.g. +919876543210");
-            return;
-        }
-        setErrorMsg("");
-        setAuthLoading(true);
+        if (!clean || clean.length < 10 || !clean.startsWith('+')) { setErrorMsg("Enter a valid number with country code."); return; }
+        setErrorMsg(""); setAuthLoading(true);
         try {
             const verifier = setupRecaptcha();
             const result = await signInWithPhoneNumber(auth, smsPhone, verifier);
-            setConfirmationResult(result);
-            setSmsSent(true);
-            toast.success("OTP sent to " + smsPhone);
+            setConfirmationResult(result); setSmsSent(true); toast.success("OTP sent to " + smsPhone);
         } catch (error: any) {
-            recaptchaVerifierRef.current?.clear();
-            recaptchaVerifierRef.current = null;
-            const msg = error.message?.replace("Firebase: ", "") || "Failed to send OTP.";
-            if (error.code === 'auth/operation-not-allowed') {
-                setErrorMsg("Phone sign-in is not enabled. Go to Firebase Console → Authentication → Sign-in methods and enable 'Phone'.");
-            } else if (error.code === 'auth/invalid-phone-number') {
-                setErrorMsg("Invalid phone number format. Use international format, e.g. +919876543210");
-            } else if (error.code === 'auth/too-many-requests') {
-                setErrorMsg("Too many attempts. Please wait a few minutes and try again.");
-            } else {
-                setErrorMsg(msg);
-            }
+            recaptchaVerifierRef.current?.clear(); recaptchaVerifierRef.current = null;
+            if (error.code === 'auth/billing-not-enabled') setErrorMsg("Firebase SMS requires Blaze billing. Use the free Authenticator tab instead.");
+            else if (error.code === 'auth/operation-not-allowed') setErrorMsg("Phone sign-in not enabled in Firebase Console.");
+            else if (error.code === 'auth/invalid-phone-number') setErrorMsg("Invalid phone format. Use +919876543210");
+            else if (error.code === 'auth/too-many-requests') setErrorMsg("Too many attempts. Wait a few minutes.");
+            else setErrorMsg(error.message?.replace("Firebase: ", "") || "Failed to send OTP.");
         } finally { setAuthLoading(false); }
     };
-
-    // ── Firebase Phone Auth: Verify SMS code ──────────────────────────────────
     const handleVerifySms = async () => {
-        if (!smsCode || smsCode.length !== 6) {
-            setErrorMsg("Enter the 6-digit code from your SMS.");
-            return;
-        }
-        if (!confirmationResult) {
-            setErrorMsg("Session expired. Please request a new OTP.");
-            return;
-        }
-        setErrorMsg("");
-        setAuthLoading(true);
+        if (!smsCode || smsCode.length !== 6 || !confirmationResult) { setErrorMsg("Enter the 6-digit SMS code."); return; }
+        setErrorMsg(""); setAuthLoading(true);
         try {
-            await confirmationResult.confirm(smsCode);
-            toast.success("Verified! Redirecting...");
+            await confirmationResult.confirm(smsCode); toast.success("Verified! Redirecting...");
         } catch (error: any) {
-            if (error.code === 'auth/invalid-verification-code') {
-                setErrorMsg("Incorrect OTP. Please check the code and try again.");
-            } else if (error.code === 'auth/code-expired') {
-                setErrorMsg("OTP has expired. Please request a new one.");
-                setSmsSent(false);
-            } else {
-                setErrorMsg(error.message?.replace("Firebase: ", "") || "Verification failed.");
-            }
+            if (error.code === 'auth/invalid-verification-code') setErrorMsg("Incorrect OTP code.");
+            else if (error.code === 'auth/code-expired') { setErrorMsg("OTP expired. Request a new one."); setSmsSent(false); }
+            else setErrorMsg(error.message?.replace("Firebase: ", "") || "Verification failed.");
         } finally { setAuthLoading(false); }
     };
 
     const copyKey = () => {
         navigator.clipboard.writeText(manualKey);
         setKeyCopied(true);
-        setTimeout(() => setKeyCopied(false), 2000);
+        toast.success("Key copied!");
+        setTimeout(() => setKeyCopied(false), 2500);
     };
 
     const handleGoogleLogin = async () => {
@@ -330,8 +290,8 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center p-4 text-[#881337]">
-            {/* Invisible reCAPTCHA container — required by Firebase Phone Auth */}
-            <div id="recaptcha-container" ref={recaptchaContainerRef} />
+            {/* reCAPTCHA container — hidden, required by Firebase Phone Auth */}
+            <div id="recaptcha-container" className="hidden" />
 
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] opacity-5 pointer-events-none" />
 
@@ -359,20 +319,21 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    {/* ── 3 Method Tabs ────────────────────────────────────────── */}
+                    {/* ── 2 Tabs (Mobile OTP hidden, code kept) ────────────────── */}
                     <div className="flex bg-gray-100 p-1 rounded-xl mb-5 gap-1">
                         <button onClick={() => switchTab("email")}
-                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${authMode === "email" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>
-                            <Mail className="w-3.5 h-3.5" /> Email
+                            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${authMode === "email" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>
+                            <Mail className="w-4 h-4" /> Email
                         </button>
                         <button onClick={() => switchTab("totp")}
-                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${authMode === "totp" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>
-                            <Smartphone className="w-3.5 h-3.5" /> Authenticator
+                            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${authMode === "totp" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>
+                            <Smartphone className="w-4 h-4" /> Authenticator
                         </button>
-                        <button onClick={() => switchTab("phone")}
-                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${authMode === "phone" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>
-                            <MessageSquare className="w-3.5 h-3.5" /> Mobile OTP
+                        {/* Mobile OTP tab hidden — requires Firebase Blaze billing
+                        <button onClick={() => switchTab("phone")} ...>
+                            <MessageSquare /> Mobile OTP
                         </button>
+                        */}
                     </div>
 
                     {errorMsg && (
@@ -429,10 +390,11 @@ export default function LoginPage() {
                     {authMode === "totp" && (
                         <div className="space-y-4 mb-5">
                             {!qrShown ? (
+                                /* ── Step 1: Enter phone number ── */
                                 <>
                                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 leading-relaxed">
-                                        <p className="font-bold mb-1">📱 Free — No SMS charges</p>
-                                        <p>Enter your mobile number. You'll get a QR code to scan once with <strong>Google Authenticator</strong> or <strong>FreeOTP</strong>. Then log in using a 6-digit code anytime.</p>
+                                        <p className="font-bold mb-1">📱 100% Free — No SMS charges ever</p>
+                                        <p>Enter your mobile number to get a setup code for your authenticator app. Works on any device, no internet needed after setup.</p>
                                     </div>
                                     <div className="relative">
                                         <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
@@ -442,50 +404,101 @@ export default function LoginPage() {
                                     </div>
                                     <button onClick={handleGenerateQr}
                                         className="w-full bg-[#D4AF37] text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-[#c29e2f] active:scale-95 flex items-center justify-center gap-2">
-                                        Get Authenticator QR Code
+                                        <Smartphone className="w-4 h-4" /> Generate My Setup Code
                                     </button>
                                 </>
                             ) : (
+                                /* ── Step 2: Browser-friendly setup UI ── */
                                 <>
-                                    <div className="text-center">
-                                        <p className="text-sm font-bold text-gray-700 mb-3">Scan with your authenticator app</p>
-                                        <div className="flex justify-center mb-3">
-                                            <div className="p-3 bg-white rounded-xl border-4 border-[#D4AF37] shadow-md inline-block">
+                                    {/* Context-aware header */}
+                                    <div className={`rounded-xl p-3 text-xs border ${isMobileDevice ? 'bg-green-50 border-green-200 text-green-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
+                                        {isMobileDevice ? (
+                                            <p><strong>📱 You're on mobile!</strong> Tap the button below to open directly in your authenticator app — no QR scanning needed.</p>
+                                        ) : (
+                                            <p><strong>🖥️ You're on desktop.</strong> Open your authenticator app on your phone and scan the QR code, or manually enter the key shown below.</p>
+                                        )}
+                                    </div>
+
+                                    {/* Mobile: Deep-link button (tap to open authenticator directly) */}
+                                    {isMobileDevice && (
+                                        <a
+                                            href={qrUrl}
+                                            className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-emerald-700 active:scale-95 flex items-center justify-center gap-2 no-underline"
+                                        >
+                                            <ExternalLink className="w-4 h-4" />
+                                            Open in Google Authenticator / FreeOTP
+                                        </a>
+                                    )}
+
+                                    {/* Desktop: QR code */}
+                                    {!isMobileDevice && (
+                                        <div className="flex justify-center">
+                                            <div className="p-3 bg-white rounded-2xl border-4 border-[#D4AF37] shadow-lg inline-block">
                                                 <QRCodeSVG value={qrUrl} size={160} bgColor="#FFFFFF" fgColor="#881337" level="M" />
                                             </div>
                                         </div>
-                                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-left text-xs text-gray-700 space-y-1.5 mb-3">
-                                            <p className="font-bold text-[#881337] mb-1">How to verify:</p>
-                                            <p>① Install <strong>Google Authenticator</strong> or <strong>FreeOTP</strong></p>
-                                            <p>② Tap <strong>"+"</strong> → <strong>"Scan QR code"</strong></p>
-                                            <p>③ Point at the QR above — app shows <strong>DBohraRishta</strong></p>
-                                            <p>④ Enter the shown 6-digit code below</p>
-                                            <p className="text-gray-400 pt-1">💡 Next login: skip QR, just enter the code directly.</p>
-                                        </div>
-                                        <div className="bg-rose-50 border border-[#881337]/20 rounded-xl p-3 mb-3">
-                                            <p className="text-xs text-gray-500 mb-1 font-medium">Can't scan? Enter this key manually:</p>
-                                            <div className="flex items-center justify-between gap-2">
-                                                <code className="text-xs font-mono text-[#881337] break-all tracking-widest">{manualKey}</code>
-                                                <button onClick={copyKey} className="shrink-0 text-[#D4AF37] hover:text-[#c29e2f]">
-                                                    {keyCopied ? <CheckCircle className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                                                </button>
-                                            </div>
-                                        </div>
+                                    )}
+
+                                    {/* Steps — adapted per device */}
+                                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-700 space-y-1.5">
+                                        <p className="font-bold text-[#881337] mb-2">
+                                            {isMobileDevice ? "How to set up (mobile):" : "How to set up (desktop):"}
+                                        </p>
+                                        {isMobileDevice ? (<>
+                                            <p>① Install <strong>Google Authenticator</strong> or <strong>FreeOTP</strong> on this phone</p>
+                                            <p>② Tap <strong>"Open in Google Authenticator"</strong> above</p>
+                                            <p>③ The app adds <strong>DBohraRishta</strong> automatically</p>
+                                            <p>④ Enter the 6-digit code shown in the app below</p>
+                                        </>) : (<>
+                                            <p>① Install <strong>Google Authenticator</strong> or <strong>FreeOTP</strong> on your phone</p>
+                                            <p>② Open the app → tap <strong>"+"</strong> → <strong>"Scan QR code"</strong></p>
+                                            <p>③ Point your phone camera at the QR above</p>
+                                            <p>④ Enter the 6-digit code from the app below</p>
+                                        </>)}
+                                        <p className="text-gray-400 pt-1">💡 After setup, skip this screen — just enter the 6-digit code directly next time.</p>
                                     </div>
+
+                                    {/* Manual key — always visible, prominent copy */}
+                                    <div className="bg-rose-50 border border-[#881337]/20 rounded-xl p-3">
+                                        <p className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1.5">
+                                            🔑 Can't scan / open app? Enter this key manually in the app:
+                                        </p>
+                                        <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-gray-200">
+                                            <code className="text-sm font-mono text-[#881337] break-all tracking-widest flex-1 select-all">{manualKey}</code>
+                                            <button
+                                                onClick={copyKey}
+                                                className="shrink-0 bg-[#D4AF37] text-white rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1 hover:bg-[#c29e2f] transition-colors"
+                                            >
+                                                {keyCopied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                                {keyCopied ? "Copied!" : "Copy"}
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-gray-400 mt-1.5">In the app, tap "+" → "Enter a setup key" → paste the key above. Set account name: <em>DBohraRishta</em></p>
+                                    </div>
+
+                                    {/* Code entry */}
                                     <div className="relative">
                                         <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                        <input type="text" inputMode="numeric" maxLength={6}
-                                            placeholder="6-digit code from app"
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            maxLength={6}
+                                            placeholder="Enter 6-digit code from app"
                                             value={totpCode}
                                             onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none text-center tracking-[0.5em] font-mono text-xl" />
+                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none text-center tracking-[0.5em] font-mono text-xl"
+                                            autoFocus
+                                        />
                                     </div>
                                     <button onClick={handleVerifyTotp} disabled={authLoading}
                                         className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-[#9F1239] active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2">
                                         {authLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                                         Verify &amp; Login
                                     </button>
-                                    <button onClick={() => { setQrShown(false); setTotpCode(""); setErrorMsg(""); }} className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors mt-1">
+                                    <button
+                                        onClick={() => { setQrShown(false); setTotpCode(""); setErrorMsg(""); }}
+                                        className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors"
+                                    >
                                         ← Change Mobile Number
                                     </button>
                                 </>
@@ -493,76 +506,15 @@ export default function LoginPage() {
                         </div>
                     )}
 
-                    {/* ══════════════ MOBILE OTP (Firebase Phone Auth) TAB ══════════════ */}
+                    {/* ══════════════ MOBILE OTP TAB (HIDDEN — requires Firebase Blaze billing) ══════════════
                     {authMode === "phone" && (
                         <div className="space-y-4 mb-5">
-                            {!smsSent ? (
-                                /* Step 1: Enter phone → Send SMS */
-                                <>
-                                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 leading-relaxed">
-                                        <p className="font-bold mb-1">📲 SMS OTP via Firebase</p>
-                                        <p>Enter your mobile number with country code. You'll receive a 6-digit OTP via SMS. Standard carrier rates may apply.</p>
-                                    </div>
-                                    <div className="relative">
-                                        <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                        <input
-                                            type="tel"
-                                            inputMode="tel"
-                                            placeholder="+919876543210"
-                                            value={smsPhone}
-                                            onChange={(e) => setSmsPhone(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none"
-                                        />
-                                    </div>
-                                    <p className="text-xs text-gray-400 text-center">
-                                        Include country code — e.g. <strong>+91</strong> for India, <strong>+971</strong> for UAE
-                                    </p>
-                                    <button
-                                        onClick={handleSendSms}
-                                        disabled={authLoading}
-                                        className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-[#9F1239] active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2"
-                                    >
-                                        {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
-                                        Send OTP via SMS
-                                    </button>
-                                </>
-                            ) : (
-                                /* Step 2: Enter SMS OTP → Verify */
-                                <>
-                                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800">
-                                        <p className="font-bold mb-1">✅ OTP Sent!</p>
-                                        <p>A 6-digit OTP has been sent to <strong>{smsPhone}</strong>. Check your SMS and enter it below.</p>
-                                    </div>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            maxLength={6}
-                                            placeholder="6-digit OTP"
-                                            value={smsCode}
-                                            onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, ''))}
-                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none text-center tracking-[0.5em] font-mono text-xl"
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={handleVerifySms}
-                                        disabled={authLoading}
-                                        className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-[#9F1239] active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2"
-                                    >
-                                        {authLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                        Verify OTP &amp; Login
-                                    </button>
-                                    <button
-                                        onClick={() => { setSmsSent(false); setSmsCode(""); setErrorMsg(""); setConfirmationResult(null); recaptchaVerifierRef.current?.clear(); recaptchaVerifierRef.current = null; }}
-                                        className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors mt-1"
-                                    >
-                                        ← Change Number / Resend OTP
-                                    </button>
-                                </>
-                            )}
+                            ... Firebase Phone Auth UI ...
+                            ... Re-enable when Blaze billing is activated ...
+                            ... handleSendSms / handleVerifySms functions above are ready to use ...
                         </div>
                     )}
+                    */}
 
                     {/* OR divider */}
                     <div className="flex items-center gap-4 mb-4">

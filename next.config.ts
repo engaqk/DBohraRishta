@@ -7,5 +7,9 @@ const nextConfig: NextConfig = {
     unoptimized: true
   }
 };
+module.exports = {
+  basePath: '/DBohraRishta',
+  assetPrefix: '/DBohraRishta/',
+}
 
 export default nextConfig;

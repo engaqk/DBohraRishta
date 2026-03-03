@@ -7,9 +7,10 @@ import { ShieldCheck, Heart, Mail, Lock, Phone } from "lucide-react";
 import toast from "react-hot-toast";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import { CheckCircle } from "lucide-react";
 
 export default function LoginPage() {
-    const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, setDummyUser, setupRecaptcha, sendOtp, verifyOtp, resetPassword } = useAuth();
+    const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, setDummyUser, sendOtp, verifyOtp, resetPassword } = useAuth();
     const router = useRouter();
 
     const [authMode, setAuthMode] = useState<"email" | "phone">("email");
@@ -23,7 +24,7 @@ export default function LoginPage() {
     const [isResettingPassword, setIsResettingPassword] = useState(false);
     const [authLoading, setAuthLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
-    const [isOtpLimitReached, setIsOtpLimitReached] = useState(false);
+    const [otpStatus, setOtpStatus] = useState<string | null>(null); // tracks SMS status message
 
     // No recaptcha initialization needed anymore for our fully free custom backend!
 
@@ -46,21 +47,7 @@ export default function LoginPage() {
         checkUserStatus();
     }, [user, loading, router]);
 
-    // Check SMS Limit on Mount to proactively disable Mobile option
-    useEffect(() => {
-        const checkSmsLimit = async () => {
-            try {
-                const todayStr = new Date().toISOString().split('T')[0];
-                const trackerSnap = await getDoc(doc(db, "sys_otp_usage", todayStr));
-                if (trackerSnap.exists() && trackerSnap.data().count >= 10) {
-                    setIsOtpLimitReached(true);
-                }
-            } catch (e) {
-                console.error("Failed fetching limits", e);
-            }
-        };
-        checkSmsLimit();
-    }, []);
+    // No SMS quota check needed — custom free backend has no global usage limits!
 
     const handleGoogleLogin = async () => {
         setAuthLoading(true);
@@ -127,43 +114,19 @@ export default function LoginPage() {
             return;
         }
         setErrorMsg("");
+        setOtpStatus(null);
         setAuthLoading(true);
 
         try {
-            // Strict Daily Quota Checking Table
-            const todayStr = new Date().toISOString().split('T')[0];
-            const trackerRef = doc(db, "sys_otp_usage", todayStr);
-            const trackerSnap = await getDoc(trackerRef);
-
-            let currentCount = 0;
-            if (trackerSnap.exists()) {
-                currentCount = trackerSnap.data().count || 0;
-            }
-
-            if (currentCount >= 10) {
-                setIsOtpLimitReached(true);
-                toast.error("Maximum 10 OTP verifications hit for today globally. Redirecting to Email authentication fallback.", { duration: 6000 });
-                setAuthMode("email");
-                setErrorMsg("");
-                setAuthLoading(false);
-                return; // Stop execution, don't ping Firebase Auth SMS
-            }
-
-            // Fire SMS Request
-            await sendOtp(phone);
+            const result = await sendOtp(phone);
             setOtpSent(true);
-            toast.success("OTP Sent Successfully!");
-
-            // Log Success inside Table
-            await setDoc(trackerRef, { count: currentCount + 1 }, { merge: true });
-
-        } catch (error: any) {
-            const errStr = error.message || "";
-            if (errStr.includes("auth/operation-not-allowed")) {
-                setErrorMsg("Developer: Phone Auth is currently disabled in your Firebase console. Please go to Build -> Auth -> Sign-in Method and enable 'Phone' to clear this error.");
-            } else {
-                setErrorMsg(errStr.replace("Firebase: ", ""));
+            toast.success("OTP Sent! Check your mobile.");
+            // Show simulated mode note if in dev (Fast2SMS key not configured)
+            if ((result as any)?.status?.includes("Simulated")) {
+                setOtpStatus("Dev Mode: OTP printed in server console (configure FAST2SMS_API_KEY for real SMS)");
             }
+        } catch (error: any) {
+            setErrorMsg(error.message?.replace("Firebase: ", "") || "Failed to send OTP. Please try again.");
         } finally {
             setAuthLoading(false);
         }
@@ -222,17 +185,15 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    {!isOtpLimitReached && (
-                        <div className="flex bg-gray-100 p-1 rounded-xl mb-6 relative group">
-                            <button onClick={() => { setAuthMode("email"); setErrorMsg(""); }} className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${authMode === "email" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>Email</button>
-                            <button
-                                onClick={() => { setAuthMode("phone"); setErrorMsg(""); }}
-                                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${authMode === "phone" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}
-                            >
-                                Mobile OTP
-                            </button>
-                        </div>
-                    )}
+                    <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+                        <button onClick={() => { setAuthMode("email"); setErrorMsg(""); setOtpSent(false); }} className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${authMode === "email" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>Email</button>
+                        <button
+                            onClick={() => { setAuthMode("phone"); setErrorMsg(""); }}
+                            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${authMode === "phone" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}
+                        >
+                            Mobile OTP
+                        </button>
+                    </div>
 
 
 
@@ -305,12 +266,19 @@ export default function LoginPage() {
                                         <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                                         <input
                                             type="tel"
-                                            placeholder="Mobile Number (e.g. +9198765...)"
+                                            placeholder="Mobile Number (e.g. +919876543210)"
                                             value={phone}
                                             onChange={(e) => setPhone(e.target.value)}
                                             className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none"
+                                            inputMode="tel"
                                         />
                                     </div>
+                                    {otpStatus && (
+                                        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                                            <CheckCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                            <p className="text-xs text-amber-700 font-medium leading-relaxed">{otpStatus}</p>
+                                        </div>
+                                    )}
                                     <button
                                         onClick={handleSendOtp}
                                         disabled={authLoading}
@@ -325,10 +293,12 @@ export default function LoginPage() {
                                         <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                                         <input
                                             type="text"
+                                            inputMode="numeric"
+                                            maxLength={6}
                                             placeholder="Enter 6-digit OTP"
                                             value={otp}
-                                            onChange={(e) => setOtp(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none text-center tracking-widest font-mono text-xl"
+                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none text-center tracking-[0.5em] font-mono text-xl"
                                         />
                                     </div>
                                     <button

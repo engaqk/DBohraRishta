@@ -23,7 +23,7 @@ interface AuthContextType {
     logout: () => Promise<void>;
     setDummyUser: (uid: string, email: string) => void;
     setupRecaptcha: (containerId: string) => void;
-    sendOtp: (phoneNumber: string) => Promise<void>;
+    sendOtp: (phoneNumber: string) => Promise<any>;
     verifyOtp: (otp: string) => Promise<void>;
     resetPassword: (email: string) => Promise<void>;
     verifyEmail: () => Promise<void>;
@@ -110,6 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (!resp.ok) throw new Error(data.error || "Failed to send OTP");
 
             setCustomOtpPayload({ hash: data.hash, expiry: data.expiry, phone: phoneNumber });
+            return data; // return so caller can inspect status
         } catch (error: any) {
             console.error("Error sending custom OTP", error);
             throw error;

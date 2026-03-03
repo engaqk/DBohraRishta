@@ -652,26 +652,6 @@ export default function RishtaDashboard() {
                             })()}
                         </div>
                     )}
-
-                    <PrivacyToggle />
-
-                    <div className="bg-gradient-to-br from-[#881337] to-[#9F1239] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-20">
-                            <Sparkles className="w-16 h-16" />
-                        </div>
-                        <h3 className="text-xl font-bold font-serif mb-2 flex items-center">
-                            Aunty Intelligence 2.0
-                        </h3>
-                        <p className="text-sm opacity-90 mb-6 leading-relaxed">
-                            Based on your preferences, AI suggests focusing on matches in healthcare or finance to align with your Dunyawi goals.
-                        </p>
-                        <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md">
-                            <h4 className="font-bold text-xs uppercase tracking-wider mb-2 text-[#D4AF37]">Halal Icebreaker</h4>
-                            <p className="text-sm italic">
-                                "I noticed you are currently based in Dubai. How do you find the balance of Deeni and Dunyawi life there?"
-                            </p>
-                        </div>
-                    </div>
                 </aside>
 
                 {/* Main Content Render */}

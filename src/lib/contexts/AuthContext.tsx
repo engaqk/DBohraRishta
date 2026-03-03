@@ -91,7 +91,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const resetPassword = async (email: string) => {
         try {
-            await sendPasswordResetEmail(auth, email);
+            // continueUrl tells Firebase where to redirect after the user clicks the reset link
+            // This must also be added to Firebase Console → Authentication → Authorized domains
+            const actionCodeSettings = {
+                url: typeof window !== 'undefined'
+                    ? `${window.location.origin}/login`
+                    : 'https://engaqk.github.io/dbohrarishta/login',
+                handleCodeInApp: false,
+            };
+            await sendPasswordResetEmail(auth, email, actionCodeSettings);
         } catch (error) {
             console.error("Error sending password reset email", error);
             throw error;

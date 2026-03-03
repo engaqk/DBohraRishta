@@ -77,18 +77,18 @@ function verifyTOTP(secret: string, code: string): boolean {
 /** Deterministic Firebase credential from phone — completely free alternative to Phone Auth */
 function phoneToFirebaseCredentials(phone: string) {
     const clean = phone.replace(/[\s\-\+()]/g, '');
-    // Deterministic email — consistent per device
-    const internalEmail = `${clean}@dbohrarishta.local`;
-    // Deterministic password — derived from phone + fixed server salt
-    // NOTE: This is obfuscated in the bundle but fine for a community app
-    const SALT = "fb_salt_dbohra_2026";
+    // Use .app TLD — widely accepted by Firebase; avoid .local which can cause 400s
+    const internalEmail = `p${clean}@dbohra.app`;
+    // Deterministic password derived from phone + fixed pepper
+    const SALT = "fb_salt_dbohra_v2_2026";
     let hash = 5381;
     const input = SALT + clean;
     for (let i = 0; i < input.length; i++) {
         hash = ((hash << 5) + hash) + input.charCodeAt(i);
         hash |= 0;
     }
-    const internalPassword = Math.abs(hash).toString(36).padStart(8, "x").substring(0, 20);
+    // Ensure password meets Firebase 6+ char minimum
+    const internalPassword = "Db" + Math.abs(hash).toString(36).padStart(10, "0").substring(0, 18);
     return { internalEmail, internalPassword };
 }
 
@@ -209,22 +209,47 @@ export default function LoginPage() {
 
         try {
             const { internalEmail, internalPassword } = phoneToFirebaseCredentials(phone);
+
+            // Attempt 1: Sign in (handles returning users)
+            let signedIn = false;
             try {
                 await signInWithEmailAndPassword(auth, internalEmail, internalPassword);
-            } catch (authError: any) {
-                if (
-                    authError.code === 'auth/user-not-found' ||
-                    authError.code === 'auth/invalid-credential' ||
-                    authError.code === 'auth/invalid-login-credentials'
-                ) {
-                    await createUserWithEmailAndPassword(auth, internalEmail, internalPassword);
+                signedIn = true;
+            } catch (signInError: any) {
+                // Any 400/sign-in failure = user likely doesn't exist yet → create them
+                // Firebase merges user-not-found + wrong-password into auth/invalid-credential in newer SDK
+                const isNotFound = [
+                    'auth/user-not-found',
+                    'auth/invalid-credential',
+                    'auth/invalid-login-credentials',
+                    'auth/wrong-password',
+                ].includes(signInError.code) || signInError.message?.includes('400');
+
+                if (isNotFound) {
+                    // Attempt 2: Create user (first-time login)
+                    try {
+                        await createUserWithEmailAndPassword(auth, internalEmail, internalPassword);
+                        signedIn = true;
+                    } catch (createError: any) {
+                        if (createError.code === 'auth/email-already-in-use') {
+                            // Race condition: user was created between our two tries → sign in again
+                            await signInWithEmailAndPassword(auth, internalEmail, internalPassword);
+                            signedIn = true;
+                        } else if (createError.code === 'auth/operation-not-allowed') {
+                            throw new Error('Email/Password sign-in is not enabled in Firebase console. Please enable it under Authentication → Sign-in methods.');
+                        } else {
+                            throw createError;
+                        }
+                    }
                 } else {
-                    throw authError;
+                    throw signInError;
                 }
             }
-            toast.success("Verified! Redirecting...");
+
+            if (signedIn) toast.success('Verified! Redirecting...');
         } catch (error: any) {
-            setErrorMsg(error.message?.replace("Firebase: ", "") || "Sign-in failed. Try again.");
+            const msg = error.message?.replace('Firebase: ', '') || 'Sign-in failed. Try again.';
+            setErrorMsg(msg);
         } finally {
             setAuthLoading(false);
         }

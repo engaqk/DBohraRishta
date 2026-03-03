@@ -240,7 +240,18 @@ export default function OnboardingPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
-                                    <input type="email" name="email" onChange={handleChange} value={formData.email} className={`w-full bg-gray-50 border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="abc@example.com" />
+                                    {/* autoComplete="off" alone isn't enough — additional attributes needed to override browser heuristics */}
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        autoComplete="off"
+                                        data-lpignore="true"
+                                        data-form-type="other"
+                                        onChange={handleChange}
+                                        value={formData.email}
+                                        className={`w-full bg-gray-50 border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`}
+                                        placeholder="Your personal email address"
+                                    />
                                     {errors.email && <p className="text-red-500 text-xs font-bold mt-1">{errors.email}</p>}
                                 </div>
                                 <div>

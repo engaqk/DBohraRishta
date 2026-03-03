@@ -555,7 +555,7 @@ export default function RishtaDashboard() {
                                             {...p}
                                             isDummy={(p as any).isDummy}
                                             matchScore={computeMatchScore(myProfile, p)}
-                                            isMyProfileVerified={myProfile?.isItsVerified || false}
+                                            isMyProfileVerified={myProfile?.isItsVerified || myProfile?.isCandidateFormComplete || myProfile?.status === 'verified' || false}
                                             bio={p.bio}
                                             isBlurSecurityEnabled={blurEnabled}
                                             viewerItsNumber={myProfile?.itsNumber || ''}
@@ -655,14 +655,14 @@ export default function RishtaDashboard() {
                                         <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-3">
                                             <div className="h-full bg-gradient-to-r from-[#D4AF37] to-[#881337] transition-all duration-1000" style={{ width: `${completeness}%` }}></div>
                                         </div>
-                                        {completeness < 100 && myProfile.isItsVerified && (
+                                        {completeness < 100 && (
                                             <button onClick={() => router.push('/candidate-registration')} className="w-full bg-[#881337] text-white py-2 rounded-lg text-xs font-bold shadow hover:bg-[#9F1239] transition-all tracking-wide mt-1">
-                                                Complete Registration Form
+                                                Complete ITNC Registration Form
                                             </button>
                                         )}
-                                        {completeness < 100 && !myProfile.isItsVerified && (
+                                        {completeness >= 100 && !myProfile.isItsVerified && (
                                             <div className="w-full bg-yellow-50 text-yellow-700 py-2 rounded-lg text-xs font-bold text-center border border-yellow-200 tracking-wide mt-1">
-                                                Verify ITS to Complete Biodata
+                                                ITS Verification Pending — you can still browse
                                             </div>
                                         )}
                                         <button

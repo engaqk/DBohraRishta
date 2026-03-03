@@ -9,9 +9,6 @@ import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut,
-    RecaptchaVerifier,
-    signInWithPhoneNumber,
-    ConfirmationResult,
     sendPasswordResetEmail,
     sendEmailVerification
 } from "firebase/auth";
@@ -37,8 +34,7 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
-    const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
-    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+    const [customOtpPayload, setCustomOtpPayload] = useState<{ hash: string, expiry: number, phone: string } | null>(null);
 
     useEffect(() => {
         const dummyUserStr = localStorage.getItem('dummy_user_id');
@@ -98,31 +94,62 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const setupRecaptcha = (containerId: string) => {
-        if (!recaptchaVerifier) {
-            const verifier = new RecaptchaVerifier(auth, containerId, {
-                size: 'invisible',
-            });
-            setRecaptchaVerifier(verifier);
-        }
+        // Deprecated: Custom fully free OTP implementation no longer natively requires Recaptcha
+        console.log("Recaptcha bypassed for completely free Fast2SMS integration.");
     };
 
     const sendOtp = async (phoneNumber: string) => {
-        if (!recaptchaVerifier) throw new Error("Recaptcha not initialized");
         try {
-            const result = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-            setConfirmationResult(result);
-        } catch (error) {
-            console.error("Error sending OTP", error);
+            const resp = await fetch('/api/otp/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: phoneNumber })
+            });
+
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || "Failed to send OTP");
+
+            setCustomOtpPayload({ hash: data.hash, expiry: data.expiry, phone: phoneNumber });
+        } catch (error: any) {
+            console.error("Error sending custom OTP", error);
             throw error;
         }
     };
 
     const verifyOtp = async (otp: string) => {
-        if (!confirmationResult) throw new Error("No pending OTP request");
+        if (!customOtpPayload) throw new Error("No pending OTP request");
+
         try {
-            await confirmationResult.confirm(otp);
-        } catch (error) {
-            console.error("Error verifying OTP", error);
+            const resp = await fetch('/api/otp/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phone: customOtpPayload.phone,
+                    otp,
+                    hash: customOtpPayload.hash,
+                    expiry: customOtpPayload.expiry
+                })
+            });
+
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || "Failed to verify OTP");
+
+            // Complete Custom Integration: Securely login to Firebase using deterministic internal credentials
+            // This is completely free forever.
+            try {
+                // Try sign in first
+                await signInWithEmailAndPassword(auth, data.internalEmail, data.internalPassword);
+            } catch (authError: any) {
+                // If user doesn't exist internally yet, create the deterministic record!
+                if (authError.message.includes('auth/invalid-credential') || authError.message.includes('auth/user-not-found') || authError.message.includes('auth/invalid-login-credentials')) {
+                    await createUserWithEmailAndPassword(auth, data.internalEmail, data.internalPassword);
+                } else {
+                    throw authError; // bubble up
+                }
+            }
+
+        } catch (error: any) {
+            console.error("Error verifying custom OTP", error);
             throw error;
         }
     };

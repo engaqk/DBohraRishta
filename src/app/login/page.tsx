@@ -25,14 +25,7 @@ export default function LoginPage() {
     const [errorMsg, setErrorMsg] = useState("");
     const [isOtpLimitReached, setIsOtpLimitReached] = useState(false);
 
-    // Initialize recaptcha instantly on mount for phone auth container
-    useEffect(() => {
-        if (authMode === "phone") {
-            try {
-                setupRecaptcha("recaptcha-container");
-            } catch (e) { console.error(e) }
-        }
-    }, [authMode, setupRecaptcha]);
+    // No recaptcha initialization needed anymore for our fully free custom backend!
 
     useEffect(() => {
         const checkUserStatus = async () => {
@@ -241,7 +234,7 @@ export default function LoginPage() {
                         </div>
                     )}
 
-                    <div id="recaptcha-container"></div>
+
 
                     {errorMsg && <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100 mb-4">{errorMsg}</div>}
 

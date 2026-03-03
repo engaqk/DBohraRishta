@@ -24,14 +24,18 @@ interface DiscoveryCardProps {
     hobbies?: string;
     partnerQualities?: string;
     isBlurSecurityEnabled?: boolean;
+    isItsVerified?: boolean;
+    bio?: string;
+    isOnline?: boolean;
 }
 
-export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, gender, matchScore = 85, isMyProfileVerified = false, isDummy = false, heightFeet, heightInch, hobbies, partnerQualities, isBlurSecurityEnabled = true }: DiscoveryCardProps) {
+export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, gender, matchScore = 85, isMyProfileVerified = false, isDummy = false, heightFeet, heightInch, hobbies, partnerQualities, isBlurSecurityEnabled = true, isItsVerified = false, bio, isOnline = false }: DiscoveryCardProps) {
     const { user } = useAuth();
     const [requestSent, setRequestSent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
     const [rejectCount, setRejectCount] = useState(0);
+    const [isBookmarked, setIsBookmarked] = useState(false);
 
     // Calculate approximate age
     const age = dob ? Math.floor((new Date().getTime() - new Date(dob).getTime()) / 31557600000) : 25;
@@ -97,6 +101,32 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
 
         try {
             setLoading(true);
+
+            // Spam Protection: Max 20 requests per 24 hours
+            const spamCheckQ = query(
+                collection(db, "rishta_requests"),
+                where("from", "==", user.uid)
+            );
+            const spamSnap = await getDocs(spamCheckQ);
+            let recentCount = 0;
+            const oneDayAgo = new Date().getTime() - (24 * 60 * 60 * 1000);
+
+            spamSnap.forEach(d => {
+                const reqData = d.data();
+                if (reqData.timestamp) {
+                    const reqDate = reqData.timestamp?.toDate ? reqData.timestamp.toDate() : new Date(reqData.timestamp);
+                    if (reqDate.getTime() > oneDayAgo) {
+                        recentCount++;
+                    }
+                }
+            });
+
+            if (recentCount >= 20) {
+                toast.error("Spam Limit Protective Measure: You can only send up to 20 Interest Requests every 24 hours.", { duration: 6000, icon: '🛡️' });
+                setLoading(false);
+                return;
+            }
+
             await addDoc(collection(db, "rishta_requests"), {
                 from: user.uid,
                 to: id,
@@ -110,6 +140,12 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleBookmark = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsBookmarked(!isBookmarked);
+        toast.success(isBookmarked ? "Removed from saved profiles" : "Profile saved for later!");
     };
 
     return (
@@ -156,7 +192,12 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                             SAMPLE PROFILE
                         </div>
                     )}
-                    <div className="flex justify-between items-start mb-4">
+                    {isOnline && (
+                        <div className="absolute -top-3 left-6 bg-emerald-500 text-white text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-full z-20 shadow-md border-2 border-white flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> Active Recently
+                        </div>
+                    )}
+                    <div className="flex justify-between items-start mb-4 mt-2">
                         <div>
                             <div className="flex items-center gap-2">
                                 <h3 className="text-2xl font-bold text-[#881337] font-serif group-hover:underline cursor-pointer" onClick={() => setShowDetails(true)}>{name || 'Verified Member'}, {age}</h3>
@@ -169,15 +210,39 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                             <p className="text-gray-600 font-sans text-sm mt-1">{jamaat || 'Community Member'} • {hizratLocation || 'Unknown'}</p>
                             <button onClick={() => setShowDetails(true)} className="text-xs text-[#D4AF37] font-bold hover:underline mt-1">View Full Profile →</button>
                         </div>
-                        <div className="bg-[#881337] text-[#D4AF37] px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-md shrink-0">
-                            <span>{matchScore}% Match</span>
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                            <div className="bg-[#881337] text-[#D4AF37] px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-md">
+                                <span>{matchScore}% Match</span>
+                            </div>
+                            <button
+                                onClick={handleBookmark}
+                                className={`p-1.5 rounded-full transition-colors ${isBookmarked ? 'bg-rose-100 text-[#881337]' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                title={isBookmarked ? "Saved" : "Save for later"}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
+                            </button>
                         </div>
                     </div>
 
+                    {bio && (
+                        <div className="mb-4 text-sm text-gray-600 italic border-l-2 border-[#D4AF37] pl-3">
+                            "{bio.length > 80 ? bio.substring(0, 80) + '...' : bio}"
+                        </div>
+                    )}
+
                     <div className="space-y-3 mb-6 flex-grow">
                         <div className="flex items-center text-sm">
-                            <CheckCircle className="w-5 h-5 text-[#D4AF37] mr-3" />
-                            <span className="text-gray-700 font-medium">ITS Verified Profile</span>
+                            {isItsVerified ? (
+                                <>
+                                    <CheckCircle className="w-5 h-5 text-[#D4AF37] mr-3 shrink-0" />
+                                    <span className="text-gray-700 font-medium">ITS Verified Profile</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="w-5 h-5 border-2 border-gray-300 rounded-full mr-3 shrink-0" />
+                                    <span className="text-gray-400 italic">ITS Verification Pending</span>
+                                </>
+                            )}
                         </div>
                         <div className="flex items-center text-sm">
                             <Info className="w-5 h-5 text-[#D4AF37] mr-3 shrink-0" />
@@ -231,10 +296,17 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
 
                                 <div className="absolute bottom-6 left-6 z-10">
                                     <div className="flex flex-col">
-                                        <h2 className="text-3xl font-bold font-serif text-white">{name}, {age}</h2>
+                                        <h2 className="text-3xl font-bold font-serif text-white flex items-center gap-3">
+                                            {name}, {age}
+                                            {isItsVerified && (
+                                                <div className="bg-[#D4AF37] text-[#881337] px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 shadow-lg">
+                                                    <CheckCircle className="w-3 h-3" /> Verified Member
+                                                </div>
+                                            )}
+                                        </h2>
                                         <div className="flex items-center gap-3">
-                                            <p className="text-[#D4AF37] font-medium flex items-center gap-2 mt-1">
-                                                <CheckCircle className="w-4 h-4" /> ITS Verified
+                                            <p className={`font-medium flex items-center gap-2 mt-1 ${isItsVerified ? 'text-[#D4AF37]' : 'text-gray-400 italic font-normal'}`}>
+                                                {isItsVerified ? <><CheckCircle className="w-4 h-4" /> ITS Verified</> : 'Pending ITS Verification'}
                                             </p>
                                             {rejectCount > 0 && !requestSent && (
                                                 <span className="bg-red-500/80 text-white backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-bold border border-red-500/50 uppercase">
@@ -251,6 +323,12 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                                 <div>
                                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Core Details</h4>
                                     <div className="grid grid-cols-2 gap-4">
+                                        {bio && (
+                                            <div className="bg-rose-50 p-4 rounded-xl border border-rose-100 col-span-2">
+                                                <p className="text-[#881337]/70 text-xs font-bold mb-1 uppercase tracking-widest">Highlights / About Me</p>
+                                                <p className="text-[#881337] font-medium leading-relaxed italic">"{bio}"</p>
+                                            </div>
+                                        )}
                                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                                             <p className="text-gray-500 text-xs font-bold mb-1">Jamaat</p>
                                             <p className="text-[#881337] font-semibold">{jamaat || 'Not specified'}</p>

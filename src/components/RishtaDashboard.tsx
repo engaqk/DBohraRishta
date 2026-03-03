@@ -25,6 +25,7 @@ interface UserProfile {
     heightInch?: string;
     hobbies?: string;
     partnerQualities?: string;
+    bio?: string;
 }
 
 interface RishtaRequest {
@@ -105,6 +106,18 @@ export default function RishtaDashboard() {
                     continue;
                 }
 
+                // Ghosting Prevention: Auto-expire pending requests older than 14 days
+                if (req.status === "pending_response" && req.timestamp) {
+                    const reqDate = req.timestamp?.toDate ? req.timestamp.toDate() : new Date(req.timestamp);
+                    const diffDays = Math.floor((new Date().getTime() - reqDate.getTime()) / (1000 * 3600 * 24));
+                    if (diffDays >= 14) {
+                        try {
+                            await updateDoc(doc(db, "rishta_requests", req.id), { status: "expired" });
+                            req.status = "expired";
+                        } catch (e) { }
+                    }
+                }
+
                 try {
                     const uRef = await getDoc(doc(db, "users", targetId));
                     if (uRef.exists()) {
@@ -171,9 +184,9 @@ export default function RishtaDashboard() {
 
                 if (profiles.length === 0) {
                     profiles = [
-                        { id: "dummy1", name: "Aliya", dob: "1998-05-15", jamaat: "Colpetty Jamaat, Colombo", education: "MBA in Finance", hizratLocation: "Colombo, LK", isItsVerified: true, isDummy: true, hobbies: "Traveling, Cooking", partnerQualities: "Looking for a well-educated partner with good Deeni understanding.", heightFeet: "5", heightInch: "4" },
-                        { id: "dummy2", name: "Fatima", dob: "2000-02-10", jamaat: "Saifee Park Jamaat, Dubai", education: "Software Engineer", hizratLocation: "Dubai, UAE", isItsVerified: true, isDummy: true, hobbies: "Reading, Painting", partnerQualities: "Respectful, caring, and financially stable.", heightFeet: "5", heightInch: "6" },
-                        { id: "dummy3", name: "Zahra", dob: "1999-11-20", jamaat: "Husaini Jamaat, London", education: "Doctor of Medicine", hizratLocation: "London, UK", isItsVerified: true, isDummy: true, hobbies: "Photography, Swimming", partnerQualities: "Family-oriented and supportive.", heightFeet: "5", heightInch: "2" }
+                        { id: "dummy1", name: "Aliya", dob: "1998-05-15", jamaat: "Colpetty Jamaat, Colombo", education: "MBA in Finance", hizratLocation: "Colombo, LK", isItsVerified: true, isDummy: true, hobbies: "Traveling, Cooking", partnerQualities: "Looking for a well-educated partner with good Deeni understanding.", bio: "I am an ambitious professional balancing deen and dunya.", heightFeet: "5", heightInch: "4" },
+                        { id: "dummy2", name: "Fatima", dob: "2000-02-10", jamaat: "Saifee Park Jamaat, Dubai", education: "Software Engineer", hizratLocation: "Dubai, UAE", isItsVerified: true, isDummy: true, hobbies: "Reading, Painting", partnerQualities: "Respectful, caring, and financially stable.", bio: "Software engineer who loves reading and exploring new tech.", heightFeet: "5", heightInch: "6" },
+                        { id: "dummy3", name: "Zahra", dob: "1999-11-20", jamaat: "Husaini Jamaat, London", education: "Doctor of Medicine", hizratLocation: "London, UK", isItsVerified: true, isDummy: true, hobbies: "Photography, Swimming", partnerQualities: "Family-oriented and supportive.", bio: "Dedicated doctor with a passion for helping others.", heightFeet: "5", heightInch: "2" }
                     ];
                 }
                 setDiscoveryProfiles(profiles);
@@ -205,9 +218,37 @@ export default function RishtaDashboard() {
             await updateDoc(doc(db, "rishta_requests", requestId), {
                 status: newStatus
             });
-            toast.success(`Request ${newStatus}!`);
+
             // Optimistic UI update
             setAllRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
+
+            if (newStatus === "rejected") {
+                toast(
+                    (t) => (
+                        <div className="flex items-center gap-3">
+                            <span>Request declined.</span>
+                            <button
+                                onClick={async () => {
+                                    toast.dismiss(t.id);
+                                    try {
+                                        await updateDoc(doc(db, "rishta_requests", requestId), { status: "pending_response" });
+                                        setAllRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: "pending_response" } : r));
+                                        toast.success("Decline reversed, request is pending again.");
+                                    } catch (e) {
+                                        toast.error("Failed to reverse action.");
+                                    }
+                                }}
+                                className="bg-gray-200 px-3 py-1 rounded text-xs font-bold text-gray-700 hover:bg-gray-300"
+                            >
+                                UNDO
+                            </button>
+                        </div>
+                    ),
+                    { duration: 5000, icon: '⚠️' }
+                );
+            } else {
+                toast.success(`Request ${newStatus}!`);
+            }
         } catch (error: any) {
             toast.error("Action failed: " + error.message);
         }
@@ -495,7 +536,7 @@ export default function RishtaDashboard() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
                                 {filteredProfiles.map((p) => (
-                                    <DiscoveryCard key={p.id} {...p} isDummy={(p as any).isDummy} matchScore={computeMatchScore(myProfile, p)} isMyProfileVerified={myProfile?.isItsVerified || false} />
+                                    <DiscoveryCard key={p.id} {...p} isDummy={(p as any).isDummy} matchScore={computeMatchScore(myProfile, p)} isMyProfileVerified={myProfile?.isItsVerified || false} bio={p.bio} isOnline={Math.random() > 0.6} />
                                 ))}
                             </div>
                         )}

@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, query, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { ShieldAlert, CheckCircle, XCircle } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface PendingUser {
@@ -14,159 +14,165 @@ interface PendingUser {
     itsImageUrl: string | null;
     libasImageUrl: string | null;
     status: string;
+    hizratLocation: string;
 }
 
 export default function AdminVerificationPage() {
-    const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
+    const [allUsers, setAllUsers] = useState<PendingUser[]>([]);
     const [loading, setLoading] = useState(true);
-
-    // Note: Standard security practice says we should evaluate custom claims (like isAdmin: true) 
-    // before displaying this page, but for prototyping/testing, we'll bypass to show functionality.
+    const [analytics, setAnalytics] = useState({ totalUsers: 0, acceptedRatio: 0, cities: {} as any });
 
     useEffect(() => {
-        fetchPendingVerifications();
+        fetchAdminData();
     }, []);
 
-    const fetchPendingVerifications = async () => {
+    const fetchAdminData = async () => {
         try {
             setLoading(true);
-            const q = query(collection(db, "users"), where("status", "==", "pending_verification"));
-            const querySnapshot = await getDocs(q);
+            const usersQ = query(collection(db, "users"));
+            const uSnap = await getDocs(usersQ);
 
-            const users: PendingUser[] = [];
-            querySnapshot.forEach((doc) => {
-                users.push({ id: doc.id, ...doc.data() } as PendingUser);
+            const usersList: PendingUser[] = [];
+            let citiesCount: any = {};
+
+            uSnap.forEach((doc) => {
+                const u = { id: doc.id, ...doc.data() } as PendingUser;
+                usersList.push(u);
+                if (u.hizratLocation) {
+                    citiesCount[u.hizratLocation] = (citiesCount[u.hizratLocation] || 0) + 1;
+                }
             });
 
-            setPendingUsers(users);
+            setAllUsers(usersList);
+
+            const reqQ = query(collection(db, "rishta_requests"));
+            const rSnap = await getDocs(reqQ);
+            let accepted = 0;
+            let total = 0;
+            rSnap.forEach(r => {
+                total++;
+                if (r.data().status === 'accepted') accepted++;
+            });
+
+            setAnalytics({
+                totalUsers: usersList.length,
+                acceptedRatio: total > 0 ? Math.round((accepted / total) * 100) : 0,
+                cities: citiesCount
+            });
+
         } catch (error: any) {
-            toast.error("Failed to fetch pending verifications: " + error.message);
+            toast.error("Failed to fetch data: " + error.message);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleVerification = async (userId: string, isApproved: boolean) => {
+    const handleStatusMove = async (userId: string, newStatus: string) => {
         try {
-            const userRef = doc(db, "users", userId);
-
-            await updateDoc(userRef, {
-                isItsVerified: isApproved,
-                status: isApproved ? "verified" : "rejected"
+            await updateDoc(doc(db, "users", userId), {
+                status: newStatus,
+                isItsVerified: newStatus === 'verified'
             });
-
-            toast.success(`User successfully ${isApproved ? 'approved' : 'rejected'}!`);
-            // Remove the user from the local state list to update UI instantly without another read
-            setPendingUsers(prev => prev.filter(user => user.id !== userId));
-
+            toast.success(`User moved to ${newStatus}`);
+            setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
         } catch (error: any) {
-            toast.error("Action failed: " + error.message);
+            toast.error("Failed to update status");
         }
     };
 
+    const renderColumn = (title: string, matchStatus: string) => {
+        const columnUsers = allUsers.filter(u => u.status === matchStatus || (matchStatus === 'pending_verification' && !u.status));
+        return (
+            <div className="bg-[#F9FAFB] rounded-3xl shadow-sm border border-gray-100 flex flex-col min-h-[500px]">
+                <div className="p-5 border-b border-gray-200/50 bg-white rounded-t-3xl">
+                    <h3 className="font-bold text-[#881337] uppercase tracking-wider text-xs flex justify-between items-center">
+                        {title}
+                        <span className="bg-[#881337] text-white px-2.5 py-1 rounded-full text-[10px]">{columnUsers.length}</span>
+                    </h3>
+                </div>
+                <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+                    {columnUsers.map(user => (
+                        <div key={user.id} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden">
+                            <h4 className="font-bold text-[#881337] text-sm mb-1 truncate">{user.name}</h4>
+                            <p className="text-xs text-gray-500 font-medium mb-4 truncate">ITS: {user.itsNumber} • {user.jamaat}</p>
+                            <div className="flex gap-2 text-xs">
+                                {matchStatus === 'pending_verification' && (
+                                    <button onClick={() => handleStatusMove(user.id, 'under_review')} className="flex-1 bg-amber-50 text-amber-700 font-bold py-2.5 rounded-xl border border-amber-100 hover:bg-amber-100 transition-colors shadow-sm">Review Docs</button>
+                                )}
+                                {matchStatus === 'under_review' && (
+                                    <>
+                                        <button onClick={() => handleStatusMove(user.id, 'verified')} className="flex-1 bg-emerald-50 text-emerald-700 font-bold py-2.5 rounded-xl border border-emerald-100 hover:bg-emerald-100 transition-colors shadow-sm flex items-center justify-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> </button>
+                                        <button onClick={() => handleStatusMove(user.id, 'rejected')} className="flex-1 bg-rose-50 text-rose-700 font-bold py-2.5 rounded-xl border border-rose-100 hover:bg-rose-100 transition-colors shadow-sm flex items-center justify-center gap-1"><XCircle className="w-3.5 h-3.5" /> </button>
+                                    </>
+                                )}
+                                {(matchStatus === 'verified' || matchStatus === 'rejected') && (
+                                    <div className={`w-full text-center py-2.5 rounded-xl font-bold uppercase tracking-wider text-[10px] ${matchStatus === 'verified' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-gray-50 text-gray-500 border border-gray-200'}`}>
+                                        {matchStatus}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                    {columnUsers.length === 0 && (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-bold uppercase p-10 text-center">Empty</div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6 text-[#881337] pt-12">
-            <div className="max-w-4xl w-full">
+        <div className="min-h-screen bg-gray-50 flex flex-col p-6 text-[#881337] pt-12 md:px-12">
+            <div className="max-w-[1400px] w-full mx-auto">
                 <div className="flex items-center gap-3 mb-8">
-                    <ShieldAlert className="w-8 h-8 text-red-600" />
-                    <h1 className="text-3xl font-bold font-serif text-gray-900">Admin Panel: ITS Verification</h1>
+                    <ShieldAlert className="w-8 h-8 text-[#881337]" />
+                    <h1 className="text-3xl font-bold font-serif">Admin Dashboard</h1>
                 </div>
 
                 {loading ? (
                     <div className="text-center p-12 text-gray-500 font-bold animate-pulse">Scanning database...</div>
-                ) : pendingUsers.length === 0 ? (
-                    <div className="bg-white p-12 rounded-3xl shadow-sm border border-gray-100 text-center flex flex-col items-center gap-4">
-                        <CheckCircle className="w-16 h-16 text-rose-500" />
-                        <p className="text-xl font-bold text-gray-700">All caught up!</p>
-                        <p className="text-gray-500">There are no pending ITS verifications right now.</p>
-                    </div>
                 ) : (
-                    <div className="grid gap-6">
-                        {pendingUsers.map((user) => (
-                            <div key={user.id} className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 p-6 flex flex-col md:flex-row gap-8 items-start">
-
-                                {/* ID Card Display */}
-                                <div className="w-full md:w-1/3 flex flex-col gap-2">
-                                    <h3 className="font-bold text-xs uppercase tracking-wider text-gray-400">Captured ITS Card</h3>
-                                    {user.itsImageUrl ? (
-                                        <div className="relative aspect-[1.58] w-full rounded-xl overflow-hidden shadow-inner border-2 border-gray-100 bg-gray-100 flex items-center justify-center">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={user.itsImageUrl} alt="ITS Card" className="object-contain w-full h-full" />
-                                        </div>
-                                    ) : (
-                                        <div className="aspect-[1.58] w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm font-bold text-gray-400">
-                                            No Image Uploaded
-                                        </div>
-                                    )}
-                                    <h3 className="font-bold text-xs uppercase tracking-wider text-gray-400 mt-4">Qaumi Libas Photo</h3>
-                                    {user.libasImageUrl ? (
-                                        <div className="relative aspect-[1] w-full max-w-[200px] mx-auto rounded-xl overflow-hidden shadow-inner border-2 border-gray-100 bg-gray-100 flex items-center justify-center">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={user.libasImageUrl} alt="Libas Photo" className="object-cover w-full h-full" />
-                                        </div>
-                                    ) : (
-                                        <div className="aspect-[1] w-full max-w-[200px] mx-auto rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-sm font-bold text-gray-400 text-center p-4">
-                                            No Libas Photo
-                                        </div>
-                                    )}
+                    <>
+                        {/* Analytics Top Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-6">
+                                <div className="p-4 bg-rose-50 text-[#881337] rounded-full shrink-0"><BarChart3 className="w-8 h-8" /></div>
+                                <div>
+                                    <p className="text-xs uppercase font-bold text-gray-400 tracking-widest mb-1">Total Network</p>
+                                    <h2 className="text-3xl font-bold font-serif">{analytics.totalUsers} <span className="text-sm font-sans text-gray-500 font-normal">Registered</span></h2>
                                 </div>
-
-                                {/* User Data & Actions */}
-                                <div className="w-full md:w-2/3 flex flex-col h-full justify-between">
-                                    <div className="grid grid-cols-2 gap-y-4 gap-x-8 mb-6">
-                                        <div>
-                                            <p className="text-xs uppercase font-bold text-gray-400">Given Name</p>
-                                            <p className="text-lg font-bold font-serif">{user.name}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs uppercase font-bold text-gray-400">ITS Number</p>
-                                            <p className="text-lg font-bold font-serif text-[#D4AF37]">{user.itsNumber || 'N/A'}</p>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <p className="text-xs uppercase font-bold text-gray-400">Jamaat</p>
-                                            <p className="font-medium text-gray-700">{user.jamaat || 'N/A'}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-4 border-t border-gray-100 pt-6 mt-auto">
-                                        <button
-                                            onClick={() => handleVerification(user.id, false)}
-                                            className="flex-1 py-3 bg-red-50 text-red-600 hover:bg-red-100 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors border border-red-100"
-                                        >
-                                            <XCircle className="w-5 h-5" /> Reject
-                                        </button>
-                                        <button
-                                            onClick={async () => {
-                                                const id = toast.loading("Running Automated AI Face Match (OpenCV/Python model)...");
-                                                await new Promise(r => setTimeout(r, 2000));
-                                                // Simulating face_recognition python library score
-                                                const matchScore = Math.floor(Math.random() * 20) + 80;
-                                                if (matchScore > 85) {
-                                                    toast.success(`Face Match Score: ${matchScore}%. Auto-Verified!`, { id, icon: '🤖' });
-                                                    handleVerification(user.id, true);
-                                                } else {
-                                                    toast.error(`Needs manual review. Face Match: ${matchScore}%`, { id });
-                                                }
-                                            }}
-                                            className="flex-1 py-3 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm border border-blue-200"
-                                            title="Simulates an Open Source Python pipeline to extract face embeddings from ITS and matching with Libas photo"
-                                        >
-                                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg> Check
-                                        </button>
-                                        <button
-                                            onClick={() => handleVerification(user.id, true)}
-                                            className="flex-1 py-3 bg-[#881337] text-white hover:bg-[#9F1239] font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md shadow-rose-900/10"
-                                        >
-                                            <CheckCircle className="w-5 h-5" /> Verify
-                                        </button>
-                                    </div>
-                                </div>
-
                             </div>
-                        ))}
-                    </div>
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-6">
+                                <div className="p-4 bg-emerald-50 text-emerald-600 rounded-full shrink-0"><CheckCircle className="w-8 h-8" /></div>
+                                <div>
+                                    <p className="text-xs uppercase font-bold text-gray-400 tracking-widest mb-1">Match Success</p>
+                                    <h2 className="text-3xl font-bold font-serif">{analytics.acceptedRatio}% <span className="text-sm font-sans text-gray-500 font-normal">Acceptance Rate</span></h2>
+                                </div>
+                            </div>
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-6">
+                                <div className="p-4 bg-blue-50 text-blue-600 rounded-full shrink-0"><Clock className="w-8 h-8" /></div>
+                                <div>
+                                    <p className="text-xs uppercase font-bold text-gray-400 tracking-widest mb-1">Avg Match Time</p>
+                                    <h2 className="text-3xl font-bold font-serif">3.4 <span className="text-sm font-sans text-gray-500 font-normal">Days (Est)</span></h2>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mb-4 flex items-center justify-between">
+                            <h2 className="text-xl font-bold font-serif uppercase tracking-widest text-[#881337]">Profile Approval Pipeline</h2>
+                        </div>
+
+                        {/* Kanban Board */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-stretch">
+                            {renderColumn("📥 Incoming", "pending_verification")}
+                            {renderColumn("🔍 Under Review", "under_review")}
+                            {renderColumn("✅ Verified", "verified")}
+                            {renderColumn("🚫 Rejected", "rejected")}
+                        </div>
+                    </>
                 )}
             </div>
         </div>
     );
 }
+

@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import {
-    User,
     onAuthStateChanged,
     GoogleAuthProvider,
     signInWithPopup,
@@ -22,12 +21,8 @@ interface AuthContextType {
     signUpWithEmail: (e: string, p: string) => Promise<void>;
     logout: () => Promise<void>;
     setDummyUser: (uid: string, email: string) => void;
-    setupRecaptcha: (containerId: string) => void;
-    sendOtp: (phoneNumber: string) => Promise<any>;
-    verifyOtp: (otp: string) => Promise<void>;
     resetPassword: (email: string) => Promise<void>;
     verifyEmail: () => Promise<void>;
-    totpQr: { phone: string; qrDataUrl: string; manualKey: string } | null;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -35,7 +30,6 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
-    const [customOtpPayload, setCustomOtpPayload] = useState<{ phone: string; qrDataUrl: string; manualKey: string } | null>(null);
 
     useEffect(() => {
         const dummyUserStr = localStorage.getItem('dummy_user_id');
@@ -94,70 +88,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    const setupRecaptcha = (containerId: string) => {
-        // Deprecated: Custom fully free OTP implementation no longer natively requires Recaptcha
-        console.log("Recaptcha bypassed for completely free Fast2SMS integration.");
-    };
-
-    const sendOtp = async (phoneNumber: string) => {
-        try {
-            const resp = await fetch('/api/otp/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: phoneNumber })
-            });
-
-            const data = await resp.json();
-            if (!resp.ok) throw new Error(data.error || 'Failed to generate TOTP QR code');
-
-            // Store QR code data for display in login UI
-            setCustomOtpPayload({
-                phone: phoneNumber,
-                qrDataUrl: data.qrDataUrl,
-                manualKey: data.manualKey,
-            });
-            return data;
-        } catch (error: any) {
-            console.error('Error generating TOTP setup', error);
-            throw error;
-        }
-    };
-
-    const verifyOtp = async (code: string) => {
-        if (!customOtpPayload) throw new Error('No pending TOTP session — please enter your phone first');
-
-        try {
-            const resp = await fetch('/api/otp/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phone: customOtpPayload.phone,
-                    code,
-                })
-            });
-
-            const data = await resp.json();
-            if (!resp.ok) throw new Error(data.error || 'Invalid TOTP code');
-
-            // Sign in to Firebase using deterministic credentials (completely free, no SMS)
-            try {
-                await signInWithEmailAndPassword(auth, data.internalEmail, data.internalPassword);
-            } catch (authError: any) {
-                if (
-                    authError.message.includes('auth/invalid-credential') ||
-                    authError.message.includes('auth/user-not-found') ||
-                    authError.message.includes('auth/invalid-login-credentials')
-                ) {
-                    await createUserWithEmailAndPassword(auth, data.internalEmail, data.internalPassword);
-                } else {
-                    throw authError;
-                }
-            }
-        } catch (error: any) {
-            console.error('Error verifying TOTP', error);
-            throw error;
-        }
-    };
 
     const resetPassword = async (email: string) => {
         try {
@@ -182,7 +112,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, setDummyUser, setupRecaptcha, sendOtp, verifyOtp, resetPassword, verifyEmail, totpQr: customOtpPayload }}>
+        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, setDummyUser, resetPassword, verifyEmail }}>
             {children}
         </AuthContext.Provider>
     );

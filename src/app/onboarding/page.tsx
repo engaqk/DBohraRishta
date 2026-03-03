@@ -93,7 +93,15 @@ export default function OnboardingPage() {
                 newErrors.mobile = "Please enter a valid mobile number with optional + country code (max 15 characters).";
             }
             if (!formData.gender) newErrors.gender = "Gender is required.";
-            if (!formData.dob) newErrors.dob = "Date of Birth is required.";
+            if (!formData.dob) {
+                newErrors.dob = "Date of Birth is required.";
+            } else {
+                const dobDate = new Date(formData.dob);
+                const today = new Date();
+                const age = today.getFullYear() - dobDate.getFullYear();
+                if (age < 18) newErrors.dob = "You must be at least 18 years old.";
+                if (age > 80) newErrors.dob = "Please enter a valid date of birth.";
+            }
         }
         if (step === 2) {
             if (!formData.itsNumber) {
@@ -253,7 +261,7 @@ export default function OnboardingPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Date of Birth</label>
-                                    <input type="date" name="dob" max="2005-01-01" onChange={handleChange} value={formData.dob} className={`w-full bg-gray-50 border ${errors.dob ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} />
+                                    <input type="date" name="dob" max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]} onChange={handleChange} value={formData.dob} className={`w-full bg-gray-50 border ${errors.dob ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} />
                                     {errors.dob && <p className="text-red-500 text-xs font-bold mt-1">{errors.dob}</p>}
                                 </div>
                             </div>
@@ -405,7 +413,7 @@ export default function OnboardingPage() {
                             <div className="flex justify-between pt-6">
                                 <button onClick={() => setStep(1)} className="text-gray-500 px-6 py-3 font-bold hover:text-gray-700">Back</button>
                                 <button onClick={handleNext} className="bg-[#881337] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#9F1239] transition-colors shadow-md flex items-center gap-2">
-                                    Next State
+                                    Next
                                 </button>
                             </div>
                         </div>

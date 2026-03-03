@@ -158,7 +158,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
     return (
         <>
             <div
-                className="bg-[#F9FAFB] rounded-2xl shadow-xl border border-gray-100 overflow-hidden max-w-sm w-full transition-transform hover:scale-[1.02] flex flex-col cursor-pointer"
+                className={`bg-[#F9FAFB] rounded-2xl shadow-xl border overflow-hidden max-w-sm w-full transition-transform hover:scale-[1.02] flex flex-col cursor-pointer ${requestStatus === 'accepted' ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30 shadow-[0_0_20px_rgba(212,175,55,0.15)]' : 'border-gray-100'}`}
                 onClick={() => setShowDetails(true)}
             >
                 {/* Blurred Photo Placeholder */}
@@ -288,11 +288,12 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                             disabled={requestSent || loading || !isMyProfileVerified}
                             className={`w-full z-20 py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 
                             ${!isMyProfileVerified ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200' :
-                                    requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' :
-                                        'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
+                                    requestStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed border border-emerald-200 shadow-none' :
+                                        requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' :
+                                            'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
                         >
                             {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                            {!isMyProfileVerified ? 'Awaiting Verification' : requestSent ? 'Request Sent' : rejectCount === 1 ? 'Retry Send Request' : 'Send Request'}
+                            {!isMyProfileVerified ? 'Awaiting Verification' : requestStatus === 'accepted' ? '✓ Interest Accepted' : requestSent ? 'Request Sent' : rejectCount === 1 ? 'Retry Send Request' : 'Send Request'}
                         </button>
                     )}
                 </div>

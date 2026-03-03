@@ -457,10 +457,15 @@ export default function RishtaDashboard() {
                 );
             case 'discovery':
             default:
-                // Only filter out profiles that have ACCEPTED or REJECTED statuses, or incoming requests.
-                const hiddenToIds = allRequests
-                    .filter(r => r.status === "accepted" || r.status === "rejected" || r.isIncoming)
-                    .map(r => r.to);
+                // Filter out profiles where there is already an accepted connection or the user is the sender of a pending request
+                const hiddenProfileIds = new Set<string>();
+                allRequests.forEach(r => {
+                    if (r.status === "accepted") {
+                        // Hide accepted connections from discovery (they appear in Messages)
+                        const otherId = r.isIncoming ? r.from : r.to;
+                        hiddenProfileIds.add(otherId);
+                    }
+                });
 
                 const computeMatchScore = (me: any, them: any) => {
                     let score = 50;
@@ -504,7 +509,7 @@ export default function RishtaDashboard() {
                     return Math.min(99, Math.max(30, score));
                 };
 
-                const availableProfiles = discoveryProfiles.filter(p => !hiddenToIds.includes(p.id));
+                const availableProfiles = discoveryProfiles.filter(p => !hiddenProfileIds.has(p.id));
 
                 const filteredProfiles = availableProfiles.filter(p =>
                     !searchQuery ||
@@ -535,9 +540,28 @@ export default function RishtaDashboard() {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
-                                {filteredProfiles.map((p) => (
-                                    <DiscoveryCard key={p.id} {...p} isDummy={(p as any).isDummy} matchScore={computeMatchScore(myProfile, p)} isMyProfileVerified={myProfile?.isItsVerified || false} bio={p.bio} isOnline={Math.random() > 0.6} viewerItsNumber={myProfile?.itsNumber || 'GUEST-XYZ'} />
-                                ))}
+                                {filteredProfiles.map((p) => {
+                                    // Check if this profile has a pending or accepted request from/to the current user
+                                    const relatedReq = allRequests.find(r => {
+                                        const otherId = r.isIncoming ? r.from : r.to;
+                                        return otherId === p.id;
+                                    });
+                                    const isAccepted = relatedReq?.status === 'accepted';
+                                    const blurEnabled = isAccepted ? false : (myProfile?.isBlurSecurityEnabled !== false);
+
+                                    return (
+                                        <DiscoveryCard
+                                            key={p.id}
+                                            {...p}
+                                            isDummy={(p as any).isDummy}
+                                            matchScore={computeMatchScore(myProfile, p)}
+                                            isMyProfileVerified={myProfile?.isItsVerified || false}
+                                            bio={p.bio}
+                                            isBlurSecurityEnabled={blurEnabled}
+                                            viewerItsNumber={myProfile?.itsNumber || ''}
+                                        />
+                                    );
+                                })}
                             </div>
                         )}
                     </section>

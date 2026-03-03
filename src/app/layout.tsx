@@ -16,7 +16,18 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "DBohraRishta | Intentional Matchmaking for the Dawoodi Bohra Community",
-  description: "A high-performance, community-centric matchmaking platform for the Dawoodi Bohra community, focusing on Rishta (Alliance) as the primary goal.",
+  description: "A trusted, community-centric matchmaking platform for the Dawoodi Bohra community. ITS-verified profiles, dynamic photo privacy, and intentional Rishta connections.",
+  keywords: "Bohra, Dawoodi Bohra, Rishta, matchmaking, matrimony, ITS verified",
+  other: {
+    "theme-color": "#881337",
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

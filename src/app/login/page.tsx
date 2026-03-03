@@ -22,6 +22,7 @@ export default function LoginPage() {
     const [isRegistering, setIsRegistering] = useState(false);
     const [authLoading, setAuthLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+    const [isOtpLimitReached, setIsOtpLimitReached] = useState(false);
 
     // Initialize recaptcha instantly on mount for phone auth container
     useEffect(() => {
@@ -50,6 +51,22 @@ export default function LoginPage() {
         };
         checkUserStatus();
     }, [user, loading, router]);
+
+    // Check SMS Limit on Mount to proactively disable Mobile option
+    useEffect(() => {
+        const checkSmsLimit = async () => {
+            try {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const trackerSnap = await getDoc(doc(db, "sys_otp_usage", todayStr));
+                if (trackerSnap.exists() && trackerSnap.data().count >= 10) {
+                    setIsOtpLimitReached(true);
+                }
+            } catch (e) {
+                console.error("Failed fetching limits", e);
+            }
+        };
+        checkSmsLimit();
+    }, []);
 
     const handleGoogleLogin = async () => {
         try {
@@ -102,6 +119,7 @@ export default function LoginPage() {
             }
 
             if (currentCount >= 10) {
+                setIsOtpLimitReached(true);
                 toast.error("Maximum 10 OTP verifications hit for today globally. Redirecting to Email authentication fallback.", { duration: 6000 });
                 setAuthMode("email");
                 setErrorMsg("");
@@ -182,9 +200,21 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+                    <div className="flex bg-gray-100 p-1 rounded-xl mb-6 relative group">
                         <button onClick={() => setAuthMode("email")} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === "email" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>Email</button>
-                        <button onClick={() => setAuthMode("phone")} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === "phone" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>Mobile OTP</button>
+                        <button
+                            disabled={isOtpLimitReached}
+                            onClick={() => setAuthMode("phone")}
+                            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === "phone" ? "bg-white text-[#881337] shadow-sm" : isOtpLimitReached ? "text-gray-400 opacity-60 cursor-not-allowed line-through" : "text-gray-500"}`}
+                            title={isOtpLimitReached ? "Daily quota exceeded (10/day). Try again tomorrow." : ""}
+                        >
+                            Mobile OTP
+                        </button>
+                        {isOtpLimitReached && (
+                            <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1.5 rounded-lg hidden group-hover:block whitespace-nowrap z-50 text-center shadow-lg pointer-events-none">
+                                Daily SMS limit filled.<br />Please use Email, or wait 24hrs.
+                            </div>
+                        )}
                     </div>
 
                     <div id="recaptcha-container"></div>

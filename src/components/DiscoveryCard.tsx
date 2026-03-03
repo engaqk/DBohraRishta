@@ -33,6 +33,7 @@ interface DiscoveryCardProps {
 export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, gender, matchScore = 85, isMyProfileVerified = false, isDummy = false, heightFeet, heightInch, hobbies, partnerQualities, isBlurSecurityEnabled = true, isItsVerified = false, bio, isOnline = false, viewerItsNumber = '' }: DiscoveryCardProps) {
     const { user } = useAuth();
     const [requestSent, setRequestSent] = useState(false);
+    const [requestStatus, setRequestStatus] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
     const [rejectCount, setRejectCount] = useState(0);
@@ -69,6 +70,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                     rejects++;
                 } else {
                     activeReq = true;
+                    setRequestStatus(s);
                 }
             };
 
@@ -220,6 +222,11 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                                         Not Accepted
                                     </span>
                                 )}
+                                {requestStatus === 'accepted' && (
+                                    <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100 uppercase mt-1">
+                                        Accepted
+                                    </span>
+                                )}
                             </div>
                             <p className="text-gray-600 font-sans text-sm mt-1">{jamaat || 'Community Member'} • {hizratLocation || 'Unknown'}</p>
                             <button onClick={() => setShowDetails(true)} className="text-xs text-[#D4AF37] font-bold hover:underline mt-1">View Full Profile →</button>
@@ -340,6 +347,11 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                                                     Not Accepted
                                                 </span>
                                             )}
+                                            {requestStatus === 'accepted' && (
+                                                <span className="bg-emerald-500/80 text-white backdrop-blur-sm px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-500/50 uppercase">
+                                                    Accepted
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -404,11 +416,12 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                                         disabled={requestSent || loading || !isMyProfileVerified}
                                         className={`w-full py-4 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-lg
                                         ${!isMyProfileVerified ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200' :
-                                                requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' :
-                                                    'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
+                                                requestStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed border border-emerald-200 shadow-none' :
+                                                    requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' :
+                                                        'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
                                     >
                                         {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                                        {!isMyProfileVerified ? 'Awaiting Admin Verification' : requestSent ? 'Request Already Sent' : rejectCount === 1 ? 'Retry Send Interest Request' : 'Send Interest Request'}
+                                        {!isMyProfileVerified ? 'Awaiting Admin Verification' : requestStatus === 'accepted' ? 'Interest Accepted' : requestSent ? 'Request Already Sent' : rejectCount === 1 ? 'Retry Send Interest Request' : 'Send Interest Request'}
                                     </button>
                                 )}
                             </div>

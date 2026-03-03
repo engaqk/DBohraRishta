@@ -9,7 +9,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 
 export default function LoginPage() {
-    const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, setDummyUser, setupRecaptcha, sendOtp, verifyOtp } = useAuth();
+    const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, setDummyUser, setupRecaptcha, sendOtp, verifyOtp, resetPassword } = useAuth();
     const router = useRouter();
 
     const [authMode, setAuthMode] = useState<"email" | "phone">("email");
@@ -20,6 +20,7 @@ export default function LoginPage() {
     const [otpSent, setOtpSent] = useState(false);
 
     const [isRegistering, setIsRegistering] = useState(false);
+    const [isResettingPassword, setIsResettingPassword] = useState(false);
     const [authLoading, setAuthLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
     const [isOtpLimitReached, setIsOtpLimitReached] = useState(false);
@@ -79,6 +80,25 @@ export default function LoginPage() {
     const handleEmailAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMsg("");
+
+        if (isResettingPassword) {
+            if (!email) {
+                setErrorMsg("Please enter your email to reset password");
+                return;
+            }
+            setAuthLoading(true);
+            try {
+                await resetPassword(email);
+                toast.success("Password reset email sent! Check your inbox.");
+                setIsResettingPassword(false);
+            } catch (error: any) {
+                setErrorMsg(error.message.replace("Firebase: ", ""));
+            } finally {
+                setAuthLoading(false);
+            }
+            return;
+        }
+
         if (!email || !password) {
             setErrorMsg("Please enter email and password");
             return;
@@ -229,29 +249,50 @@ export default function LoginPage() {
                                         className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none"
                                     />
                                 </div>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="password"
-                                        placeholder="Password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none"
-                                    />
-                                </div>
+                                {!isResettingPassword && (
+                                    <>
+                                        <div className="relative">
+                                            <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                                            <input
+                                                type="password"
+                                                placeholder="Password"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none"
+                                            />
+                                        </div>
+                                        {!isRegistering && (
+                                            <div className="text-right">
+                                                <button type="button" onClick={() => setIsResettingPassword(true)} className="text-xs text-[#D4AF37] font-bold hover:underline">
+                                                    Forgot Password?
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                                 <button
                                     type="submit"
                                     disabled={authLoading}
                                     className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-[#9F1239] active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
-                                    {authLoading ? "Please wait..." : (isRegistering ? "Sign Up" : "Log In with Email")}
+                                    {authLoading ? "Please wait..." : isResettingPassword ? "Send Reset Link" : isRegistering ? "Sign Up" : "Log In with Email"}
                                 </button>
                             </form>
-                            <div className="text-center text-sm text-gray-500 mb-6">
-                                {isRegistering ? "Already have an account?" : "Don't have an account?"}{" "}
-                                <button type="button" onClick={() => setIsRegistering(!isRegistering)} className="text-[#881337] font-bold underline">
-                                    {isRegistering ? "Log In" : "Sign Up"}
-                                </button>
+                            <div className="text-center text-sm text-gray-500 mb-6 flex flex-col gap-2">
+                                {isResettingPassword ? (
+                                    <button type="button" onClick={() => setIsResettingPassword(false)} className="text-[#881337] font-bold underline">
+                                        Back to Login
+                                    </button>
+                                ) : (
+                                    <>
+                                        <span>
+                                            {isRegistering ? "Already have an account?" : "Don't have an account?"}{" "}
+                                            <button type="button" onClick={() => setIsRegistering(!isRegistering)} className="text-[#881337] font-bold underline animate-pulse">
+                                                {isRegistering ? "Log In" : "Sign Up"}
+                                            </button>
+                                        </span>
+                                    </>
+                                )}
                             </div>
                         </>
                     ) : (

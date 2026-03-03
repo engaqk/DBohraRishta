@@ -11,7 +11,9 @@ import {
     signOut,
     RecaptchaVerifier,
     signInWithPhoneNumber,
-    ConfirmationResult
+    ConfirmationResult,
+    sendPasswordResetEmail,
+    sendEmailVerification
 } from "firebase/auth";
 import { auth } from "../firebase/config";
 
@@ -26,6 +28,8 @@ interface AuthContextType {
     setupRecaptcha: (containerId: string) => void;
     sendOtp: (phoneNumber: string) => Promise<void>;
     verifyOtp: (otp: string) => Promise<void>;
+    resetPassword: (email: string) => Promise<void>;
+    verifyEmail: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -123,8 +127,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const resetPassword = async (email: string) => {
+        try {
+            await sendPasswordResetEmail(auth, email);
+        } catch (error) {
+            console.error("Error sending password reset email", error);
+            throw error;
+        }
+    };
+
+    const verifyEmail = async () => {
+        if (auth.currentUser) {
+            try {
+                await sendEmailVerification(auth.currentUser);
+            } catch (error) {
+                console.error("Error sending verification email", error);
+                throw error;
+            }
+        } else {
+            throw new Error("No user is currently logged in.");
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, setDummyUser, setupRecaptcha, sendOtp, verifyOtp }}>
+        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, setDummyUser, setupRecaptcha, sendOtp, verifyOtp, resetPassword, verifyEmail }}>
             {children}
         </AuthContext.Provider>
     );

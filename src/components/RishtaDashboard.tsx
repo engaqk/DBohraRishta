@@ -512,7 +512,7 @@ export default function RishtaDashboard() {
                     p.jamaat?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     p.hizratLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     p.education?.toLowerCase().includes(searchQuery.toLowerCase())
-                );
+                ).sort((a, b) => computeMatchScore(myProfile, b) - computeMatchScore(myProfile, a));
 
                 return (
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -536,7 +536,7 @@ export default function RishtaDashboard() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
                                 {filteredProfiles.map((p) => (
-                                    <DiscoveryCard key={p.id} {...p} isDummy={(p as any).isDummy} matchScore={computeMatchScore(myProfile, p)} isMyProfileVerified={myProfile?.isItsVerified || false} bio={p.bio} isOnline={Math.random() > 0.6} />
+                                    <DiscoveryCard key={p.id} {...p} isDummy={(p as any).isDummy} matchScore={computeMatchScore(myProfile, p)} isMyProfileVerified={myProfile?.isItsVerified || false} bio={p.bio} isOnline={Math.random() > 0.6} viewerItsNumber={myProfile?.itsNumber || 'GUEST-XYZ'} />
                                 ))}
                             </div>
                         )}

@@ -27,15 +27,18 @@ interface DiscoveryCardProps {
     isItsVerified?: boolean;
     bio?: string;
     isOnline?: boolean;
+    viewerItsNumber?: string;
 }
 
-export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, gender, matchScore = 85, isMyProfileVerified = false, isDummy = false, heightFeet, heightInch, hobbies, partnerQualities, isBlurSecurityEnabled = true, isItsVerified = false, bio, isOnline = false }: DiscoveryCardProps) {
+export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, gender, matchScore = 85, isMyProfileVerified = false, isDummy = false, heightFeet, heightInch, hobbies, partnerQualities, isBlurSecurityEnabled = true, isItsVerified = false, bio, isOnline = false, viewerItsNumber = '' }: DiscoveryCardProps) {
     const { user } = useAuth();
     const [requestSent, setRequestSent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
     const [rejectCount, setRejectCount] = useState(0);
     const [isBookmarked, setIsBookmarked] = useState(false);
+    const [showIcebreakerModal, setShowIcebreakerModal] = useState(false);
+    const [icebreakerText, setIcebreakerText] = useState("");
 
     // Calculate approximate age
     const age = dob ? Math.floor((new Date().getTime() - new Date(dob).getTime()) / 31557600000) : 25;
@@ -131,9 +134,11 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                 from: user.uid,
                 to: id,
                 status: "pending_response",
+                icebreaker: icebreakerText.trim(),
                 timestamp: serverTimestamp()
             });
             setRequestSent(true);
+            setShowIcebreakerModal(false);
             toast.success("Interest Request sent successfully!");
         } catch (error: any) {
             toast.error("Failed to send request: " + error.message);
@@ -157,7 +162,16 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                 {/* Blurred Photo Placeholder */}
                 <div className="relative h-72 bg-gray-200 flex items-center justify-center overflow-hidden">
                     {libasImageUrl ? (
-                        <img src={libasImageUrl} alt="Profile" className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${isBlurSecurityEnabled ? 'blur-2xl scale-110 opacity-60' : 'opacity-100 scale-100'}`} />
+                        <>
+                            <img src={libasImageUrl} alt="Profile" className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${isBlurSecurityEnabled ? 'blur-2xl scale-110 opacity-60' : 'opacity-100 scale-100'}`} />
+                            {!isBlurSecurityEnabled && viewerItsNumber && (
+                                <div className="absolute inset-0 pointer-events-none z-30 flex flex-wrap overflow-hidden opacity-[0.08] mix-blend-overlay items-center justify-center">
+                                    {Array.from({ length: 40 }).map((_, i) => (
+                                        <span key={i} className="text-black font-extrabold text-sm whitespace-nowrap px-4 py-8 -rotate-45 select-none">{viewerItsNumber}</span>
+                                    ))}
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <div className={`absolute inset-0 w-full h-full flex items-center justify-center bg-gray-300 transition-all duration-300 ${isBlurSecurityEnabled ? 'blur-2xl scale-110 opacity-40' : 'opacity-100'}`}>
                             <span className="text-4xl">📸</span>
@@ -258,7 +272,11 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleSendRequest();
+                                if (isMyProfileVerified && !requestSent && !isDummy) {
+                                    setShowIcebreakerModal(true);
+                                } else {
+                                    handleSendRequest();
+                                }
                             }}
                             disabled={requestSent || loading || !isMyProfileVerified}
                             className={`w-full z-20 py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 
@@ -282,7 +300,16 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                             <div className="relative h-48 bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
                                 <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
                                     {libasImageUrl ? (
-                                        <img src={libasImageUrl} alt="Profile" className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${isBlurSecurityEnabled ? 'blur-3xl scale-125 opacity-70' : 'opacity-100 scale-100'}`} />
+                                        <>
+                                            <img src={libasImageUrl} alt="Profile" className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${isBlurSecurityEnabled ? 'blur-3xl scale-125 opacity-70' : 'opacity-100 scale-100'}`} />
+                                            {!isBlurSecurityEnabled && viewerItsNumber && (
+                                                <div className="absolute inset-0 pointer-events-none z-30 flex flex-wrap overflow-hidden opacity-[0.08] mix-blend-overlay items-center justify-center">
+                                                    {Array.from({ length: 60 }).map((_, i) => (
+                                                        <span key={i} className="text-black font-extrabold text-sm whitespace-nowrap px-4 py-8 -rotate-45 select-none">{viewerItsNumber}</span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </>
                                     ) : (
                                         <span className="text-7xl">📸</span>
                                     )}
@@ -390,6 +417,30 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                     </div>
                 )
             }
+
+            {/* Icebreaker Pre-Send Modal */}
+            {showIcebreakerModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm shadow-2xl" onClick={(e) => { e.stopPropagation(); setShowIcebreakerModal(false); }}>
+                    <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-xl font-bold font-serif text-[#881337] mb-2">Send Interest Request</h3>
+                        <p className="text-sm text-gray-500 mb-4 leading-relaxed">Attaching a short personalized halal icebreaker (optional) can increase your chances of being accepted!</p>
+
+                        <textarea
+                            value={icebreakerText}
+                            onChange={(e) => setIcebreakerText(e.target.value)}
+                            placeholder="e.g. I see we both care about our Deeni & Dunyawi balance..."
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none resize-none focus:ring-2 focus:ring-[#D4AF37] text-sm mb-4 h-24"
+                            maxLength={120}
+                        />
+                        <div className="flex gap-3">
+                            <button onClick={() => setShowIcebreakerModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-colors text-sm">Cancel</button>
+                            <button onClick={handleSendRequest} className="flex-1 py-3 bg-[#D4AF37] text-white rounded-xl font-bold hover:bg-[#c29e2f] transition-colors text-sm flex items-center justify-center gap-2">
+                                {loading && <Loader2 className="w-4 h-4 animate-spin" />} Send Request
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

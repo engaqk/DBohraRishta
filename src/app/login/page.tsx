@@ -200,22 +200,17 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <div className="flex bg-gray-100 p-1 rounded-xl mb-6 relative group">
-                        <button onClick={() => setAuthMode("email")} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === "email" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>Email</button>
-                        <button
-                            disabled={isOtpLimitReached}
-                            onClick={() => setAuthMode("phone")}
-                            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === "phone" ? "bg-white text-[#881337] shadow-sm" : isOtpLimitReached ? "text-gray-400 opacity-60 cursor-not-allowed line-through" : "text-gray-500"}`}
-                            title={isOtpLimitReached ? "Daily quota exceeded (10/day). Try again tomorrow." : ""}
-                        >
-                            Mobile OTP
-                        </button>
-                        {isOtpLimitReached && (
-                            <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1.5 rounded-lg hidden group-hover:block whitespace-nowrap z-50 text-center shadow-lg pointer-events-none">
-                                Daily SMS limit filled.<br />Please use Email, or wait 24hrs.
-                            </div>
-                        )}
-                    </div>
+                    {!isOtpLimitReached && (
+                        <div className="flex bg-gray-100 p-1 rounded-xl mb-6 relative group">
+                            <button onClick={() => setAuthMode("email")} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === "email" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>Email</button>
+                            <button
+                                onClick={() => setAuthMode("phone")}
+                                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === "phone" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}
+                            >
+                                Mobile OTP
+                            </button>
+                        </div>
+                    )}
 
                     <div id="recaptcha-container"></div>
 

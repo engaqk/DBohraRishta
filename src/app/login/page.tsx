@@ -89,16 +89,38 @@ export default function LoginPage() {
         }
         setErrorMsg("");
         setAuthLoading(true);
+
         try {
+            // Strict Daily Quota Checking Table
+            const todayStr = new Date().toISOString().split('T')[0];
+            const trackerRef = doc(db, "sys_otp_usage", todayStr);
+            const trackerSnap = await getDoc(trackerRef);
+
+            let currentCount = 0;
+            if (trackerSnap.exists()) {
+                currentCount = trackerSnap.data().count || 0;
+            }
+
+            if (currentCount >= 10) {
+                toast.error("Maximum 10 OTP verifications hit for today globally. Redirecting to Email authentication fallback.", { duration: 6000 });
+                setAuthMode("email");
+                setErrorMsg("");
+                setAuthLoading(false);
+                return; // Stop execution, don't ping Firebase Auth SMS
+            }
+
+            // Fire SMS Request
             await sendOtp(phone);
             setOtpSent(true);
             toast.success("OTP Sent Successfully!");
+
+            // Log Success inside Table
+            await setDoc(trackerRef, { count: currentCount + 1 }, { merge: true });
+
         } catch (error: any) {
             const errStr = error.message || "";
-            if (errStr.includes("quota") || errStr.includes("too-many-requests") || errStr.includes("billing") || errStr.includes("internal-error")) {
-                toast.error("Daily SMS limit reached (10/day). Redirecting to Email login.", { duration: 6000 });
-                setAuthMode("email");
-                setErrorMsg("");
+            if (errStr.includes("auth/operation-not-allowed")) {
+                setErrorMsg("Developer: Phone Auth is currently disabled in your Firebase console. Please go to Build -> Auth -> Sign-in Method and enable 'Phone' to clear this error.");
             } else {
                 setErrorMsg(errStr.replace("Firebase: ", ""));
             }

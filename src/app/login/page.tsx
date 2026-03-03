@@ -94,7 +94,14 @@ export default function LoginPage() {
             setOtpSent(true);
             toast.success("OTP Sent Successfully!");
         } catch (error: any) {
-            setErrorMsg(error.message.replace("Firebase: ", ""));
+            const errStr = error.message || "";
+            if (errStr.includes("quota") || errStr.includes("too-many-requests") || errStr.includes("billing") || errStr.includes("internal-error")) {
+                toast.error("Daily SMS limit reached (10/day). Redirecting to Email login.", { duration: 6000 });
+                setAuthMode("email");
+                setErrorMsg("");
+            } else {
+                setErrorMsg(errStr.replace("Firebase: ", ""));
+            }
         } finally {
             setAuthLoading(false);
         }

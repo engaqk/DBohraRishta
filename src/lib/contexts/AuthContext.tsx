@@ -8,7 +8,10 @@ import {
     signInWithPopup,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
-    signOut
+    signOut,
+    RecaptchaVerifier,
+    signInWithPhoneNumber,
+    ConfirmationResult
 } from "firebase/auth";
 import { auth } from "../firebase/config";
 
@@ -20,6 +23,9 @@ interface AuthContextType {
     signUpWithEmail: (e: string, p: string) => Promise<void>;
     logout: () => Promise<void>;
     setDummyUser: (uid: string, email: string) => void;
+    setupRecaptcha: (containerId: string) => void;
+    sendOtp: (phoneNumber: string) => Promise<void>;
+    verifyOtp: (otp: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -27,6 +33,8 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
+    const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
+    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
     useEffect(() => {
         const dummyUserStr = localStorage.getItem('dummy_user_id');
@@ -85,8 +93,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const setupRecaptcha = (containerId: string) => {
+        if (!recaptchaVerifier) {
+            const verifier = new RecaptchaVerifier(auth, containerId, {
+                size: 'invisible',
+            });
+            setRecaptchaVerifier(verifier);
+        }
+    };
+
+    const sendOtp = async (phoneNumber: string) => {
+        if (!recaptchaVerifier) throw new Error("Recaptcha not initialized");
+        try {
+            const result = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+            setConfirmationResult(result);
+        } catch (error) {
+            console.error("Error sending OTP", error);
+            throw error;
+        }
+    };
+
+    const verifyOtp = async (otp: string) => {
+        if (!confirmationResult) throw new Error("No pending OTP request");
+        try {
+            await confirmationResult.confirm(otp);
+        } catch (error) {
+            console.error("Error verifying OTP", error);
+            throw error;
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, setDummyUser }}>
+        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, setDummyUser, setupRecaptcha, sendOtp, verifyOtp }}>
             {children}
         </AuthContext.Provider>
     );

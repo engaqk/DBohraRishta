@@ -3,20 +3,34 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { ShieldCheck, Heart, Mail, Lock } from "lucide-react";
+import { ShieldCheck, Heart, Mail, Lock, Phone } from "lucide-react";
 import toast from "react-hot-toast";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 
 export default function LoginPage() {
-    const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, setDummyUser } = useAuth();
+    const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, setDummyUser, setupRecaptcha, sendOtp, verifyOtp } = useAuth();
     const router = useRouter();
 
+    const [authMode, setAuthMode] = useState<"email" | "phone">("email");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [phone, setPhone] = useState("+91");
+    const [otp, setOtp] = useState("");
+    const [otpSent, setOtpSent] = useState(false);
+
     const [isRegistering, setIsRegistering] = useState(false);
     const [authLoading, setAuthLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+
+    // Initialize recaptcha instantly on mount for phone auth container
+    useEffect(() => {
+        if (authMode === "phone") {
+            try {
+                setupRecaptcha("recaptcha-container");
+            } catch (e) { console.error(e) }
+        }
+    }, [authMode, setupRecaptcha]);
 
     useEffect(() => {
         const checkUserStatus = async () => {
@@ -68,6 +82,41 @@ export default function LoginPage() {
         }
     };
 
+    const handleSendOtp = async () => {
+        if (!phone || phone.length < 10) {
+            setErrorMsg("Please enter a valid mobile number with country code (e.g. +91...)");
+            return;
+        }
+        setErrorMsg("");
+        setAuthLoading(true);
+        try {
+            await sendOtp(phone);
+            setOtpSent(true);
+            toast.success("OTP Sent Successfully!");
+        } catch (error: any) {
+            setErrorMsg(error.message.replace("Firebase: ", ""));
+        } finally {
+            setAuthLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        if (!otp) {
+            setErrorMsg("Please enter the OTP.");
+            return;
+        }
+        setErrorMsg("");
+        setAuthLoading(true);
+        try {
+            await verifyOtp(otp);
+            toast.success("Phone Verified successfully! Redirecting...");
+        } catch (error: any) {
+            setErrorMsg(error.message.replace("Firebase: ", ""));
+        } finally {
+            setAuthLoading(false);
+        }
+    };
+
     if (loading) return null;
 
     return (
@@ -104,43 +153,99 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <form onSubmit={handleEmailAuth} className="space-y-4 mb-6">
-                        {errorMsg && <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100">{errorMsg}</div>}
-                        <div className="relative">
-                            <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                            <input
-                                type="email"
-                                placeholder={isRegistering ? "Email Address" : "Email (Admin or User)"}
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none"
-                            />
-                        </div>
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                            <input
-                                type="password"
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none"
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={authLoading}
-                            className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-[#9F1239] active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
-                        >
-                            {authLoading ? "Please wait..." : (isRegistering ? "Sign Up" : "Log In with Email")}
-                        </button>
-                    </form>
-
-                    <div className="text-center text-sm text-gray-500 mb-6">
-                        {isRegistering ? "Already have an account?" : "Don't have an account?"}{" "}
-                        <button type="button" onClick={() => setIsRegistering(!isRegistering)} className="text-[#881337] font-bold underline">
-                            {isRegistering ? "Log In" : "Sign Up"}
-                        </button>
+                    <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+                        <button onClick={() => setAuthMode("email")} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === "email" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>Email</button>
+                        <button onClick={() => setAuthMode("phone")} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${authMode === "phone" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>Mobile OTP</button>
                     </div>
+
+                    <div id="recaptcha-container"></div>
+
+                    {errorMsg && <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100 mb-4">{errorMsg}</div>}
+
+                    {authMode === "email" ? (
+                        <>
+                            <form onSubmit={handleEmailAuth} className="space-y-4 mb-6">
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="email"
+                                        placeholder={isRegistering ? "Email Address" : "Email (Admin or User)"}
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none"
+                                    />
+                                </div>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="password"
+                                        placeholder="Password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    disabled={authLoading}
+                                    className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-[#9F1239] active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                                >
+                                    {authLoading ? "Please wait..." : (isRegistering ? "Sign Up" : "Log In with Email")}
+                                </button>
+                            </form>
+                            <div className="text-center text-sm text-gray-500 mb-6">
+                                {isRegistering ? "Already have an account?" : "Don't have an account?"}{" "}
+                                <button type="button" onClick={() => setIsRegistering(!isRegistering)} className="text-[#881337] font-bold underline">
+                                    {isRegistering ? "Log In" : "Sign Up"}
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="space-y-4 mb-6">
+                            {!otpSent ? (
+                                <>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                                        <input
+                                            type="tel"
+                                            placeholder="Mobile Number (e.g. +9198765...)"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleSendOtp}
+                                        disabled={authLoading}
+                                        className="w-full bg-[#D4AF37] text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-[#c29e2f] active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                                    >
+                                        {authLoading ? "Sending OTP..." : "Send Verification Code"}
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Enter 6-digit OTP"
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value)}
+                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none text-center tracking-widest font-mono text-xl"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleVerifyOtp}
+                                        disabled={authLoading}
+                                        className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold transition-all shadow-sm hover:bg-[#9F1239] active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                                    >
+                                        {authLoading ? "Verifying..." : "Confirm & Login"}
+                                    </button>
+                                    <button onClick={() => setOtpSent(false)} className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors mt-2">Change Mobile Number</button>
+                                </>
+                            )}
+                        </div>
+                    )}
 
                     <div className="flex items-center gap-4 mb-6">
                         <div className="h-px bg-gray-200 flex-1"></div>

@@ -688,7 +688,7 @@ export default function RishtaDashboard() {
                         >
                             {tab === 'mybiodata' ? 'Biodata'
                                 : tab === 'messages' ? 'Chats'
-                                    : tab === 'discovery' ? 'Discover'
+                                    : tab === 'discovery' ? 'Search Profile'
                                         : tab === 'notifications' ? (
                                             <span className="relative">
                                                 🔔
@@ -931,7 +931,7 @@ export default function RishtaDashboard() {
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                             <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
                                 <MessageCircle className="w-4 h-4 text-[#881337]" />
-                                <h3 className="font-bold text-sm text-[#881337] uppercase tracking-wide">Messages from Admin</h3>
+                                <h3 className="font-bold text-sm text-[#881337] uppercase tracking-wide">💬 Chat with Admin to Resolve Above</h3>
                             </div>
                             <div className="flex flex-col gap-2.5 min-h-[120px] max-h-72 overflow-y-auto p-4">
                                 {adminMsgThread.length === 0 ? (
@@ -988,7 +988,7 @@ export default function RishtaDashboard() {
                     <ShieldCheck className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Biodata</span>
                 </button>
                 <button onClick={() => setActiveTab('discovery')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'discovery' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <Heart className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Discover</span>
+                    <Heart className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Search</span>
                 </button>
                 <button onClick={() => setActiveTab('requests')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'requests' ? 'text-[#881337]' : 'text-gray-400'}`}>
                     <ShieldCheck className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Requests</span>

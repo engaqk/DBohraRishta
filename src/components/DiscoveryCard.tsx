@@ -188,8 +188,8 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                                 src={libasImageUrl}
                                 alt={name}
                                 className={`w-full h-full object-cover transition-all duration-300 ${isBlurSecurityEnabled && requestStatus !== 'accepted'
-                                        ? 'blur-[3px] brightness-90'
-                                        : ''
+                                    ? 'blur-[3px] brightness-90'
+                                    : ''
                                     }`}
                             />
                         </div>
@@ -287,6 +287,13 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                         <div className="w-full z-20 py-3.5 bg-gray-50 text-gray-400 font-bold rounded-xl border border-gray-100 text-sm text-center shadow-sm">
                             Maximum request limit reached for this profile
                         </div>
+                    ) : !isMyProfileVerified ? (
+                        <div className="w-full z-20 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3.5 text-center shadow-sm">
+                            <p className="text-amber-800 font-bold text-xs leading-snug">
+                                🔐 Please verify your original ITS to enable Send Request
+                            </p>
+                            <p className="text-amber-700 text-[10px] mt-0.5 font-medium">Awaiting ITS Verification by Admin</p>
+                        </div>
                     ) : (
                         <button
                             onClick={(e) => {
@@ -297,15 +304,14 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                                     handleSendRequest();
                                 }
                             }}
-                            disabled={requestSent || loading || !isMyProfileVerified}
-                            className={`w-full z-20 py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 
-                            ${!isMyProfileVerified ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200' :
-                                    requestStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed border border-emerald-200 shadow-none' :
-                                        requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' :
-                                            'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
+                            disabled={requestSent || loading}
+                            className={`w-full z-20 py-3.5 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
+                            ${requestStatus === 'accepted' ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed border border-emerald-200 shadow-none' :
+                                    requestSent ? 'bg-gray-100 text-[#881337] cursor-not-allowed border border-gray-200 shadow-none' :
+                                        'bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg'}`}
                         >
                             {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                            {!isMyProfileVerified ? 'Awaiting Verification' : requestStatus === 'accepted' ? '✓ Interest Accepted' : requestSent ? 'Request Sent' : rejectCount === 1 ? 'Retry Send Request' : 'Send Request'}
+                            {requestStatus === 'accepted' ? '✓ Interest Accepted' : requestSent ? 'Request Sent' : rejectCount === 1 ? 'Retry Send Request' : 'Send Request'}
                         </button>
                     )}
                 </div>

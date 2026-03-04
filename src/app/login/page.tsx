@@ -363,19 +363,19 @@ export default function LoginPage() {
                         <div className="h-px bg-gray-200 flex-1" />
                     </div>
 
-                    {/* ── 2 Tabs (Mobile OTP hidden, code kept) ────────────────── */}
-                    {/* HIDING TABS FOR NOW: Only Google and Mobile are active
-                    <div className="flex bg-gray-100 p-1 rounded-xl mb-5 gap-1">
+                    {/* ── Modern Tabs (Email & Authenticator) ────────────────── */}
+                    <div className="flex bg-gray-100/80 p-1.5 rounded-2xl mb-6 shadow-inner ring-1 ring-black/5">
                         <button onClick={() => switchTab("email")}
-                            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${authMode === "email" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>
-                            <Mail className="w-4 h-4" /> Email
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300 ${authMode === "email" ? "bg-white text-[#881337] shadow-md border border-gray-100 scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-white/50"}`}>
+                            <Mail className={`w-4 h-4 ${authMode === "email" ? "text-[#881337]" : "text-gray-400"}`} />
+                            <span className="text-xs font-bold uppercase tracking-wide">Email</span>
                         </button>
                         <button onClick={() => switchTab("totp")}
-                            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${authMode === "totp" ? "bg-white text-[#881337] shadow-sm" : "text-gray-500"}`}>
-                            <Smartphone className="w-4 h-4" /> Mobile
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300 ${authMode === "totp" ? "bg-white text-[#881337] shadow-md border border-gray-100 scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-white/50"}`}>
+                            <Smartphone className={`w-4 h-4 ${authMode === "totp" ? "text-[#881337]" : "text-gray-400"}`} />
+                            <span className="text-xs font-bold uppercase tracking-wide">Free OTP</span>
                         </button>
                     </div>
-                    */}
 
                     {errorMsg && (
                         <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100 mb-4">{errorMsg}</div>

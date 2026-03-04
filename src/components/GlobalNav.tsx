@@ -3,13 +3,36 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, Home, User, LogOut } from 'lucide-react';
+import { Menu, X, Home, User, LogOut, Bell } from 'lucide-react';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 
 export default function GlobalNav() {
     const { user, logout } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // Listen for notifications (admin messages)
+    useEffect(() => {
+        if (!user) return;
+        const msgRef = collection(db, 'admin_messages', user.uid, 'thread');
+        const q = query(msgRef, orderBy('createdAt', 'asc'));
+
+        const unsub = onSnapshot(q, (snap) => {
+            const msgs = snap.docs.map(d => d.data());
+            const lastRead = localStorage.getItem(`lastReadNotif_${user.uid}`) || '0';
+            const newUnread = msgs.filter(m => {
+                if (m.from !== 'admin') return false;
+                const ts = m.createdAt?.toMillis?.() || m.createdAt?.seconds * 1000 || 0;
+                return ts > parseInt(lastRead);
+            }).length;
+            setUnreadCount(newUnread);
+        });
+
+        return () => unsub();
+    }, [user]);
 
     // Auto-close mobile menu on route change
     useEffect(() => {
@@ -42,7 +65,18 @@ export default function GlobalNav() {
                     </div>
 
                     {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center space-x-6">
+                    <div className="hidden md:flex items-center space-x-4">
+                        {user && (
+                            <button
+                                onClick={() => router.push('/?tab=notifications')}
+                                className="relative p-2 text-gray-500 hover:text-[#881337] transition-colors"
+                            >
+                                <Bell className="w-5 h-5" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+                                )}
+                            </button>
+                        )}
                         {user ? (
                             <>
                                 <button onClick={() => router.push('/')} className={`flex items-center gap-1.5 transition font-medium text-sm px-3 py-1.5 rounded-lg ${isActive('/') ? 'text-[#881337] bg-rose-50 font-bold' : 'text-gray-600 hover:text-[#881337] hover:bg-gray-50'}`}>
@@ -62,8 +96,19 @@ export default function GlobalNav() {
                         )}
                     </div>
 
-                    {/* Mobile Menu Button */}
-                    <div className="md:hidden flex items-center">
+                    {/* Mobile Menu Button + Bell */}
+                    <div className="md:hidden flex items-center gap-1">
+                        {user && (
+                            <button
+                                onClick={() => router.push('/?tab=notifications')}
+                                className="relative p-2 text-[#881337]"
+                            >
+                                <Bell className="w-6 h-6" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-1.5 right-1.5 w-3 h-3 bg-red-500 border-2 border-white rounded-full animate-pulse"></span>
+                                )}
+                            </button>
+                        )}
                         <button onClick={() => setIsOpen(!isOpen)} className="text-[#881337] focus:outline-none p-2">
                             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>

@@ -78,6 +78,7 @@ export default function CandidateRegistrationPage() {
         informationProvidedBy: "Myself (Candidate)",
         status: "",
         adminMessage: "",
+        isBlurSecurityEnabled: true,
     });
 
     useEffect(() => {
@@ -132,7 +133,8 @@ export default function CandidateRegistrationPage() {
             if (user && Object.keys(formData).length > 0 && formData.firstName !== "") {
                 try {
                     await updateDoc(doc(db, "users", user.uid), {
-                        ...formData
+                        ...formData,
+                        isBlurSecurityEnabled: formData.isBlurSecurityEnabled
                     });
                 } catch (e) {
                     console.error("Auto save error", e);
@@ -146,6 +148,44 @@ export default function CandidateRegistrationPage() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         if (errors[e.target.name]) {
             setErrors({ ...errors, [e.target.name]: "" });
+        }
+    };
+
+    const handleLibasImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("Image must be less than 5MB");
+            return;
+        }
+        setLoading(true);
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 600;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    if (scaleSize < 1) {
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                    } else {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                    }
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    setLibasImageUrl(canvas.toDataURL('image/jpeg', 0.5));
+                    setLoading(false);
+                    toast.success("Main Biodata photo ready!");
+                };
+            };
+        } catch (error) {
+            setLoading(false);
+            toast.error("Failed to process image");
         }
     };
 
@@ -305,6 +345,7 @@ export default function CandidateRegistrationPage() {
                     name: fullName,
                     itsNumber: formData.ejamaatId,
                     isCandidateFormComplete: true,
+                    libasImageUrl: libasImageUrl || null,
                     extraImageUrl: extraImageUrl || null
                 };
 
@@ -315,11 +356,30 @@ export default function CandidateRegistrationPage() {
 
                 await updateDoc(doc(db, "users", user.uid), updateObj);
 
-                // Email Notification Call (Mock fetch placeholder for serverless function/email trigger)
-                // In production, an API route or Firebase Extension would handle actually dispatching this email.
+                // Email Notification Call to Admin
                 try {
-                    console.log("Sending email notification to abdulqadirkhanji52@gmail.com for exact new verification request from", fullName);
-                    // fetch("/api/notify-admin", { method: "POST", body: JSON.stringify({ email: "abdulqadirkhanji52@gmail.com", user: fullName }) })
+                    await fetch("/api/notify", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            to: "abdulqadirkhanji52@gmail.com",
+                            subject: "Profile Verification Required: " + fullName,
+                            html: `
+                                <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                                    <h2 style="color: #881337;">New Profile Verification Request</h2>
+                                    <p>A new candidate has submitted their biodata for verification:</p>
+                                    <ul style="list-style: none; padding: 0;">
+                                        <li><strong>Name:</strong> ${fullName}</li>
+                                        <li><strong>ITS:</strong> ${formData.ejamaatId}</li>
+                                        <li><strong>Gender:</strong> ${formData.gender}</li>
+                                        <li><strong>City:</strong> ${formData.city || 'Not specified'}</li>
+                                    </ul>
+                                    <p style="margin-top: 20px;">Please login to the admin dashboard to review and approve/reject this profile.</p>
+                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                                    <p style="font-size: 10px; color: #999;">DBohraRishta Notification System</p>
+                                </div>
+                            `
+                        })
+                    });
                 } catch (e) { }
 
                 toast.success("Biodata Updated Successfully!");
@@ -440,6 +500,46 @@ export default function CandidateRegistrationPage() {
                                     <ErrorMsg msg={errors.dob} />
                                 </div>
                             </div>
+
+                            {/* PHOTO MANAGEMENT (Add/Change) */}
+                            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="p-5 border-2 border-dashed border-[#D4AF37]/30 bg-[#D4AF37]/5 rounded-2xl">
+                                    <label className="block text-sm font-bold text-[#881337] mb-3">Main Biodata Photo (Kaumi Libas) *</label>
+                                    <div className="flex items-center gap-4">
+                                        {libasImageUrl ? (
+                                            <div className="w-16 h-16 rounded-xl overflow-hidden shadow-md border-2 border-white ring-2 ring-[#881337]/10 shrink-0">
+                                                <img src={libasImageUrl} alt="Main" className="w-full h-full object-cover" />
+                                            </div>
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-xl bg-gray-200 flex items-center justify-center shrink-0">
+                                                <span className="text-xl">📸</span>
+                                            </div>
+                                        )}
+                                        <div className="flex-1">
+                                            <input type="file" accept="image/*" onChange={handleLibasImageUpload} className="text-xs text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#881337] file:text-white hover:file:bg-[#9F1239] cursor-pointer" />
+                                            <p className="text-[10px] text-gray-400 mt-2">Required for verification. Photo in full Kaumi Libas.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-5 border-2 border-dashed border-rose-200 bg-rose-50/50 rounded-2xl">
+                                    <label className="block text-sm font-bold text-[#881337] mb-3">Additional Portrait Photo (Option)</label>
+                                    <div className="flex items-center gap-4">
+                                        {extraImageUrl ? (
+                                            <div className="w-16 h-16 rounded-xl overflow-hidden shadow-md border-2 border-white ring-2 ring-rose-900/10 shrink-0">
+                                                <img src={extraImageUrl} alt="Extra" className="w-full h-full object-cover" />
+                                            </div>
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-xl bg-gray-200 flex items-center justify-center shrink-0">
+                                                <span className="text-xl">📸</span>
+                                            </div>
+                                        )}
+                                        <div className="flex-1">
+                                            <input type="file" accept="image/*" onChange={handleExtraImageUpload} className="text-xs text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#881337] file:text-white hover:file:bg-[#9F1239] cursor-pointer" />
+                                            <p className="text-[10px] text-gray-400 mt-2">Optional portrait photo for profile gallery.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </section>
 
                         {/* 2. FAMILY */}
@@ -491,6 +591,29 @@ export default function CandidateRegistrationPage() {
                                     <div className="flex gap-2">
                                         <input placeholder="Citizen Of" name="citizenOf" onChange={handleChange} value={formData.citizenOf} className="w-1/2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none" />
                                         <input placeholder="Ancestral Watan" name="ancestralWatan" onChange={handleChange} value={formData.ancestralWatan} className="w-1/2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 🛡️ Photo Privacy Toggle */}
+                            <div className="mt-8 p-6 bg-rose-50 border-2 border-rose-100 rounded-2xl">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex-1">
+                                        <h3 className="text-[#881337] font-black text-sm uppercase tracking-wider mb-1">Photo Privacy Control</h3>
+                                        <p className="text-gray-600 text-[11px] leading-relaxed">
+                                            Enable <strong>Blur Mode</strong> to keep your photos private. They will only be visible to users whose Interest Request you accept.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-rose-100">
+                                        <span className={`text-[10px] font-bold ${!formData.isBlurSecurityEnabled ? 'text-gray-400' : 'text-[#881337]'}`}>BLUR</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, isBlurSecurityEnabled: !prev.isBlurSecurityEnabled }))}
+                                            className={`w-12 h-6 rounded-full relative transition-all duration-300 ${formData.isBlurSecurityEnabled ? 'bg-[#881337]' : 'bg-gray-300'}`}
+                                        >
+                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${formData.isBlurSecurityEnabled ? 'right-1' : 'left-1'}`} />
+                                        </button>
+                                        <span className={`text-[10px] font-bold ${formData.isBlurSecurityEnabled ? 'text-gray-400' : 'text-emerald-600'}`}>SHOW</span>
                                     </div>
                                 </div>
                             </div>

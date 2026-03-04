@@ -29,9 +29,33 @@ interface DiscoveryCardProps {
     bio?: string;
     isOnline?: boolean;
     viewerItsNumber?: string;
+    extraImageUrl?: string;
+    // Enhanced fields
+    ejamaatId?: string;
+    itsNumber?: string;
+    maritalStatus?: string;
+    mobile?: string;
+    mobileCode?: string;
+    email?: string;
+    fatherName?: string;
+    motherName?: string;
+    professionType?: string;
+    educationDetails?: string;
+    city?: string;
+    state?: string;
+    country?: string;
 }
 
-export default function DiscoveryCard({ id, name, dob, jamaat, education, hizratLocation, libasImageUrl, gender, matchScore = 85, isMyProfileVerified = false, isDummy = false, heightFeet, heightInch, hobbies, partnerQualities, isBlurSecurityEnabled = true, isItsVerified = false, bio, isOnline = false, viewerItsNumber = '' }: DiscoveryCardProps) {
+export default function DiscoveryCard({
+    id, name, dob, jamaat, education, hizratLocation, libasImageUrl, gender, matchScore = 85,
+    isMyProfileVerified = false, isDummy = false, heightFeet, heightInch, hobbies,
+    partnerQualities, isBlurSecurityEnabled = true, isItsVerified = false, bio,
+    isOnline = false, viewerItsNumber = '', extraImageUrl,
+    // Destructure new fields
+    ejamaatId, itsNumber, maritalStatus, mobile, mobileCode, email,
+    fatherName, motherName, professionType, educationDetails,
+    city, state, country
+}: DiscoveryCardProps) {
     const { user } = useAuth();
     const router = useRouter();
     const [requestSent, setRequestSent] = useState(false);
@@ -41,6 +65,13 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [showIcebreakerModal, setShowIcebreakerModal] = useState(false);
     const [icebreakerText, setIcebreakerText] = useState("");
+
+    // Photo Gallery State
+    const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+    const [showLightbox, setShowLightbox] = useState(false);
+
+    const photos = [libasImageUrl, extraImageUrl].filter(Boolean) as string[];
+    const currentPhoto = photos[activePhotoIdx] || libasImageUrl;
 
     // Calculate approximate age
     const age = dob ? Math.floor((new Date().getTime() - new Date(dob).getTime()) / 31557600000) : 25;
@@ -140,6 +171,35 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                 icebreaker: icebreakerText.trim(),
                 timestamp: serverTimestamp()
             });
+
+            // Email Notification to Target Candidate
+            if (email && email.includes('@')) {
+                try {
+                    await fetch("/api/notify", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            to: email,
+                            subject: "New Interest Request - DBohraRishta",
+                            html: `
+                                <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                                    <h2 style="color: #881337;">Someone is interested in your biodata!</h2>
+                                    <p>As-salaamu alaykum,</p>
+                                    <p>You have received a new Interest Request on <strong>DBohraRishta</strong>.</p>
+                                    <p style="background: #f9f9f9; padding: 15px; border-radius: 8px; color: #555; font-style: italic;">
+                                        "${icebreakerText.trim() || 'No message provided.'}"
+                                    </p>
+                                    <p>Please login to your dashboard to review the profile and respond.</p>
+                                    <div style="margin-top: 25px;">
+                                        <a href="https://dbohrarishta.com" style="background: #881337; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Request</a>
+                                    </div>
+                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                                    <p style="font-size: 10px; color: #999;">DBohraRishta Notification System</p>
+                                </div>
+                            `
+                        })
+                    });
+                } catch (e) { }
+            }
             setRequestSent(true);
             setShowIcebreakerModal(false);
             toast.success("Interest Request sent successfully!");
@@ -162,11 +222,32 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                 className={`bg-[#F9FAFB] rounded-2xl shadow-xl border overflow-hidden max-w-sm w-full transition-transform hover:scale-[1.02] flex flex-col cursor-pointer ${requestStatus === 'accepted' ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30 shadow-[0_0_20px_rgba(212,175,55,0.15)]' : 'border-gray-100'}`}
                 onClick={() => router.push(`/profile?id=${id}`)}
             >
-                {/* Blurred Photo Placeholder */}
-                <div className="relative h-72 bg-gray-200 flex items-center justify-center overflow-hidden">
-                    {libasImageUrl ? (
+                {/* Photo Display (with Gallery Navigation if accepted) */}
+                <div className="relative h-80 bg-gray-200 flex items-center justify-center overflow-hidden group/photo">
+                    {currentPhoto ? (
                         <>
-                            <img src={libasImageUrl} alt="Profile" className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${(isBlurSecurityEnabled && requestStatus !== 'accepted') ? 'blur-2xl scale-110 opacity-60' : 'opacity-100 scale-100'}`} />
+                            <img
+                                src={currentPhoto}
+                                alt="Profile"
+                                onClick={(e) => { e.stopPropagation(); setShowLightbox(true); }}
+                                className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 cursor-zoom-in
+                                    ${(isBlurSecurityEnabled && requestStatus !== 'accepted') ? 'blur-2xl scale-110 opacity-60' : 'opacity-100 scale-100'}`}
+                            />
+
+                            {/* Gallery Navigation Dots (only if accepted or public and has mult photos) */}
+                            {photos.length > 1 && (!isBlurSecurityEnabled || requestStatus === 'accepted') && (
+                                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-40">
+                                    {photos.map((_, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={(e) => { e.stopPropagation(); setActivePhotoIdx(idx); }}
+                                            className={`w-2 h-2 rounded-full transition-all ${activePhotoIdx === idx ? 'bg-[#D4AF37] w-4' : 'bg-white/60 hover:bg-white'}`}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Watermark */}
                             {(!isBlurSecurityEnabled || requestStatus === 'accepted') && viewerItsNumber && (
                                 <div className="absolute inset-0 pointer-events-none z-30 flex flex-wrap overflow-hidden opacity-[0.08] mix-blend-overlay items-center justify-center">
                                     {Array.from({ length: 40 }).map((_, i) => (
@@ -177,7 +258,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                         </>
                     ) : (
                         <div className={`absolute inset-0 w-full h-full flex items-center justify-center bg-gray-300 transition-all duration-300 ${(isBlurSecurityEnabled && requestStatus !== 'accepted') ? 'blur-2xl scale-110 opacity-40' : 'opacity-100'}`}>
-                            <span className="text-4xl">📸</span>
+                            <span className="text-4xl text-gray-400">📸 No Photo</span>
                         </div>
                     )}
 
@@ -263,23 +344,91 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                         </div>
                     )}
 
-                    <div className="space-y-3 mb-6 flex-grow">
-                        <div className="flex items-center text-sm">
-                            {isItsVerified ? (
-                                <>
-                                    <CheckCircle className="w-5 h-5 text-[#D4AF37] mr-3 shrink-0" />
-                                    <span className="text-gray-700 font-medium">ITS Verified Biodata</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span className="w-5 h-5 border-2 border-gray-300 rounded-full mr-3 shrink-0" />
-                                    <span className="text-gray-400 italic">ITS Verification Pending</span>
-                                </>
-                            )}
+                    {/* 📜 Enhanced Biodata Display Section */}
+                    <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 shadow-inner">
+                        <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-2">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-[#881337]/60">Complete Biodata</h4>
+                            <div className="h-px bg-[#881337]/10 flex-1"></div>
                         </div>
-                        <div className="flex items-center text-sm">
-                            <Info className="w-5 h-5 text-[#D4AF37] mr-3 shrink-0" />
-                            <span className="text-gray-700 truncate">{education || 'Graduated'}</span>
+
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                            {/* Column 1 */}
+                            <div className="space-y-3">
+                                <div>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">ITS Number</p>
+                                    <p className="text-xs font-black text-[#881337]">{ejamaatId || itsNumber || '••••••••'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Gender & Height</p>
+                                    <p className="text-xs font-bold text-gray-700 capitalize">
+                                        {gender || 'N/A'} • {heightFeet ? `${heightFeet}'${heightInch || '0'}"` : 'N/A'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Jamaat</p>
+                                    <p className="text-xs font-bold text-gray-700 leading-tight">{jamaat || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Mobile</p>
+                                    <p className={`text-xs font-bold ${requestStatus === 'accepted' ? 'text-emerald-600' : 'text-gray-400 italic'}`}>
+                                        {requestStatus === 'accepted' ? `${mobileCode || ''} ${mobile}` : '🔒 Locked'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Education</p>
+                                    <p className="text-xs font-bold text-gray-700 leading-tight">{education || educationDetails || 'N/A'}</p>
+                                </div>
+                            </div>
+
+                            {/* Column 2 */}
+                            <div className="space-y-3">
+                                <div>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">DOB</p>
+                                    <p className="text-xs font-bold text-gray-700">{dob || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Marital Status</p>
+                                    <p className="text-xs font-bold text-gray-700 capitalize">{maritalStatus || 'Single'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Location</p>
+                                    <p className="text-xs font-bold text-gray-700 leading-tight">
+                                        {city ? `${city}${state ? `, ${state}` : ''}` : hizratLocation || 'N/A'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Email</p>
+                                    <p className={`text-xs font-bold ${requestStatus === 'accepted' ? 'text-emerald-600' : 'text-gray-400 italic'}`}>
+                                        {requestStatus === 'accepted' ? email : '🔒 Locked'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Profession</p>
+                                    <p className="text-xs font-bold text-gray-700 leading-tight">{professionType || 'Professional'}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Full Width Fields */}
+                        <div className="mt-4 pt-4 border-t border-gray-50 flex flex-col gap-3">
+                            <div>
+                                <p className="text-[9px] font-bold text-gray-400 uppercase">Parents</p>
+                                <p className="text-xs font-bold text-gray-700">
+                                    Father: <span className="text-[#881337]">{fatherName || 'N/A'}</span> | Mother: <span className="text-[#881337]">{motherName || 'N/A'}</span>
+                                </p>
+                            </div>
+                            {bio && (
+                                <div>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Bio</p>
+                                    <p className="text-xs font-medium text-gray-600 italic leading-relaxed line-clamp-2">"{bio}"</p>
+                                </div>
+                            )}
+                            {partnerQualities && (
+                                <div>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Partner Qualities</p>
+                                    <p className="text-xs font-bold text-[#D4AF37] leading-relaxed line-clamp-2">{partnerQualities}</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -338,6 +487,43 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                             <button onClick={handleSendRequest} className="flex-1 py-3 bg-[#D4AF37] text-white rounded-xl font-bold hover:bg-[#c29e2f] transition-colors text-sm flex items-center justify-center gap-2">
                                 {loading && <Loader2 className="w-4 h-4 animate-spin" />} Send Request
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* 🖼️ Full-View Lightbox Modal */}
+            {showLightbox && (!isBlurSecurityEnabled || requestStatus === 'accepted') && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in duration-300" onClick={() => setShowLightbox(false)}>
+                    <button className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors" onClick={() => setShowLightbox(false)}>
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+
+                    <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                        <img
+                            src={currentPhoto}
+                            alt="Original Full View"
+                            className="max-w-full max-h-full object-contain shadow-2xl rounded-lg"
+                        />
+
+                        {photos.length > 1 && (
+                            <>
+                                <button
+                                    onClick={() => setActivePhotoIdx((prev) => (prev - 1 + photos.length) % photos.length)}
+                                    className="absolute left-2 md:-left-16 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition-all shadow-xl"
+                                >
+                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
+                                </button>
+                                <button
+                                    onClick={() => setActivePhotoIdx((prev) => (prev + 1) % photos.length)}
+                                    className="absolute right-2 md:-right-16 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition-all shadow-xl"
+                                >
+                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                                </button>
+                            </>
+                        )}
+
+                        <div className="absolute -bottom-10 left-0 right-0 text-center text-white/60 text-sm font-bold tracking-widest uppercase">
+                            Original Photo • {activePhotoIdx + 1} of {photos.length}
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
@@ -27,6 +27,22 @@ interface UserProfile {
     hobbies?: string;
     partnerQualities?: string;
     bio?: string;
+    // Enhanced fields
+    ejamaatId?: string;
+    itsNumber?: string;
+    maritalStatus?: string;
+    mobile?: string;
+    mobileCode?: string;
+    email?: string;
+    fatherName?: string;
+    motherName?: string;
+    professionType?: string;
+    educationDetails?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    extraImageUrl?: string;
+    isBlurSecurityEnabled?: boolean;
 }
 
 interface RishtaRequest {
@@ -49,9 +65,20 @@ interface RishtaRequest {
 export default function RishtaDashboard() {
     const { user, loading, logout } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const tabParam = searchParams.get('tab');
 
     // UI State
     const [activeTab, setActiveTab] = useState<'mybiodata' | 'discovery' | 'requests' | 'messages' | 'notifications'>('discovery');
+
+    // Sync tab with URL
+    useEffect(() => {
+        if (tabParam === 'notifications') {
+            setActiveTab('notifications');
+        } else if (tabParam === 'discovery') {
+            setActiveTab('discovery');
+        }
+    }, [tabParam]);
     const [dataLoading, setDataLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -313,9 +340,9 @@ export default function RishtaDashboard() {
 
                 if (profiles.length === 0) {
                     profiles = [
-                        { id: "dummy1", name: "Aliya", dob: "1998-05-15", jamaat: "Colpetty Jamaat, Colombo", education: "MBA in Finance", hizratLocation: "Colombo, LK", isItsVerified: true, isDummy: true, hobbies: "Traveling, Cooking", partnerQualities: "Looking for a well-educated partner with good Deeni understanding.", bio: "I am an ambitious professional balancing deen and dunya.", heightFeet: "5", heightInch: "4" },
-                        { id: "dummy2", name: "Fatima", dob: "2000-02-10", jamaat: "Saifee Park Jamaat, Dubai", education: "Software Engineer", hizratLocation: "Dubai, UAE", isItsVerified: true, isDummy: true, hobbies: "Reading, Painting", partnerQualities: "Respectful, caring, and financially stable.", bio: "Software engineer who loves reading and exploring new tech.", heightFeet: "5", heightInch: "6" },
-                        { id: "dummy3", name: "Zahra", dob: "1999-11-20", jamaat: "Husaini Jamaat, London", education: "Doctor of Medicine", hizratLocation: "London, UK", isItsVerified: true, isDummy: true, hobbies: "Photography, Swimming", partnerQualities: "Family-oriented and supportive.", bio: "Dedicated doctor with a passion for helping others.", heightFeet: "5", heightInch: "2" }
+                        { id: "dummy1", name: "Aliya", dob: "1998-10-12", jamaat: "Colpetty Jamaat, Colombo", education: "MBA in Finance", hizratLocation: "Colombo, LK", isItsVerified: true, isDummy: true, hobbies: "Traveling, Cooking", partnerQualities: "Looking for a well-educated partner with good Deeni understanding.", bio: "I am an ambitious professional balancing deen and dunya.", heightFeet: "5", heightInch: "4", ejamaatId: "3041XXXX", maritalStatus: "Single", professionType: "Finance Professional", fatherName: "Mustafa Bhai", motherName: "Zainab Ben", city: "Colombo", country: "Sri Lanka" },
+                        { id: "dummy2", name: "Fatima", dob: "2000-02-10", jamaat: "Saifee Park Jamaat, Dubai", education: "Software Engineer", hizratLocation: "Dubai, UAE", isItsVerified: true, isDummy: true, hobbies: "Reading, Painting", partnerQualities: "Respectful, caring, and financially stable.", bio: "Software engineer who loves reading and exploring new tech.", heightFeet: "5", heightInch: "6", ejamaatId: "2039XXXX", maritalStatus: "Single", professionType: "Software Developer", fatherName: "Abdeali Bhai", motherName: "Sakina Ben", city: "Dubai", country: "UAE" },
+                        { id: "dummy3", name: "Zahra", dob: "1999-11-20", jamaat: "Husaini Jamaat, London", education: "Doctor of Medicine", hizratLocation: "London, UK", isItsVerified: true, isDummy: true, hobbies: "Photography, Swimming", partnerQualities: "Family-oriented and supportive.", bio: "Dedicated doctor with a passion for helping others.", heightFeet: "5", heightInch: "2", ejamaatId: "1082XXXX", maritalStatus: "Single", professionType: "Medical Doctor", fatherName: "Husain Bhai", motherName: "Rashida Ben", city: "London", country: "UK" }
                     ];
                 }
                 setDiscoveryProfiles(profiles);
@@ -404,6 +431,62 @@ export default function RishtaDashboard() {
                 email: acceptEmail
             });
             await handleRequestAction(acceptingRequest.id, "accepted");
+
+            // Email Notifications for Acceptance
+            // 1. Notify the one who accepted (the current user)
+            if (acceptEmail && acceptEmail.includes('@')) {
+                try {
+                    await fetch("/api/notify", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            to: acceptEmail,
+                            subject: "Interest Request Accepted - Contact Details Shared",
+                            html: `
+                                <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                                    <h2 style="color: #881337;">Alhamdulillah! Connection Successful</h2>
+                                    <p>You have accepted the interest request from <strong>${acceptingRequest.otherUserName}</strong>.</p>
+                                    <p>Your contact details (Mobile: ${acceptMobile}, Email: ${acceptEmail}) have been shared with them.</p>
+                                    <p>You can now see their unblurred photos and full details on your dashboard under "Unblurred Alignments".</p>
+                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                                    <p style="font-size: 10px; color: #999;">DBohraRishta Notification System</p>
+                                </div>
+                            `
+                        })
+                    });
+                } catch (e) { }
+            }
+
+            // 2. Notify the requester
+            if (acceptingRequest.otherUserEmail && acceptingRequest.otherUserEmail.includes('@')) {
+                try {
+                    await fetch("/api/notify", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            to: acceptingRequest.otherUserEmail,
+                            subject: "Interest Request Accepted! - DBohraRishta",
+                            html: `
+                                <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                                    <h2 style="color: #881337;">Mubarak! Your Interest Request was Accepted</h2>
+                                    <p><strong>${myProfile?.name}</strong> has accepted your interest request.</p>
+                                    <p>Their contact details are now visible on your dashboard under "Unblurred Alignments".</p>
+                                    <p><strong>Contact Info:</strong></p>
+                                    <ul style="list-style: none; padding: 0;">
+                                        <li>Mobile: ${acceptMobile}</li>
+                                        <li>Email: ${acceptEmail}</li>
+                                    </ul>
+                                    <p>Login now to see their full profile and photos!</p>
+                                    <div style="margin-top: 25px;">
+                                        <a href="https://dbohrarishta.com" style="background: #881337; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">Go to Dashboard</a>
+                                    </div>
+                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                                    <p style="font-size: 10px; color: #999;">DBohraRishta Notification System</p>
+                                </div>
+                            `
+                        })
+                    });
+                } catch (e) { }
+            }
+
             setAcceptingRequest(null);
         } catch (err: any) {
             toast.error("Failed to accept: " + err.message);
@@ -677,7 +760,7 @@ export default function RishtaDashboard() {
                                         return otherId === p.id;
                                     });
                                     const isAccepted = relatedReq?.status === 'accepted';
-                                    const blurEnabled = isAccepted ? false : (myProfile?.isBlurSecurityEnabled !== false);
+                                    const blurEnabled = isAccepted ? false : (p.isBlurSecurityEnabled !== false);
 
                                     return (
                                         <DiscoveryCard
@@ -727,20 +810,6 @@ export default function RishtaDashboard() {
                     </nav>
                 </div>
 
-                {/* Large Bell Button - Primary Notification Entry */}
-                <button
-                    onClick={() => setActiveTab('notifications')}
-                    className={`shrink-0 w-16 h-16 rounded-3xl shadow-md border-2 items-center justify-center transition-all relative group 
-                        ${activeTab === 'notifications' ? 'bg-[#881337] text-white border-[#881337]' : 'bg-white text-[#881337] border-gray-100 hover:border-[#881337]/30 hover:shadow-lg'}
-                        ${unreadNotifCount > 0 && activeTab !== 'notifications' ? 'ring-4 ring-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : ''}`}
-                >
-                    <Bell className={`w-8 h-8 transition-transform group-hover:rotate-12 ${unreadNotifCount > 0 && activeTab !== 'notifications' ? 'animate-bell-ring' : ''}`} />
-                    {unreadNotifCount > 0 && (
-                        <span className="absolute -top-1 -right-1 min-w-[24px] h-6 px-1.5 bg-red-500 text-white text-xs font-black flex items-center justify-center rounded-full border-2 border-white shadow-lg animate-bounce z-20">
-                            {unreadNotifCount}
-                        </span>
-                    )}
-                </button>
             </header>
 
             {/* 🎉 Verified Celebration Banner */}

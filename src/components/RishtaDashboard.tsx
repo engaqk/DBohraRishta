@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -698,35 +698,51 @@ export default function RishtaDashboard() {
 
     return (
         <div className="min-h-screen bg-[#F9FAFB] text-[#881337] p-6 pb-24 md:p-12 md:pb-12">
-            <header className="max-w-7xl mx-auto mb-4 flex justify-center items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100 w-full">
-                <nav className="flex w-full relative">
-                    {(['mybiodata', 'discovery', 'requests', 'messages', 'notifications'] as const).map((tab) => (
-                        <button
-                            key={tab}
-                            id={`${tab}-nav-tab`}
-                            onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-2.5 text-[10px] font-bold transition-all rounded-xl relative z-10 text-center ${activeTab === tab ? 'text-white shadow-sm' : 'text-gray-500 hover:text-[#881337]'}`}
-                        >
-                            {tab === 'mybiodata' ? 'Biodata'
-                                : tab === 'messages' ? 'Accepted Chats'
-                                    : tab === 'discovery' ? 'Search Profile'
-                                        : tab === 'notifications' ? (
-                                            <span className="relative">
-                                                🔔
-                                                {unreadNotifCount > 0 && (
-                                                    <span className="absolute -top-1 -right-2 w-2.5 h-2.5 bg-red-500 rounded-full border border-white shadow-sm transition-transform animate-pulse" />
-                                                )}
-                                            </span>
-                                        )
-                                            : 'Requests'}
-                        </button>
-                    ))}
-                    {/* Active Background Pill */}
-                    <div
-                        className="absolute top-0 bottom-0 w-1/5 bg-[#881337] rounded-xl transition-all duration-300 ease-out shadow-sm"
-                        style={{ left: `${(['mybiodata', 'discovery', 'requests', 'messages', 'notifications'].indexOf(activeTab)) * 20}%` }}
-                    />
-                </nav>
+            <header className="max-w-7xl mx-auto mb-6 flex items-center gap-4">
+                <div className="flex-1 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
+                    <nav className="flex w-full relative">
+                        {(['mybiodata', 'discovery', 'requests', 'messages', 'notifications'] as const).map((tab) => (
+                            <button
+                                key={tab}
+                                id={`${tab}-nav-tab`}
+                                onClick={() => setActiveTab(tab)}
+                                className={`flex-1 py-2.5 text-xs font-bold transition-all rounded-xl relative z-10 text-center ${activeTab === tab ? 'text-white shadow-sm' : 'text-gray-500 hover:text-[#881337]'}`}
+                            >
+                                {tab === 'mybiodata' ? 'Biodata'
+                                    : tab === 'messages' ? 'Accepted Chats'
+                                        : tab === 'discovery' ? 'Search Profile'
+                                            : tab === 'notifications' ? (
+                                                <span className="relative inline-flex items-center gap-1">
+                                                    <Bell className={`w-3.5 h-3.5 ${activeTab === 'notifications' ? 'text-white' : 'text-[#881337]'}`} />
+                                                    Alerts
+                                                    {unreadNotifCount > 0 && (
+                                                        <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white shadow-sm animate-pulse" />
+                                                    )}
+                                                </span>
+                                            )
+                                                : 'Requests'}
+                            </button>
+                        ))}
+                        {/* Active Background Pill */}
+                        <div
+                            className="absolute top-0 bottom-0 w-1/5 bg-[#881337] rounded-xl transition-all duration-300 ease-out shadow-sm"
+                            style={{ left: `${(['mybiodata', 'discovery', 'requests', 'messages', 'notifications'].indexOf(activeTab)) * 20}%` }}
+                        />
+                    </nav>
+                </div>
+
+                {/* Large Bell Button */}
+                <button
+                    onClick={() => setActiveTab('notifications')}
+                    className={`hidden md:flex shrink-0 w-14 h-14 rounded-2xl shadow-sm border border-gray-100 items-center justify-center transition-all relative group ${activeTab === 'notifications' ? 'bg-[#881337] text-white' : 'bg-white text-[#881337] hover:bg-gray-50'}`}
+                >
+                    <Bell className={`w-7 h-7 transition-transform group-hover:rotate-12 ${activeTab === 'notifications' ? 'animate-none' : ''}`} />
+                    {unreadNotifCount > 0 && (
+                        <span className="absolute top-2 right-2 min-w-[20px] h-5 px-1 bg-red-500 text-white text-[11px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-sm animate-bounce">
+                            {unreadNotifCount}
+                        </span>
+                    )}
+                </button>
             </header>
 
             {/* 🎉 Verified Celebration Banner */}

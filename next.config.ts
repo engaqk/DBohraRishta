@@ -1,10 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Needed for GitHub Pages deployment under a subpath
+  // Removed basePath and assetPrefix for custom domain deployment (www.53dbohrarishta.in)
+  // These are only needed if deploying to username.github.io/repo-name/
   output: "export",
-  basePath: "/DBohraRishta",   // match your repo name exactly (case-sensitive)
-  assetPrefix: "/DBohraRishta/",
 
   // GitHub Pages doesn’t support Next.js image optimization
   images: {

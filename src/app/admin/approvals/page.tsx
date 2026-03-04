@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase/config";
 import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 interface PendingUser {
     id: string;
@@ -28,10 +29,16 @@ export default function AdminVerificationPage() {
     const [showRejectInput, setShowRejectInput] = useState(false);
     const [analytics, setAnalytics] = useState({ totalUsers: 0, acceptedRatio: 0, cities: {} as any });
     const { user } = useAuth();
+    const router = useRouter();
 
     useEffect(() => {
+        const isAdmin = localStorage.getItem("admin_auth_token");
+        if (!isAdmin) {
+            router.push('/admin/login');
+            return;
+        }
         fetchAdminData();
-    }, []);
+    }, [router]);
 
     const fetchAdminData = async () => {
         try {

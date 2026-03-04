@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Info, CheckCircle, ShieldCheck, Loader2 } from 'lucide-react';
+import { Info, CheckCircle, ShieldCheck, Loader2, ExternalLink } from 'lucide-react';
 import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -65,6 +65,7 @@ export default function DiscoveryCard({
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [showIcebreakerModal, setShowIcebreakerModal] = useState(false);
     const [icebreakerText, setIcebreakerText] = useState("");
+    const [isExpanded, setIsExpanded] = useState(false);
 
     // Photo Gallery State
     const [activePhotoIdx, setActivePhotoIdx] = useState(0);
@@ -219,8 +220,8 @@ export default function DiscoveryCard({
     return (
         <>
             <div
-                className={`bg-[#F9FAFB] rounded-2xl shadow-xl border overflow-hidden max-w-sm w-full transition-transform hover:scale-[1.02] flex flex-col cursor-pointer ${requestStatus === 'accepted' ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30 shadow-[0_0_20px_rgba(212,175,55,0.15)]' : 'border-gray-100'}`}
-                onClick={() => router.push(`/profile?id=${id}`)}
+                className={`bg-[#F9FAFB] rounded-2xl shadow-xl border overflow-hidden max-w-sm w-full transition-all duration-300 flex flex-col cursor-pointer ${requestStatus === 'accepted' ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30 shadow-[0_0_20px_rgba(212,175,55,0.15)]' : 'border-gray-100'} ${isExpanded ? 'max-w-md' : 'max-w-sm'}`}
+                onClick={() => setIsExpanded(!isExpanded)}
             >
                 {/* Photo Display (with Gallery Navigation if accepted) */}
                 <div className="relative h-80 bg-gray-200 flex items-center justify-center overflow-hidden group/photo">
@@ -322,7 +323,9 @@ export default function DiscoveryCard({
                                 )}
                             </div>
                             <p className="text-gray-600 font-sans text-sm mt-1">{jamaat || 'Community Member'} • {hizratLocation || 'Unknown'}</p>
-                            <button onClick={(e) => { e.stopPropagation(); router.push(`/profile?id=${id}`); }} className="text-xs text-[#D4AF37] font-bold hover:underline mt-1">View Full Profile →</button>
+                            <button onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }} className="text-xs text-[#D4AF37] font-bold hover:underline mt-1">
+                                {isExpanded ? 'Collapse Details ↑' : 'View Full Details ↓'}
+                            </button>
                         </div>
                         <div className="flex flex-col items-end gap-2 shrink-0">
                             <div className="bg-[#881337] text-[#D4AF37] px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-md">
@@ -344,93 +347,104 @@ export default function DiscoveryCard({
                         </div>
                     )}
 
-                    {/* 📜 Enhanced Biodata Display Section */}
-                    <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 shadow-inner">
-                        <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-2">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-[#881337]/60">Complete Biodata</h4>
-                            <div className="h-px bg-[#881337]/10 flex-1"></div>
-                        </div>
+                    {/* 📜 Enhanced Biodata Display Section - ONLY SHOWN WHEN EXPANDED */}
+                    {isExpanded && (
+                        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 shadow-inner animate-in slide-in-from-top-2 duration-300">
+                            <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-2">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-[#881337]/60">Candidate Biodata</h4>
+                                <div className="h-px bg-[#881337]/10 flex-1"></div>
+                            </div>
 
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-4">
-                            {/* Column 1 */}
-                            <div className="space-y-3">
-                                <div>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">ITS Number</p>
-                                    <p className="text-xs font-black text-[#881337]">{ejamaatId || itsNumber || '••••••••'}</p>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                                {/* Column 1 */}
+                                <div className="space-y-3">
+                                    <div>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase">ITS Number</p>
+                                        <p className="text-xs font-black text-[#881337]">{ejamaatId || itsNumber || '••••••••'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase">Gender & Height</p>
+                                        <p className="text-xs font-bold text-gray-700 capitalize">
+                                            {gender || 'N/A'} • {heightFeet ? `${heightFeet}'${heightInch || '0'}"` : 'N/A'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase">Jamaat</p>
+                                        <p className="text-xs font-bold text-gray-700 leading-tight">{jamaat || 'N/A'}</p>
+                                    </div>
+                                    {requestStatus === 'accepted' && (
+                                        <div>
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase">Mobile</p>
+                                            <p className="text-xs font-bold text-emerald-600">
+                                                {mobileCode || ''} {mobile}
+                                            </p>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase">Education</p>
+                                        <p className="text-xs font-bold text-gray-700 leading-tight">{education || educationDetails || 'N/A'}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Gender & Height</p>
-                                    <p className="text-xs font-bold text-gray-700 capitalize">
-                                        {gender || 'N/A'} • {heightFeet ? `${heightFeet}'${heightInch || '0'}"` : 'N/A'}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Jamaat</p>
-                                    <p className="text-xs font-bold text-gray-700 leading-tight">{jamaat || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Mobile</p>
-                                    <p className={`text-xs font-bold ${requestStatus === 'accepted' ? 'text-emerald-600' : 'text-gray-400 italic'}`}>
-                                        {requestStatus === 'accepted' ? `${mobileCode || ''} ${mobile}` : '🔒 Locked'}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Education</p>
-                                    <p className="text-xs font-bold text-gray-700 leading-tight">{education || educationDetails || 'N/A'}</p>
+
+                                {/* Column 2 */}
+                                <div className="space-y-3">
+                                    <div>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase">DOB</p>
+                                        <p className="text-xs font-bold text-gray-700">{dob || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase">Marital Status</p>
+                                        <p className="text-xs font-bold text-gray-700 capitalize">{maritalStatus || 'Single'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase">Location</p>
+                                        <p className="text-xs font-bold text-gray-700 leading-tight">
+                                            {city ? `${city}${state ? `, ${state}` : ''}` : hizratLocation || 'N/A'}
+                                        </p>
+                                    </div>
+                                    {requestStatus === 'accepted' && (
+                                        <div>
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase">Email</p>
+                                            <p className="text-xs font-bold text-emerald-600">
+                                                {email}
+                                            </p>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase">Profession</p>
+                                        <p className="text-xs font-bold text-gray-700 leading-tight">{professionType || 'Professional'}</p>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Column 2 */}
-                            <div className="space-y-3">
+                            {/* Full Width Fields */}
+                            <div className="mt-4 pt-4 border-t border-gray-50 flex flex-col gap-3">
                                 <div>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">DOB</p>
-                                    <p className="text-xs font-bold text-gray-700">{dob || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Marital Status</p>
-                                    <p className="text-xs font-bold text-gray-700 capitalize">{maritalStatus || 'Single'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Location</p>
-                                    <p className="text-xs font-bold text-gray-700 leading-tight">
-                                        {city ? `${city}${state ? `, ${state}` : ''}` : hizratLocation || 'N/A'}
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Parents</p>
+                                    <p className="text-xs font-bold text-gray-700">
+                                        Father: <span className="text-[#881337]">{fatherName || 'N/A'}</span> | Mother: <span className="text-[#881337]">{motherName || 'N/A'}</span>
                                     </p>
                                 </div>
-                                <div>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Email</p>
-                                    <p className={`text-xs font-bold ${requestStatus === 'accepted' ? 'text-emerald-600' : 'text-gray-400 italic'}`}>
-                                        {requestStatus === 'accepted' ? email : '🔒 Locked'}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Profession</p>
-                                    <p className="text-xs font-bold text-gray-700 leading-tight">{professionType || 'Professional'}</p>
+                                {bio && (
+                                    <div>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase">Bio</p>
+                                        <p className="text-xs font-medium text-gray-600 italic leading-relaxed">"{bio}"</p>
+                                    </div>
+                                )}
+                                {partnerQualities && (
+                                    <div>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase">Partner Qualities</p>
+                                        <p className="text-xs font-bold text-[#D4AF37] leading-relaxed">{partnerQualities}</p>
+                                    </div>
+                                )}
+                                <div className="mt-2 text-center">
+                                    <button onClick={(e) => { e.stopPropagation(); router.push(`/profile?id=${id}`); }} className="text-[10px] font-bold text-[#881337] hover:underline flex items-center justify-center gap-1 mx-auto">
+                                        Open Separate Profile Page <ExternalLink className="w-3 h-3" />
+                                    </button>
                                 </div>
                             </div>
                         </div>
-
-                        {/* Full Width Fields */}
-                        <div className="mt-4 pt-4 border-t border-gray-50 flex flex-col gap-3">
-                            <div>
-                                <p className="text-[9px] font-bold text-gray-400 uppercase">Parents</p>
-                                <p className="text-xs font-bold text-gray-700">
-                                    Father: <span className="text-[#881337]">{fatherName || 'N/A'}</span> | Mother: <span className="text-[#881337]">{motherName || 'N/A'}</span>
-                                </p>
-                            </div>
-                            {bio && (
-                                <div>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Bio</p>
-                                    <p className="text-xs font-medium text-gray-600 italic leading-relaxed line-clamp-2">"{bio}"</p>
-                                </div>
-                            )}
-                            {partnerQualities && (
-                                <div>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Partner Qualities</p>
-                                    <p className="text-xs font-bold text-[#D4AF37] leading-relaxed line-clamp-2">{partnerQualities}</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    )}
 
                     {rejectCount >= 2 && !requestSent ? (
                         <div className="w-full z-20 py-3.5 bg-gray-50 text-gray-400 font-bold rounded-xl border border-gray-100 text-sm text-center shadow-sm">

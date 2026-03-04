@@ -39,8 +39,8 @@ export default function GlobalNav() {
         setIsOpen(false);
     }, [pathname]);
 
-    // Don't show nav on login or onboarding
-    if (pathname === '/login' || pathname === '/onboarding') return null;
+    // Don't show nav on login, onboarding, or admin pages
+    if (pathname === '/login' || pathname === '/onboarding' || pathname?.startsWith('/admin')) return null;
 
     const handleLogout = async () => {
         setIsOpen(false);
@@ -49,6 +49,7 @@ export default function GlobalNav() {
     };
 
     const isActive = (path: string) => pathname === path;
+    const isNotificationsActive = pathname === '/' && new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('tab') === 'notifications';
 
     return (
         <div className="fixed top-0 left-0 w-full z-[100] bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm print:hidden">
@@ -69,11 +70,13 @@ export default function GlobalNav() {
                         {user && (
                             <button
                                 onClick={() => router.push('/?tab=notifications')}
-                                className="relative p-2 text-gray-500 hover:text-[#881337] transition-colors"
+                                className={`relative p-2 transition-all duration-300 rounded-xl ${isNotificationsActive ? 'text-white bg-[#881337] shadow-md ring-2 ring-rose-100' : 'text-gray-500 hover:text-[#881337] hover:bg-rose-50'}`}
                             >
                                 <Bell className="w-5 h-5" />
                                 {unreadCount > 0 && (
-                                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+                                    <span className={`absolute -top-1 -right-1 min-w-[16px] h-4 text-[9px] font-black flex items-center justify-center rounded-full border-2 ${isNotificationsActive ? 'bg-[#D4AF37] text-[#881337] border-[#881337]' : 'bg-red-500 text-white border-white'}`}>
+                                        {unreadCount}
+                                    </span>
                                 )}
                             </button>
                         )}
@@ -101,11 +104,13 @@ export default function GlobalNav() {
                         {user && (
                             <button
                                 onClick={() => router.push('/?tab=notifications')}
-                                className="relative p-2 text-[#881337]"
+                                className={`relative p-2 transition-all rounded-xl ${isNotificationsActive ? 'text-white bg-[#881337] shadow-lg' : 'text-[#881337]'}`}
                             >
                                 <Bell className="w-6 h-6" />
                                 {unreadCount > 0 && (
-                                    <span className="absolute top-1.5 right-1.5 w-3 h-3 bg-red-500 border-2 border-white rounded-full animate-pulse"></span>
+                                    <span className={`absolute -top-1 -right-1 w-5 h-5 text-[10px] font-black flex items-center justify-center rounded-full border-2 animate-pulse ${isNotificationsActive ? 'bg-[#D4AF37] text-[#881337] border-[#881337]' : 'bg-red-500 text-white border-white'}`}>
+                                        {unreadCount}
+                                    </span>
                                 )}
                             </button>
                         )}

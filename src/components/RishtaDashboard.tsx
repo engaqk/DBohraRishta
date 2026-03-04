@@ -787,26 +787,24 @@ export default function RishtaDashboard() {
     return (
         <div className="min-h-screen bg-[#F9FAFB] text-[#881337] p-6 pb-24 md:p-12 md:pb-12">
             <header className="max-w-7xl mx-auto mb-6 flex items-center gap-4">
-                <div className="flex-1 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
-                    <nav className="flex w-full relative">
+                <div className="flex-1">
+                    <nav className="hidden md:flex bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden divide-x divide-gray-100">
                         {(['mybiodata', 'discovery', 'requests', 'messages'] as const).map((tab) => (
                             <button
                                 key={tab}
                                 id={`${tab}-nav-tab`}
                                 onClick={() => setActiveTab(tab)}
-                                className={`flex-1 py-2.5 text-xs font-bold transition-all rounded-xl relative z-10 text-center ${activeTab === tab ? 'text-white shadow-sm' : 'text-gray-500 hover:text-[#881337]'}`}
+                                className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all relative ${activeTab === tab ? 'bg-rose-50/50 text-[#881337]' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
                             >
-                                {tab === 'mybiodata' ? 'My Biodata'
-                                    : tab === 'messages' ? 'Accepted Chats'
-                                        : tab === 'discovery' ? 'Search Profile'
-                                            : 'Requests'}
+                                <div className="flex flex-col items-center gap-1">
+                                    {tab === 'mybiodata' ? 'My Biodata'
+                                        : tab === 'messages' ? 'Accepted'
+                                            : tab === 'discovery' ? 'Search Profile'
+                                                : 'Requests'}
+                                    {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337]" />}
+                                </div>
                             </button>
                         ))}
-                        {/* Active Background Pill */}
-                        <div
-                            className="absolute top-0 bottom-0 w-1/4 bg-[#881337] rounded-xl transition-all duration-300 ease-out shadow-sm"
-                            style={{ left: `${(['mybiodata', 'discovery', 'requests', 'messages'].indexOf(activeTab as any)) * 25}%` }}
-                        />
                     </nav>
                 </div>
 

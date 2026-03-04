@@ -147,10 +147,10 @@ export default function AdminVerificationPage() {
         }
     };
 
-    const openDetails = (u: PendingUser) => {
+    const openDetails = (u: PendingUser, tab: 'biodata' | 'messages' = 'biodata') => {
         setSelectedUser(u);
         setAdminComment(u.adminMessage || "");
-        setActiveDetailTab('biodata');
+        setActiveDetailTab(tab);
     };
     const closeDetails = () => { setSelectedUser(null); setAdminComment(""); };
 
@@ -357,25 +357,26 @@ export default function AdminVerificationPage() {
 
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 hidden md:grid grid-cols-12 gap-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                <div className="col-span-3">Profile / Name</div>
+                                <div className="col-span-2">Profile / Name</div>
                                 <div className="col-span-2">ITS Number</div>
                                 <div className="col-span-2">Location</div>
                                 <div className="col-span-2">Status</div>
-                                <div className="col-span-3 text-right">Actions</div>
+                                <div className="col-span-2">Recent Activity</div>
+                                <div className="col-span-2 text-right">Actions</div>
                             </div>
                             <div className="divide-y divide-gray-100">
                                 {allUsers.length === 0 ? (
                                     <div className="p-10 text-center text-gray-400 font-bold uppercase text-sm">No users found</div>
                                 ) : (
                                     allUsers.map((u) => (
-                                        <div key={u.id} onClick={() => openDetails(u)} className="p-4 md:px-6 md:py-4 flex flex-col md:grid md:grid-cols-12 gap-4 items-center cursor-pointer transition-colors hover:bg-gray-50/80">
-                                            <div className="col-span-3 flex items-center gap-3 w-full">
+                                        <div key={u.id} className="p-4 md:px-6 md:py-4 flex flex-col md:grid md:grid-cols-12 gap-4 items-center cursor-pointer transition-colors hover:bg-gray-50/80" onClick={() => openDetails(u)}>
+                                            <div className="col-span-2 flex items-center gap-3 w-full">
                                                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0 border border-gray-100">
                                                     {u.libasImageUrl ? <img src={u.libasImageUrl} alt="Profile" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[#881337] font-bold bg-rose-50">{u.name?.charAt(0) || '?'}</div>}
                                                 </div>
                                                 <div className="flex-1 truncate">
                                                     <p className="font-bold text-[#881337] truncate">{u.name}</p>
-                                                    <p className="text-xs text-gray-500 truncate">{u.mobile || u.mobileNumber || "No mobile"}</p>
+                                                    <p className="text-[10px] text-gray-400 truncate">{u.mobile || u.mobileNumber || "No mobile"}</p>
                                                 </div>
                                             </div>
                                             <div className="col-span-2 w-full text-sm font-medium text-gray-700">{u.itsNumber}</div>
@@ -383,13 +384,18 @@ export default function AdminVerificationPage() {
                                             <div className="col-span-2 w-full">
                                                 <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(u.status)}`}>{getStatusLabel(u.status)}</span>
                                             </div>
-                                            <div className="col-span-3 w-full flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                                <button onClick={() => openDetails(u)} className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-100 shadow-sm transition-colors">Open Details</button>
+                                            <div className="col-span-2 w-full flex items-center gap-2">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); openDetails(u, 'messages'); }}
+                                                    className="flex items-center gap-1.5 text-[#881337] hover:underline text-[10px] font-bold"
+                                                >
+                                                    <MessageCircle className="w-3.5 h-3.5" /> View Chat
+                                                </button>
+                                            </div>
+                                            <div className="col-span-2 w-full flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                                                <button onClick={() => openDetails(u)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 shadow-sm transition-colors" title="Open Complete Details"><ArrowRight className="w-4 h-4" /></button>
                                                 {(!u.status || u.status === 'pending_verification' || u.status === 'pending') && (
                                                     <button onClick={() => handleStatusMove(u.id, 'verified')} className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg hover:bg-emerald-100 shadow-sm" title="Quick Verify"><CheckCircle className="w-4 h-4" /></button>
-                                                )}
-                                                {u.status !== 'rejected' && (
-                                                    <button onClick={() => handleStatusMove(u.id, 'hold', 'Your profile has been put on hold temporarily.')} className="p-2 bg-yellow-50 text-yellow-600 border border-yellow-100 rounded-lg hover:bg-yellow-100 shadow-sm" title="Put on Hold"><PauseCircle className="w-4 h-4" /></button>
                                                 )}
                                             </div>
                                         </div>

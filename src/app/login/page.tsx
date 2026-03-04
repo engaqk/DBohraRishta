@@ -86,19 +86,10 @@ function phoneToFirebaseCredentials(phone: string) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function LoginPage() {
-    const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, setDummyUser, resetPassword } = useAuth();
+    const { user, loading, signInWithGoogle, setDummyUser } = useAuth();
     const router = useRouter();
 
-    type AuthTab = "email" | "totp"; // "phone" is hidden (billing required) but code is kept
-    const [authMode, setAuthMode] = useState<AuthTab>("totp");
-
-    // Email tab state
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [isRegistering, setIsRegistering] = useState(false);
-    const [isResettingPassword, setIsResettingPassword] = useState(false);
-
-    // TOTP tab state
+    // TOTP state
     const [totpPhone, setTotpPhone] = useState("+91");
     const [totpCode, setTotpCode] = useState("");
     const [qrShown, setQrShown] = useState(false);
@@ -135,66 +126,7 @@ export default function LoginPage() {
         checkUserStatus();
     }, [user, loading, router]);
 
-    const switchTab = (tab: AuthTab) => {
-        setAuthMode(tab);
-        setErrorMsg("");
-    };
 
-    // ── Email Auth ────────────────────────────────────────────────────────────
-    const handleEmailAuth = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setErrorMsg("");
-        if (isResettingPassword) {
-            if (!email) { setErrorMsg("Please enter your email."); return; }
-            setAuthLoading(true);
-            try {
-                await resetPassword(email);
-                toast.success("Password reset email sent!");
-                setIsResettingPassword(false);
-            } catch (error: any) {
-                setErrorMsg(error.message.replace("Firebase: ", ""));
-            } finally { setAuthLoading(false); }
-            return;
-        }
-        if (!email || !password) { setErrorMsg("Please enter email and password."); return; }
-
-        // Admin credentials bypass
-        if (email.toLowerCase() === 'admin' && password === 'admin53') {
-            setAuthLoading(true);
-            try {
-                // We create a dummy authenticated state or sign in using a hardcoded firebase email 
-                // Alternatively, intercept at the AuthContext level or use hardcoded email.
-                // Assuming we have to map "admin" to a real firebase email
-                await signInWithEmail('abdulqadirkhanji52@gmail.com', password); // Admin mapping example
-                toast.success("Welcome Admin!");
-                router.push("/admin");
-                return;
-            } catch {
-                toast.error("Admin account error. Please ensure Firebase has this admin configured or use correct password.");
-                try {
-                    await signInWithEmail('admin@dbohranisbat.com', password);
-                } catch (e: any) {
-                    setErrorMsg(e.message);
-                }
-            } finally {
-                setAuthLoading(false);
-            }
-            return;
-        }
-
-        if (isRegistering && password.length < 6) { setErrorMsg("Password must be at least 6 characters."); return; }
-        setAuthLoading(true);
-        try {
-            if (isRegistering) {
-                await signUpWithEmail(email, password);
-                toast.success("Account created! Admin verification pending.");
-            } else {
-                await signInWithEmail(email, password);
-            }
-        } catch (error: any) {
-            setErrorMsg(error.message.replace("Firebase: ", ""));
-        } finally { setAuthLoading(false); }
-    };
 
     // ── TOTP: Step 1 — Generate QR ────────────────────────────────────────────
     const handleGenerateQr = () => {
@@ -363,199 +295,127 @@ export default function LoginPage() {
                         <div className="h-px bg-gray-200 flex-1" />
                     </div>
 
-                    {/* ── Modern Tabs (Email & Authenticator) ────────────────── */}
-                    <div className="flex bg-gray-100/80 p-1.5 rounded-2xl mb-6 shadow-inner ring-1 ring-black/5">
-                        <button onClick={() => switchTab("email")}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300 ${authMode === "email" ? "bg-white text-[#881337] shadow-md border border-gray-100 scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-white/50"}`}>
-                            <Mail className={`w-4 h-4 ${authMode === "email" ? "text-[#881337]" : "text-gray-400"}`} />
-                            <span className="text-xs font-bold uppercase tracking-wide">Email</span>
-                        </button>
-                        <button onClick={() => switchTab("totp")}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all duration-300 ${authMode === "totp" ? "bg-white text-[#881337] shadow-md border border-gray-100 scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-white/50"}`}>
-                            <Smartphone className={`w-4 h-4 ${authMode === "totp" ? "text-[#881337]" : "text-gray-400"}`} />
-                            <span className="text-xs font-bold uppercase tracking-wide">Free OTP</span>
-                        </button>
-                    </div>
-
                     {errorMsg && (
                         <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100 mb-4">{errorMsg}</div>
                     )}
 
-                    {/* ══════════════ EMAIL TAB ══════════════ */}
-                    {authMode === "email" && (
-                        <>
-                            <form onSubmit={handleEmailAuth} className="space-y-4 mb-5">
+                    {/* ══════════════ AUTHENTICATOR TOTP ══════════════ */}
+                    <div className="space-y-4 mb-5">
+                        {!qrShown ? (
+                            /* ── Step 1: Enter phone number ── */
+                            <>
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 leading-relaxed">
+                                    <p className="font-bold mb-1">📱 Mobile Login (Verification)</p>
+                                    <p>Enter your mobile number to get a setup code for your authenticator app. Works on any device, no internet needed after setup.</p>
+                                </div>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                    <input type="email" placeholder="Email Address" value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
+                                    <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                                    <input type="tel" inputMode="tel" placeholder="e.g. 9876543210"
+                                        value={totpPhone} onChange={(e) => setTotpPhone(e.target.value.replace(/[^0-9+]/g, ''))}
                                         className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none" />
                                 </div>
-                                {!isResettingPassword && (
-                                    <>
-                                        <div className="relative">
-                                            <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                            <input type="password" placeholder="Password" value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none" />
-                                        </div>
-                                        {!isRegistering && (
-                                            <div className="text-right">
-                                                <button type="button" onClick={() => setIsResettingPassword(true)} className="text-xs text-[#D4AF37] font-bold hover:underline">Forgot Password?</button>
-                                            </div>
-                                        )}
-                                    </>
+                                <button onClick={handleGenerateQr}
+                                    className="w-full bg-[#D4AF37] text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-[#c29e2f] active:scale-95 flex items-center justify-center gap-2">
+                                    <Smartphone className="w-4 h-4" /> Generate My Setup Code
+                                </button>
+                            </>
+                        ) : (
+                            /* ── Step 2: Browser-friendly setup UI ── */
+                            <>
+                                {/* Context-aware header */}
+                                <div className={`rounded-xl p-3 text-xs border ${isMobileDevice ? 'bg-green-50 border-green-200 text-green-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
+                                    {isMobileDevice ? (
+                                        <p><strong>📱 You're on mobile!</strong> Tap the button below to open directly in your authenticator app — no QR scanning needed.</p>
+                                    ) : (
+                                        <p><strong>🖥️ You're on desktop.</strong> Open your authenticator app on your phone and scan the QR code, or manually enter the key shown below.</p>
+                                    )}
+                                </div>
+
+                                {/* Mobile: Deep-link button (tap to open authenticator directly) */}
+                                {isMobileDevice && (
+                                    <a
+                                        href={qrUrl}
+                                        className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-emerald-700 active:scale-95 flex items-center justify-center gap-2 no-underline"
+                                    >
+                                        <ExternalLink className="w-4 h-4" />
+                                        Open in Google Authenticator / FreeOTP
+                                    </a>
                                 )}
-                                <button type="submit" disabled={authLoading}
+
+                                {/* Desktop: QR code */}
+                                {!isMobileDevice && (
+                                    <div className="flex justify-center">
+                                        <div className="p-3 bg-white rounded-2xl border-4 border-[#D4AF37] shadow-lg inline-block">
+                                            <QRCodeSVG value={qrUrl} size={160} bgColor="#FFFFFF" fgColor="#881337" level="M" />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Steps — adapted per device */}
+                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-700 space-y-1.5">
+                                    <p className="font-bold text-[#881337] mb-2">
+                                        {isMobileDevice ? "How to set up (mobile):" : "How to set up (desktop):"}
+                                    </p>
+                                    {isMobileDevice ? (<>
+                                        <p>① Install <strong>Google Authenticator</strong> or <strong>FreeOTP</strong> on this phone</p>
+                                        <p>② Tap <strong>"Open in Google Authenticator"</strong> above</p>
+                                        <p>③ The app adds <strong>DBohraRishta</strong> automatically</p>
+                                        <p>④ Enter the 6-digit code shown in the app below</p>
+                                    </>) : (<>
+                                        <p>① Install <strong>Google Authenticator</strong> or <strong>FreeOTP</strong> on your phone</p>
+                                        <p>② Open the app → tap <strong>"+"</strong> → <strong>"Scan QR code"</strong></p>
+                                        <p>③ Point your phone camera at the QR above</p>
+                                        <p>④ Enter the 6-digit code from the app below</p>
+                                    </>)}
+                                    <p className="text-gray-400 pt-1">💡 After setup, skip this screen — just enter the 6-digit code directly next time.</p>
+                                </div>
+
+                                {/* Manual key — always visible, prominent copy */}
+                                <div className="bg-rose-50 border border-[#881337]/20 rounded-xl p-3">
+                                    <p className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1.5">
+                                        🔑 Can't scan / open app? Enter this key manually in the app:
+                                    </p>
+                                    <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-gray-200">
+                                        <code className="text-sm font-mono text-[#881337] break-all tracking-widest flex-1 select-all">{manualKey}</code>
+                                        <button
+                                            onClick={copyKey}
+                                            className="shrink-0 bg-[#D4AF37] text-white rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1 hover:bg-[#c29e2f] transition-colors"
+                                        >
+                                            {keyCopied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                            {keyCopied ? "Copied!" : "Copy"}
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-1.5">In the app, tap "+" → "Enter a setup key" → paste the key above. Set account name: <em>DBohraRishta</em></p>
+                                </div>
+
+                                {/* Code entry */}
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        maxLength={6}
+                                        placeholder="Enter 6-digit code from app"
+                                        value={totpCode}
+                                        onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none text-center tracking-[0.5em] font-mono text-xl"
+                                        autoFocus
+                                    />
+                                </div>
+                                <button onClick={handleVerifyTotp} disabled={authLoading}
                                     className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-[#9F1239] active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2">
                                     {authLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                    {isResettingPassword ? "Send Reset Link" : isRegistering ? "Sign Up" : "Log In with Email"}
+                                    Verify &amp; Login
                                 </button>
-                            </form>
-                            <div className="text-center text-sm text-gray-500 mb-5">
-                                {isResettingPassword ? (
-                                    <button type="button" onClick={() => setIsResettingPassword(false)} className="text-[#881337] font-bold underline">Back to Login</button>
-                                ) : (
-                                    <span>
-                                        {isRegistering ? "Already have an account?" : "Don't have an account?"}{" "}
-                                        <button type="button" onClick={() => setIsRegistering(!isRegistering)} className="text-[#881337] font-bold underline">
-                                            {isRegistering ? "Log In" : "Sign Up"}
-                                        </button>
-                                    </span>
-                                )}
-                            </div>
-                        </>
-                    )}
-
-                    {/* ══════════════ AUTHENTICATOR TOTP TAB ══════════════ */}
-                    {authMode === "totp" && (
-                        <div className="space-y-4 mb-5">
-                            {!qrShown ? (
-                                /* ── Step 1: Enter phone number ── */
-                                <>
-                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 leading-relaxed">
-                                        <p className="font-bold mb-1">📱 Mobile Login (Verification)</p>
-                                        <p>Enter your mobile number to get a setup code for your authenticator app. Works on any device, no internet needed after setup.</p>
-                                    </div>
-                                    <div className="relative">
-                                        <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                        <input type="tel" inputMode="tel" placeholder="e.g. 9876543210"
-                                            value={totpPhone} onChange={(e) => setTotpPhone(e.target.value.replace(/[^0-9+]/g, ''))}
-                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none" />
-                                    </div>
-                                    <button onClick={handleGenerateQr}
-                                        className="w-full bg-[#D4AF37] text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-[#c29e2f] active:scale-95 flex items-center justify-center gap-2">
-                                        <Smartphone className="w-4 h-4" /> Generate My Setup Code
-                                    </button>
-                                </>
-                            ) : (
-                                /* ── Step 2: Browser-friendly setup UI ── */
-                                <>
-                                    {/* Context-aware header */}
-                                    <div className={`rounded-xl p-3 text-xs border ${isMobileDevice ? 'bg-green-50 border-green-200 text-green-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
-                                        {isMobileDevice ? (
-                                            <p><strong>📱 You're on mobile!</strong> Tap the button below to open directly in your authenticator app — no QR scanning needed.</p>
-                                        ) : (
-                                            <p><strong>🖥️ You're on desktop.</strong> Open your authenticator app on your phone and scan the QR code, or manually enter the key shown below.</p>
-                                        )}
-                                    </div>
-
-                                    {/* Mobile: Deep-link button (tap to open authenticator directly) */}
-                                    {isMobileDevice && (
-                                        <a
-                                            href={qrUrl}
-                                            className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-emerald-700 active:scale-95 flex items-center justify-center gap-2 no-underline"
-                                        >
-                                            <ExternalLink className="w-4 h-4" />
-                                            Open in Google Authenticator / FreeOTP
-                                        </a>
-                                    )}
-
-                                    {/* Desktop: QR code */}
-                                    {!isMobileDevice && (
-                                        <div className="flex justify-center">
-                                            <div className="p-3 bg-white rounded-2xl border-4 border-[#D4AF37] shadow-lg inline-block">
-                                                <QRCodeSVG value={qrUrl} size={160} bgColor="#FFFFFF" fgColor="#881337" level="M" />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Steps — adapted per device */}
-                                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-700 space-y-1.5">
-                                        <p className="font-bold text-[#881337] mb-2">
-                                            {isMobileDevice ? "How to set up (mobile):" : "How to set up (desktop):"}
-                                        </p>
-                                        {isMobileDevice ? (<>
-                                            <p>① Install <strong>Google Authenticator</strong> or <strong>FreeOTP</strong> on this phone</p>
-                                            <p>② Tap <strong>"Open in Google Authenticator"</strong> above</p>
-                                            <p>③ The app adds <strong>DBohraRishta</strong> automatically</p>
-                                            <p>④ Enter the 6-digit code shown in the app below</p>
-                                        </>) : (<>
-                                            <p>① Install <strong>Google Authenticator</strong> or <strong>FreeOTP</strong> on your phone</p>
-                                            <p>② Open the app → tap <strong>"+"</strong> → <strong>"Scan QR code"</strong></p>
-                                            <p>③ Point your phone camera at the QR above</p>
-                                            <p>④ Enter the 6-digit code from the app below</p>
-                                        </>)}
-                                        <p className="text-gray-400 pt-1">💡 After setup, skip this screen — just enter the 6-digit code directly next time.</p>
-                                    </div>
-
-                                    {/* Manual key — always visible, prominent copy */}
-                                    <div className="bg-rose-50 border border-[#881337]/20 rounded-xl p-3">
-                                        <p className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1.5">
-                                            🔑 Can't scan / open app? Enter this key manually in the app:
-                                        </p>
-                                        <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-gray-200">
-                                            <code className="text-sm font-mono text-[#881337] break-all tracking-widest flex-1 select-all">{manualKey}</code>
-                                            <button
-                                                onClick={copyKey}
-                                                className="shrink-0 bg-[#D4AF37] text-white rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1 hover:bg-[#c29e2f] transition-colors"
-                                            >
-                                                {keyCopied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                                                {keyCopied ? "Copied!" : "Copy"}
-                                            </button>
-                                        </div>
-                                        <p className="text-xs text-gray-400 mt-1.5">In the app, tap "+" → "Enter a setup key" → paste the key above. Set account name: <em>DBohraRishta</em></p>
-                                    </div>
-
-                                    {/* Code entry */}
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            maxLength={6}
-                                            placeholder="Enter 6-digit code from app"
-                                            value={totpCode}
-                                            onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-                                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none text-center tracking-[0.5em] font-mono text-xl"
-                                            autoFocus
-                                        />
-                                    </div>
-                                    <button onClick={handleVerifyTotp} disabled={authLoading}
-                                        className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-[#9F1239] active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2">
-                                        {authLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                        Verify &amp; Login
-                                    </button>
-                                    <button
-                                        onClick={() => { setQrShown(false); setTotpCode(""); setErrorMsg(""); }}
-                                        className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors"
-                                    >
-                                        ← Change Mobile Number
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ══════════════ MOBILE OTP TAB (HIDDEN — requires Firebase Blaze billing) ══════════════
-                    {authMode === "phone" && (
-                        <div className="space-y-4 mb-5">
-                            ... Firebase Phone Auth UI ...
-                            ... Re-enable when Blaze billing is activated ...
-                            ... handleSendSms / handleVerifySms functions above are ready to use ...
-                        </div>
-                    )}
-                    */}
+                                <button
+                                    onClick={() => { setQrShown(false); setTotpCode(""); setErrorMsg(""); }}
+                                    className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors"
+                                >
+                                    ← Change Mobile Number
+                                </button>
+                            </>
+                        )}
+                    </div>
 
 
                     {/* Dev-only test buttons */}
@@ -568,7 +428,6 @@ export default function LoginPage() {
                         </>
                     )}
 
-                    <p className="text-xs text-center text-gray-400 mt-4">By continuing, you agree to our Terms of Service and Privacy Policy.</p>
                 </div>
             </div>
         </div>

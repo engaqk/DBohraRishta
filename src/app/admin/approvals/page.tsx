@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverTimestamp, orderBy, collectionGroup } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut } from "lucide-react";
@@ -34,13 +34,33 @@ export default function AdminVerificationPage() {
     const [loading, setLoading] = useState(true);
     const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
     const [adminComment, setAdminComment] = useState("");
-    const [analytics, setAnalytics] = useState({ totalUsers: 0, acceptedRatio: 0, pendingCount: 0, holdCount: 0 });
+    const [activeDetailTab, setActiveDetailTab] = useState<'biodata' | 'messages'>('biodata');
     const [adminMessages, setAdminMessages] = useState<AdminMessage[]>([]);
     const [newAdminMsg, setNewAdminMsg] = useState("");
-    const [activeDetailTab, setActiveDetailTab] = useState<'biodata' | 'messages'>('biodata');
     const [msgCounts, setMsgCounts] = useState<Record<string, { total: number, userMsgs: number }>>({});
+    const [requestStats, setRequestStats] = useState({ total: 0, accepted: 0 });
+    const [searchQuery, setSearchQuery] = useState("");
     const { user } = useAuth();
     const router = useRouter();
+
+    const filteredUsers = useMemo(() => {
+        return allUsers.filter(u =>
+            !searchQuery ||
+            u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            u.itsNumber?.includes(searchQuery) ||
+            u.hizratLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            u.jamaat?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [allUsers, searchQuery]);
+
+    const analytics = useMemo(() => {
+        return {
+            totalUsers: filteredUsers.length,
+            pendingCount: filteredUsers.filter(u => !u.status || u.status === 'pending' || u.status === 'pending_verification').length,
+            holdCount: filteredUsers.filter(u => u.status === 'hold').length,
+            acceptedRatio: requestStats.total > 0 ? Math.round((requestStats.accepted / requestStats.total) * 100) : 0,
+        };
+    }, [filteredUsers, requestStats]);
 
     useEffect(() => {
         const isAdmin = localStorage.getItem("admin_auth_token");
@@ -48,7 +68,26 @@ export default function AdminVerificationPage() {
             router.push('/admin/login');
             return;
         }
-        fetchAdminData();
+
+        // Live stats for users
+        const usersUnsub = onSnapshot(collection(db, "users"), (snap) => {
+            setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as PendingUser)));
+            setLoading(false);
+        });
+
+        // Live stats for requests (Match Rate)
+        const reqUnsub = onSnapshot(collection(db, "rishta_requests"), (snap) => {
+            let accepted = 0;
+            snap.docs.forEach(docSnap => {
+                if (docSnap.data().status === 'accepted') accepted++;
+            });
+            setRequestStats({ total: snap.size, accepted });
+        });
+
+        return () => {
+            usersUnsub();
+            reqUnsub();
+        };
     }, [router]);
 
     // Listen to all message threads for counters
@@ -83,43 +122,6 @@ export default function AdminVerificationPage() {
         return () => unsub();
     }, [selectedUser?.id]);
 
-    const fetchAdminData = async () => {
-        try {
-            setLoading(true);
-            const usersQ = query(collection(db, "users"));
-            const uSnap = await getDocs(usersQ);
-
-            const usersList: PendingUser[] = [];
-            let citiesCount: any = {};
-
-            uSnap.forEach((doc) => {
-                const u = { id: doc.id, ...doc.data() } as PendingUser;
-                usersList.push(u);
-                if (u.hizratLocation) {
-                    citiesCount[u.hizratLocation] = (citiesCount[u.hizratLocation] || 0) + 1;
-                }
-            });
-
-            setAllUsers(usersList);
-
-            const reqQ = query(collection(db, "rishta_requests"));
-            const rSnap = await getDocs(reqQ);
-            let accepted = 0; let total = 0;
-            rSnap.forEach(r => { total++; if (r.data().status === 'accepted') accepted++; });
-
-            setAnalytics({
-                totalUsers: usersList.length,
-                acceptedRatio: total > 0 ? Math.round((accepted / total) * 100) : 0,
-                pendingCount: usersList.filter(u => !u.status || u.status === 'pending' || u.status === 'pending_verification').length,
-                holdCount: usersList.filter(u => u.status === 'hold').length,
-            });
-
-        } catch (error: any) {
-            toast.error("Failed to fetch data: " + error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleStatusMove = async (userId: string, newStatus: string, message?: string) => {
         try {
@@ -197,12 +199,22 @@ export default function AdminVerificationPage() {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col p-6 text-[#881337] pt-12 md:px-12">
             <div className="max-w-[1400px] w-full mx-auto">
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
                     <div className="flex items-center gap-3">
                         <ShieldAlert className="w-8 h-8 text-[#881337]" />
                         <h1 className="text-3xl font-bold font-serif">Admin Dashboard</h1>
                     </div>
-                    <div className="flex items-center gap-3">
+
+                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                        <div className="relative w-full md:w-64">
+                            <input
+                                type="text"
+                                placeholder="Search candidates..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#881337] transition-all"
+                            />
+                        </div>
                         {user && (
                             <button onClick={async () => {
                                 try {
@@ -399,10 +411,10 @@ export default function AdminVerificationPage() {
                                 <div className="col-span-2 text-right">Actions</div>
                             </div>
                             <div className="divide-y divide-gray-100">
-                                {allUsers.length === 0 ? (
+                                {filteredUsers.length === 0 ? (
                                     <div className="p-10 text-center text-gray-400 font-bold uppercase text-sm">No users found</div>
                                 ) : (
-                                    allUsers.map((u) => (
+                                    filteredUsers.map((u) => (
                                         <div key={u.id} className="p-4 md:px-6 md:py-4 flex flex-col md:grid md:grid-cols-12 gap-4 items-center cursor-pointer transition-colors hover:bg-gray-50/80" onClick={() => openDetails(u)}>
                                             <div className="col-span-2 flex items-center gap-3 w-full">
                                                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0 border border-gray-100">

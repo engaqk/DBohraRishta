@@ -235,10 +235,20 @@ export default function AdminVerificationPage() {
 
                                     <div className="flex gap-4 mb-6">
                                         {selectedUser.itsImageUrl && (
-                                            <div className="flex-1"><p className="text-xs font-bold text-gray-500 mb-1">ITS Card</p><div className="w-full h-40 bg-gray-100 rounded-xl overflow-hidden border border-gray-200"><img src={selectedUser.itsImageUrl} alt="ITS Doc" className="w-full h-full object-cover" /></div></div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <p className="text-xs font-bold text-gray-500">ITS Card / Photo</p>
+                                                    {selectedUser.status === 'pending_verification' && (
+                                                        <span className="bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">🔄 Re-submitted — Pending Re-verification</span>
+                                                    )}
+                                                </div>
+                                                <div className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden border-2 border-amber-300 shadow">
+                                                    <img src={selectedUser.itsImageUrl} alt="ITS Doc" className="w-full h-full object-contain" />
+                                                </div>
+                                            </div>
                                         )}
                                         {selectedUser.libasImageUrl && (
-                                            <div className="flex-1"><p className="text-xs font-bold text-gray-500 mb-1">Libas Photo</p><div className="w-full h-40 bg-gray-100 rounded-xl overflow-hidden border border-gray-200"><img src={selectedUser.libasImageUrl} alt="Libas Photo" className="w-full h-full object-cover" /></div></div>
+                                            <div className="flex-1"><p className="text-xs font-bold text-gray-500 mb-1">Libas Photo</p><div className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden border border-gray-200"><img src={selectedUser.libasImageUrl} alt="Libas Photo" className="w-full h-full object-cover" /></div></div>
                                         )}
                                     </div>
 

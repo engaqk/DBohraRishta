@@ -86,10 +86,31 @@ export default function RishtaDashboard() {
         const msgRef = collection(db, 'admin_messages', user.uid, 'thread');
         const q = query(msgRef, orderBy('createdAt', 'asc'));
         const unsub = onSnapshot(q, (snap) => {
-            setAdminMsgThread(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+            const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+            setAdminMsgThread(msgs);
+
+            // Calculate unread count based on last read timestamp
+            const lastRead = localStorage.getItem(`lastReadNotif_${user.uid}`) || '0';
+            const newUnread = msgs.filter(m => {
+                if (m.from !== 'admin') return false;
+                const ts = m.createdAt?.toMillis?.() || m.createdAt?.seconds * 1000 || 0;
+                return ts > parseInt(lastRead);
+            }).length;
+
+            // Also count celebration/rejection/hold if they haven't been cleared
+            const extra = (showVerifiedCelebration || myProfile?.status === 'rejected' || myProfile?.status === 'hold') ? 1 : 0;
+            setUnreadNotifCount(newUnread + extra);
         });
         return () => unsub();
-    }, [user]);
+    }, [user, myProfile?.status, showVerifiedCelebration]);
+
+    // Handle tab change to clear notifications
+    useEffect(() => {
+        if (activeTab === 'notifications' && user) {
+            localStorage.setItem(`lastReadNotif_${user.uid}`, Date.now().toString());
+            setUnreadNotifCount(0);
+        }
+    }, [activeTab, user]);
 
     const handleSendMessageToAdmin = async () => {
         if (!userMsgInput.trim() || !user) return;
@@ -687,13 +708,13 @@ export default function RishtaDashboard() {
                             className={`flex-1 py-2.5 text-[10px] font-bold transition-all rounded-xl relative z-10 text-center ${activeTab === tab ? 'text-white shadow-sm' : 'text-gray-500 hover:text-[#881337]'}`}
                         >
                             {tab === 'mybiodata' ? 'Biodata'
-                                : tab === 'messages' ? 'Chats'
+                                : tab === 'messages' ? 'Accepted Chats'
                                     : tab === 'discovery' ? 'Search Profile'
                                         : tab === 'notifications' ? (
                                             <span className="relative">
                                                 🔔
-                                                {(adminMsgThread.length > 0 || showVerifiedCelebration || (myProfile?.status === 'rejected') || (myProfile?.status === 'hold')) && (
-                                                    <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full" />
+                                                {unreadNotifCount > 0 && (
+                                                    <span className="absolute -top-1 -right-2 w-2.5 h-2.5 bg-red-500 rounded-full border border-white shadow-sm transition-transform animate-pulse" />
                                                 )}
                                             </span>
                                         )
@@ -994,13 +1015,13 @@ export default function RishtaDashboard() {
                     <ShieldCheck className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Requests</span>
                 </button>
                 <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'messages' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <MessageCircle className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Chats</span>
+                    <MessageCircle className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Accepted</span>
                     {allRequests.filter(r => r.status === 'accepted' && r.isIncoming).length > 0 && <span className="absolute -top-0.5 right-3 w-1.5 h-1.5 bg-red-500 rounded-full" />}
                 </button>
                 <button onClick={() => setActiveTab('notifications')} className={`flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'notifications' ? 'text-[#881337]' : 'text-gray-400'}`}>
                     <span className="text-xl leading-none">🔔</span>
                     <span className="text-[8px] font-bold uppercase">Alerts</span>
-                    {(adminMsgThread.length > 0 || showVerifiedCelebration || myProfile?.status === 'rejected' || myProfile?.status === 'hold') && <span className="absolute -top-0.5 right-3 w-1.5 h-1.5 bg-red-500 rounded-full" />}
+                    {unreadNotifCount > 0 && <span className="absolute -top-0.5 right-3 w-2 h-2 bg-red-500 rounded-full border border-white shadow-sm animate-pulse" />}
                 </button>
             </nav>
 

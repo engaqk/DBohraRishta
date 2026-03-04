@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
+import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverTimestamp, orderBy, collectionGroup } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut } from "lucide-react";
 import toast from "react-hot-toast";
@@ -38,6 +38,7 @@ export default function AdminVerificationPage() {
     const [adminMessages, setAdminMessages] = useState<AdminMessage[]>([]);
     const [newAdminMsg, setNewAdminMsg] = useState("");
     const [activeDetailTab, setActiveDetailTab] = useState<'biodata' | 'messages'>('biodata');
+    const [msgCounts, setMsgCounts] = useState<Record<string, { total: number, userMsgs: number }>>({});
     const { user } = useAuth();
     const router = useRouter();
 
@@ -49,6 +50,27 @@ export default function AdminVerificationPage() {
         }
         fetchAdminData();
     }, [router]);
+
+    // Listen to all message threads for counters
+    useEffect(() => {
+        const q = collectionGroup(db, "thread");
+        const unsub = onSnapshot(q, (snap) => {
+            const counts: Record<string, { total: number, userMsgs: number }> = {};
+            snap.docs.forEach(docSnap => {
+                const data = docSnap.data();
+                const userId = docSnap.ref.parent.parent?.id;
+                if (!userId) return;
+
+                if (!counts[userId]) counts[userId] = { total: 0, userMsgs: 0 };
+                counts[userId].total++;
+                if (data.from !== 'admin') {
+                    counts[userId].userMsgs++;
+                }
+            });
+            setMsgCounts(counts);
+        });
+        return () => unsub();
+    }, []);
 
     // Subscribe to messages for selected user
     useEffect(() => {
@@ -401,7 +423,13 @@ export default function AdminVerificationPage() {
                                                     onClick={(e) => { e.stopPropagation(); openDetails(u, 'messages'); }}
                                                     className="flex items-center gap-1.5 text-[#881337] hover:underline text-[10px] font-bold"
                                                 >
-                                                    <MessageCircle className="w-3.5 h-3.5" /> View Chat
+                                                    <MessageCircle className="w-3.5 h-3.5" />
+                                                    View Chat
+                                                    {msgCounts[u.id] && (
+                                                        <span className="ml-1 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-400">
+                                                            {msgCounts[u.id].userMsgs}/{msgCounts[u.id].total}
+                                                        </span>
+                                                    )}
                                                 </button>
                                             </div>
                                             <div className="col-span-2 w-full flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>

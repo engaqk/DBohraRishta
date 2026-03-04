@@ -32,8 +32,11 @@ service cloud.firestore {
     }
 
     // Admin <-> User messaging threads
-    // The user can read/write their own thread.
-    // Admin (authenticated) can read/write any thread to reply.
+    // Supporting collectionGroup queries for admin dashboard counters
+    match /{path=**}/thread/{msgId} {
+      allow read: if request.auth != null;
+    }
+
     match /admin_messages/{userId} {
       allow read, write: if request.auth != null;
       match /thread/{msgId} {

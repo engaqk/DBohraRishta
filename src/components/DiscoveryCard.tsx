@@ -181,10 +181,21 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                         </div>
                     )}
 
-                    {/* For Female Profiles, show a small, somewhat clear thumbnail snippet if requested by user for 'testing visual differences', or similar feature */}
-                    {gender === 'female' && libasImageUrl && (isBlurSecurityEnabled && requestStatus !== 'accepted') && (
-                        <div className="absolute bottom-4 right-4 w-16 h-16 rounded-full border-2 border-white/50 shadow-lg overflow-hidden opacity-90 backdrop-blur-sm pointer-events-none">
-                            <img src={libasImageUrl} alt="Preview" className="w-full h-full object-cover blur-[2px]" />
+                    {/* Small profile thumbnail – always visible for identification */}
+                    {libasImageUrl ? (
+                        <div className="absolute top-3 left-3 z-20 w-14 h-14 rounded-full border-2 border-white shadow-lg overflow-hidden">
+                            <img
+                                src={libasImageUrl}
+                                alt={name}
+                                className={`w-full h-full object-cover transition-all duration-300 ${isBlurSecurityEnabled && requestStatus !== 'accepted'
+                                        ? 'blur-[3px] brightness-90'
+                                        : ''
+                                    }`}
+                            />
+                        </div>
+                    ) : (
+                        <div className="absolute top-3 left-3 z-20 w-14 h-14 rounded-full border-2 border-white shadow-lg bg-gradient-to-br from-[#881337] to-[#D4AF37] flex items-center justify-center">
+                            <span className="text-white font-black text-xl">{name?.charAt(0) || '?'}</span>
                         </div>
                     )}
 

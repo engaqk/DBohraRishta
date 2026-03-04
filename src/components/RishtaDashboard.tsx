@@ -51,7 +51,7 @@ export default function RishtaDashboard() {
     const router = useRouter();
 
     // UI State
-    const [activeTab, setActiveTab] = useState<'mybiodata' | 'discovery' | 'requests' | 'messages'>('discovery');
+    const [activeTab, setActiveTab] = useState<'mybiodata' | 'discovery' | 'requests' | 'messages' | 'notifications'>('discovery');
     const [dataLoading, setDataLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -71,6 +71,8 @@ export default function RishtaDashboard() {
     const [userMsgInput, setUserMsgInput] = useState('');
     const [showAdminMessages, setShowAdminMessages] = useState(false);
     const [itsReuploadUrl, setItsReuploadUrl] = useState<string | null>(null);
+    const [showVerifiedCelebration, setShowVerifiedCelebration] = useState(false);
+    const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
     // Accept Request Contact Modal
     const [acceptingRequest, setAcceptingRequest] = useState<RishtaRequest | null>(null);
@@ -256,7 +258,16 @@ export default function RishtaDashboard() {
                 const profileData = meRef.data();
                 setMyProfile(profileData);
 
-                if (profileData.status === 'rejected') {
+                // 🎉 Show verified celebration if newly verified
+                const isVerified = profileData.isItsVerified === true ||
+                    profileData.status === 'verified' || profileData.status === 'approved';
+                const celebKey = `verified_celebrated_${user.uid}`;
+                if (isVerified && !localStorage.getItem(celebKey)) {
+                    setShowVerifiedCelebration(true);
+                    localStorage.setItem(celebKey, 'true');
+                }
+
+                if (profileData.status === 'rejected' || profileData.status === 'hold') {
                     setDataLoading(false);
                     return;
                 }
@@ -668,23 +679,58 @@ export default function RishtaDashboard() {
         <div className="min-h-screen bg-[#F9FAFB] text-[#881337] p-6 pb-24 md:p-12 md:pb-12">
             <header className="max-w-7xl mx-auto mb-4 flex justify-center items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100 w-full">
                 <nav className="flex w-full relative">
-                    {(['mybiodata', 'discovery', 'requests', 'messages'] as const).map((tab) => (
+                    {(['mybiodata', 'discovery', 'requests', 'messages', 'notifications'] as const).map((tab) => (
                         <button
                             key={tab}
                             id={`${tab}-nav-tab`}
                             onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-2.5 text-xs font-bold capitalize transition-all rounded-xl relative z-10 text-center ${activeTab === tab ? 'text-white shadow-sm' : 'text-gray-500 hover:text-[#881337]'}`}
+                            className={`flex-1 py-2.5 text-[10px] font-bold transition-all rounded-xl relative z-10 text-center ${activeTab === tab ? 'text-white shadow-sm' : 'text-gray-500 hover:text-[#881337]'}`}
                         >
-                            {tab === 'mybiodata' ? 'My Biodata' : tab === 'messages' ? 'Chats' : tab === 'discovery' ? 'Discover' : 'Requests'}
+                            {tab === 'mybiodata' ? 'Biodata'
+                                : tab === 'messages' ? 'Chats'
+                                    : tab === 'discovery' ? 'Discover'
+                                        : tab === 'notifications' ? (
+                                            <span className="relative">
+                                                🔔
+                                                {(adminMsgThread.length > 0 || showVerifiedCelebration || (myProfile?.status === 'rejected') || (myProfile?.status === 'hold')) && (
+                                                    <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full" />
+                                                )}
+                                            </span>
+                                        )
+                                            : 'Requests'}
                         </button>
                     ))}
                     {/* Active Background Pill */}
                     <div
-                        className="absolute top-0 bottom-0 w-1/4 bg-[#881337] rounded-xl transition-all duration-300 ease-out shadow-sm"
-                        style={{ left: `${(['mybiodata', 'discovery', 'requests', 'messages'].indexOf(activeTab)) * 25}%` }}
+                        className="absolute top-0 bottom-0 w-1/5 bg-[#881337] rounded-xl transition-all duration-300 ease-out shadow-sm"
+                        style={{ left: `${(['mybiodata', 'discovery', 'requests', 'messages', 'notifications'].indexOf(activeTab)) * 20}%` }}
                     />
                 </nav>
             </header>
+
+            {/* 🎉 Verified Celebration Banner */}
+            {showVerifiedCelebration && (
+                <div className="max-w-7xl mx-auto mb-5 rounded-2xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-green-50 shadow-lg overflow-hidden">
+                    <div className="flex items-start gap-4 p-5 md:p-6">
+                        <div className="text-4xl shrink-0 animate-bounce">🎊</div>
+                        <div className="flex-1">
+                            <h3 className="font-black text-xl text-emerald-800 mb-1">Mubarak! Your Profile is Successfully Verified ✨</h3>
+                            <p className="text-emerald-700 text-sm leading-relaxed">
+                                You can now send Rishta requests and access all the amazing features of this application.
+                                May Allah bless you and help you find your Soulmate soon. <strong>Shukran! 🤲</strong>
+                            </p>
+                            <div className="flex gap-3 mt-3 flex-wrap">
+                                <button onClick={() => { setActiveTab('discovery'); setShowVerifiedCelebration(false); }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-xs font-bold shadow transition-all">
+                                    🌟 Start Discovering Matches
+                                </button>
+                                <button onClick={() => setShowVerifiedCelebration(false)} className="bg-white border border-emerald-200 text-emerald-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-50 transition-all">
+                                    Dismiss
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── Admin Notification Banner (shown across all tabs) ── */}
             {myProfile && (myProfile.status === 'rejected' || myProfile.status === 'hold') && (
@@ -839,8 +885,95 @@ export default function RishtaDashboard() {
                     </div>
                 )}
 
+                {/* NOTIFICATIONS TAB */}
+                {activeTab === 'notifications' && (
+                    <div className="max-w-2xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <h2 className="text-lg font-black text-[#881337] uppercase tracking-widest mb-2">🔔 Notifications</h2>
+
+                        {/* Verified celebration */}
+                        {showVerifiedCelebration && (
+                            <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-300 rounded-2xl p-5 shadow-sm flex gap-4 items-start">
+                                <div className="text-3xl animate-bounce shrink-0">🎊</div>
+                                <div className="flex-1">
+                                    <p className="font-black text-emerald-800 text-base">Mubarak! Your Profile is Successfully Verified ✨</p>
+                                    <p className="text-emerald-700 text-sm mt-1 leading-relaxed">You can now send Rishta requests and access all the amazing features. May Allah bless you and help you find your Soulmate soon. <strong>Shukran! 🤲</strong></p>
+                                    <button onClick={() => { setActiveTab('discovery'); setShowVerifiedCelebration(false); }} className="mt-3 bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all">🌟 Start Discovering</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Rejected alert */}
+                        {myProfile?.status === 'rejected' && (
+                            <div className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-5 shadow-sm flex gap-4 items-start">
+                                <div className="text-3xl shrink-0">⚠️</div>
+                                <div className="flex-1">
+                                    <p className="font-black text-[#881337] text-base">Profile Verification Rejected</p>
+                                    <p className="text-gray-700 text-sm mt-1">Your biodata verification was rejected. Please reapply with correct data to access the Send Request feature and all other features.</p>
+                                    {myProfile.adminMessage && <p className="mt-2 italic text-rose-700 text-sm bg-white border border-rose-100 px-3 py-2 rounded-xl">💬 "{myProfile.adminMessage}"</p>}
+                                    <button onClick={() => router.push('/candidate-registration')} className="mt-3 bg-[#881337] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-rose-900 transition-all">✏️ Update &amp; Resubmit Profile</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Hold alert */}
+                        {myProfile?.status === 'hold' && (
+                            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-2xl p-5 shadow-sm flex gap-4 items-start">
+                                <div className="text-3xl shrink-0">⏸️</div>
+                                <div className="flex-1">
+                                    <p className="font-black text-yellow-800 text-base">Profile On Hold</p>
+                                    <p className="text-gray-700 text-sm mt-1">Your profile is temporarily on hold pending admin review.</p>
+                                    {myProfile.adminMessage && <p className="mt-2 italic text-yellow-700 text-sm bg-white border border-yellow-100 px-3 py-2 rounded-xl">💬 "{myProfile.adminMessage}"</p>}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Admin Message Thread */}
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+                                <MessageCircle className="w-4 h-4 text-[#881337]" />
+                                <h3 className="font-bold text-sm text-[#881337] uppercase tracking-wide">Messages from Admin</h3>
+                            </div>
+                            <div className="flex flex-col gap-2.5 min-h-[120px] max-h-72 overflow-y-auto p-4">
+                                {adminMsgThread.length === 0 ? (
+                                    <p className="text-center text-gray-400 text-sm py-8">No messages from admin yet.</p>
+                                ) : (
+                                    adminMsgThread.map(msg => (
+                                        <div key={msg.id} className={`flex ${msg.from === 'admin' ? 'justify-start' : 'justify-end'}`}>
+                                            <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm shadow-sm ${msg.from === 'admin' ? 'bg-gray-100 text-gray-800 rounded-tl-sm' : 'bg-[#881337] text-white rounded-tr-sm'}`}>
+                                                <p className="text-[10px] font-bold uppercase opacity-60 mb-0.5">{msg.from === 'admin' ? 'Admin' : 'You'}</p>
+                                                <p>{msg.text}</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                            <div className="flex gap-2 p-4 border-t border-gray-100 bg-gray-50/50">
+                                <input
+                                    type="text"
+                                    value={userMsgInput}
+                                    onChange={e => setUserMsgInput(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') handleSendMessageToAdmin(); }}
+                                    placeholder="Send a message to admin..."
+                                    className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#881337] bg-white"
+                                />
+                                <button onClick={handleSendMessageToAdmin} className="bg-[#881337] text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-rose-900 transition-colors shadow-sm flex items-center gap-1.5">
+                                    <Send className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {adminMsgThread.length === 0 && !showVerifiedCelebration && myProfile?.status !== 'rejected' && myProfile?.status !== 'hold' && (
+                            <div className="text-center py-12 text-gray-400">
+                                <div className="text-5xl mb-3">🔔</div>
+                                <p className="font-bold text-sm">All Caught Up!</p>
+                                <p className="text-xs mt-1">No new notifications right now.</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Discovery / Requests / Messages */}
-                {activeTab !== 'mybiodata' && (
+                {activeTab !== 'mybiodata' && activeTab !== 'notifications' && (
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                         {renderTabContent()}
                     </div>
@@ -850,102 +983,113 @@ export default function RishtaDashboard() {
 
 
             {/* Mobile Bottom Nav */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 pb-safe flex justify-around items-center z-50 shadow-2xl">
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2 pb-safe flex justify-around items-center z-50 shadow-2xl">
                 <button onClick={() => setActiveTab('mybiodata')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'mybiodata' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <ShieldCheck className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">My Biodata</span>
+                    <ShieldCheck className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Biodata</span>
                 </button>
                 <button onClick={() => setActiveTab('discovery')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'discovery' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <Heart className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Discover</span>
+                    <Heart className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Discover</span>
                 </button>
                 <button onClick={() => setActiveTab('requests')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'requests' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <ShieldCheck className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Requests</span>
+                    <ShieldCheck className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Requests</span>
                 </button>
                 <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'messages' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <MessageCircle className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Chats</span>
+                    <MessageCircle className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Chats</span>
                     {allRequests.filter(r => r.status === 'accepted' && r.isIncoming).length > 0 && <span className="absolute -top-0.5 right-3 w-1.5 h-1.5 bg-red-500 rounded-full" />}
+                </button>
+                <button onClick={() => setActiveTab('notifications')} className={`flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'notifications' ? 'text-[#881337]' : 'text-gray-400'}`}>
+                    <span className="text-xl leading-none">🔔</span>
+                    <span className="text-[8px] font-bold uppercase">Alerts</span>
+                    {(adminMsgThread.length > 0 || showVerifiedCelebration || myProfile?.status === 'rejected' || myProfile?.status === 'hold') && <span className="absolute -top-0.5 right-3 w-1.5 h-1.5 bg-red-500 rounded-full" />}
                 </button>
             </nav>
 
             {/* Premium Modal */}
-            {showPremiumModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white max-w-sm w-full rounded-3xl overflow-hidden shadow-2xl">
-                        <div className="bg-gradient-to-r from-[#D4AF37] to-[#F1D16A] p-6 text-center relative">
-                            <button onClick={() => setShowPremiumModal(false)} className="absolute top-4 right-4 bg-black/10 rounded-full p-2 text-[#881337]"><X className="w-4 h-4" /></button>
-                            <Sparkles className="w-12 h-12 text-[#881337] mx-auto mb-3" />
-                            <h2 className="text-2xl font-bold text-[#881337] font-serif mb-1">Unlock Halal Chats</h2>
-                            <p className="text-[#881337] opacity-90 text-sm font-medium">Unlimited Matches &amp; Chat</p>
-                        </div>
-                        <div className="p-8 text-center space-y-6">
-                            <h3 className="text-4xl font-extrabold text-[#881337] flex justify-center items-start"><span className="text-xl mt-1">&#8377;</span>53<span className="text-base text-gray-500 font-normal mt-auto mb-1">/mo</span></h3>
-                            <ul className="text-left text-sm text-gray-600 space-y-3 font-medium">
-                                <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> Encrypted end-to-end chat</li>
-                                <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> Dynamic profile photo unblurring</li>
-                                <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> See who viewed your profile</li>
-                            </ul>
-                            <button onClick={handleUpgradeToPremium} disabled={paying} className="w-full bg-[#881337] hover:bg-[#9F1239] text-white py-4 rounded-xl font-bold shadow-md flex justify-center items-center gap-2">
-                                {paying ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Pay Now (Mock)</>}
-                            </button>
+            {
+                showPremiumModal && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white max-w-sm w-full rounded-3xl overflow-hidden shadow-2xl">
+                            <div className="bg-gradient-to-r from-[#D4AF37] to-[#F1D16A] p-6 text-center relative">
+                                <button onClick={() => setShowPremiumModal(false)} className="absolute top-4 right-4 bg-black/10 rounded-full p-2 text-[#881337]"><X className="w-4 h-4" /></button>
+                                <Sparkles className="w-12 h-12 text-[#881337] mx-auto mb-3" />
+                                <h2 className="text-2xl font-bold text-[#881337] font-serif mb-1">Unlock Halal Chats</h2>
+                                <p className="text-[#881337] opacity-90 text-sm font-medium">Unlimited Matches &amp; Chat</p>
+                            </div>
+                            <div className="p-8 text-center space-y-6">
+                                <h3 className="text-4xl font-extrabold text-[#881337] flex justify-center items-start"><span className="text-xl mt-1">&#8377;</span>53<span className="text-base text-gray-500 font-normal mt-auto mb-1">/mo</span></h3>
+                                <ul className="text-left text-sm text-gray-600 space-y-3 font-medium">
+                                    <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> Encrypted end-to-end chat</li>
+                                    <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> Dynamic profile photo unblurring</li>
+                                    <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> See who viewed your profile</li>
+                                </ul>
+                                <button onClick={handleUpgradeToPremium} disabled={paying} className="w-full bg-[#881337] hover:bg-[#9F1239] text-white py-4 rounded-xl font-bold shadow-md flex justify-center items-center gap-2">
+                                    {paying ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Pay Now (Mock)</>}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* My Profile Preview Modal */}
-            {showMyProfileModal && myProfile && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setShowMyProfileModal(false)}>
-                    <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                        <div className="relative h-48 bg-gray-200 overflow-hidden shrink-0">
-                            {myProfile.libasImageUrl ? <img src={myProfile.libasImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-80" /> : <div className="absolute inset-0 bg-gray-300" />}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/20" />
-                            <button onClick={() => setShowMyProfileModal(false)} className="absolute top-4 right-4 bg-black/40 text-white rounded-full p-2 z-20"><X className="w-4 h-4" /></button>
-                            <div className="absolute bottom-6 left-6 z-10">
-                                <h2 className="text-3xl font-bold font-serif text-white">{myProfile.name}, {myProfile.dob ? Math.floor((Date.now() - new Date(myProfile.dob).getTime()) / 31557600000) : '--'}</h2>
-                                <p className="text-[#D4AF37] font-medium flex items-center gap-2 mt-1"><CheckCircle className="w-4 h-4" /> {myProfile.isItsVerified ? 'ITS Verified' : 'Unverified'}</p>
+            {
+                showMyProfileModal && myProfile && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setShowMyProfileModal(false)}>
+                        <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                            <div className="relative h-48 bg-gray-200 overflow-hidden shrink-0">
+                                {myProfile.libasImageUrl ? <img src={myProfile.libasImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-80" /> : <div className="absolute inset-0 bg-gray-300" />}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/20" />
+                                <button onClick={() => setShowMyProfileModal(false)} className="absolute top-4 right-4 bg-black/40 text-white rounded-full p-2 z-20"><X className="w-4 h-4" /></button>
+                                <div className="absolute bottom-6 left-6 z-10">
+                                    <h2 className="text-3xl font-bold font-serif text-white">{myProfile.name}, {myProfile.dob ? Math.floor((Date.now() - new Date(myProfile.dob).getTime()) / 31557600000) : '--'}</h2>
+                                    <p className="text-[#D4AF37] font-medium flex items-center gap-2 mt-1"><CheckCircle className="w-4 h-4" /> {myProfile.isItsVerified ? 'ITS Verified' : 'Unverified'}</p>
+                                </div>
                             </div>
-                        </div>
-                        <div className="p-6 overflow-y-auto space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="text-gray-400 text-xs font-bold mb-1">Jamaat</p><p className="text-[#881337] font-semibold text-sm">{myProfile.jamaat || 'N/A'}</p></div>
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="text-gray-400 text-xs font-bold mb-1">Location</p><p className="text-[#881337] font-semibold text-sm">{myProfile.hizratLocation || 'N/A'}</p></div>
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2"><p className="text-gray-400 text-xs font-bold mb-1">Profession</p><p className="text-[#881337] font-semibold text-sm">{myProfile.professionType || myProfile.profession || 'N/A'}</p></div>
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2"><p className="text-gray-400 text-xs font-bold mb-1">Hobbies</p><p className="text-[#881337] font-semibold text-sm">{myProfile.hobbies || 'Not specified'}</p></div>
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2"><p className="text-gray-400 text-xs font-bold mb-1">Partner Qualities</p><p className="text-[#881337] font-semibold text-sm">{myProfile.partnerQualities || 'Not specified'}</p></div>
+                            <div className="p-6 overflow-y-auto space-y-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="text-gray-400 text-xs font-bold mb-1">Jamaat</p><p className="text-[#881337] font-semibold text-sm">{myProfile.jamaat || 'N/A'}</p></div>
+                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="text-gray-400 text-xs font-bold mb-1">Location</p><p className="text-[#881337] font-semibold text-sm">{myProfile.hizratLocation || 'N/A'}</p></div>
+                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2"><p className="text-gray-400 text-xs font-bold mb-1">Profession</p><p className="text-[#881337] font-semibold text-sm">{myProfile.professionType || myProfile.profession || 'N/A'}</p></div>
+                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2"><p className="text-gray-400 text-xs font-bold mb-1">Hobbies</p><p className="text-[#881337] font-semibold text-sm">{myProfile.hobbies || 'Not specified'}</p></div>
+                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2"><p className="text-gray-400 text-xs font-bold mb-1">Partner Qualities</p><p className="text-[#881337] font-semibold text-sm">{myProfile.partnerQualities || 'Not specified'}</p></div>
+                                </div>
+                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-3 items-start">
+                                    <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                                    <p className="text-sm text-blue-700">Photos and contact info remain blurred until an interest is mutually accepted.</p>
+                                </div>
                             </div>
-                            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-3 items-start">
-                                <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                                <p className="text-sm text-blue-700">Photos and contact info remain blurred until an interest is mutually accepted.</p>
+                            <div className="p-5 border-t shrink-0">
+                                <button onClick={() => { setShowMyProfileModal(false); router.push('/candidate-registration'); }} className="w-full py-3 rounded-xl font-bold bg-[#D4AF37] text-white hover:bg-[#c29e2f]">Edit Profile Details</button>
                             </div>
-                        </div>
-                        <div className="p-5 border-t shrink-0">
-                            <button onClick={() => { setShowMyProfileModal(false); router.push('/candidate-registration'); }} className="w-full py-3 rounded-xl font-bold bg-[#D4AF37] text-white hover:bg-[#c29e2f]">Edit Profile Details</button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Accept Request Modal */}
-            {acceptingRequest && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
-                        <h3 className="text-2xl font-bold font-serif text-[#881337] mb-2">Accept Interest Request</h3>
-                        <p className="text-sm text-gray-600 mb-6">Accepting from <span className="font-bold">{acceptingRequest.otherUserName}</span>. Confirm contact details to share.</p>
-                        <div className="space-y-4 mb-6">
-                            {acceptError && <div className="p-3 bg-red-50 text-red-600 text-sm font-bold rounded-xl border border-red-100">{acceptError}</div>}
-                            <div><label className="block text-sm font-bold text-gray-700 mb-1">Mobile Number *</label><input value={acceptMobile} onChange={e => { setAcceptMobile(e.target.value); setAcceptError(''); }} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. +91 9876543210" /></div>
-                            <div><label className="block text-sm font-bold text-gray-700 mb-1">Email Address *</label><input type="email" value={acceptEmail} onChange={e => { setAcceptEmail(e.target.value); setAcceptError(''); }} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. you@example.com" /></div>
-                            <div className="flex gap-2 bg-red-50 p-3 rounded-lg border border-red-100">
-                                <Info className="w-4 h-4 text-[#881337] shrink-0 mt-0.5" /><p className="text-xs text-[#881337] font-medium">These details will be shared mutually upon acceptance.</p>
+            {
+                acceptingRequest && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+                        <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
+                            <h3 className="text-2xl font-bold font-serif text-[#881337] mb-2">Accept Interest Request</h3>
+                            <p className="text-sm text-gray-600 mb-6">Accepting from <span className="font-bold">{acceptingRequest.otherUserName}</span>. Confirm contact details to share.</p>
+                            <div className="space-y-4 mb-6">
+                                {acceptError && <div className="p-3 bg-red-50 text-red-600 text-sm font-bold rounded-xl border border-red-100">{acceptError}</div>}
+                                <div><label className="block text-sm font-bold text-gray-700 mb-1">Mobile Number *</label><input value={acceptMobile} onChange={e => { setAcceptMobile(e.target.value); setAcceptError(''); }} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. +91 9876543210" /></div>
+                                <div><label className="block text-sm font-bold text-gray-700 mb-1">Email Address *</label><input type="email" value={acceptEmail} onChange={e => { setAcceptEmail(e.target.value); setAcceptError(''); }} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. you@example.com" /></div>
+                                <div className="flex gap-2 bg-red-50 p-3 rounded-lg border border-red-100">
+                                    <Info className="w-4 h-4 text-[#881337] shrink-0 mt-0.5" /><p className="text-xs text-[#881337] font-medium">These details will be shared mutually upon acceptance.</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-4">
+                                <button onClick={() => setAcceptingRequest(null)} className="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-xl">Cancel</button>
+                                <button onClick={confirmAcceptRequest} className="flex-1 py-3 bg-[#D4AF37] text-white font-bold rounded-xl hover:bg-[#c29e2f] shadow-md">Confirm &amp; Accept</button>
                             </div>
                         </div>
-                        <div className="flex gap-4">
-                            <button onClick={() => setAcceptingRequest(null)} className="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-xl">Cancel</button>
-                            <button onClick={confirmAcceptRequest} className="flex-1 py-3 bg-[#D4AF37] text-white font-bold rounded-xl hover:bg-[#c29e2f] shadow-md">Confirm &amp; Accept</button>
-                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-        </div>
+        </div >
     );
 }

@@ -25,6 +25,44 @@ export default function ChatWindow({ connectionId, otherUserName, onClose }: Cha
     const [loading, setLoading] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    // Helpers for Date Formatting
+    const formatMessageTime = (timestamp: any) => {
+        if (!timestamp) return '';
+        const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const groupMessagesByDate = (msgs: ChatMessage[]) => {
+        const groups: { dateLabel: string, messages: ChatMessage[] }[] = [];
+        let currentDateLabel = '';
+
+        msgs.forEach(msg => {
+            if (!msg.timestamp) return;
+            const date = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date(msg.timestamp);
+
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            let dateString = '';
+            if (date.toDateString() === today.toDateString()) {
+                dateString = 'Today';
+            } else if (date.toDateString() === yesterday.toDateString()) {
+                dateString = 'Yesterday';
+            } else {
+                dateString = date.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+            }
+
+            if (dateString !== currentDateLabel) {
+                currentDateLabel = dateString;
+                groups.push({ dateLabel: currentDateLabel, messages: [msg] });
+            } else {
+                groups[groups.length - 1].messages.push(msg);
+            }
+        });
+        return groups;
+    };
+
     useEffect(() => {
         if (!user) return;
 
@@ -91,14 +129,26 @@ export default function ChatWindow({ connectionId, otherUserName, onClose }: Cha
                         Alhamdulillah! Start the conversation.
                     </div>
                 )}
-                {messages.map((msg) => {
-                    const isMe = msg.senderId === user?.uid;
-                    return (
-                        <div key={msg.id} className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm relative z-10 ${isMe ? 'bg-[#881337] text-white self-end rounded-br-sm' : 'bg-white border border-rose-100 text-gray-900 self-start rounded-bl-sm'}`}>
-                            {msg.text}
+                {groupMessagesByDate(messages).map((group, groupIndex) => (
+                    <div key={groupIndex} className="flex flex-col gap-3">
+                        <div className="flex justify-center my-2">
+                            <span className="bg-gray-200/80 text-gray-700 text-[11px] font-bold px-3 py-1 rounded-lg backdrop-blur-sm shadow-sm uppercase tracking-wide">
+                                {group.dateLabel}
+                            </span>
                         </div>
-                    );
-                })}
+                        {group.messages.map((msg) => {
+                            const isMe = msg.senderId === user?.uid;
+                            return (
+                                <div key={msg.id} className={`max-w-[80%] rounded-2xl px-3 py-2 text-[15px] shadow-sm relative z-10 flex flex-col gap-1 ${isMe ? 'bg-[#dcf8c6] text-gray-900 self-end rounded-br-sm' : 'bg-white border border-rose-100 text-gray-900 self-start rounded-bl-sm'}`}>
+                                    <span style={{ wordBreak: 'break-word' }} className="pr-6">{msg.text}</span>
+                                    <span className={`text-[10px] self-end mt-[-4px] mb-[-2px] ${isMe ? 'text-green-800/60' : 'text-gray-400'}`}>
+                                        {formatMessageTime(msg.timestamp)}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ))}
                 <div ref={messagesEndRef} />
             </div>
 

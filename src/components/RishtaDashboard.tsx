@@ -706,42 +706,35 @@ export default function RishtaDashboard() {
             <header className="max-w-7xl mx-auto mb-6 flex items-center gap-4">
                 <div className="flex-1 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
                     <nav className="flex w-full relative">
-                        {(['mybiodata', 'discovery', 'requests', 'messages', 'notifications'] as const).map((tab) => (
+                        {(['mybiodata', 'discovery', 'requests', 'messages'] as const).map((tab) => (
                             <button
                                 key={tab}
                                 id={`${tab}-nav-tab`}
                                 onClick={() => setActiveTab(tab)}
                                 className={`flex-1 py-2.5 text-xs font-bold transition-all rounded-xl relative z-10 text-center ${activeTab === tab ? 'text-white shadow-sm' : 'text-gray-500 hover:text-[#881337]'}`}
                             >
-                                {tab === 'mybiodata' ? 'Biodata'
+                                {tab === 'mybiodata' ? 'My Biodata'
                                     : tab === 'messages' ? 'Accepted Chats'
                                         : tab === 'discovery' ? 'Search Profile'
-                                            : tab === 'notifications' ? (
-                                                <span className="relative inline-flex items-center gap-1.5">
-                                                    <Bell className={`w-4 h-4 ${activeTab === 'notifications' ? 'text-white' : 'text-[#881337]'}`} />
-                                                    Notifications
-                                                    {unreadNotifCount > 0 && (
-                                                        <span className="absolute -top-1.5 -right-2 w-2.5 h-2.5 bg-red-500 rounded-full border border-white shadow-sm animate-pulse" />
-                                                    )}
-                                                </span>
-                                            )
-                                                : 'Requests'}
+                                            : 'Requests'}
                             </button>
                         ))}
                         {/* Active Background Pill */}
                         <div
-                            className="absolute top-0 bottom-0 w-1/5 bg-[#881337] rounded-xl transition-all duration-300 ease-out shadow-sm"
-                            style={{ left: `${(['mybiodata', 'discovery', 'requests', 'messages', 'notifications'].indexOf(activeTab)) * 20}%` }}
+                            className="absolute top-0 bottom-0 w-1/4 bg-[#881337] rounded-xl transition-all duration-300 ease-out shadow-sm"
+                            style={{ left: `${(['mybiodata', 'discovery', 'requests', 'messages'].indexOf(activeTab as any)) * 25}%` }}
                         />
                     </nav>
                 </div>
 
-                {/* Large Bell Button */}
+                {/* Large Bell Button - Primary Notification Entry */}
                 <button
                     onClick={() => setActiveTab('notifications')}
-                    className={`hidden md:flex shrink-0 w-16 h-16 rounded-3xl shadow-md border-2 items-center justify-center transition-all relative group ${activeTab === 'notifications' ? 'bg-[#881337] text-white border-[#881337]' : 'bg-white text-[#881337] border-gray-100 hover:border-[#881337]/30 hover:shadow-lg'}`}
+                    className={`shrink-0 w-16 h-16 rounded-3xl shadow-md border-2 items-center justify-center transition-all relative group 
+                        ${activeTab === 'notifications' ? 'bg-[#881337] text-white border-[#881337]' : 'bg-white text-[#881337] border-gray-100 hover:border-[#881337]/30 hover:shadow-lg'}
+                        ${unreadNotifCount > 0 && activeTab !== 'notifications' ? 'ring-4 ring-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : ''}`}
                 >
-                    <Bell className={`w-8 h-8 transition-transform group-hover:rotate-12 ${unreadNotifCount > 0 ? 'animate-bell-ring' : ''}`} />
+                    <Bell className={`w-8 h-8 transition-transform group-hover:rotate-12 ${unreadNotifCount > 0 && activeTab !== 'notifications' ? 'animate-bell-ring' : ''}`} />
                     {unreadNotifCount > 0 && (
                         <span className="absolute -top-1 -right-1 min-w-[24px] h-6 px-1.5 bg-red-500 text-white text-xs font-black flex items-center justify-center rounded-full border-2 border-white shadow-lg animate-bounce z-20">
                             {unreadNotifCount}
@@ -1038,11 +1031,6 @@ export default function RishtaDashboard() {
                 <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'messages' ? 'text-[#881337]' : 'text-gray-400'}`}>
                     <MessageCircle className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Accepted</span>
                     {allRequests.filter(r => r.status === 'accepted' && r.isIncoming).length > 0 && <span className="absolute -top-0.5 right-3 w-1.5 h-1.5 bg-red-500 rounded-full" />}
-                </button>
-                <button onClick={() => setActiveTab('notifications')} className={`flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'notifications' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <span className="text-xl leading-none">🔔</span>
-                    <span className="text-[8px] font-bold uppercase">Alerts</span>
-                    {unreadNotifCount > 0 && <span className="absolute -top-0.5 right-3 w-2 h-2 bg-red-500 rounded-full border border-white shadow-sm animate-pulse" />}
                 </button>
             </nav>
 

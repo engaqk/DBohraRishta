@@ -188,7 +188,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                                 src={libasImageUrl}
                                 alt={name}
                                 className={`w-full h-full object-cover transition-all duration-300 ${isBlurSecurityEnabled && requestStatus !== 'accepted'
-                                    ? 'blur-[3px] brightness-90'
+                                    ? 'blur-[1px] brightness-95'
                                     : ''
                                     }`}
                             />

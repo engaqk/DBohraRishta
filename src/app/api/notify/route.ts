@@ -5,7 +5,7 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 
 export async function POST(req: Request) {
     try {
-        const { to, subject, html } = await req.json();
+        const { to, cc, subject, html } = await req.json();
 
         if (!to || !subject || !html) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -17,10 +17,12 @@ export async function POST(req: Request) {
         }
 
         const recipients = Array.isArray(to) ? to : [to];
+        const ccRecipients = cc ? (Array.isArray(cc) ? cc : [cc]) : undefined;
 
         const { data, error } = await resend.emails.send({
             from: 'DBohraRishta <notifications@dbohrarishta.com>',
             to: recipients,
+            cc: ccRecipients,
             subject,
             html,
         });

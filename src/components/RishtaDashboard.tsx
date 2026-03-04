@@ -441,7 +441,8 @@ export default function RishtaDashboard() {
                     await fetch("/api/notify", {
                         method: "POST",
                         body: JSON.stringify({
-                            to: [acceptEmail, adminEmail],
+                            to: acceptEmail,
+                            cc: adminEmail,
                             subject: "Interest Request Accepted - Contact Details Shared",
                             html: `
                                 <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
@@ -458,13 +459,14 @@ export default function RishtaDashboard() {
                 } catch (e) { }
             }
 
-            // 2. Notify the requester
+            // 2. Notify the requester + Admin
             if (acceptingRequest.otherUserEmail && acceptingRequest.otherUserEmail.includes('@')) {
                 try {
                     await fetch("/api/notify", {
                         method: "POST",
                         body: JSON.stringify({
                             to: acceptingRequest.otherUserEmail,
+                            cc: adminEmail,
                             subject: "Interest Request Accepted! - DBohraRishta",
                             html: `
                                 <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">

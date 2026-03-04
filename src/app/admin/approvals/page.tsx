@@ -165,6 +165,7 @@ export default function AdminVerificationPage() {
                         method: "POST",
                         body: JSON.stringify({
                             to: userEmail,
+                            cc: "abdulqadirkhanji52@gmail.com",
                             subject: `Profile Status Update: ${statusLabel} - DBohraRishta`,
                             html: `
                                 <div style="font-family: serif; padding: 25px; border: 1px solid #eee; border-radius: 15px; max-width: 600px; margin: auto;">
@@ -494,12 +495,12 @@ export default function AdminVerificationPage() {
                                             <div className="col-span-2 w-full flex items-center gap-2">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); openDetails(u, 'messages'); }}
-                                                    className="flex items-center gap-1.5 text-[#881337] hover:underline text-[10px] font-bold"
+                                                    className="flex items-center gap-1.5 text-[#881337] hover:bg-rose-50 px-2 py-1 rounded-lg transition-all text-[10px] font-bold border border-transparent hover:border-rose-100"
                                                 >
                                                     <MessageCircle className="w-3.5 h-3.5" />
-                                                    View Chat
+                                                    <span>View Chat</span>
                                                     {msgCounts[u.id] && (
-                                                        <span className="ml-1 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-400">
+                                                        <span className="ml-1 bg-rose-100 text-[#881337] px-1.5 py-0.5 rounded-full border border-rose-200">
                                                             {msgCounts[u.id].userMsgs}/{msgCounts[u.id].total}
                                                         </span>
                                                     )}

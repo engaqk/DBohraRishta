@@ -130,9 +130,13 @@ export default function LoginPage() {
 
     // ── TOTP: Step 1 — Generate QR ────────────────────────────────────────────
     const handleGenerateQr = () => {
-        const clean = totpPhone.replace(/[\s\-()]/g, '');
-        if (!clean || clean.length < 10 || !clean.startsWith('+')) {
-            setErrorMsg("Enter a valid number with country code, e.g. +919876543210");
+        const clean = totpPhone.trim();
+        if (!clean || !clean.startsWith('+')) {
+            setErrorMsg("Enter a valid number starting with +, e.g. +919876543210");
+            return;
+        }
+        if (clean.length < 10 || clean.length > 16) {
+            setErrorMsg("Enter a valid mobile number (10 to 15 digits including country code)");
             return;
         }
         setErrorMsg("");
@@ -310,8 +314,15 @@ export default function LoginPage() {
                                 </div>
                                 <div className="relative">
                                     <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                    <input type="tel" inputMode="tel" placeholder="e.g. 9876543210"
-                                        value={totpPhone} onChange={(e) => setTotpPhone(e.target.value.replace(/[^0-9+]/g, ''))}
+                                    <input type="tel" inputMode="tel" placeholder="+919876543210"
+                                        maxLength={16}
+                                        value={totpPhone}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            // Allow only numbers and a plus sign at the start
+                                            const sanitized = val.replace(/[^0-9+]/g, '').replace(/(?!^)\+/g, '');
+                                            setTotpPhone(sanitized);
+                                        }}
                                         className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none" />
                                 </div>
                                 <button onClick={handleGenerateQr}

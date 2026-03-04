@@ -16,7 +16,7 @@ interface PendingUser {
     status: string;
     hizratLocation: string;
     mobileNumber?: string; // optional mobile number field
-    // Additional fields can be added as needed
+    [key: string]: any; // Catch-all for full biodata
 }
 
 export default function AdminVerificationPage() {
@@ -140,11 +140,20 @@ export default function AdminVerificationPage() {
                     <dialog open className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
                         <div className="bg-white rounded-lg p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto">
                             <h2 className="text-2xl font-bold mb-4 text-[#881337] border-b pb-2">User Profile: {selectedUser.name}</h2>
-                            <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                                <div><p className="text-gray-500 uppercase text-[10px] font-bold">ITS Number</p><p className="font-medium text-gray-800">{selectedUser.itsNumber}</p></div>
+                            <div className="grid grid-cols-2 gap-4 mb-4 text-sm bg-gray-50 p-4 rounded-xl border border-gray-100 max-h-64 overflow-y-auto">
+                                <div><p className="text-gray-500 uppercase text-[10px] font-bold">ITS Number</p><p className="font-medium text-[#881337]">{selectedUser.itsNumber}</p></div>
+                                <div><p className="text-gray-500 uppercase text-[10px] font-bold">DOB</p><p className="font-medium text-gray-800">{selectedUser.dob || "N/A"}</p></div>
+                                <div><p className="text-gray-500 uppercase text-[10px] font-bold">Gender & Height</p><p className="font-medium text-gray-800 capitalize">{selectedUser.gender || "N/A"} • {selectedUser.heightFeet ? `${selectedUser.heightFeet}' ${selectedUser.heightInch}"` : "N/A"}</p></div>
+                                <div><p className="text-gray-500 uppercase text-[10px] font-bold">Marital Status</p><p className="font-medium text-gray-800 capitalize">{selectedUser.maritalStatus || "Single"}</p></div>
                                 <div><p className="text-gray-500 uppercase text-[10px] font-bold">Jamaat</p><p className="font-medium text-gray-800">{selectedUser.jamaat}</p></div>
                                 <div><p className="text-gray-500 uppercase text-[10px] font-bold">Location</p><p className="font-medium text-gray-800">{selectedUser.hizratLocation}</p></div>
-                                <div><p className="text-gray-500 uppercase text-[10px] font-bold">Mobile</p><p className="font-medium text-gray-800">{selectedUser.mobileNumber || "Not set"}</p></div>
+                                <div><p className="text-gray-500 uppercase text-[10px] font-bold">Mobile</p><p className="font-medium text-gray-800">{selectedUser.mobile || selectedUser.mobileNumber || "Not set"}</p></div>
+                                <div><p className="text-gray-500 uppercase text-[10px] font-bold">Email</p><p className="font-medium text-gray-800">{selectedUser.email || "Not set"}</p></div>
+                                <div className="col-span-2"><p className="text-gray-500 uppercase text-[10px] font-bold">Education</p><p className="font-medium text-gray-800">{selectedUser.education || selectedUser.completedUpto || "N/A"} - {selectedUser.educationDetails || "No details"}</p></div>
+                                <div className="col-span-2"><p className="text-gray-500 uppercase text-[10px] font-bold">Profession</p><p className="font-medium text-gray-800">{selectedUser.professionType || "N/A"} - {selectedUser.serviceType || "N/A"}</p></div>
+                                <div className="col-span-2"><p className="text-gray-500 uppercase text-[10px] font-bold">Parents</p><p className="font-medium text-gray-800 text-xs">Father: {selectedUser.fatherName || "N/A"} | Mother: {selectedUser.motherName || "N/A"}</p></div>
+                                <div className="col-span-2"><p className="text-gray-500 uppercase text-[10px] font-bold">Bio</p><p className="font-medium text-gray-800 italic">{selectedUser.bio || "None"}</p></div>
+                                <div className="col-span-2"><p className="text-gray-500 uppercase text-[10px] font-bold">Partner Qualities</p><p className="font-medium text-gray-800 text-xs">{selectedUser.partnerQualities || "None"}</p></div>
                             </div>
 
                             <div className="flex gap-4 mb-6">
@@ -167,34 +176,26 @@ export default function AdminVerificationPage() {
                             </div>
 
                             <div className="flex flex-col gap-3 justify-end border-t pt-4 mt-4">
-                                {showRejectInput ? (
-                                    <div className="w-full bg-rose-50 p-4 rounded-xl border border-rose-100 flex flex-col gap-3 mt-2">
-                                        <h4 className="font-bold text-[#881337] text-sm">Reason for Rejection</h4>
-                                        <textarea
-                                            value={rejectReason}
-                                            onChange={(e) => setRejectReason(e.target.value)}
-                                            placeholder="e.g. Please crop your Libas photo properly and resubmit for reapproval."
-                                            className="w-full p-3 border border-rose-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-rose-500 resize-none h-20"
-                                        />
-                                        <div className="flex gap-2 justify-end mt-1">
-                                            <button onClick={() => setShowRejectInput(false)} className="px-4 py-2 bg-gray-200 text-gray-700 font-bold text-xs rounded-xl hover:bg-gray-300">Cancel</button>
-                                            <button onClick={() => { handleStatusMove(selectedUser.id, 'rejected', rejectReason); closeDetails(); }} className="px-4 py-2 bg-rose-600 text-white font-bold text-xs rounded-xl hover:bg-rose-700 shadow-sm flex items-center gap-1"><XCircle className="w-3.5 h-3.5" /> Confirm Reject</button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex gap-3 justify-end w-full">
-                                        {selectedUser.status !== 'approved' && selectedUser.status !== 'verified' && (
-                                            <button onClick={() => { handleStatusMove(selectedUser.id, 'verified'); closeDetails(); }} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm">Verify / Accept</button>
-                                        )}
-                                        {selectedUser.status === 'verified' && (
-                                            <button onClick={() => { handleStatusMove(selectedUser.id, 'approved'); closeDetails(); }} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm">Final Approve</button>
-                                        )}
-                                        {selectedUser.status !== 'rejected' && (
-                                            <button onClick={() => setShowRejectInput(true)} className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm">Reject</button>
-                                        )}
-                                        <button onClick={closeDetails} className="px-5 py-2.5 bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 rounded-xl transition-colors">Close Viewer</button>
-                                    </div>
-                                )}
+                                <h4 className="font-bold text-[#881337] text-sm">Admin Comment / Message (Optional)</h4>
+                                <p className="text-xs text-gray-500 mb-1">Send a message to the user along with rejection or verification. If rejected, they must fix and resubmit for reverification.</p>
+                                <textarea
+                                    value={rejectReason}
+                                    onChange={(e) => setRejectReason(e.target.value)}
+                                    placeholder="e.g. Please update your Libas photo with a clearer version."
+                                    className="w-full p-3 border border-gray-200 bg-gray-50 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#881337] resize-none h-20"
+                                />
+                                <div className="flex gap-3 justify-end w-full mt-2">
+                                    {selectedUser.status !== 'approved' && selectedUser.status !== 'verified' && (
+                                        <button onClick={() => { handleStatusMove(selectedUser.id, 'verified', rejectReason); closeDetails(); }} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm">Verify / Accept</button>
+                                    )}
+                                    {selectedUser.status === 'verified' && (
+                                        <button onClick={() => { handleStatusMove(selectedUser.id, 'approved', rejectReason); closeDetails(); }} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm">Final Approve</button>
+                                    )}
+                                    {selectedUser.status !== 'rejected' && (
+                                        <button onClick={() => { handleStatusMove(selectedUser.id, 'rejected', rejectReason); closeDetails(); }} className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm">Reject Profile</button>
+                                    )}
+                                    <button onClick={closeDetails} className="px-5 py-2.5 bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 rounded-xl transition-colors">Close</button>
+                                </div>
                             </div>
                         </div>
                     </dialog>

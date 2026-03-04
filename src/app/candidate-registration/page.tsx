@@ -514,7 +514,10 @@ export default function CandidateRegistrationPage() {
                                     {/* Edit Mobile Secion inline */}
                                     {user && (
                                         <div className="bg-rose-50 rounded-xl p-4 border border-rose-100 shadow-inner mt-2">
-                                            <h3 className="font-bold text-[#881337] text-xs mb-2 uppercase tracking-wide">Update Mobile (Requires Verify)</h3>
+                                            <h3 className="font-bold text-[#881337] text-xs mb-1 uppercase tracking-wide">Update Mobile (Requires Verify)</h3>
+                                            <p className="text-[11px] text-rose-800 mb-3 leading-relaxed font-medium">
+                                                If you logged in via email and haven't set up the mobile authenticator, please log out, select <strong>Mobile</strong> login, and follow the simple 100% free setup guide to get your code.
+                                            </p>
                                             <div className="space-y-3">
                                                 <input type="text" placeholder="New mobile number (e.g. 9876543210)" className="border border-rose-200 focus:outline-none focus:ring-1 focus:ring-[#881337] rounded-lg w-full p-2.5 text-sm bg-white" id="newMobileInput" />
                                                 <input type="text" placeholder="Authenticator App Code (6 Digits)" className="border border-rose-200 focus:outline-none focus:ring-1 focus:ring-[#881337] rounded-lg w-full p-2.5 text-sm bg-white" id="authCodeInput" maxLength={6} />

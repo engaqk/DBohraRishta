@@ -606,7 +606,7 @@ export default function RishtaDashboard() {
                             onClick={() => setActiveTab(tab as any)}
                             className={`flex-1 py-3 text-sm font-bold capitalize transition-all rounded-xl relative z-10 ${activeTab === tab ? 'text-white shadow-sm' : 'text-gray-500 hover:text-[#881337]'}`}
                         >
-                            {tab}
+                            {tab === 'messages' ? 'Accepted (Messages)' : tab}
                         </button>
                     ))}
                     {/* Active Background Pill */}

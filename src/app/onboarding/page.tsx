@@ -297,7 +297,7 @@ export default function OnboardingPage() {
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">ITS Number</label>
-                                <input name="itsNumber" onChange={handleChange} value={formData.itsNumber} className={`w-full bg-gray-50 border ${errors.itsNumber ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. 2045612" />
+                                <input name="itsNumber" onChange={handleChange} value={formData.itsNumber} className={`w-full bg-gray-50 border ${errors.itsNumber ? 'border-red-500 focus:ring-red-500' : 'border-yellow-400 focus:ring-yellow-500'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. 2045612" />
                                 {errors.itsNumber && <p className="text-red-500 text-xs font-bold mt-1">{errors.itsNumber}</p>}
                             </div>
 
@@ -308,8 +308,16 @@ export default function OnboardingPage() {
                             </div>
 
                             {/* Mobile Real-time Camera Capture for ITS */}
-                            <div className={`mt-6 border ${errors.itsImage ? 'border-red-500' : 'border-gray-200'} rounded-xl p-5 bg-white shadow-sm flex flex-col items-center`}>
-                                <label className="text-center w-full block mb-4 font-bold text-sm text-[#881337]">Capture ITS Card Verification</label>
+                            <div className={`mt-6 border-2 border-yellow-400 rounded-xl p-5 bg-yellow-50/30 shadow-sm flex flex-col items-center relative overflow-hidden`}>
+                                <div className="absolute top-0 left-0 right-0 bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-widest text-center py-1">
+                                    Strictly Confidential & Mandatory
+                                </div>
+                                <label className="text-center w-full block mt-4 mb-2 font-bold text-sm text-[#881337]">
+                                    Upload Original ITS Card
+                                </label>
+                                <p className="text-xs text-yellow-800 text-center mb-5 max-w-sm font-medium leading-relaxed">
+                                    Your profile <strong className="text-red-600">will be rejected</strong> if the ITS card is entirely missing or fake. This is strictly required to verify your identity before allowing access to the platform. <strong>Only Verified ITS card candidates can send requests. Request option will be locked until verification.</strong>
+                                </p>
 
                                 {imagePreview ? (
                                     <div className="relative w-full max-w-[250px] aspect-[1.58] rounded-xl overflow-hidden shadow-lg border-2 border-[#D4AF37]">

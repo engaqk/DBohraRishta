@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverTimestamp, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -180,16 +180,28 @@ export default function AdminVerificationPage() {
                         <ShieldAlert className="w-8 h-8 text-[#881337]" />
                         <h1 className="text-3xl font-bold font-serif">Admin Dashboard</h1>
                     </div>
-                    {user && (
-                        <button onClick={async () => {
-                            try {
-                                await updateDoc(doc(db, "users", user.uid), { role: 'admin' });
-                                toast.success("Admin role granted!");
-                            } catch (e) { toast.error("Could not grant admin."); }
-                        }} className="bg-rose-100 hover:bg-rose-200 text-[#881337] px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-rose-200">
-                            <Key className="w-4 h-4" /> Grant Me Admin
+                    <div className="flex items-center gap-3">
+                        {user && (
+                            <button onClick={async () => {
+                                try {
+                                    await updateDoc(doc(db, "users", user.uid), { role: 'admin' });
+                                    toast.success("Admin role granted!");
+                                } catch (e) { toast.error("Could not grant admin."); }
+                            }} className="bg-rose-100 hover:bg-rose-200 text-[#881337] px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-rose-200">
+                                <Key className="w-4 h-4" /> Grant Me Admin
+                            </button>
+                        )}
+                        <button
+                            onClick={() => {
+                                localStorage.removeItem("admin_auth_token");
+                                toast.success("Admin session terminated.");
+                                router.push('/admin/login');
+                            }}
+                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-gray-200"
+                        >
+                            <LogOut className="w-4 h-4" /> Secure Logout
                         </button>
-                    )}
+                    </div>
                 </div>
 
                 {/* Full-screen Detail View */}

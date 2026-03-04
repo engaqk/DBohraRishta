@@ -319,13 +319,15 @@ export default function LoginPage() {
                                         <p>③ Point your phone camera at the QR above</p>
                                         <p>④ Enter the 6-digit code from the app below</p>
                                     </>)}
-                                    <p className="text-gray-400 pt-1">💡 After setup, skip this screen — just enter the 6-digit code directly next time.</p>
+                                    <p className="text-amber-700 font-bold pt-1 flex items-center gap-1.5">
+                                        <span className="text-sm">💡</span> After setup, skip this screen — just enter the 6-digit code directly next time.
+                                    </p>
                                 </div>
 
                                 {/* Manual key — always visible, prominent copy */}
                                 <div className="bg-rose-50 border border-[#881337]/20 rounded-xl p-3">
-                                    <p className="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1.5">
-                                        🔑 Can't scan / open app? Enter this key manually in the app:
+                                    <p className="text-sm font-bold text-amber-900 mb-2 flex items-center gap-1.5">
+                                        <span className="p-1 bg-amber-200 rounded-lg text-xs">🔑</span> Can't scan / open app? Enter this key manually in the app:
                                     </p>
                                     <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-gray-200">
                                         <code className="text-sm font-mono text-[#881337] break-all tracking-widest flex-1 select-all">{manualKey}</code>

@@ -87,9 +87,25 @@ export default function ChatWindow({ connectionId, otherUserName, onClose }: Cha
         return () => unsubscribe();
     }, [connectionId, user]);
 
+    const BAD_WORDS = ['porn', 'sex', 'nude', 'nudes', 'fuck', 'shit', 'bitch', 'ass', 'dick', 'pussy', 'slut', 'whore', 'boobs', 'tits', 'cock', 'cunt'];
+    const [msgError, setMsgError] = useState("");
+
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
+        setMsgError("");
         if (!newMessage.trim() || !user) return;
+
+        // Basic profanity filter
+        const lowerMsg = newMessage.toLowerCase();
+        const hasBadWords = BAD_WORDS.some(word => {
+            const regex = new RegExp(`\\b${word}\\b`, 'i');
+            return regex.test(lowerMsg);
+        });
+
+        if (hasBadWords) {
+            setMsgError("Message blocked. Please maintain respectful, halal communication.");
+            return;
+        }
 
         const text = newMessage;
         setNewMessage("");
@@ -165,6 +181,11 @@ export default function ChatWindow({ connectionId, otherUserName, onClose }: Cha
                         </button>
                     ))}
                 </div>
+                {msgError && (
+                    <div className="px-3 pt-2 text-xs font-bold text-red-500 animate-pulse text-center bg-red-50 py-1">
+                        {msgError}
+                    </div>
+                )}
                 <form onSubmit={handleSendMessage} className="p-3 flex gap-2 items-center">
                     <input
                         type="text"

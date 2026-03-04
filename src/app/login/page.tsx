@@ -434,7 +434,7 @@ export default function LoginPage() {
                                 /* ── Step 1: Enter phone number ── */
                                 <>
                                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 leading-relaxed">
-                                        <p className="font-bold mb-1">📱 100% Free — No SMS charges ever</p>
+                                        <p className="font-bold mb-1">📱 Mobile Login (Verification)</p>
                                         <p>Enter your mobile number to get a setup code for your authenticator app. Works on any device, no internet needed after setup.</p>
                                     </div>
                                     <div className="relative">

@@ -13,7 +13,43 @@
     font-family: Arial, Helvetica, sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: Georgia, serif; /* Elegant Serif for headings */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: Georgia, serif;
+    /* Elegant Serif for headings */
+  }
+}
+
+@layer utilities {
+  @keyframes bell-ring {
+
+    0%,
+    100% {
+      transform: rotate(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+      transform: rotate(15deg);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+      transform: rotate(-15deg);
+    }
+  }
+
+  .animate-bell-ring {
+    animation: bell-ring 2s ease-in-out infinite;
+    transform-origin: top center;
   }
 }

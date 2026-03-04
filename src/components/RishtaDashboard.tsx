@@ -100,6 +100,11 @@ export default function RishtaDashboard() {
             // Also count celebration/rejection/hold if they haven't been cleared
             const extra = (showVerifiedCelebration || myProfile?.status === 'rejected' || myProfile?.status === 'hold') ? 1 : 0;
             setUnreadNotifCount(newUnread + extra);
+        }, (err) => {
+            console.error("Firestore onSnapshot error (admin_messages):", err);
+            if (err.code === 'permission-denied') {
+                toast.error("Contact permission issue. Please update Firestore Rules.");
+            }
         });
         return () => unsub();
     }, [user, myProfile?.status, showVerifiedCelebration]);
@@ -712,11 +717,11 @@ export default function RishtaDashboard() {
                                     : tab === 'messages' ? 'Accepted Chats'
                                         : tab === 'discovery' ? 'Search Profile'
                                             : tab === 'notifications' ? (
-                                                <span className="relative inline-flex items-center gap-1">
-                                                    <Bell className={`w-3.5 h-3.5 ${activeTab === 'notifications' ? 'text-white' : 'text-[#881337]'}`} />
-                                                    Alerts
+                                                <span className="relative inline-flex items-center gap-1.5">
+                                                    <Bell className={`w-4 h-4 ${activeTab === 'notifications' ? 'text-white' : 'text-[#881337]'}`} />
+                                                    Notifications
                                                     {unreadNotifCount > 0 && (
-                                                        <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white shadow-sm animate-pulse" />
+                                                        <span className="absolute -top-1.5 -right-2 w-2.5 h-2.5 bg-red-500 rounded-full border border-white shadow-sm animate-pulse" />
                                                     )}
                                                 </span>
                                             )
@@ -734,11 +739,11 @@ export default function RishtaDashboard() {
                 {/* Large Bell Button */}
                 <button
                     onClick={() => setActiveTab('notifications')}
-                    className={`hidden md:flex shrink-0 w-14 h-14 rounded-2xl shadow-sm border border-gray-100 items-center justify-center transition-all relative group ${activeTab === 'notifications' ? 'bg-[#881337] text-white' : 'bg-white text-[#881337] hover:bg-gray-50'}`}
+                    className={`hidden md:flex shrink-0 w-16 h-16 rounded-3xl shadow-md border-2 items-center justify-center transition-all relative group ${activeTab === 'notifications' ? 'bg-[#881337] text-white border-[#881337]' : 'bg-white text-[#881337] border-gray-100 hover:border-[#881337]/30 hover:shadow-lg'}`}
                 >
-                    <Bell className={`w-7 h-7 transition-transform group-hover:rotate-12 ${activeTab === 'notifications' ? 'animate-none' : ''}`} />
+                    <Bell className={`w-8 h-8 transition-transform group-hover:rotate-12 ${unreadNotifCount > 0 ? 'animate-bell-ring' : ''}`} />
                     {unreadNotifCount > 0 && (
-                        <span className="absolute top-2 right-2 min-w-[20px] h-5 px-1 bg-red-500 text-white text-[11px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-sm animate-bounce">
+                        <span className="absolute -top-1 -right-1 min-w-[24px] h-6 px-1.5 bg-red-500 text-white text-xs font-black flex items-center justify-center rounded-full border-2 border-white shadow-lg animate-bounce z-20">
                             {unreadNotifCount}
                         </span>
                     )}

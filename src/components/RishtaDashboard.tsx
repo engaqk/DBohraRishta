@@ -9,7 +9,8 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import toast from 'react-hot-toast';
-
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
 interface UserProfile {
     id: string;
     name: string;
@@ -71,30 +72,43 @@ export default function RishtaDashboard() {
     const [acceptEmail, setAcceptEmail] = useState('');
     const [acceptError, setAcceptError] = useState('');
 
-    // Tour Guide State
-    const [tourStep, setTourStep] = useState(0);
-    const [showTour, setShowTour] = useState(false);
-
+    // Tour State managed by driver.js
     useEffect(() => {
         const hasSeenTour = localStorage.getItem('hasSeenTour');
         if (!hasSeenTour) {
-            // Slight delay so the UI renders
-            setTimeout(() => setShowTour(true), 1500);
+            setTimeout(() => {
+                const driverObj = driver({
+                    showProgress: true,
+                    steps: [
+                        {
+                            popover: { title: 'Welcome to DBohraRishta!', description: "Let's take a quick tour to help you find your perfect halal match." }
+                        },
+                        {
+                            element: '#profile-completeness-section',
+                            popover: { title: 'Your Biodata', description: 'Complete your registration here to become visible to others.', side: "right", align: 'start' }
+                        },
+                        {
+                            element: '#discovery-nav-tab',
+                            popover: { title: 'Discovery Tab', description: 'Find and browse highly compatible matches here.', side: "bottom", align: 'start' }
+                        },
+                        {
+                            element: '#requests-nav-tab',
+                            popover: { title: 'Interest Requests', description: 'Manage incoming and outgoing requests.', side: "bottom", align: 'start' }
+                        },
+                        {
+                            element: '#messages-nav-tab',
+                            popover: { title: 'Accepted Connections', description: 'Once mutually accepted, photos unblur and you can chat safely here!', side: "bottom", align: 'start' }
+                        }
+                    ],
+                    onDestroyStarted: () => {
+                        localStorage.setItem('hasSeenTour', 'true');
+                        driverObj.destroy();
+                    }
+                });
+                driverObj.drive();
+            }, 1000);
         }
     }, []);
-
-    const nextTourStep = () => {
-        if (tourStep >= 3) {
-            setShowTour(false);
-            localStorage.setItem('hasSeenTour', 'true');
-        } else {
-            setTourStep(prev => prev + 1);
-        }
-    };
-    const skipTour = () => {
-        setShowTour(false);
-        localStorage.setItem('hasSeenTour', 'true');
-    };
 
     useEffect(() => {
         if (loading) return;
@@ -603,6 +617,7 @@ export default function RishtaDashboard() {
                     {['discovery', 'requests', 'messages'].map((tab) => (
                         <button
                             key={tab}
+                            id={`${tab}-nav-tab`}
                             onClick={() => setActiveTab(tab as any)}
                             className={`flex-1 py-3 text-sm font-bold capitalize transition-all rounded-xl relative z-10 ${activeTab === tab ? 'text-white shadow-sm' : 'text-gray-500 hover:text-[#881337]'}`}
                         >
@@ -673,7 +688,7 @@ export default function RishtaDashboard() {
                                     if (myProfile.isCandidateFormComplete) completeness = 100;
 
                                     return (
-                                        <div className="w-full mt-6 bg-gray-50 p-4 border border-gray-100 rounded-xl flex flex-col items-center">
+                                        <div id="profile-completeness-section" className="w-full mt-6 bg-gray-50 p-4 border border-gray-100 rounded-xl flex flex-col items-center">
                                             <div className="w-full flex justify-between text-xs font-bold text-gray-500 mb-2">
                                                 <span>Biodata Completeness</span>
                                                 <span className="text-[#881337]">{completeness}%</span>
@@ -881,43 +896,6 @@ export default function RishtaDashboard() {
                 </div>
             )}
 
-            {showTour && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm shadow-2xl">
-                    <div className="bg-white rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative text-center">
-                        <div className="mb-6 flex justify-center">
-                            {tourStep === 0 && <Heart className="w-16 h-16 text-[#881337]" />}
-                            {tourStep === 1 && <ShieldCheck className="w-16 h-16 text-[#881337]" />}
-                            {tourStep === 2 && <Info className="w-16 h-16 text-[#D4AF37]" />}
-                            {tourStep === 3 && <MessageCircle className="w-16 h-16 text-[#881337]" />}
-                        </div>
-                        <h3 className="text-2xl font-bold font-serif text-[#881337] mb-2">
-                            {tourStep === 0 && "Welcome to DBohraRishta!"}
-                            {tourStep === 1 && "Strictly Verified"}
-                            {tourStep === 2 && "Dynamic Privacy"}
-                            {tourStep === 3 && "Secure Halal Chat"}
-                        </h3>
-                        <p className="text-gray-600 mb-6 leading-relaxed">
-                            {tourStep === 0 && "Let's take a quick tour to help you find your perfect halal match."}
-                            {tourStep === 1 && "Only ITS-verified profiles can send Interest Requests. Your identity is secure with us."}
-                            {tourStep === 2 && "Photos remaining beautifully blurred until an interest request is mutually accepted."}
-                            {tourStep === 3 && "Once accepted, photos unblur, contact forms are shared, and you can chat safely!"}
-                        </p>
-
-                        <div className="flex justify-center gap-2 mb-6">
-                            {[0, 1, 2, 3].map(i => (
-                                <div key={i} className={`h-2 rounded-full transition-all ${tourStep === i ? 'w-6 bg-[#881337]' : 'w-2 bg-gray-200'}`} />
-                            ))}
-                        </div>
-
-                        <div className="flex gap-3">
-                            <button onClick={skipTour} className="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-xl transition-colors text-sm">Skip Tour</button>
-                            <button onClick={nextTourStep} className="flex-1 py-3 bg-[#D4AF37] text-white rounded-xl font-bold hover:bg-[#c29e2f] transition-colors text-sm shadow-md">
-                                {tourStep === 3 ? "Get Started" : "Next"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

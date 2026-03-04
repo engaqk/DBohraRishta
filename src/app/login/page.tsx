@@ -439,8 +439,8 @@ export default function LoginPage() {
                                     </div>
                                     <div className="relative">
                                         <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                        <input type="tel" inputMode="tel" placeholder="+919876543210"
-                                            value={totpPhone} onChange={(e) => setTotpPhone(e.target.value)}
+                                        <input type="tel" inputMode="tel" placeholder="e.g. 9876543210"
+                                            value={totpPhone} onChange={(e) => setTotpPhone(e.target.value.replace(/[^0-9+]/g, ''))}
                                             className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none" />
                                     </div>
                                     <button onClick={handleGenerateQr}

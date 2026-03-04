@@ -137,9 +137,15 @@ export default function AdminVerificationPage() {
                 </div>
                 {/* Detail Modal */}
                 {selectedUser && (
-                    <dialog open className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-                        <div className="bg-white rounded-lg p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto">
-                            <h2 className="text-2xl font-bold mb-4 text-[#881337] border-b pb-2">User Profile: {selectedUser.name}</h2>
+                    <div className="fixed inset-0 z-[100] bg-gray-50 flex flex-col overflow-y-auto w-full h-full text-left">
+                        <div className="bg-white px-6 py-4 shadow-sm sticky top-0 z-10 flex items-center gap-4">
+                            <button onClick={closeDetails} className="text-gray-500 hover:text-[#881337] flex items-center gap-2 font-bold px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                                ← Back to Grid
+                            </button>
+                            <h2 className="text-xl font-bold text-[#881337] flex-1">Profile Details: {selectedUser.name}</h2>
+                        </div>
+                        <div className="p-6 md:p-12 max-w-5xl mx-auto w-full">
+                            <h3 className="text-2xl font-bold mb-6 text-[#881337] border-b pb-2">Complete Biodata</h3>
                             <div className="grid grid-cols-2 gap-4 mb-4 text-sm bg-gray-50 p-4 rounded-xl border border-gray-100 max-h-64 overflow-y-auto">
                                 <div><p className="text-gray-500 uppercase text-[10px] font-bold">ITS Number</p><p className="font-medium text-[#881337]">{selectedUser.itsNumber}</p></div>
                                 <div><p className="text-gray-500 uppercase text-[10px] font-bold">DOB</p><p className="font-medium text-gray-800">{selectedUser.dob || "N/A"}</p></div>
@@ -198,7 +204,7 @@ export default function AdminVerificationPage() {
                                 </div>
                             </div>
                         </div>
-                    </dialog>
+                    </div>
                 )}
 
 
@@ -249,7 +255,7 @@ export default function AdminVerificationPage() {
                                     <div className="p-10 text-center text-gray-400 font-bold uppercase text-sm">No users found</div>
                                 ) : (
                                     allUsers.map((user) => (
-                                        <div key={user.id} className={`p-4 md:px-6 md:py-4 flex flex-col md:grid md:grid-cols-12 gap-4 items-center transition-colors hover:bg-gray-50/50 ${getStatusColor(user.status).replace('text-', 'hover:border-').replace('border-', 'border-l-4 border-l-')}`}>
+                                        <div key={user.id} onClick={() => openDetails(user)} className={`p-4 md:px-6 md:py-4 flex flex-col md:grid md:grid-cols-12 gap-4 items-center cursor-pointer transition-colors hover:bg-gray-50/50 ${getStatusColor(user.status).replace('text-', 'hover:border-').replace('border-', 'border-l-4 border-l-')}`}>
                                             <div className="col-span-3 flex items-center gap-3 w-full">
                                                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
                                                     {user.libasImageUrl ? (
@@ -276,9 +282,9 @@ export default function AdminVerificationPage() {
                                                     {getStatusLabel(user.status)}
                                                 </span>
                                             </div>
-                                            <div className="col-span-3 w-full flex items-center justify-end gap-2">
+                                            <div className="col-span-3 w-full flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                                                 <button onClick={() => openDetails(user)} className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-100 shadow-sm transition-colors">
-                                                    View Bio & Photos
+                                                    Open Details
                                                 </button>
                                                 {(!user.status || user.status === 'pending_verification' || user.status === 'pending') && (
                                                     <button onClick={() => handleStatusMove(user.id, 'verified')} className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg hover:bg-emerald-100 shadow-sm" title="Quick Verify">

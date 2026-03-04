@@ -303,7 +303,7 @@ export default function RishtaDashboard() {
     const renderTabContent = () => {
         if (dataLoading) {
             return (
-                <section className="lg:col-span-3 flex items-center justify-center p-24">
+                <section className={`${activeTab === 'discovery' ? 'lg:col-span-3' : 'lg:col-span-4'} flex items-center justify-center p-24`}>
                     <Loader2 className="w-12 h-12 text-[#D4AF37] animate-spin" />
                 </section>
             );
@@ -311,7 +311,7 @@ export default function RishtaDashboard() {
 
         if (myProfile?.status === 'rejected') {
             return (
-                <section className="lg:col-span-3 flex items-center justify-center p-12">
+                <section className={`${activeTab === 'discovery' ? 'lg:col-span-3' : 'lg:col-span-4'} flex items-center justify-center p-12`}>
                     <div className="bg-red-50 p-12 rounded-3xl shadow-sm text-center border border-red-100 flex flex-col items-center">
                         <X className="w-16 h-16 text-red-500 mb-4" />
                         <h2 className="text-2xl font-bold text-red-700 mb-2">Biodata Verification Rejected</h2>
@@ -325,7 +325,7 @@ export default function RishtaDashboard() {
             case 'requests':
                 const pendingRequests = allRequests.filter(r => r.status === "pending_response");
                 return (
-                    <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <section className="lg:col-span-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold font-serif">Interest Requests</h2>
                         </div>
@@ -373,7 +373,7 @@ export default function RishtaDashboard() {
 
                 if (activeChat) {
                     return (
-                        <section className="lg:col-span-3">
+                        <section className="lg:col-span-4">
                             <ChatWindow
                                 connectionId={activeChat.id}
                                 otherUserName={activeChat.name}
@@ -384,7 +384,7 @@ export default function RishtaDashboard() {
                 }
 
                 return (
-                    <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <section className="lg:col-span-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <h2 className="text-2xl font-bold font-serif mb-6">Unblurred Alignments</h2>
                         {acceptedRequests.length === 0 ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100 flex flex-col items-center">
@@ -595,88 +595,90 @@ export default function RishtaDashboard() {
             <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
 
                 {/* Left Sidebar / Privacy & AI Coaching */}
-                <aside className="lg:col-span-1 space-y-6">
-                    {myProfile && (
-                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
-                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-rose-50 mb-4 shadow-sm relative">
-                                {myProfile.itsImageUrl ? (
-                                    <img src={myProfile.itsImageUrl} alt="Biodata" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-3xl">
-                                        {myProfile.name?.charAt(0)}
-                                    </div>
-                                )}
-                            </div>
-                            <h3 className="font-bold text-xl text-[#881337] text-center">{myProfile.name}</h3>
-                            <p className="text-sm text-gray-500 mb-1">ITS: {myProfile.itsNumber}</p>
-                            <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-                                {myProfile.isItsVerified ? (
-                                    <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-emerald-100"><Check className="w-3 h-3" /> ITS Verified</span>
-                                ) : (
-                                    <span className="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-yellow-100"><Clock className="w-3 h-3" /> ITS Pending</span>
-                                )}
+                {activeTab === 'discovery' && (
+                    <aside className="lg:col-span-1 space-y-6">
+                        {myProfile && (
+                            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
+                                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-rose-50 mb-4 shadow-sm relative">
+                                    {myProfile.itsImageUrl ? (
+                                        <img src={myProfile.itsImageUrl} alt="Biodata" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-3xl">
+                                            {myProfile.name?.charAt(0)}
+                                        </div>
+                                    )}
+                                </div>
+                                <h3 className="font-bold text-xl text-[#881337] text-center">{myProfile.name}</h3>
+                                <p className="text-sm text-gray-500 mb-1">ITS: {myProfile.itsNumber}</p>
+                                <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                                    {myProfile.isItsVerified ? (
+                                        <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-emerald-100"><Check className="w-3 h-3" /> ITS Verified</span>
+                                    ) : (
+                                        <span className="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-yellow-100"><Clock className="w-3 h-3" /> ITS Pending</span>
+                                    )}
 
-                                {/* Assuming email verification uses either user.emailVerified or a db flag */}
-                                {user?.emailVerified || myProfile.isEmailVerified ? (
-                                    <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-blue-100"><Check className="w-3 h-3" /> Email Verified</span>
-                                ) : (
-                                    <span onClick={async () => {
-                                        const { sendEmailVerification } = require("firebase/auth");
-                                        if (user) {
-                                            try { await sendEmailVerification(user); toast.success("Verification Email Sent!"); }
-                                            catch (e: any) { toast.error("Too many requests or error. Try later."); }
+                                    {/* Assuming email verification uses either user.emailVerified or a db flag */}
+                                    {user?.emailVerified || myProfile.isEmailVerified ? (
+                                        <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-blue-100"><Check className="w-3 h-3" /> Email Verified</span>
+                                    ) : (
+                                        <span onClick={async () => {
+                                            const { sendEmailVerification } = require("firebase/auth");
+                                            if (user) {
+                                                try { await sendEmailVerification(user); toast.success("Verification Email Sent!"); }
+                                                catch (e: any) { toast.error("Too many requests or error. Try later."); }
+                                            }
+                                        }} className="bg-gray-50 text-gray-600 px-3 py-1 cursor-pointer hover:bg-gray-100 transition-colors rounded-full text-xs font-bold flex items-center gap-1 border border-gray-200" title="Click to send verification link"><Clock className="w-3 h-3" /> Verify Email</span>
+                                    )}
+                                </div>
+
+                                {/* Profile Completeness Section */}
+                                {(() => {
+                                    const requiredDetailedFields = [
+                                        'name', 'itsNumber', 'gender', 'dob', 'jamaat', 'education', 'hizratLocation',
+                                        'libasImageUrl', 'fatherName', 'motherName', 'maritalStatus', 'mobile',
+                                        'address', 'professionType'
+                                    ];
+                                    let filled = 0;
+                                    requiredDetailedFields.forEach(f => {
+                                        if (myProfile[f] || (f === 'professionType' && myProfile['profession']) || (f === 'education' && myProfile['educationDetails'])) {
+                                            filled++;
                                         }
-                                    }} className="bg-gray-50 text-gray-600 px-3 py-1 cursor-pointer hover:bg-gray-100 transition-colors rounded-full text-xs font-bold flex items-center gap-1 border border-gray-200" title="Click to send verification link"><Clock className="w-3 h-3" /> Verify Email</span>
-                                )}
-                            </div>
+                                    });
+                                    let completeness = Math.floor((filled / requiredDetailedFields.length) * 100);
+                                    if (myProfile.isCandidateFormComplete) completeness = 100;
 
-                            {/* Profile Completeness Section */}
-                            {(() => {
-                                const requiredDetailedFields = [
-                                    'name', 'itsNumber', 'gender', 'dob', 'jamaat', 'education', 'hizratLocation',
-                                    'libasImageUrl', 'fatherName', 'motherName', 'maritalStatus', 'mobile',
-                                    'address', 'professionType'
-                                ];
-                                let filled = 0;
-                                requiredDetailedFields.forEach(f => {
-                                    if (myProfile[f] || (f === 'professionType' && myProfile['profession']) || (f === 'education' && myProfile['educationDetails'])) {
-                                        filled++;
-                                    }
-                                });
-                                let completeness = Math.floor((filled / requiredDetailedFields.length) * 100);
-                                if (myProfile.isCandidateFormComplete) completeness = 100;
-
-                                return (
-                                    <div className="w-full mt-6 bg-gray-50 p-4 border border-gray-100 rounded-xl flex flex-col items-center">
-                                        <div className="w-full flex justify-between text-xs font-bold text-gray-500 mb-2">
-                                            <span>Biodata Completeness</span>
-                                            <span className="text-[#881337]">{completeness}%</span>
-                                        </div>
-                                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-3">
-                                            <div className="h-full bg-gradient-to-r from-[#D4AF37] to-[#881337] transition-all duration-1000" style={{ width: `${completeness}%` }}></div>
-                                        </div>
-                                        {completeness < 100 && (
-                                            <button onClick={() => router.push('/candidate-registration')} className="w-full bg-[#881337] text-white py-2 rounded-lg text-xs font-bold shadow hover:bg-[#9F1239] transition-all tracking-wide mt-1">
-                                                Complete ITNC Registration Form
-                                            </button>
-                                        )}
-                                        {completeness >= 100 && !myProfile.isItsVerified && (
-                                            <div className="w-full bg-yellow-50 text-yellow-700 py-2 rounded-lg text-xs font-bold text-center border border-yellow-200 tracking-wide mt-1">
-                                                ITS Verification Pending — you can still browse
+                                    return (
+                                        <div className="w-full mt-6 bg-gray-50 p-4 border border-gray-100 rounded-xl flex flex-col items-center">
+                                            <div className="w-full flex justify-between text-xs font-bold text-gray-500 mb-2">
+                                                <span>Biodata Completeness</span>
+                                                <span className="text-[#881337]">{completeness}%</span>
                                             </div>
-                                        )}
-                                        <button
-                                            onClick={() => setShowMyProfileModal(true)}
-                                            className="w-full bg-white text-[#881337] border border-[#881337]/20 hover:bg-rose-50 py-2 rounded-lg text-xs font-bold shadow-sm transition-all tracking-wide mt-3 flex items-center justify-center gap-1"
-                                        >
-                                            <Sparkles className="w-3 h-3" /> Preview My Biodata
-                                        </button>
-                                    </div>
-                                );
-                            })()}
-                        </div>
-                    )}
-                </aside>
+                                            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-3">
+                                                <div className="h-full bg-gradient-to-r from-[#D4AF37] to-[#881337] transition-all duration-1000" style={{ width: `${completeness}%` }}></div>
+                                            </div>
+                                            {completeness < 100 && (
+                                                <button onClick={() => router.push('/candidate-registration')} className="w-full bg-[#881337] text-white py-2 rounded-lg text-xs font-bold shadow hover:bg-[#9F1239] transition-all tracking-wide mt-1">
+                                                    Complete ITNC Registration Form
+                                                </button>
+                                            )}
+                                            {completeness >= 100 && !myProfile.isItsVerified && (
+                                                <div className="w-full bg-yellow-50 text-yellow-700 py-2 rounded-lg text-xs font-bold text-center border border-yellow-200 tracking-wide mt-1">
+                                                    ITS Verification Pending — you can still browse
+                                                </div>
+                                            )}
+                                            <button
+                                                onClick={() => setShowMyProfileModal(true)}
+                                                className="w-full bg-white text-[#881337] border border-[#881337]/20 hover:bg-rose-50 py-2 rounded-lg text-xs font-bold shadow-sm transition-all tracking-wide mt-3 flex items-center justify-center gap-1"
+                                            >
+                                                <Sparkles className="w-3 h-3" /> Preview My Biodata
+                                            </button>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )}
+                    </aside>
+                )}
 
                 {/* Main Content Render */}
                 {renderTabContent()}

@@ -16,6 +16,7 @@ export default function CandidateRegistrationPage() {
     const [loading, setLoading] = useState(false);
     const [libasImageUrl, setLibasImageUrl] = useState<string | null>(null);
     const [itsImageUrl, setItsImageUrl] = useState<string | null>(null);
+    const [extraImageUrl, setExtraImageUrl] = useState<string | null>(null);
     const [isItsVerified, setIsItsVerified] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [submitError, setSubmitError] = useState("");
@@ -94,6 +95,7 @@ export default function CandidateRegistrationPage() {
 
                     setLibasImageUrl(data.libasImageUrl || null);
                     setItsImageUrl(data.itsImageUrl || null);
+                    setExtraImageUrl(data.extraImageUrl || null);
                     setIsItsVerified(data.isItsVerified === true);
 
                     setFormData(prev => ({
@@ -140,6 +142,44 @@ export default function CandidateRegistrationPage() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         if (errors[e.target.name]) {
             setErrors({ ...errors, [e.target.name]: "" });
+        }
+    };
+
+    const handleExtraImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("Image must be less than 5MB");
+            return;
+        }
+        setLoading(true);
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 600;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    if (scaleSize < 1) {
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                    } else {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                    }
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    setExtraImageUrl(canvas.toDataURL('image/jpeg', 0.5));
+                    setLoading(false);
+                    toast.success("Additional photo ready!");
+                };
+            };
+        } catch (error) {
+            setLoading(false);
+            toast.error("Failed to process image");
         }
     };
 
@@ -225,7 +265,8 @@ export default function CandidateRegistrationPage() {
                     ...formData,
                     name: fullName,
                     itsNumber: formData.ejamaatId,
-                    isCandidateFormComplete: true
+                    isCandidateFormComplete: true,
+                    extraImageUrl: extraImageUrl || null
                 });
                 // Email Notification Call (Mock fetch placeholder for serverless function/email trigger)
                 // In production, an API route or Firebase Extension would handle actually dispatching this email.
@@ -264,16 +305,13 @@ export default function CandidateRegistrationPage() {
                             <p className="text-[#D4AF37] font-medium tracking-wide text-sm">International Taiseer un Nikah Committee (I.T.NC.) Format</p>
                         </div>
                         <div className="flex gap-4 relative z-10 hidden md:flex">
-                            {itsImageUrl && (
+                            {itsImageUrl && isItsVerified && (
                                 <div className="flex flex-col items-center">
                                     <div className="w-24 h-24 rounded-full border-4 border-white/50 shadow-xl overflow-hidden bg-white/10 flex items-center justify-center">
                                         <img src={itsImageUrl} alt="ITS Photo" className="w-full h-full object-cover" />
                                     </div>
                                     <div className="text-center mt-2 text-xs font-bold tracking-widest uppercase">
-                                        {isItsVerified
-                                            ? <span className="text-emerald-300">✓ ITS Verified</span>
-                                            : <span className="text-yellow-300">⏳ ITS Pending</span>
-                                        }
+                                        <span className="text-emerald-300">✓ ITS Verified</span>
                                     </div>
                                 </div>
                             )}
@@ -496,6 +534,18 @@ export default function CandidateRegistrationPage() {
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Qualities you want in your life partner</label>
                                     <textarea name="partnerQualities" onChange={handleChange} value={formData.partnerQualities} rows={2} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none resize-none focus:ring-2 focus:ring-[#881337]" />
+                                </div>
+                                <div className="mt-4 p-5 border border-dashed border-rose-200 bg-rose-50/50 rounded-xl">
+                                    <label className="block text-sm font-bold text-[#881337] mb-3">Additional Biodata Photo (Optional)</label>
+                                    <div className="flex items-center gap-4 flex-wrap">
+                                        {extraImageUrl && (
+                                            <div className="w-20 h-20 rounded-xl auto overflow-hidden shadow-sm border border-[#D4AF37]">
+                                                <img src={extraImageUrl} alt="Extra Secondary" className="w-full h-full object-cover" />
+                                            </div>
+                                        )}
+                                        <input type="file" accept="image/*" onChange={handleExtraImageUpload} className="text-sm text-gray-600 file:cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#881337] file:text-white hover:file:bg-[#9F1239] transition-colors focus:outline-none focus:ring-2 focus:ring-[#881337]/50" />
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-2">Upload a casual or professional portrait to strengthen your biodata.</p>
                                 </div>
                             </div>
                         </section>

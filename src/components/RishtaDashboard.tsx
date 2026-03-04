@@ -745,7 +745,7 @@ export default function RishtaDashboard() {
                                 <p className="text-gray-700 text-sm mb-2">
                                     {myProfile.status === 'rejected'
                                         ? 'An Admin has reviewed your profile and requested some adjustments. Please fix the issue below and resubmit.'
-                                        : 'Your profile is temporarily on hold. Please read the admin note below and you may send a message for queries.'}
+                                        : 'Your profile is temporarily on hold. Please read the admin note below and you may send a message for queries to Admin by below chat option.'}
                                 </p>
                                 {myProfile.adminMessage && (
                                     <div className={`px-4 py-3 rounded-xl text-sm italic font-medium border ${myProfile.status === 'rejected' ? 'bg-white border-rose-100 text-rose-800' : 'bg-white border-yellow-100 text-yellow-800'}`}>

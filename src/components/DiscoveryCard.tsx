@@ -173,34 +173,40 @@ export default function DiscoveryCard({
                 timestamp: serverTimestamp()
             });
 
-            // Email Notification to Target Candidate
-            if (email && email.includes('@')) {
-                try {
-                    await fetch("/api/notify", {
-                        method: "POST",
-                        body: JSON.stringify({
-                            to: email,
-                            subject: "New Interest Request - DBohraRishta",
-                            html: `
-                                <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-                                    <h2 style="color: #881337;">Someone is interested in your biodata!</h2>
-                                    <p>As-salaamu alaykum,</p>
-                                    <p>You have received a new Interest Request on <strong>DBohraRishta</strong>.</p>
-                                    <p style="background: #f9f9f9; padding: 15px; border-radius: 8px; color: #555; font-style: italic;">
-                                        "${icebreakerText.trim() || 'No message provided.'}"
-                                    </p>
-                                    <p>Please login to your dashboard to review the profile and respond.</p>
-                                    <div style="margin-top: 25px;">
-                                        <a href="https://dbohrarishta.com" style="background: #881337; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">View Request</a>
-                                    </div>
-                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-                                    <p style="font-size: 10px; color: #999;">DBohraRishta Notification System</p>
+            // Enhanced Email Notification to Target Candidate, Requester, and Admin
+            const adminEmail = "abdulqadirkhanji52@gmail.com";
+            const recipients = [adminEmail];
+            if (email && email.includes('@')) recipients.push(email);
+            if (user.email && user.email.includes('@')) recipients.push(user.email);
+
+            try {
+                await fetch("/api/notify", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        to: recipients,
+                        subject: "Interest Request - DBohraRishta",
+                        html: `
+                            <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                                <h2 style="color: #881337;">Interest Request Alert</h2>
+                                <p>As-salaamu alaykum,</p>
+                                <p>A new Interest Request has been recorded on <strong>DBohraRishta</strong>.</p>
+                                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                                    <p><strong>From:</strong> ${user.displayName || user.email || 'A Candidate'}</p>
+                                    <p><strong>To:</strong> ${name}</p>
+                                    <p><strong>Message:</strong></p>
+                                    <p style="color: #555; font-style: italic;">"${icebreakerText.trim() || 'No message provided.'}"</p>
                                 </div>
-                            `
-                        })
-                    });
-                } catch (e) { }
-            }
+                                <p>Candidates can login to their dashboard to review and manage this request.</p>
+                                <div style="margin-top: 25px;">
+                                    <a href="https://53dbohrarishta.in" style="background: #881337; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">Login to Dashboard</a>
+                                </div>
+                                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                                <p style="font-size: 10px; color: #999;">DBohraRishta Notification System</p>
+                            </div>
+                        `
+                    })
+                });
+            } catch (e) { console.error("Notification failed", e); }
             setRequestSent(true);
             setShowIcebreakerModal(false);
             toast.success("Interest Request sent successfully!");
@@ -507,9 +513,21 @@ export default function DiscoveryCard({
             )}
             {/* 🖼️ Full-View Lightbox Modal */}
             {showLightbox && (!isBlurSecurityEnabled || requestStatus === 'accepted') && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in duration-300" onClick={() => setShowLightbox(false)}>
-                    <button className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors" onClick={() => setShowLightbox(false)}>
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 animate-in fade-in duration-300"
+                    onClick={() => setShowLightbox(false)}
+                >
+                    {/* Escape Key handling (indirectly through focus or global listener if we wanted, but simple onClick handles most) */}
+
+                    {/* Big Prominent Close Button on Top Right */}
+                    <button
+                        className="absolute top-6 right-6 z-[110] w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#881337] shadow-2xl hover:bg-rose-50 hover:scale-110 active:scale-90 transition-all border-4 border-[#881337]/20"
+                        onClick={(e) => { e.stopPropagation(); setShowLightbox(false); }}
+                        title="Close full view (Esc)"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
 
                     <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>

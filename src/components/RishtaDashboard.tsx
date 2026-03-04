@@ -432,14 +432,16 @@ export default function RishtaDashboard() {
             });
             await handleRequestAction(acceptingRequest.id, "accepted");
 
-            // Email Notifications for Acceptance
-            // 1. Notify the one who accepted (the current user)
+            // Updated Email Notifications for Acceptance (Consolidated with Admin CC)
+            const adminEmail = "abdulqadirkhanji52@gmail.com";
+
+            // 1. Notify the one who accepted (the current user) + Admin
             if (acceptEmail && acceptEmail.includes('@')) {
                 try {
                     await fetch("/api/notify", {
                         method: "POST",
                         body: JSON.stringify({
-                            to: acceptEmail,
+                            to: [acceptEmail, adminEmail],
                             subject: "Interest Request Accepted - Contact Details Shared",
                             html: `
                                 <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
@@ -476,7 +478,7 @@ export default function RishtaDashboard() {
                                     </ul>
                                     <p>Login now to see their full profile and photos!</p>
                                     <div style="margin-top: 25px;">
-                                        <a href="https://dbohrarishta.com" style="background: #881337; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">Go to Dashboard</a>
+                                        <a href="https://53dbohrarishta.in" style="background: #881337; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">Go to Dashboard</a>
                                     </div>
                                     <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
                                     <p style="font-size: 10px; color: #999;">DBohraRishta Notification System</p>

@@ -16,9 +16,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Email service not configured' }, { status: 503 });
         }
 
+        const recipients = Array.isArray(to) ? to : [to];
+
         const { data, error } = await resend.emails.send({
             from: 'DBohraRishta <notifications@dbohrarishta.com>',
-            to,
+            to: recipients,
             subject,
             html,
         });

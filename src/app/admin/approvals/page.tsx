@@ -40,6 +40,7 @@ export default function AdminVerificationPage() {
     const [msgCounts, setMsgCounts] = useState<Record<string, { total: number, userMsgs: number }>>({});
     const [requestStats, setRequestStats] = useState({ total: 0, accepted: 0 });
     const [searchQuery, setSearchQuery] = useState("");
+    const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const { user } = useAuth();
     const router = useRouter();
 
@@ -145,6 +146,47 @@ export default function AdminVerificationPage() {
                     createdAt: serverTimestamp(),
                 });
             }
+
+            // --- 📩 Email Notification to Candidate ---
+            const targetUser = allUsers.find(u => u.id === userId);
+            const userEmail = targetUser?.email || targetUser?.mobileEmail; // Fallback to auto-detected field if available
+
+            if (userEmail && userEmail.includes('@')) {
+                try {
+                    const statusLabels: any = {
+                        verified: "Verified & Approved",
+                        approved: "Approved",
+                        rejected: "Action Required / Profile Rejected",
+                        hold: "Profile Put On Hold"
+                    };
+                    const statusLabel = statusLabels[newStatus] || newStatus;
+
+                    await fetch("/api/notify", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            to: userEmail,
+                            subject: `Profile Status Update: ${statusLabel} - DBohraRishta`,
+                            html: `
+                                <div style="font-family: serif; padding: 25px; border: 1px solid #eee; border-radius: 15px; max-width: 600px; margin: auto;">
+                                    <h2 style="color: #881337; border-bottom: 2px solid #881337; padding-bottom: 10px;">Status Update Alert</h2>
+                                    <p>As-salaamu alaykum <strong>${targetUser?.name || 'Candidate'}</strong>,</p>
+                                    <p>Your profile status on <strong>DBohraRishta</strong> has been updated by the administration.</p>
+                                    <div style="background: #fdf2f2; border-left: 5px solid #881337; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                                        <p style="margin: 0; font-weight: bold; color: #881337;">New Status: <span style="text-transform: capitalize;">${statusLabel}</span></p>
+                                        ${updateData.adminMessage ? `<p style="margin-top: 10px; color: #555; font-style: italic;">" ${updateData.adminMessage} "</p>` : ''}
+                                    </div>
+                                    <p>Please log in to your dashboard to see your current status and any next steps required.</p>
+                                    <div style="margin-top: 30px; text-align: center;">
+                                        <a href="https://53dbohrarishta.in" style="background: #881337; color: white; padding: 14px 30px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(136, 19, 55, 0.2);">Log in to Dashboard</a>
+                                    </div>
+                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+                                    <p style="font-size: 11px; color: #999; text-align: center;">DBohraRishta Official Notification</p>
+                                </div>
+                            `
+                        })
+                    });
+                } catch (emailErr) { console.error("Admin status notification failed", emailErr); }
+            }
         } catch (error: any) {
             console.error("Error updating status:", error);
             toast.error("Failed to update status: " + error.message);
@@ -249,11 +291,19 @@ export default function AdminVerificationPage() {
                                 <h2 className="text-xl font-bold text-[#881337]">{selectedUser.name}</h2>
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${getStatusColor(selectedUser.status)}`}>{getStatusLabel(selectedUser.status)}</span>
                             </div>
-                            {/* Detail Tabs */}
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 items-center">
                                 <button onClick={() => setActiveDetailTab('biodata')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${activeDetailTab === 'biodata' ? 'bg-[#881337] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Biodata</button>
                                 <button onClick={() => setActiveDetailTab('messages')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 ${activeDetailTab === 'messages' ? 'bg-[#881337] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                                     <MessageCircle className="w-3.5 h-3.5" /> Messages {adminMessages.length > 0 && <span className="bg-rose-500 text-white rounded-full px-1.5 text-[9px]">{adminMessages.length}</span>}
+                                </button>
+
+                                {/* Right Top Close Button */}
+                                <button
+                                    onClick={closeDetails}
+                                    className="ml-2 w-10 h-10 flex items-center justify-center bg-rose-50 text-[#881337] rounded-full hover:bg-rose-100 transition-all border border-rose-100 shadow-sm"
+                                    title="Close details"
+                                >
+                                    <XCircle className="w-6 h-6" />
                                 </button>
                             </div>
                         </div>
@@ -288,13 +338,24 @@ export default function AdminVerificationPage() {
                                                         <span className="bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">🔄 Re-submitted — Pending Re-verification</span>
                                                     )}
                                                 </div>
-                                                <div className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden border-2 border-amber-300 shadow">
+                                                <div
+                                                    className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden border-2 border-amber-300 shadow cursor-pointer hover:opacity-90 transition-opacity"
+                                                    onClick={() => setFullscreenImage(selectedUser.itsImageUrl)}
+                                                >
                                                     <img src={selectedUser.itsImageUrl} alt="ITS Doc" className="w-full h-full object-contain" />
                                                 </div>
                                             </div>
                                         )}
                                         {selectedUser.libasImageUrl && (
-                                            <div className="flex-1"><p className="text-xs font-bold text-gray-500 mb-1">Libas Photo</p><div className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden border border-gray-200"><img src={selectedUser.libasImageUrl} alt="Libas Photo" className="w-full h-full object-cover" /></div></div>
+                                            <div className="flex-1">
+                                                <p className="text-xs font-bold text-gray-500 mb-1">Libas Photo</p>
+                                                <div
+                                                    className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                                                    onClick={() => setFullscreenImage(selectedUser.libasImageUrl)}
+                                                >
+                                                    <img src={selectedUser.libasImageUrl} alt="Libas Photo" className="w-full h-full object-cover" />
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
 
@@ -456,6 +517,23 @@ export default function AdminVerificationPage() {
                             </div>
                         </div>
                     </>
+                )}
+                {/* Image Full-View Modal for Admin */}
+                {fullscreenImage && (
+                    <div
+                        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-300"
+                        onClick={() => setFullscreenImage(null)}
+                    >
+                        <button
+                            className="absolute top-8 right-8 z-[210] w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#881337] shadow-xl hover:bg-rose-50 hover:scale-110 active:scale-90 transition-all border-4 border-[#881337]/20"
+                            onClick={(e) => { e.stopPropagation(); setFullscreenImage(null); }}
+                        >
+                            <XCircle className="w-8 h-8" />
+                        </button>
+                        <div className="max-w-5xl max-h-[90vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                            <img src={fullscreenImage} alt="Full View" className="max-w-full max-h-full object-contain shadow-2xl rounded-xl border border-white/10" />
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

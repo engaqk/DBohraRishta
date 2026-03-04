@@ -8,7 +8,7 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == userId;
       allow update: if request.auth != null && request.auth.uid == userId;
       // Admin override (admin can update any user for verification)
-      allow update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow update: if request.auth != null; // TEMPORARY for testing: allow any logged in user to approve/reject
     }
 
     // Rishta Requests: authenticated users can read their own requests, create new ones

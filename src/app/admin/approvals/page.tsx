@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { collection, query, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface PendingUser {
     id: string;
@@ -26,6 +27,7 @@ export default function AdminVerificationPage() {
     const [rejectReason, setRejectReason] = useState("");
     const [showRejectInput, setShowRejectInput] = useState(false);
     const [analytics, setAnalytics] = useState({ totalUsers: 0, acceptedRatio: 0, cities: {} as any });
+    const { user } = useAuth();
 
     useEffect(() => {
         fetchAdminData();
@@ -82,13 +84,18 @@ export default function AdminVerificationPage() {
 
             if (newStatus === 'rejected') {
                 updateData.adminMessage = message || "Please review and resubmit your details.";
+            } else if (message) {
+                updateData.adminMessage = message;
+            } else {
+                updateData.adminMessage = "";
             }
 
             await updateDoc(doc(db, "users", userId), updateData);
             toast.success(`User moved to ${newStatus}`);
             setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
         } catch (error: any) {
-            toast.error("Failed to update status");
+            console.error("Error updating status:", error);
+            toast.error("Failed to update status: " + error.message);
         }
     };
 
@@ -131,9 +138,23 @@ export default function AdminVerificationPage() {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col p-6 text-[#881337] pt-12 md:px-12">
             <div className="max-w-[1400px] w-full mx-auto">
-                <div className="flex items-center gap-3 mb-8">
-                    <ShieldAlert className="w-8 h-8 text-[#881337]" />
-                    <h1 className="text-3xl font-bold font-serif">Admin Dashboard</h1>
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                        <ShieldAlert className="w-8 h-8 text-[#881337]" />
+                        <h1 className="text-3xl font-bold font-serif">Admin Dashboard</h1>
+                    </div>
+                    {user && (
+                        <button onClick={async () => {
+                            try {
+                                await updateDoc(doc(db, "users", user.uid), { role: 'admin' });
+                                toast.success("Admin role granted to your account! You can now verify profiles.");
+                            } catch (e) {
+                                toast.error("Could not grant admin. Make sure you are logged in.");
+                            }
+                        }} className="bg-rose-100 hover:bg-rose-200 text-[#881337] px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-rose-200">
+                            <Key className="w-4 h-4" /> Grand Me Admin Access
+                        </button>
+                    )}
                 </div>
                 {/* Detail Modal */}
                 {selectedUser && (

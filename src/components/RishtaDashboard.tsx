@@ -4,9 +4,9 @@ import { useRouter } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import toast from 'react-hot-toast';
 import { driver } from "driver.js";
@@ -66,11 +66,41 @@ export default function RishtaDashboard() {
     const [paying, setPaying] = useState(false);
     const [showMyProfileModal, setShowMyProfileModal] = useState(false);
 
+    // Admin Messaging State
+    const [adminMsgThread, setAdminMsgThread] = useState<{ id: string; text: string; from: 'admin' | 'user'; createdAt: any }[]>([]);
+    const [userMsgInput, setUserMsgInput] = useState('');
+    const [showAdminMessages, setShowAdminMessages] = useState(false);
+
     // Accept Request Contact Modal
     const [acceptingRequest, setAcceptingRequest] = useState<RishtaRequest | null>(null);
     const [acceptMobile, setAcceptMobile] = useState('');
     const [acceptEmail, setAcceptEmail] = useState('');
     const [acceptError, setAcceptError] = useState('');
+
+    // Subscribe to admin message thread for current user
+    useEffect(() => {
+        if (!user) return;
+        const msgRef = collection(db, 'admin_messages', user.uid, 'thread');
+        const q = query(msgRef, orderBy('createdAt', 'asc'));
+        const unsub = onSnapshot(q, (snap) => {
+            setAdminMsgThread(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
+        });
+        return () => unsub();
+    }, [user]);
+
+    const handleSendMessageToAdmin = async () => {
+        if (!userMsgInput.trim() || !user) return;
+        try {
+            await addDoc(collection(db, 'admin_messages', user.uid, 'thread'), {
+                text: userMsgInput.trim(),
+                from: 'user',
+                createdAt: serverTimestamp(),
+            });
+            setUserMsgInput('');
+        } catch (e: any) {
+            toast.error('Could not send message.');
+        }
+    };
 
     // Tour State managed by driver.js
     useEffect(() => {
@@ -613,7 +643,7 @@ export default function RishtaDashboard() {
 
     return (
         <div className="min-h-screen bg-[#F9FAFB] text-[#881337] p-6 pb-24 md:p-12 md:pb-12">
-            <header className="max-w-7xl mx-auto mb-8 flex justify-center items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100 max-w-sm">
+            <header className="max-w-7xl mx-auto mb-4 flex justify-center items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100 max-w-sm">
                 <nav className="flex w-full relative">
                     {['discovery', 'requests', 'messages'].map((tab) => (
                         <button
@@ -632,6 +662,79 @@ export default function RishtaDashboard() {
                     />
                 </nav>
             </header>
+
+            {/* ── Admin Notification Banner (shown across all tabs) ── */}
+            {myProfile && (myProfile.status === 'rejected' || myProfile.status === 'hold') && (
+                <div className={`max-w-7xl mx-auto mb-5 rounded-2xl border-2 shadow-sm ${myProfile.status === 'rejected' ? 'bg-rose-50 border-rose-300' : 'bg-yellow-50 border-yellow-300'}`}>
+                    <div className="flex items-start justify-between gap-3 p-4 md:p-5">
+                        <div className="flex gap-3 flex-1">
+                            <div className="shrink-0 text-2xl mt-0.5">{myProfile.status === 'rejected' ? '⚠️' : '⏸️'}</div>
+                            <div className="flex-1">
+                                <h3 className={`font-black text-base mb-1 ${myProfile.status === 'rejected' ? 'text-[#881337]' : 'text-yellow-800'}`}>
+                                    {myProfile.status === 'rejected' ? 'Action Required: Profile Needs Updates' : 'Profile On Hold — Awaiting Admin Review'}
+                                </h3>
+                                <p className="text-gray-700 text-sm mb-2">
+                                    {myProfile.status === 'rejected'
+                                        ? 'An Admin has reviewed your profile and requested some adjustments. Please fix the issue below and resubmit.'
+                                        : 'Your profile is temporarily on hold. Please read the admin note below and you may send a message for queries.'}
+                                </p>
+                                {myProfile.adminMessage && (
+                                    <div className={`px-4 py-3 rounded-xl text-sm italic font-medium border ${myProfile.status === 'rejected' ? 'bg-white border-rose-100 text-rose-800' : 'bg-white border-yellow-100 text-yellow-800'}`}>
+                                        💬 "{myProfile.adminMessage}"
+                                    </div>
+                                )}
+                                <div className="flex gap-3 mt-3 flex-wrap">
+                                    {myProfile.status === 'rejected' && (
+                                        <button onClick={() => router.push('/candidate-registration')} className="bg-[#881337] text-white px-4 py-2 rounded-xl text-xs font-bold shadow hover:bg-rose-900 transition-all">
+                                            ✏️ Update &amp; Resubmit Profile
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => setShowAdminMessages(!showAdminMessages)}
+                                        className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition-all flex items-center gap-1.5"
+                                    >
+                                        <MessageCircle className="w-3.5 h-3.5" />
+                                        {showAdminMessages ? 'Hide' : 'Message Admin'}
+                                        {adminMsgThread.length > 0 && <span className="bg-[#881337] text-white rounded-full px-1.5 text-[9px]">{adminMsgThread.length}</span>}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Collapsible message thread */}
+                    {showAdminMessages && (
+                        <div className="border-t border-gray-200 p-4 md:p-5">
+                            <div className="flex flex-col gap-2.5 max-h-56 overflow-y-auto mb-3 bg-white rounded-xl p-3 border border-gray-100">
+                                {adminMsgThread.length === 0 && (
+                                    <p className="text-center text-gray-400 text-xs py-4">No messages yet. Send a query below.</p>
+                                )}
+                                {adminMsgThread.map(msg => (
+                                    <div key={msg.id} className={`flex ${msg.from === 'admin' ? 'justify-start' : 'justify-end'}`}>
+                                        <div className={`max-w-[80%] px-3.5 py-2 rounded-xl text-sm shadow-sm ${msg.from === 'admin' ? 'bg-gray-100 text-gray-800 rounded-tl-sm' : 'bg-[#881337] text-white rounded-tr-sm'}`}>
+                                            <p className="text-[10px] font-bold uppercase opacity-60 mb-0.5">{msg.from === 'admin' ? 'Admin' : 'You'}</p>
+                                            <p>{msg.text}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={userMsgInput}
+                                    onChange={e => setUserMsgInput(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') handleSendMessageToAdmin(); }}
+                                    placeholder="Write a query to admin..."
+                                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#881337] bg-gray-50"
+                                />
+                                <button onClick={handleSendMessageToAdmin} className="bg-[#881337] text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-rose-900 transition-colors shadow-sm flex items-center gap-1.5">
+                                    <Send className="w-4 h-4" /> Send
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
 

@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { deriveBase32Secret, verifyTOTP } from "@/lib/totp-helpers";
 
 const ErrorMsg = ({ msg }: { msg?: string }) => msg ? <p className="text-red-500 text-xs mt-1 font-semibold animate-in fade-in">{msg}</p> : null;
 
@@ -235,19 +236,15 @@ export default function CandidateRegistrationPage() {
         if (!user) return;
         try {
             setLoading(true);
-            const res = await fetch('/api/otp/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: newMobile, code: authCode })
-            });
 
-            const data = await res.json();
-            if (!res.ok) {
-                toast.error(data.error || "Failed to verify authenticator code.");
-                setLoading(false);
+            // 1. Client-side TOTP validation (shares secret derivation with login page)
+            const secret = deriveBase32Secret(newMobile);
+            if (!verifyTOTP(secret, authCode)) {
+                toast.error("Invalid or expired code. Please use the system's login-standard OTP from your app.");
                 return;
             }
 
+            // 2. Success - Update Firestore directly
             await updateDoc(doc(db, "users", user.uid), { mobile: newMobile });
             setFormData(prev => ({ ...prev, mobile: newMobile }));
             toast.success("Mobile number updated successfully.");

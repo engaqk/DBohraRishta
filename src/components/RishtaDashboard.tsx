@@ -51,7 +51,7 @@ export default function RishtaDashboard() {
     const router = useRouter();
 
     // UI State
-    const [activeTab, setActiveTab] = useState<'discovery' | 'requests' | 'messages'>('discovery');
+    const [activeTab, setActiveTab] = useState<'mybiodata' | 'discovery' | 'requests' | 'messages'>('discovery');
     const [dataLoading, setDataLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -70,6 +70,7 @@ export default function RishtaDashboard() {
     const [adminMsgThread, setAdminMsgThread] = useState<{ id: string; text: string; from: 'admin' | 'user'; createdAt: any }[]>([]);
     const [userMsgInput, setUserMsgInput] = useState('');
     const [showAdminMessages, setShowAdminMessages] = useState(false);
+    const [itsReuploadUrl, setItsReuploadUrl] = useState<string | null>(null);
 
     // Accept Request Contact Modal
     const [acceptingRequest, setAcceptingRequest] = useState<RishtaRequest | null>(null);
@@ -99,6 +100,28 @@ export default function RishtaDashboard() {
             setUserMsgInput('');
         } catch (e: any) {
             toast.error('Could not send message.');
+        }
+    };
+
+    const handleITSReupload = async (file: File) => {
+        if (!user || !file) return;
+        if (file.size > 5 * 1024 * 1024) { toast.error('Image must be less than 5MB'); return; }
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async (event) => {
+                const dataUrl = event.target?.result as string;
+                setItsReuploadUrl(dataUrl);
+                await updateDoc(doc(db, 'users', user.uid), {
+                    itsImageUrl: dataUrl,
+                    status: 'pending_verification',
+                    adminMessage: '',
+                    isItsVerified: false,
+                });
+                toast.success('ITS photo updated! Submitted for re-verification.');
+            };
+        } catch (e: any) {
+            toast.error('Failed to upload: ' + e.message);
         }
     };
 
@@ -643,22 +666,22 @@ export default function RishtaDashboard() {
 
     return (
         <div className="min-h-screen bg-[#F9FAFB] text-[#881337] p-6 pb-24 md:p-12 md:pb-12">
-            <header className="max-w-7xl mx-auto mb-4 flex justify-center items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100 max-w-sm">
+            <header className="max-w-7xl mx-auto mb-4 flex justify-center items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100 w-full">
                 <nav className="flex w-full relative">
-                    {['discovery', 'requests', 'messages'].map((tab) => (
+                    {(['mybiodata', 'discovery', 'requests', 'messages'] as const).map((tab) => (
                         <button
                             key={tab}
                             id={`${tab}-nav-tab`}
-                            onClick={() => setActiveTab(tab as any)}
-                            className={`flex-1 py-3 text-sm font-bold capitalize transition-all rounded-xl relative z-10 ${activeTab === tab ? 'text-white shadow-sm' : 'text-gray-500 hover:text-[#881337]'}`}
+                            onClick={() => setActiveTab(tab)}
+                            className={`flex-1 py-2.5 text-xs font-bold capitalize transition-all rounded-xl relative z-10 text-center ${activeTab === tab ? 'text-white shadow-sm' : 'text-gray-500 hover:text-[#881337]'}`}
                         >
-                            {tab === 'messages' ? 'Accepted (Messages)' : tab}
+                            {tab === 'mybiodata' ? 'My Biodata' : tab === 'messages' ? 'Chats' : tab === 'discovery' ? 'Discover' : 'Requests'}
                         </button>
                     ))}
                     {/* Active Background Pill */}
                     <div
-                        className="absolute top-0 bottom-0 w-1/3 bg-[#881337] rounded-xl transition-all duration-300 ease-out shadow-sm"
-                        style={{ left: `${['discovery', 'requests', 'messages'].indexOf(activeTab) * 33.33}%` }}
+                        className="absolute top-0 bottom-0 w-1/4 bg-[#881337] rounded-xl transition-all duration-300 ease-out shadow-sm"
+                        style={{ left: `${(['mybiodata', 'discovery', 'requests', 'messages'].indexOf(activeTab)) * 25}%` }}
                     />
                 </nav>
             </header>
@@ -688,6 +711,13 @@ export default function RishtaDashboard() {
                                         <button onClick={() => router.push('/candidate-registration')} className="bg-[#881337] text-white px-4 py-2 rounded-xl text-xs font-bold shadow hover:bg-rose-900 transition-all">
                                             ✏️ Update &amp; Resubmit Profile
                                         </button>
+                                    )}
+                                    {/* ITS Re-upload in banner for rejected/hold */}
+                                    {!myProfile.isItsVerified && (
+                                        <label className="cursor-pointer bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition-all flex items-center gap-1.5">
+                                            📷 {itsReuploadUrl ? 'ITS Uploaded ✓' : 'Re-upload ITS Photo'}
+                                            <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleITSReupload(f); }} />
+                                        </label>
                                     )}
                                     <button
                                         onClick={() => setShowAdminMessages(!showAdminMessages)}
@@ -736,265 +766,181 @@ export default function RishtaDashboard() {
                 </div>
             )}
 
-            <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <main className="max-w-7xl mx-auto">
 
-                {/* Left Sidebar / Privacy & AI Coaching */}
-                {activeTab === 'discovery' && (
-                    <aside className="lg:col-span-1 space-y-6">
-                        {myProfile && (
-                            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
-                                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-rose-50 mb-4 shadow-sm relative">
-                                    {myProfile.itsImageUrl ? (
-                                        <img src={myProfile.itsImageUrl} alt="Biodata" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-3xl">
-                                            {myProfile.name?.charAt(0)}
-                                        </div>
-                                    )}
-                                </div>
-                                <h3 className="font-bold text-xl text-[#881337] text-center">{myProfile.name}</h3>
-                                <p className="text-sm text-gray-500 mb-1">ITS: {myProfile.itsNumber}</p>
-                                <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-                                    {myProfile.isItsVerified ? (
-                                        <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-emerald-100"><Check className="w-3 h-3" /> ITS Verified</span>
-                                    ) : (
-                                        <span className="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-yellow-100"><Clock className="w-3 h-3" /> ITS Pending</span>
-                                    )}
-
-                                    {/* Assuming email verification uses either user.emailVerified or a db flag */}
-                                    {user?.emailVerified || myProfile.isEmailVerified ? (
-                                        <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-blue-100"><Check className="w-3 h-3" /> Email Verified</span>
-                                    ) : (
-                                        <span onClick={async () => {
-                                            const { sendEmailVerification } = require("firebase/auth");
-                                            if (user) {
-                                                try { await sendEmailVerification(user); toast.success("Verification Email Sent!"); }
-                                                catch (e: any) { toast.error("Too many requests or error. Try later."); }
-                                            }
-                                        }} className="bg-gray-50 text-gray-600 px-3 py-1 cursor-pointer hover:bg-gray-100 transition-colors rounded-full text-xs font-bold flex items-center gap-1 border border-gray-200" title="Click to send verification link"><Clock className="w-3 h-3" /> Verify Email</span>
-                                    )}
-                                </div>
-
-                                {/* Profile Completeness Section */}
-                                {(() => {
-                                    const requiredDetailedFields = [
-                                        'name', 'itsNumber', 'gender', 'dob', 'jamaat', 'education', 'hizratLocation',
-                                        'libasImageUrl', 'fatherName', 'motherName', 'maritalStatus', 'mobile',
-                                        'address', 'professionType'
-                                    ];
-                                    let filled = 0;
-                                    requiredDetailedFields.forEach(f => {
-                                        if (myProfile[f] || (f === 'professionType' && myProfile['profession']) || (f === 'education' && myProfile['educationDetails'])) {
-                                            filled++;
-                                        }
-                                    });
-                                    let completeness = Math.floor((filled / requiredDetailedFields.length) * 100);
-                                    if (myProfile.isCandidateFormComplete) completeness = 100;
-
-                                    return (
-                                        <div id="profile-completeness-section" className="w-full mt-6 bg-gray-50 p-4 border border-gray-100 rounded-xl flex flex-col items-center">
-                                            <div className="w-full flex justify-between text-xs font-bold text-gray-500 mb-2">
-                                                <span>Biodata Completeness</span>
-                                                <span className="text-[#881337]">{completeness}%</span>
-                                            </div>
-                                            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-3">
-                                                <div className="h-full bg-gradient-to-r from-[#D4AF37] to-[#881337] transition-all duration-1000" style={{ width: `${completeness}%` }}></div>
-                                            </div>
-                                            {completeness < 100 && (
-                                                <button onClick={() => router.push('/candidate-registration')} className="w-full bg-[#881337] text-white py-2 rounded-lg text-xs font-bold shadow hover:bg-[#9F1239] transition-all tracking-wide mt-1">
-                                                    Complete ITNC Registration Form
-                                                </button>
-                                            )}
-                                            {completeness >= 100 && !myProfile.isItsVerified && (
-                                                <div className="w-full bg-yellow-50 text-yellow-700 py-2 rounded-lg text-xs font-bold text-center border border-yellow-200 tracking-wide mt-1">
-                                                    ITS Verification Pending — you can still browse
-                                                </div>
-                                            )}
-                                            <button
-                                                onClick={() => setShowMyProfileModal(true)}
-                                                className="w-full bg-white text-[#881337] border border-[#881337]/20 hover:bg-rose-50 py-2 rounded-lg text-xs font-bold shadow-sm transition-all tracking-wide mt-3 flex items-center justify-center gap-1"
-                                            >
-                                                <Sparkles className="w-3 h-3" /> Preview My Biodata
-                                            </button>
-                                        </div>
-                                    );
-                                })()}
+                {/* MY BIODATA TAB */}
+                {activeTab === 'mybiodata' && myProfile && (
+                    <div className="max-w-lg mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
+                            <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-rose-50 mb-4 shadow-md relative">
+                                {myProfile.itsImageUrl ? (
+                                    <img src={myProfile.itsImageUrl} alt="Biodata" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-4xl">
+                                        {myProfile.name?.charAt(0)}
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </aside>
+                            <h3 className="font-bold text-2xl text-[#881337] text-center font-serif">{myProfile.name}</h3>
+                            <p className="text-sm text-gray-500 mb-2">ITS: {myProfile.itsNumber} · {myProfile.jamaat}</p>
+                            <div className="flex flex-wrap items-center justify-center gap-2 mt-1 mb-4">
+                                {myProfile.isItsVerified ? (
+                                    <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-emerald-100"><Check className="w-3 h-3" /> ITS Verified</span>
+                                ) : (
+                                    <span className="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-yellow-100"><Clock className="w-3 h-3" /> ITS Pending</span>
+                                )}
+                                {user?.emailVerified || myProfile.isEmailVerified ? (
+                                    <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-blue-100"><Check className="w-3 h-3" /> Email Verified</span>
+                                ) : (
+                                    <span onClick={async () => {
+                                        const { sendEmailVerification } = require("firebase/auth");
+                                        if (user) { try { await sendEmailVerification(user); toast.success("Verification Email Sent!"); } catch { toast.error("Try later."); } }
+                                    }} className="bg-gray-50 text-gray-600 px-3 py-1 cursor-pointer hover:bg-gray-100 transition-colors rounded-full text-xs font-bold flex items-center gap-1 border border-gray-200"><Clock className="w-3 h-3" /> Verify Email</span>
+                                )}
+                            </div>
+
+                            {/* Profile Completeness */}
+                            {(() => {
+                                const fields = ['name', 'itsNumber', 'gender', 'dob', 'jamaat', 'education', 'hizratLocation', 'libasImageUrl', 'fatherName', 'motherName', 'maritalStatus', 'mobile', 'address', 'professionType'];
+                                let filled = 0;
+                                fields.forEach(f => { if (myProfile[f] || (f === 'professionType' && myProfile['profession']) || (f === 'education' && myProfile['educationDetails'])) filled++; });
+                                let pct = Math.floor((filled / fields.length) * 100);
+                                if (myProfile.isCandidateFormComplete) pct = 100;
+                                return (
+                                    <div id="profile-completeness-section" className="w-full bg-gray-50 p-4 border border-gray-100 rounded-xl flex flex-col items-center">
+                                        <div className="w-full flex justify-between text-xs font-bold text-gray-500 mb-2">
+                                            <span>Biodata Completeness</span><span className="text-[#881337]">{pct}%</span>
+                                        </div>
+                                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
+                                            <div className="h-full bg-gradient-to-r from-[#D4AF37] to-[#881337] transition-all duration-1000" style={{ width: `${pct}%` }} />
+                                        </div>
+                                        {pct < 100 && (
+                                            <button onClick={() => router.push('/candidate-registration')} className="w-full bg-[#881337] text-white py-2.5 rounded-xl text-sm font-bold shadow hover:bg-[#9F1239] transition-all mt-1">Complete ITNC Registration Form</button>
+                                        )}
+                                        {pct >= 100 && !myProfile.isItsVerified && (
+                                            <div className="w-full bg-yellow-50 text-yellow-700 py-2 rounded-lg text-xs font-bold text-center border border-yellow-200 mt-1">ITS Verification Pending — you can still browse</div>
+                                        )}
+                                        <button
+                                            onClick={() => setShowMyProfileModal(true)}
+                                            className="w-full bg-white text-[#881337] border border-[#881337]/20 hover:bg-rose-50 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all mt-3 flex items-center justify-center gap-1"
+                                        >
+                                            <Sparkles className="w-3.5 h-3.5" /> Preview My Public Biodata
+                                        </button>
+                                        <button
+                                            onClick={() => router.push('/candidate-registration')}
+                                            className="w-full bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all mt-2 flex items-center justify-center gap-1"
+                                        >
+                                            ✏️ Edit My Biodata
+                                        </button>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    </div>
                 )}
 
-                {/* Main Content Render */}
-                {renderTabContent()}
+                {/* Discovery / Requests / Messages */}
+                {activeTab !== 'mybiodata' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                        {renderTabContent()}
+                    </div>
+                )}
 
             </main>
 
-            {/* Mobile Bottom Navigation */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-safe flex justify-around items-center z-50 shadow-2xl">
-                <button onClick={() => setActiveTab('discovery')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'discovery' ? 'text-[#881337]' : 'text-gray-400 hover:text-[#881337]'}`}>
-                    <Heart className="w-6 h-6" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Discovery</span>
+
+            {/* Mobile Bottom Nav */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 pb-safe flex justify-around items-center z-50 shadow-2xl">
+                <button onClick={() => setActiveTab('mybiodata')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'mybiodata' ? 'text-[#881337]' : 'text-gray-400'}`}>
+                    <ShieldCheck className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">My Biodata</span>
                 </button>
-                <button onClick={() => setActiveTab('requests')} className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'requests' ? 'text-[#881337]' : 'text-gray-400 hover:text-[#881337]'}`}>
-                    <ShieldCheck className="w-6 h-6" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Requests</span>
+                <button onClick={() => setActiveTab('discovery')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'discovery' ? 'text-[#881337]' : 'text-gray-400'}`}>
+                    <Heart className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Discover</span>
                 </button>
-                <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-1 transition-colors relative ${activeTab === 'messages' ? 'text-[#881337]' : 'text-gray-400 hover:text-[#881337]'}`}>
-                    <MessageCircle className="w-6 h-6" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Chat</span>
-                    {/* Tiny Notification Dot Example */}
-                    {allRequests.filter(r => r.status === 'accepted' && r.isIncoming).length > 0 && <span className="absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full"></span>}
+                <button onClick={() => setActiveTab('requests')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'requests' ? 'text-[#881337]' : 'text-gray-400'}`}>
+                    <ShieldCheck className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Requests</span>
+                </button>
+                <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'messages' ? 'text-[#881337]' : 'text-gray-400'}`}>
+                    <MessageCircle className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Chats</span>
+                    {allRequests.filter(r => r.status === 'accepted' && r.isIncoming).length > 0 && <span className="absolute -top-0.5 right-3 w-1.5 h-1.5 bg-red-500 rounded-full" />}
                 </button>
             </nav>
 
-            {/* Premium Paywall Modal */}
+            {/* Premium Modal */}
             {showPremiumModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white max-w-sm w-full rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="bg-gradient-to-r from-[#D4AF37] to-[#F1D16A] p-6 text-center shadow-sm relative">
-                            <button onClick={() => setShowPremiumModal(false)} className="absolute top-4 right-4 bg-black/10 rounded-full p-2 hover:bg-black/20 text-[#881337]"><X className="w-4 h-4" /></button>
+                    <div className="bg-white max-w-sm w-full rounded-3xl overflow-hidden shadow-2xl">
+                        <div className="bg-gradient-to-r from-[#D4AF37] to-[#F1D16A] p-6 text-center relative">
+                            <button onClick={() => setShowPremiumModal(false)} className="absolute top-4 right-4 bg-black/10 rounded-full p-2 text-[#881337]"><X className="w-4 h-4" /></button>
                             <Sparkles className="w-12 h-12 text-[#881337] mx-auto mb-3" />
-                            <h2 className="text-2xl font-bold text-[#881337] font-serif mb-1">DBohraRishta match privacy update</h2>
-                            <p className="text-[#881337] opacity-90 text-sm font-medium">Unlock Unlimited Halal Chats</p>
+                            <h2 className="text-2xl font-bold text-[#881337] font-serif mb-1">Unlock Halal Chats</h2>
+                            <p className="text-[#881337] opacity-90 text-sm font-medium">Unlimited Matches &amp; Chat</p>
                         </div>
                         <div className="p-8 text-center space-y-6">
-                            <h3 className="text-4xl font-extrabold text-[#881337] flex justify-center items-start">
-                                <span className="text-xl mt-1">₹</span>53<span className="text-base text-gray-500 font-normal mt-auto mb-1">/mo</span>
-                            </h3>
+                            <h3 className="text-4xl font-extrabold text-[#881337] flex justify-center items-start"><span className="text-xl mt-1">&#8377;</span>53<span className="text-base text-gray-500 font-normal mt-auto mb-1">/mo</span></h3>
                             <ul className="text-left text-sm text-gray-600 space-y-3 font-medium">
-                                <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> Open private encrypted end-to-end chat</li>
+                                <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> Encrypted end-to-end chat</li>
                                 <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> Dynamic profile photo unblurring</li>
                                 <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> See who viewed your profile</li>
                             </ul>
-                            <button
-                                onClick={handleUpgradeToPremium}
-                                disabled={paying}
-                                className="w-full bg-[#881337] hover:bg-[#9F1239] text-white py-4 rounded-xl font-bold shadow-md transition-all active:scale-95 flex justify-center items-center gap-2">
+                            <button onClick={handleUpgradeToPremium} disabled={paying} className="w-full bg-[#881337] hover:bg-[#9F1239] text-white py-4 rounded-xl font-bold shadow-md flex justify-center items-center gap-2">
                                 {paying ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Pay Now (Mock)</>}
                             </button>
-                            <p className="text-xs text-gray-400 mt-4 leading-normal">
-                                Secure local Indian Gateway via PhonePe/Razorpay placeholder. Recurring charge. Cancel anytime.
-                            </p>
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* My Profile Preview Modal */}
             {showMyProfileModal && myProfile && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 sm:mt-0 mt-10" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setShowMyProfileModal(false)}>
-                    <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-
-                        <div className="relative h-48 bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
-                            {myProfile.libasImageUrl ? (
-                                <img src={myProfile.libasImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-80" />
-                            ) : myProfile.itsImageUrl ? (
-                                <img src={myProfile.itsImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-50" />
-                            ) : (
-                                <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-300"></div>
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/20"></div>
-
-                            <button onClick={() => setShowMyProfileModal(false)} className="absolute top-4 right-4 bg-black/40 text-white rounded-full p-2 hover:bg-black/60 transition-colors z-20">
-                                <span className="sr-only">Close</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-                            </button>
-
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setShowMyProfileModal(false)}>
+                    <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                        <div className="relative h-48 bg-gray-200 overflow-hidden shrink-0">
+                            {myProfile.libasImageUrl ? <img src={myProfile.libasImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-80" /> : <div className="absolute inset-0 bg-gray-300" />}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/20" />
+                            <button onClick={() => setShowMyProfileModal(false)} className="absolute top-4 right-4 bg-black/40 text-white rounded-full p-2 z-20"><X className="w-4 h-4" /></button>
                             <div className="absolute bottom-6 left-6 z-10">
-                                <h2 className="text-3xl font-bold font-serif text-white">{myProfile.name}, {myProfile.dob ? Math.floor((new Date().getTime() - new Date(myProfile.dob).getTime()) / 31557600000) : '--'}</h2>
-                                <p className="text-[#D4AF37] font-medium flex items-center gap-2 mt-1">
-                                    <CheckCircle className="w-4 h-4" /> {myProfile.isItsVerified ? 'ITS Verified' : 'Unverified'}
-                                </p>
+                                <h2 className="text-3xl font-bold font-serif text-white">{myProfile.name}, {myProfile.dob ? Math.floor((Date.now() - new Date(myProfile.dob).getTime()) / 31557600000) : '--'}</h2>
+                                <p className="text-[#D4AF37] font-medium flex items-center gap-2 mt-1"><CheckCircle className="w-4 h-4" /> {myProfile.isItsVerified ? 'ITS Verified' : 'Unverified'}</p>
                             </div>
                         </div>
-
-                        <div className="p-6 sm:p-8 overflow-y-auto space-y-6">
-
-                            <div>
-                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Core Details</h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                        <p className="text-gray-500 text-xs font-bold mb-1">Jamaat</p>
-                                        <p className="text-[#881337] font-semibold">{myProfile.jamaat || 'Not specified'}</p>
-                                    </div>
-                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                        <p className="text-gray-500 text-xs font-bold mb-1">Location</p>
-                                        <p className="text-[#881337] font-semibold">{myProfile.hizratLocation || 'Not specified'}</p>
-                                    </div>
-                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 col-span-2">
-                                        <p className="text-gray-500 text-xs font-bold mb-1">Education / Profession</p>
-                                        <p className="text-[#881337] font-semibold">{myProfile.education || myProfile.profession || 'Not specified'}</p>
-                                    </div>
-                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 col-span-2 md:col-span-1">
-                                        <p className="text-gray-500 text-xs font-bold mb-1">Height</p>
-                                        <p className="text-[#881337] font-semibold">{myProfile.heightFeet || myProfile.heightInch ? `${myProfile.heightFeet || 0}' ${myProfile.heightInch || 0}"` : 'Not specified'}</p>
-                                    </div>
-                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 col-span-2">
-                                        <p className="text-gray-500 text-xs font-bold mb-1">Hobbies & Interests</p>
-                                        <p className="text-[#881337] font-semibold text-sm leading-relaxed">{myProfile.hobbies || 'Not specified'}</p>
-                                    </div>
-                                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 col-span-2">
-                                        <p className="text-gray-500 text-xs font-bold mb-1">Partner Expectations</p>
-                                        <p className="text-[#881337] font-semibold text-sm leading-relaxed">{myProfile.partnerQualities || 'Not specified'}</p>
-                                    </div>
-                                </div>
+                        <div className="p-6 overflow-y-auto space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="text-gray-400 text-xs font-bold mb-1">Jamaat</p><p className="text-[#881337] font-semibold text-sm">{myProfile.jamaat || 'N/A'}</p></div>
+                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="text-gray-400 text-xs font-bold mb-1">Location</p><p className="text-[#881337] font-semibold text-sm">{myProfile.hizratLocation || 'N/A'}</p></div>
+                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2"><p className="text-gray-400 text-xs font-bold mb-1">Profession</p><p className="text-[#881337] font-semibold text-sm">{myProfile.professionType || myProfile.profession || 'N/A'}</p></div>
+                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2"><p className="text-gray-400 text-xs font-bold mb-1">Hobbies</p><p className="text-[#881337] font-semibold text-sm">{myProfile.hobbies || 'Not specified'}</p></div>
+                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2"><p className="text-gray-400 text-xs font-bold mb-1">Partner Qualities</p><p className="text-[#881337] font-semibold text-sm">{myProfile.partnerQualities || 'Not specified'}</p></div>
                             </div>
-
-                            <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100 flex gap-4 items-start">
-                                <Info className="w-8 h-8 text-blue-700 shrink-0 mt-1" />
-                                <div>
-                                    <h4 className="font-bold text-blue-800 mb-1">This is how others see you</h4>
-                                    <p className="text-sm text-blue-700/80 leading-relaxed">Your photos and direct contact info remain blurred/hidden to other members until an Interest Request is mutually accepted.</p>
-                                </div>
+                            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-3 items-start">
+                                <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                                <p className="text-sm text-blue-700">Photos and contact info remain blurred until an interest is mutually accepted.</p>
                             </div>
-
                         </div>
-
-                        <div className="p-6 border-t border-gray-100 bg-gray-50/50 shrink-0">
-                            <button
-                                onClick={() => {
-                                    setShowMyProfileModal(false);
-                                    router.push('/candidate-registration');
-                                }}
-                                className="w-full py-4 rounded-xl font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-lg bg-[#D4AF37] text-white hover:bg-[#c29e2f] hover:shadow-lg"
-                            >
-                                Edit Profile Details
-                            </button>
+                        <div className="p-5 border-t shrink-0">
+                            <button onClick={() => { setShowMyProfileModal(false); router.push('/candidate-registration'); }} className="w-full py-3 rounded-xl font-bold bg-[#D4AF37] text-white hover:bg-[#c29e2f]">Edit Profile Details</button>
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* Accept Request Modal */}
             {acceptingRequest && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 sm:mt-0 mt-10" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95">
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
                         <h3 className="text-2xl font-bold font-serif text-[#881337] mb-2">Accept Interest Request</h3>
-                        <p className="text-sm text-gray-600 mb-6">You are about to accept an interest request from <span className="font-bold">{acceptingRequest.otherUserName}</span>. Please confirm your contact details to share.</p>
-
+                        <p className="text-sm text-gray-600 mb-6">Accepting from <span className="font-bold">{acceptingRequest.otherUserName}</span>. Confirm contact details to share.</p>
                         <div className="space-y-4 mb-6">
-                            {acceptError && (
-                                <div className="p-3 bg-red-50 text-red-600 text-sm font-bold rounded-xl border border-red-100 mb-2">
-                                    {acceptError}
-                                </div>
-                            )}
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Mobile Number *</label>
-                                <input value={acceptMobile} onChange={e => { setAcceptMobile(e.target.value); setAcceptError(''); }} className={`w-full bg-gray-50 border ${!acceptMobile && acceptError ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]`} placeholder="e.g. +91 9876543210" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Email Address *</label>
-                                <input type="email" value={acceptEmail} onChange={e => { setAcceptEmail(e.target.value); setAcceptError(''); }} className={`w-full bg-gray-50 border ${!acceptEmail && acceptError ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]`} placeholder="e.g. you@example.com" />
-                            </div>
-                            <div className="flex items-start gap-3 bg-red-50 p-3 rounded-lg border border-red-100">
-                                <Info className="w-5 h-5 text-[#881337] shrink-0 mt-0.5" />
-                                <p className="text-xs text-[#881337] font-medium leading-relaxed">
-                                    These details are strictly compulsory and will be shared mutually with this candidate upon acceptance.
-                                </p>
+                            {acceptError && <div className="p-3 bg-red-50 text-red-600 text-sm font-bold rounded-xl border border-red-100">{acceptError}</div>}
+                            <div><label className="block text-sm font-bold text-gray-700 mb-1">Mobile Number *</label><input value={acceptMobile} onChange={e => { setAcceptMobile(e.target.value); setAcceptError(''); }} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. +91 9876543210" /></div>
+                            <div><label className="block text-sm font-bold text-gray-700 mb-1">Email Address *</label><input type="email" value={acceptEmail} onChange={e => { setAcceptEmail(e.target.value); setAcceptError(''); }} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. you@example.com" /></div>
+                            <div className="flex gap-2 bg-red-50 p-3 rounded-lg border border-red-100">
+                                <Info className="w-4 h-4 text-[#881337] shrink-0 mt-0.5" /><p className="text-xs text-[#881337] font-medium">These details will be shared mutually upon acceptance.</p>
                             </div>
                         </div>
-
                         <div className="flex gap-4">
-                            <button onClick={() => setAcceptingRequest(null)} className="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
-                            <button onClick={confirmAcceptRequest} className="flex-1 py-3 bg-[#D4AF37] text-white font-bold rounded-xl hover:bg-[#c29e2f] transition-colors shadow-md">Confirm & Accept</button>
+                            <button onClick={() => setAcceptingRequest(null)} className="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-xl">Cancel</button>
+                            <button onClick={confirmAcceptRequest} className="flex-1 py-3 bg-[#D4AF37] text-white font-bold rounded-xl hover:bg-[#c29e2f] shadow-md">Confirm &amp; Accept</button>
                         </div>
                     </div>
                 </div>

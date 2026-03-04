@@ -80,7 +80,7 @@ export default function ChatWindow({ connectionId, otherUserName, onClose }: Cha
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 p-4 overflow-y-auto bg-[#F9FAFB] flex flex-col gap-3">
+            <div className="flex-1 p-4 overflow-y-auto bg-rose-50 flex flex-col gap-3 relative" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 46.223l-3.344-3.042C14.735 32.378 7 25.378 7 16.711 7 9.544 12.544 4 19.711 4c4.056 0 7.944 1.889 10.289 4.889C32.344 5.889 36.233 4 40.289 4 47.456 4 53 9.544 53 16.711c0 8.667-7.735 15.667-19.656 26.47L30 46.223z' fill='%23881337' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E\")" }}>
                 {loading && (
                     <div className="flex justify-center p-4">
                         <Loader2 className="w-6 h-6 animate-spin text-[#881337]" />
@@ -94,7 +94,7 @@ export default function ChatWindow({ connectionId, otherUserName, onClose }: Cha
                 {messages.map((msg) => {
                     const isMe = msg.senderId === user?.uid;
                     return (
-                        <div key={msg.id} className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${isMe ? 'bg-[#881337] text-white self-end rounded-br-sm' : 'bg-gray-200 text-gray-900 self-start rounded-bl-sm'}`}>
+                        <div key={msg.id} className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm relative z-10 ${isMe ? 'bg-[#881337] text-white self-end rounded-br-sm' : 'bg-white border border-rose-100 text-gray-900 self-start rounded-bl-sm'}`}>
                             {msg.text}
                         </div>
                     );
@@ -102,19 +102,32 @@ export default function ChatWindow({ connectionId, otherUserName, onClose }: Cha
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Form */}
-            <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-gray-100 flex gap-2">
-                <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type a message..."
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#881337]"
-                />
-                <button type="submit" disabled={!newMessage.trim()} className="p-3 bg-[#D4AF37] text-white rounded-full hover:bg-[#c29e2f] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                    <Send className="w-4 h-4" />
-                </button>
-            </form>
+            {/* Quick Emojis & Input Form */}
+            <div className="bg-white border-t border-rose-100 flex flex-col">
+                <div className="flex gap-2 p-2 px-3 overflow-x-auto scrollbar-hide border-b border-gray-50 bg-rose-50/30">
+                    {["❤️", "🤲", "😊", "✨", "MashaAllah", "InshaAllah", "JazakAllah"].map(emoji => (
+                        <button
+                            key={emoji}
+                            onClick={() => setNewMessage(prev => prev + (prev ? " " : "") + emoji)}
+                            className="text-sm bg-white border border-rose-100 px-3 py-1 rounded-full shadow-sm hover:bg-rose-50 text-[#881337] font-medium whitespace-nowrap transition-colors active:scale-95"
+                        >
+                            {emoji}
+                        </button>
+                    ))}
+                </div>
+                <form onSubmit={handleSendMessage} className="p-3 flex gap-2 items-center">
+                    <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type a message..."
+                        className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#881337] focus:border-transparent transition-shadow"
+                    />
+                    <button type="submit" disabled={!newMessage.trim()} className="p-3 bg-[#D4AF37] text-white rounded-full hover:bg-[#c29e2f] shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed">
+                        <Send className="w-4 h-4" />
+                    </button>
+                </form>
+            </div>
         </div>
     );
 }

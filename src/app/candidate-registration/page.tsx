@@ -76,6 +76,8 @@ export default function CandidateRegistrationPage() {
         partnerQualities: "",
         parentViews: "",
         informationProvidedBy: "Myself (Candidate)",
+        status: "",
+        adminMessage: "",
     });
 
     useEffect(() => {
@@ -115,6 +117,8 @@ export default function CandidateRegistrationPage() {
                         educationDetails: data.education || prev.educationDetails,
                         professionType: data.profession || prev.professionType,
                         bio: data.bio || prev.bio,
+                        status: data.status || prev.status,
+                        adminMessage: data.adminMessage || '',
                     }));
                 }
             }
@@ -180,6 +184,42 @@ export default function CandidateRegistrationPage() {
         } catch (error) {
             setLoading(false);
             toast.error("Failed to process image");
+        }
+    };
+
+    const verifyAndUpdateMobile = async (newMobile: string, authCode: string) => {
+        if (!authCode || !newMobile) {
+            toast.error("Both new mobile number and Authenticator code are required.");
+            return;
+        }
+        if (!user) return;
+        try {
+            setLoading(true);
+            const res = await fetch('/api/otp/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: newMobile, code: authCode })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error || "Failed to verify authenticator code.");
+                setLoading(false);
+                return;
+            }
+
+            await updateDoc(doc(db, "users", user.uid), { mobile: newMobile });
+            setFormData(prev => ({ ...prev, mobile: newMobile }));
+            toast.success("Mobile number updated successfully.");
+
+            const mobileInput = document.getElementById('newMobileInput') as HTMLInputElement;
+            const authInput = document.getElementById('authCodeInput') as HTMLInputElement;
+            if (mobileInput) mobileInput.value = '';
+            if (authInput) authInput.value = '';
+        } catch (error: any) {
+            toast.error("Failed to update mobile number.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -258,16 +298,23 @@ export default function CandidateRegistrationPage() {
             }
 
             if (user) {
-                // Determine full name
                 const fullName = `${formData.firstName} ${formData.lastName}`.trim();
 
-                await updateDoc(doc(db, "users", user.uid), {
+                const updateObj: any = {
                     ...formData,
                     name: fullName,
                     itsNumber: formData.ejamaatId,
                     isCandidateFormComplete: true,
                     extraImageUrl: extraImageUrl || null
-                });
+                };
+
+                // If they were rejected, switch back to 'pending_verification' on resubmit
+                if (formData.status === 'rejected') {
+                    updateObj.status = 'pending_verification';
+                }
+
+                await updateDoc(doc(db, "users", user.uid), updateObj);
+
                 // Email Notification Call (Mock fetch placeholder for serverless function/email trigger)
                 // In production, an API route or Firebase Extension would handle actually dispatching this email.
                 try {
@@ -330,6 +377,21 @@ export default function CandidateRegistrationPage() {
                         {submitError && (
                             <div className="p-4 bg-red-50 text-red-600 font-bold rounded-xl border border-red-200 shadow-sm flex items-center gap-3">
                                 <span>{submitError}</span>
+                            </div>
+                        )}
+
+                        {/* Admin Notification Banner for Rejection */}
+                        {formData.status === 'rejected' && (
+                            <div className="p-5 bg-rose-50 border-2 border-rose-300 rounded-xl shadow-sm animate-pulse flex flex-col gap-2">
+                                <h3 className="text-[#881337] font-black text-lg flex items-center gap-2">
+                                    <span className="text-xl">⚠️</span> Action Required: Profile Need Updates
+                                </h3>
+                                <p className="text-gray-700 text-sm">
+                                    An Admin has reviewed your profile and requested some adjustments. Please fix the issue mentioned below and click 'Submit Candidate Form' to request re-approval.
+                                </p>
+                                <div className="mt-2 bg-white p-4 rounded-lg border border-rose-100 italic text-rose-800 font-medium">
+                                    " {formData.adminMessage || "Please review and update your information/photos properly."} "
+                                </div>
                             </div>
                         )}
 
@@ -443,11 +505,33 @@ export default function CandidateRegistrationPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number *</label>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 mb-3">
                                         <input disabled name="mobileCode" onChange={handleChange} value={formData.mobileCode} className="w-1/4 bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none" placeholder="+91" />
                                         <input disabled name="mobile" onChange={handleChange} value={formData.mobile} className={`w-3/4 bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.mobile ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} placeholder="e.g. 9876543210" />
                                     </div>
                                     <ErrorMsg msg={errors.mobile} />
+
+                                    {/* Edit Mobile Secion inline */}
+                                    {user && (
+                                        <div className="bg-rose-50 rounded-xl p-4 border border-rose-100 shadow-inner mt-2">
+                                            <h3 className="font-bold text-[#881337] text-xs mb-2 uppercase tracking-wide">Update Mobile (Requires Verify)</h3>
+                                            <div className="space-y-3">
+                                                <input type="text" placeholder="New mobile number (e.g. 9876543210)" className="border border-rose-200 focus:outline-none focus:ring-1 focus:ring-[#881337] rounded-lg w-full p-2.5 text-sm bg-white" id="newMobileInput" />
+                                                <input type="text" placeholder="Authenticator App Code (6 Digits)" className="border border-rose-200 focus:outline-none focus:ring-1 focus:ring-[#881337] rounded-lg w-full p-2.5 text-sm bg-white" id="authCodeInput" maxLength={6} />
+                                                <div className="flex justify-end pt-1">
+                                                    <button type="button" onClick={() => {
+                                                        const mobileInput = document.getElementById('newMobileInput') as HTMLInputElement;
+                                                        const authInput = document.getElementById('authCodeInput') as HTMLInputElement;
+                                                        if (mobileInput && mobileInput.value && authInput) {
+                                                            verifyAndUpdateMobile(mobileInput.value, authInput.value);
+                                                        } else {
+                                                            toast.error("Please fill both fields.");
+                                                        }
+                                                    }} className="px-4 py-2 bg-[#881337] hover:bg-rose-900 text-white text-xs font-bold rounded-xl transition-colors w-full shadow-sm">Verify & Update</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Landline (Optional)</label>

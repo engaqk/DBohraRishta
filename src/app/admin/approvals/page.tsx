@@ -23,6 +23,8 @@ export default function AdminVerificationPage() {
     const [allUsers, setAllUsers] = useState<PendingUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
+    const [rejectReason, setRejectReason] = useState("");
+    const [showRejectInput, setShowRejectInput] = useState(false);
     const [analytics, setAnalytics] = useState({ totalUsers: 0, acceptedRatio: 0, cities: {} as any });
 
     useEffect(() => {
@@ -70,13 +72,19 @@ export default function AdminVerificationPage() {
         }
     };
 
-    const handleStatusMove = async (userId: string, newStatus: string) => {
-        console.log('handleStatusMove called', { userId, newStatus });
+    const handleStatusMove = async (userId: string, newStatus: string, message?: string) => {
+        console.log('handleStatusMove called', { userId, newStatus, message });
         try {
-            await updateDoc(doc(db, "users", userId), {
+            const updateData: any = {
                 status: newStatus,
-                isItsVerified: newStatus === 'verified'
-            });
+                isItsVerified: newStatus === 'verified' || newStatus === 'approved'
+            };
+
+            if (newStatus === 'rejected') {
+                updateData.adminMessage = message || "Please review and resubmit your details.";
+            }
+
+            await updateDoc(doc(db, "users", userId), updateData);
             toast.success(`User moved to ${newStatus}`);
             setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
         } catch (error: any) {
@@ -85,85 +93,39 @@ export default function AdminVerificationPage() {
     };
 
     // Open and close detail modal
-    const openDetails = (user: PendingUser) => setSelectedUser(user);
-    const closeDetails = () => setSelectedUser(null);
-
-    // Verify and update mobile number using Auth Verification
-    const verifyAndUpdateMobile = async (userId: string, newMobile: string, authCode: string) => {
-        if (!authCode) {
-            toast.error("Authenticator code is required.");
-            return;
-        }
-        try {
-            const res = await fetch('/api/otp/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: newMobile, code: authCode })
-            });
-
-            const data = await res.json();
-            if (!res.ok) {
-                toast.error(data.error || "Failed to verify authenticator code.");
-                return;
-            }
-
-            await updateDoc(doc(db, "users", userId), { mobileNumber: newMobile });
-            toast.success("Mobile number updated successfully.");
-            setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, mobileNumber: newMobile } : u));
-            closeDetails();
-        } catch (error: any) {
-            toast.error("Failed to update mobile number.");
-        }
+    const openDetails = (user: PendingUser) => {
+        setSelectedUser(user);
+        setShowRejectInput(false);
+        setRejectReason("");
+    };
+    const closeDetails = () => {
+        setSelectedUser(null);
+        setShowRejectInput(false);
+        setRejectReason("");
     };
 
-    const renderColumn = (title: string, matchStatus: string) => {
-        const columnUsers = allUsers.filter(u => {
-            if (matchStatus === 'pending_verification') {
-                return u.status === 'pending_verification' || u.status === 'pending' || !u.status;
-            }
-            return u.status === matchStatus;
-        });
-        return (
-            <div className="bg-[#F9FAFB] rounded-3xl shadow-sm border border-gray-100 flex flex-col min-h-[500px]">
-                <div className="p-5 border-b border-gray-200/50 bg-white rounded-t-3xl">
-                    <h3 className="font-bold text-[#881337] uppercase tracking-wider text-xs flex justify-between items-center">
-                        {title}
-                        <span className="bg-[#881337] text-white px-2.5 py-1 rounded-full text-[10px]">{columnUsers.length}</span>
-                    </h3>
-                </div>
-                <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-                    {columnUsers.map(user => (
-                        <div key={user.id} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm relative group overflow-hidden">
-                            <h4 className="font-bold text-[#881337] text-sm mb-1 truncate">{user.name}</h4>
-                            <p className="text-xs text-gray-500 font-medium mb-4 truncate">ITS: {user.itsNumber} • {user.jamaat}</p>
-                            <div className="flex gap-2 text-xs">
-                                <button onClick={() => openDetails(user)} className="flex-1 bg-gray-50 text-gray-700 font-bold py-2.5 rounded-xl border border-gray-200 hover:bg-gray-100 transition-colors shadow-sm">Details</button>
-                                {matchStatus === 'pending_verification' && (
-                                    <button onClick={() => handleStatusMove(user.id, 'under_review')} className="flex-1 bg-amber-50 text-amber-700 font-bold py-2.5 rounded-xl border border-amber-100 hover:bg-amber-100 transition-colors shadow-sm">Review</button>
-                                )}
-                                {matchStatus === 'under_review' && (
-                                    <>
-                                        <button onClick={() => handleStatusMove(user.id, 'verified')} className="flex-1 bg-emerald-50 text-emerald-700 font-bold py-2.5 rounded-xl border border-emerald-100 hover:bg-emerald-100 transition-colors shadow-sm flex items-center justify-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> </button>
-                                        <button onClick={() => handleStatusMove(user.id, 'rejected')} className="flex-1 bg-rose-50 text-rose-700 font-bold py-2.5 rounded-xl border border-rose-100 hover:bg-rose-100 transition-colors shadow-sm flex items-center justify-center gap-1"><XCircle className="w-3.5 h-3.5" /> </button>
-                                    </>
-                                )}
-                                {matchStatus === 'verified' && (
-                                    <button onClick={() => handleStatusMove(user.id, 'approved')} className="flex-1 bg-indigo-50 text-indigo-700 font-bold py-2.5 rounded-xl border border-indigo-100 hover:bg-indigo-100 transition-colors shadow-sm">Approve</button>
-                                )}
-                                {(matchStatus === 'verified' || matchStatus === 'rejected') && (
-                                    <div className={`w-full text-center py-2.5 rounded-xl font-bold uppercase tracking-wider text-[10px] ${matchStatus === 'verified' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-gray-50 text-gray-500 border border-gray-200'}`}>
-                                        {matchStatus}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                    {columnUsers.length === 0 && (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-bold uppercase p-10 text-center">Empty</div>
-                    )}
-                </div>
-            </div>
-        );
+
+
+    const getStatusColor = (status: string) => {
+        if (!status || status === 'pending_verification' || status === 'under_review' || status === 'pending') {
+            return 'bg-orange-50 text-orange-700 border-orange-200';
+        }
+        if (status === 'verified' || status === 'approved') {
+            return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        }
+        if (status === 'rejected') {
+            return 'bg-rose-50 text-rose-700 border-rose-200';
+        }
+        return 'bg-gray-50 text-gray-700 border-gray-200';
+    };
+
+    const getStatusLabel = (status: string) => {
+        if (!status || status === 'pending_verification' || status === 'pending') return 'Pending Verification';
+        if (status === 'under_review') return 'Under Review';
+        if (status === 'verified') return 'Verified';
+        if (status === 'approved') return 'Approved';
+        if (status === 'rejected') return 'Rejected';
+        return status;
     };
 
     return (
@@ -204,25 +166,35 @@ export default function AdminVerificationPage() {
                                 )}
                             </div>
 
-                            <div className="bg-rose-50 rounded-xl p-4 border border-rose-100 mb-6">
-                                <h3 className="font-bold text-[#881337] text-sm mb-2">Update Mobile & Verify</h3>
-                                <div className="space-y-3">
-                                    <input type="text" placeholder="New mobile number (e.g. 9876543210)" className="border border-rose-200 focus:outline-none focus:ring-1 focus:ring-[#881337] rounded-lg w-full p-2.5 text-sm" id="newMobileInput" />
-                                    <input type="text" placeholder="Authenticator App Code (6 Digits)" className="border border-rose-200 focus:outline-none focus:ring-1 focus:ring-[#881337] rounded-lg w-full p-2.5 text-sm" id="authCodeInput" maxLength={6} />
-                                    <div className="flex justify-end pt-1">
-                                        <button onClick={() => {
-                                            const mobileInput = document.getElementById('newMobileInput') as HTMLInputElement;
-                                            const authInput = document.getElementById('authCodeInput') as HTMLInputElement;
-                                            if (mobileInput && mobileInput.value && authInput) {
-                                                verifyAndUpdateMobile(selectedUser.id, mobileInput.value, authInput.value);
-                                            }
-                                        }} className="px-5 py-2.5 bg-[#881337] hover:bg-rose-900 text-white text-sm font-bold rounded-xl transition-colors w-full shadow-sm">Verify & Update Mobile</button>
+                            <div className="flex flex-col gap-3 justify-end border-t pt-4 mt-4">
+                                {showRejectInput ? (
+                                    <div className="w-full bg-rose-50 p-4 rounded-xl border border-rose-100 flex flex-col gap-3 mt-2">
+                                        <h4 className="font-bold text-[#881337] text-sm">Reason for Rejection</h4>
+                                        <textarea
+                                            value={rejectReason}
+                                            onChange={(e) => setRejectReason(e.target.value)}
+                                            placeholder="e.g. Please crop your Libas photo properly and resubmit for reapproval."
+                                            className="w-full p-3 border border-rose-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-rose-500 resize-none h-20"
+                                        />
+                                        <div className="flex gap-2 justify-end mt-1">
+                                            <button onClick={() => setShowRejectInput(false)} className="px-4 py-2 bg-gray-200 text-gray-700 font-bold text-xs rounded-xl hover:bg-gray-300">Cancel</button>
+                                            <button onClick={() => { handleStatusMove(selectedUser.id, 'rejected', rejectReason); closeDetails(); }} className="px-4 py-2 bg-rose-600 text-white font-bold text-xs rounded-xl hover:bg-rose-700 shadow-sm flex items-center gap-1"><XCircle className="w-3.5 h-3.5" /> Confirm Reject</button>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 justify-end border-t pt-4">
-                                <button onClick={closeDetails} className="px-5 py-2.5 bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 rounded-xl transition-colors">Close Viewer</button>
+                                ) : (
+                                    <div className="flex gap-3 justify-end w-full">
+                                        {selectedUser.status !== 'approved' && selectedUser.status !== 'verified' && (
+                                            <button onClick={() => { handleStatusMove(selectedUser.id, 'verified'); closeDetails(); }} className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm">Verify / Accept</button>
+                                        )}
+                                        {selectedUser.status === 'verified' && (
+                                            <button onClick={() => { handleStatusMove(selectedUser.id, 'approved'); closeDetails(); }} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm">Final Approve</button>
+                                        )}
+                                        {selectedUser.status !== 'rejected' && (
+                                            <button onClick={() => setShowRejectInput(true)} className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm">Reject</button>
+                                        )}
+                                        <button onClick={closeDetails} className="px-5 py-2.5 bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 rounded-xl transition-colors">Close Viewer</button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </dialog>
@@ -262,13 +234,66 @@ export default function AdminVerificationPage() {
                             <h2 className="text-xl font-bold font-serif uppercase tracking-widest text-[#881337]">Profile Approval Pipeline</h2>
                         </div>
 
-                        {/* Kanban Board */}
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-stretch">
-                            {renderColumn("📥 Incoming", "pending_verification")}
-                            {renderColumn("🔍 Under Review", "under_review")}
-                            {renderColumn("✅ Verified", "verified")}
-                            {renderColumn("✅ Approved", "approved")}
-                            {renderColumn("🚫 Rejected", "rejected")}
+                        {/* Unified List / Row Grid */}
+                        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 hidden md:grid grid-cols-12 gap-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                <div className="col-span-3">Profile / Name</div>
+                                <div className="col-span-2">ITS Number</div>
+                                <div className="col-span-2">Location</div>
+                                <div className="col-span-2">Status</div>
+                                <div className="col-span-3 text-right">Actions</div>
+                            </div>
+                            <div className="divide-y divide-gray-100">
+                                {allUsers.length === 0 ? (
+                                    <div className="p-10 text-center text-gray-400 font-bold uppercase text-sm">No users found</div>
+                                ) : (
+                                    allUsers.map((user) => (
+                                        <div key={user.id} className={`p-4 md:px-6 md:py-4 flex flex-col md:grid md:grid-cols-12 gap-4 items-center transition-colors hover:bg-gray-50/50 ${getStatusColor(user.status).replace('text-', 'hover:border-').replace('border-', 'border-l-4 border-l-')}`}>
+                                            <div className="col-span-3 flex items-center gap-3 w-full">
+                                                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                                                    {user.libasImageUrl ? (
+                                                        <img src={user.libasImageUrl} alt="Profile" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-[#881337] font-bold bg-rose-50 border border-rose-100">
+                                                            {user.name?.charAt(0) || '?'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 truncate">
+                                                    <p className="font-bold text-[#881337] truncate">{user.name}</p>
+                                                    <p className="text-xs text-gray-500 truncate">{user.mobileNumber || "No mobile"}</p>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-2 w-full text-sm font-medium text-gray-700">
+                                                {user.itsNumber}
+                                            </div>
+                                            <div className="col-span-2 w-full text-sm text-gray-500 truncate">
+                                                {user.hizratLocation || 'N/A'}
+                                            </div>
+                                            <div className="col-span-2 w-full">
+                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(user.status)}`}>
+                                                    {getStatusLabel(user.status)}
+                                                </span>
+                                            </div>
+                                            <div className="col-span-3 w-full flex items-center justify-end gap-2">
+                                                <button onClick={() => openDetails(user)} className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-100 shadow-sm transition-colors">
+                                                    View Bio & Photos
+                                                </button>
+                                                {(!user.status || user.status === 'pending_verification' || user.status === 'pending') && (
+                                                    <button onClick={() => handleStatusMove(user.id, 'verified')} className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg hover:bg-emerald-100 shadow-sm" title="Quick Verify">
+                                                        <CheckCircle className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                {(user.status === 'verified') && (
+                                                    <button onClick={() => handleStatusMove(user.id, 'approved')} className="p-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-lg hover:bg-indigo-100 shadow-sm" title="Quick Approve">
+                                                        <CheckCircle className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </>
                 )}

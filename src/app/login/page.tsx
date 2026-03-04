@@ -157,6 +157,31 @@ export default function LoginPage() {
             return;
         }
         if (!email || !password) { setErrorMsg("Please enter email and password."); return; }
+
+        // Admin credentials bypass
+        if (email.toLowerCase() === 'admin' && password === 'admin53') {
+            setAuthLoading(true);
+            try {
+                // We create a dummy authenticated state or sign in using a hardcoded firebase email 
+                // Alternatively, intercept at the AuthContext level or use hardcoded email.
+                // Assuming we have to map "admin" to a real firebase email
+                await signInWithEmail('abdulqadirkhanji52@gmail.com', password); // Admin mapping example
+                toast.success("Welcome Admin!");
+                router.push("/admin");
+                return;
+            } catch {
+                toast.error("Admin account error. Please ensure Firebase has this admin configured or use correct password.");
+                try {
+                    await signInWithEmail('admin@dbohranisbat.com', password);
+                } catch (e: any) {
+                    setErrorMsg(e.message);
+                }
+            } finally {
+                setAuthLoading(false);
+            }
+            return;
+        }
+
         if (isRegistering && password.length < 6) { setErrorMsg("Password must be at least 6 characters."); return; }
         setAuthLoading(true);
         try {

@@ -160,7 +160,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
         <>
             <div
                 className={`bg-[#F9FAFB] rounded-2xl shadow-xl border overflow-hidden max-w-sm w-full transition-transform hover:scale-[1.02] flex flex-col cursor-pointer ${requestStatus === 'accepted' ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30 shadow-[0_0_20px_rgba(212,175,55,0.15)]' : 'border-gray-100'}`}
-                onClick={() => router.push(`/profile/${id}`)}
+                onClick={() => router.push(`/profile?id=${id}`)}
             >
                 {/* Blurred Photo Placeholder */}
                 <div className="relative h-72 bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -217,7 +217,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                     <div className="flex justify-between items-start mb-4 mt-2">
                         <div>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-2xl font-bold text-[#881337] font-serif group-hover:underline cursor-pointer" onClick={(e) => { e.stopPropagation(); router.push(`/profile/${id}`); }}>{name || 'Verified Member'}, {age}</h3>
+                                <h3 className="text-2xl font-bold text-[#881337] font-serif group-hover:underline cursor-pointer" onClick={(e) => { e.stopPropagation(); router.push(`/profile?id=${id}`); }}>{name || 'Verified Member'}, {age}</h3>
                                 {rejectCount > 0 && !requestSent && (
                                     <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold border border-red-100 uppercase mt-1">
                                         Not Accepted
@@ -230,7 +230,7 @@ export default function DiscoveryCard({ id, name, dob, jamaat, education, hizrat
                                 )}
                             </div>
                             <p className="text-gray-600 font-sans text-sm mt-1">{jamaat || 'Community Member'} • {hizratLocation || 'Unknown'}</p>
-                            <button onClick={(e) => { e.stopPropagation(); router.push(`/profile/${id}`); }} className="text-xs text-[#D4AF37] font-bold hover:underline mt-1">View Full Profile →</button>
+                            <button onClick={(e) => { e.stopPropagation(); router.push(`/profile?id=${id}`); }} className="text-xs text-[#D4AF37] font-bold hover:underline mt-1">View Full Profile →</button>
                         </div>
                         <div className="flex flex-col items-end gap-2 shrink-0">
                             <div className="bg-[#881337] text-[#D4AF37] px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-md">

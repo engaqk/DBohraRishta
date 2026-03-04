@@ -61,7 +61,7 @@ export default function RishtaDashboard() {
     const [myProfile, setMyProfile] = useState<any>(null);
 
     // Feature Modules State
-    const [activeChat, setActiveChat] = useState<{ id: string, name: string } | null>(null);
+    const [activeChat, setActiveChat] = useState<{ id: string, name: string, imageUrl?: string } | null>(null);
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [paying, setPaying] = useState(false);
     const [showMyProfileModal, setShowMyProfileModal] = useState(false);
@@ -416,6 +416,7 @@ export default function RishtaDashboard() {
                             <ChatWindow
                                 connectionId={activeChat.id}
                                 otherUserName={activeChat.name}
+                                otherUserImageUrl={activeChat.imageUrl}
                                 onClose={() => setActiveChat(null)}
                             />
                         </section>
@@ -469,7 +470,7 @@ export default function RishtaDashboard() {
                                                 <button
                                                     onClick={() => {
                                                         if (myProfile?.isPremium) {
-                                                            setActiveChat({ id: msg.id, name: msg.otherUserName });
+                                                            setActiveChat({ id: msg.id, name: msg.otherUserName, imageUrl: msg.otherUserLibasUrl || undefined });
                                                         } else {
                                                             setShowPremiumModal(true);
                                                         }

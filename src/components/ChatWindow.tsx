@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 interface ChatWindowProps {
     connectionId: string; // The requestId acts as the chat room
     otherUserName: string;
+    otherUserImageUrl?: string;
     onClose: () => void;
 }
 
@@ -18,7 +19,7 @@ interface ChatMessage {
     timestamp: any;
 }
 
-export default function ChatWindow({ connectionId, otherUserName, onClose }: ChatWindowProps) {
+export default function ChatWindow({ connectionId, otherUserName, otherUserImageUrl, onClose }: ChatWindowProps) {
     const { user } = useAuth();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState("");
@@ -124,8 +125,12 @@ export default function ChatWindow({ connectionId, otherUserName, onClose }: Cha
                 <button onClick={onClose} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
                     <ArrowLeft className="w-5 h-5" />
                 </button>
-                <div className="w-10 h-10 bg-rose-100 text-[#881337] rounded-full flex items-center justify-center font-bold text-lg">
-                    {otherUserName.charAt(0)}
+                <div className="w-10 h-10 bg-rose-100 text-[#881337] rounded-full flex items-center justify-center font-bold text-lg overflow-hidden border border-white">
+                    {otherUserImageUrl ? (
+                        <img src={otherUserImageUrl} alt={otherUserName} className="w-full h-full object-cover" />
+                    ) : (
+                        otherUserName.charAt(0)
+                    )}
                 </div>
                 <div>
                     <h3 className="font-bold">{otherUserName}</h3>

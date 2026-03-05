@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverTimestamp, orderBy, collectionGroup } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -226,6 +226,7 @@ export default function AdminVerificationPage() {
         if (status === 'verified' || status === 'approved') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
         if (status === 'rejected') return 'bg-rose-50 text-rose-700 border-rose-200';
         if (status === 'hold') return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+        if (status === 'archived') return 'bg-gray-700 text-white border-gray-600';
         return 'bg-gray-50 text-gray-700 border-gray-200';
     };
 
@@ -236,6 +237,7 @@ export default function AdminVerificationPage() {
         if (status === 'approved') return 'Approved';
         if (status === 'rejected') return 'Rejected';
         if (status === 'hold') return '⏸ On Hold';
+        if (status === 'archived') return '🗄 Archived';
         return status;
     };
 
@@ -391,6 +393,27 @@ export default function AdminVerificationPage() {
                                             {selectedUser.status !== 'rejected' && (
                                                 <button onClick={() => { handleStatusMove(selectedUser.id, 'rejected', adminComment); closeDetails(); }} className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm flex items-center gap-2">
                                                     <XCircle className="w-4 h-4" /> Reject Profile
+                                                </button>
+                                            )}
+                                            {/* ARCHIVE */}
+                                            {selectedUser.status !== 'archived' ? (
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm(`Archive ${selectedUser.name}'s profile? They will no longer be able to log in.`)) {
+                                                            handleStatusMove(selectedUser.id, 'archived', 'Your profile has been archived by the administration. Please contact support for further assistance.');
+                                                            closeDetails();
+                                                        }
+                                                    }}
+                                                    className="px-5 py-2.5 bg-gray-700 hover:bg-gray-800 text-white font-bold text-sm rounded-xl transition-colors shadow-sm flex items-center gap-2"
+                                                >
+                                                    <Archive className="w-4 h-4" /> Archive Profile
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => { handleStatusMove(selectedUser.id, 'pending', 'Your profile has been restored. Please log in to continue.'); closeDetails(); }}
+                                                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-colors shadow-sm flex items-center gap-2"
+                                                >
+                                                    <CheckCircle className="w-4 h-4" /> Restore Profile
                                                 </button>
                                             )}
                                             <button onClick={closeDetails} className="px-5 py-2.5 bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 rounded-xl transition-colors">Close</button>

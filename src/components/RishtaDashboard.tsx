@@ -180,42 +180,105 @@ export default function RishtaDashboard() {
         }
     };
 
-    // Tour State managed by driver.js
+    // 🎯 Professional First-time Tour using driver.js
     useEffect(() => {
         const hasSeenTour = localStorage.getItem('hasSeenTour');
-        if (!hasSeenTour) {
-            setTimeout(() => {
-                const driverObj = driver({
-                    showProgress: true,
-                    steps: [
-                        {
-                            popover: { title: 'Welcome to DBohraRishta!', description: "Let's take a quick tour to help you find your perfect halal match." }
-                        },
-                        {
-                            element: '#profile-completeness-section',
-                            popover: { title: 'Your Biodata', description: 'Complete your registration here to become visible to others.', side: "right", align: 'start' }
-                        },
-                        {
-                            element: '#discovery-nav-tab',
-                            popover: { title: 'Discovery Tab', description: 'Find and browse highly compatible matches here.', side: "bottom", align: 'start' }
-                        },
-                        {
-                            element: '#requests-nav-tab',
-                            popover: { title: 'Interest Requests', description: 'Manage incoming and outgoing requests.', side: "bottom", align: 'start' }
-                        },
-                        {
-                            element: '#messages-nav-tab',
-                            popover: { title: 'Accepted Connections', description: 'Once mutually accepted, photos unblur and you can chat safely here!', side: "bottom", align: 'start' }
+        if (hasSeenTour) return;
+
+        // Wait for user data and DOM to render before starting tour
+        const startTour = () => {
+            const driverObj = driver({
+                showProgress: true,
+                animate: true,
+                allowClose: true,
+                overlayColor: '#881337',
+                overlayOpacity: 0.6,
+                stagePadding: 8,
+                nextBtnText: 'Next →',
+                prevBtnText: '← Back',
+                doneBtnText: '🎉 Let\'s Start!',
+                steps: [
+                    {
+                        popover: {
+                            title: '🌟 Welcome to DBohraRishta!',
+                            description: 'Assalaamu Alaykum! This is your trusted halal matrimonial platform. Let\'s take a quick tour to help you find your perfect match. أمين',
+                            align: 'center',
                         }
-                    ],
-                    onDestroyStarted: () => {
-                        localStorage.setItem('hasSeenTour', 'true');
-                        driverObj.destroy();
-                    }
-                });
-                driverObj.drive();
-            }, 1000);
-        }
+                    },
+                    {
+                        element: '#mybiodata-nav-tab',
+                        popover: {
+                            title: '📋 My Biodata',
+                            description: 'This is your profile section. Keep your biodata complete and up to date — a strong profile gets more interest requests!',
+                            side: 'bottom',
+                            align: 'center',
+                        },
+                        onHighlightStarted: () => setActiveTab('mybiodata'),
+                    },
+                    {
+                        element: '#profile-completeness-section',
+                        popover: {
+                            title: '✏️ Complete Your Profile',
+                            description: 'Click here to update your biodata, upload your ITS photo and contact details. Your profile must be verified before you can connect with others.',
+                            side: 'right',
+                            align: 'start',
+                        },
+                        onHighlightStarted: () => setActiveTab('mybiodata'),
+                    },
+                    {
+                        element: '#discovery-nav-tab',
+                        popover: {
+                            title: '🔍 Search Profile (Discovery)',
+                            description: 'Browse verified profiles from the Dawoodi Bohra community worldwide. Filter by name, jamaat, location or education.',
+                            side: 'bottom',
+                            align: 'center',
+                        },
+                        onHighlightStarted: () => setActiveTab('discovery'),
+                    },
+                    {
+                        element: '#discovery-search-input',
+                        popover: {
+                            title: '🔎 Search & Filter',
+                            description: 'Use the search bar to quickly find candidates by name, jamaat, or location. All profiles are ITS verified for authenticity.',
+                            side: 'bottom',
+                            align: 'start',
+                        },
+                        onHighlightStarted: () => setActiveTab('discovery'),
+                    },
+                    {
+                        element: '#requests-nav-tab',
+                        popover: {
+                            title: '💌 Interest Requests',
+                            description: 'View and manage all your incoming and outgoing interest requests. Accept requests from compatible matches to share contact details.',
+                            side: 'bottom',
+                            align: 'center',
+                        },
+                        onHighlightStarted: () => setActiveTab('requests'),
+                    },
+                    {
+                        element: '#messages-nav-tab',
+                        popover: {
+                            title: '🤝 Accepted Connections',
+                            description: 'Once an interest is mutually accepted, photos unblur and contact info is revealed. You can also start a protected chat here.',
+                            side: 'bottom',
+                            align: 'center',
+                        },
+                        onHighlightStarted: () => setActiveTab('messages'),
+                    },
+                ],
+                onDestroyStarted: () => {
+                    localStorage.setItem('hasSeenTour', 'true');
+                    setActiveTab('discovery');
+                    driverObj.destroy();
+                },
+            });
+            driverObj.drive();
+        };
+
+        // Start after 2.5s so all elements have rendered
+        const timer = setTimeout(startTour, 2500);
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -738,6 +801,7 @@ export default function RishtaDashboard() {
                             <h2 className="text-2xl font-bold font-serif">Community Discovery</h2>
                             <div className="flex gap-2 w-full md:w-auto">
                                 <input
+                                    id="discovery-search-input"
                                     type="text"
                                     placeholder="Search by name, jamaat, education..."
                                     value={searchQuery}
@@ -919,7 +983,8 @@ export default function RishtaDashboard() {
                 {/* MY BIODATA TAB */}
                 {activeTab === 'mybiodata' && myProfile && (
                     <div className="max-w-lg mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
+                        <div id="profile-completeness-section" className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
+
                             <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-rose-50 mb-4 shadow-md relative">
                                 {myProfile.itsImageUrl ? (
                                     <img src={myProfile.itsImageUrl} alt="Biodata" className="w-full h-full object-cover" />

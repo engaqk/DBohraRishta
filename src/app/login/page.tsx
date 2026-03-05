@@ -126,7 +126,21 @@ export default function LoginPage() {
                     }
                 } else { throw signInError; }
             }
-            if (signedIn) toast.success('Verified! Redirecting...');
+            if (signedIn) {
+                // Check if user is archived — block login
+                const { getDoc, doc } = await import('firebase/firestore');
+                const { signOut } = await import('firebase/auth');
+                try {
+                    const userSnap = await getDoc(doc(db, 'users', auth.currentUser?.uid || ''));
+                    if (userSnap.exists() && userSnap.data().status === 'archived') {
+                        await signOut(auth);
+                        setErrorMsg('Your account has been deactivated by the administration. Please contact support for assistance.');
+                        setAuthLoading(false);
+                        return;
+                    }
+                } catch (_) { }
+                toast.success('Verified! Redirecting...');
+            }
         } catch (error: any) {
             setErrorMsg(error.message?.replace('Firebase: ', '') || 'Sign-in failed. Try again.');
         } finally { setAuthLoading(false); }

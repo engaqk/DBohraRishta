@@ -236,9 +236,14 @@ export default function DiscoveryCard({
                             <img
                                 src={currentPhoto}
                                 alt="Profile"
-                                onClick={(e) => { e.stopPropagation(); setShowLightbox(true); }}
-                                className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 cursor-zoom-in
-                                    ${(isBlurSecurityEnabled && requestStatus !== 'accepted') ? 'blur-2xl scale-110 opacity-60' : 'opacity-100 scale-100'}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Only open lightbox if blur is off OR request is accepted
+                                    if (!isBlurSecurityEnabled || requestStatus === 'accepted') {
+                                        setShowLightbox(true);
+                                    }
+                                }}
+                                className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${(!isBlurSecurityEnabled || requestStatus === 'accepted') ? 'cursor-zoom-in opacity-100 scale-100' : 'blur-2xl scale-110 opacity-60 cursor-not-allowed'}`}
                             />
 
                             {/* Gallery Navigation Dots (only if accepted or public and has mult photos) */}
@@ -269,21 +274,26 @@ export default function DiscoveryCard({
                         </div>
                     )}
 
-                    {/* Small profile thumbnail – always visible for identification */}
+                    {/* Small profile thumbnail – always clearly visible for identification, never blurred */}
                     {libasImageUrl ? (
-                        <div className="absolute top-3 left-3 z-20 w-14 h-14 rounded-full border-2 border-white shadow-lg overflow-hidden">
+                        <div className="absolute top-3 left-3 z-20 w-14 h-14 rounded-full border-2 border-white shadow-lg overflow-hidden ring-2 ring-[#D4AF37]/40">
                             <img
                                 src={libasImageUrl}
                                 alt={name}
-                                className={`w-full h-full object-cover transition-all duration-300 ${isBlurSecurityEnabled && requestStatus !== 'accepted'
-                                    ? 'blur-[1px] brightness-95'
-                                    : ''
-                                    }`}
+                                className="w-full h-full object-cover"
                             />
                         </div>
                     ) : (
                         <div className="absolute top-3 left-3 z-20 w-14 h-14 rounded-full border-2 border-white shadow-lg bg-gradient-to-br from-[#881337] to-[#D4AF37] flex items-center justify-center">
                             <span className="text-white font-black text-xl">{name?.charAt(0) || '?'}</span>
+                        </div>
+                    )}
+
+                    {/* ✅ ITS Verified Badge — top-right, bold and prominent */}
+                    {isItsVerified && (
+                        <div className="absolute top-3 right-3 z-30 flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-green-500 text-white text-[10px] font-black px-2.5 py-1.5 rounded-full shadow-lg border-2 border-white animate-in zoom-in-75 duration-300">
+                            <ShieldCheck className="w-3 h-3" />
+                            ITS VERIFIED
                         </div>
                     )}
 

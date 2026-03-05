@@ -151,8 +151,12 @@ export default function DiscoveryCard({
                                 src={currentPhoto} alt="Profile"
                                 onClick={() => { if (canZoom) setShowLightbox(true); }}
                                 className={`absolute inset-0 w-full h-full object-cover transition-all duration-500
-                                    ${canZoom ? 'cursor-zoom-in blur-0 scale-100' : 'blur-[3px] scale-105'}`}
+                                    ${canZoom ? 'cursor-zoom-in filter-none scale-100' : 'blur-xl scale-110 brightness-75'}`}
                             />
+                            {/* Extra dark overlay when blurred for stronger privacy effect */}
+                            {!canZoom && (
+                                <div className="absolute inset-0 bg-black/30 z-10 pointer-events-none" />
+                            )}
                             {canZoom && viewerItsNumber && (
                                 <div className="absolute inset-0 pointer-events-none z-10 flex flex-wrap overflow-hidden opacity-[0.06] items-center justify-center">
                                     {Array.from({ length: 30 }).map((_, i) => (
@@ -211,11 +215,13 @@ export default function DiscoveryCard({
                         </div>
                     </div>
 
-                    {/* Privacy pill */}
+                    {/* Privacy pill — prominent, centered */}
                     {!canZoom && (
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1.5 flex items-center gap-1.5">
-                            <ShieldCheck className="w-3.5 h-3.5 text-white/80" />
-                            <span className="text-white text-[10px] font-bold whitespace-nowrap">Unlocks after acceptance</span>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-2">
+                            <div className="bg-black/60 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-2 shadow-lg border border-white/20">
+                                <ShieldCheck className="w-4 h-4 text-white/90" />
+                                <span className="text-white text-xs font-bold whitespace-nowrap">Unlocks after acceptance</span>
+                            </div>
                         </div>
                     )}
 
@@ -228,6 +234,7 @@ export default function DiscoveryCard({
                             ))}
                         </div>
                     )}
+
                 </div>
 
                 {/* ── INFO ── */}

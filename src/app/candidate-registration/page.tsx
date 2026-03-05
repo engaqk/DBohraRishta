@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User, Heart, Loader2, BookOpen } from "lucide-react";
+import { User, Sparkles, Loader2, BookOpen } from "lucide-react";
 import toast from "react-hot-toast";
 import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -49,8 +49,6 @@ export default function CandidateRegistrationPage() {
         // Contact
         mobileCode: "+91",
         mobile: "",
-        landlineCode: "",
-        landline: "",
         address: "",
         city: "",
         pincode: "",
@@ -522,16 +520,7 @@ export default function CandidateRegistrationPage() {
                                     </div>
                                 </div>
                             </div>
-                            {/* Verification Notice - Step 1 */}
-                            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex gap-3 items-start">
-                                <span className="text-2xl shrink-0">🕐</span>
-                                <div>
-                                    <p className="text-xs font-bold text-blue-800 mb-1">Verification Timeline</p>
-                                    <p className="text-xs text-blue-700 leading-relaxed">
-                                        Once your original ITS photo is uploaded, it will be reviewed <strong>within 24 hours</strong>. After verification, visit your profile again to access all features.
-                                    </p>
-                                </div>
-                            </div>
+
                         </section>
 
                         {/* 2. FAMILY */}
@@ -539,17 +528,6 @@ export default function CandidateRegistrationPage() {
                             <div className="flex items-center gap-3 border-b-2 border-gray-100 pb-3 mb-4">
                                 <span className="bg-[#D4AF37] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">2</span>
                                 <h2 className="text-xl font-bold font-serif text-[#881337]">FAMILY</h2>
-                            </div>
-                            {/* Highlighted notice in Step 2 */}
-                            <div className="mb-6 p-4 bg-amber-50 border-2 border-amber-400 rounded-xl flex gap-3 items-start shadow-sm">
-                                <span className="text-2xl shrink-0">⚡</span>
-                                <div>
-                                    <p className="text-sm font-black text-amber-800 mb-1">⏳ Important: Verification Process</p>
-                                    <p className="text-sm text-amber-700 font-medium leading-relaxed">
-                                        Once your <strong>original ITS photo</strong> is uploaded for verification, it will take <strong>on or before 24 hours</strong> to verify.
-                                        After that, check your profile again by visiting our site to <strong>access all features</strong> once verified successfully.
-                                    </p>
-                                </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
@@ -627,17 +605,6 @@ export default function CandidateRegistrationPage() {
                             <div className="flex items-center gap-3 border-b-2 border-gray-100 pb-3 mb-4">
                                 <span className="bg-[#D4AF37] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">3</span>
                                 <h2 className="text-xl font-bold font-serif text-[#881337]">CONTACT</h2>
-                            </div>
-                            {/* Highlighted notice in Step 3 */}
-                            <div className="mb-6 p-4 bg-amber-50 border-2 border-amber-400 rounded-xl flex gap-3 items-start shadow-sm">
-                                <span className="text-2xl shrink-0">✅</span>
-                                <div>
-                                    <p className="text-sm font-black text-amber-800 mb-1">Almost Done — Here's what to expect next:</p>
-                                    <p className="text-sm text-amber-700 font-medium leading-relaxed">
-                                        After submitting, your profile will be reviewed. Verification takes <strong>on or before 24 hours</strong>.
-                                        You will receive an <strong>email notification</strong> once approved. Meanwhile, visit <strong>53dbohrarishta.in</strong> to check your status.
-                                    </p>
-                                </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
@@ -751,6 +718,21 @@ export default function CandidateRegistrationPage() {
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Qualities you want in your life partner</label>
                                     <textarea name="partnerQualities" onChange={handleChange} value={formData.partnerQualities} rows={2} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none resize-none focus:ring-2 focus:ring-[#881337]" />
+                                </div>
+                                <div className="p-5 bg-rose-50/30 border border-rose-100 rounded-2xl">
+                                    <label className="block text-sm font-bold text-[#881337] mb-2 leading-tight">Rishta Guardian Mode</label>
+                                    <p className="text-[10px] text-gray-500 mb-3 leading-relaxed">Is this profile managed by the candidate themselves or a Parent/Guardian?</p>
+                                    <select
+                                        name="informationProvidedBy"
+                                        onChange={handleChange}
+                                        value={formData.informationProvidedBy}
+                                        className="w-full bg-white border border-rose-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-[#881337] outline-none"
+                                    >
+                                        <option value="Myself (Candidate)">Managed by Candidate (Self)</option>
+                                        <option value="Parent/Guardian (Wali)">Managed by Parent/Guardian (Wali Mode)</option>
+                                        <option value="Sibling">Managed by Sibling</option>
+                                        <option value="Friend/Relative">Managed by Friend/Relative</option>
+                                    </select>
                                 </div>
                                 <div className="mt-4 p-5 border border-dashed border-rose-200 bg-rose-50/50 rounded-xl">
                                     <label className="block text-sm font-bold text-[#881337] mb-3">Additional Biodata Photo (Optional)</label>

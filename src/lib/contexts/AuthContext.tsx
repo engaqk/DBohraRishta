@@ -23,6 +23,9 @@ interface AuthContextType {
     setDummyUser: (uid: string, email: string) => void;
     resetPassword: (email: string) => Promise<void>;
     verifyEmail: () => Promise<void>;
+    impersonateUser: (uid: string, email: string) => void;
+    stopImpersonating: () => void;
+    isImpersonating: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -30,10 +33,17 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isImpersonating, setIsImpersonating] = useState(false);
 
     useEffect(() => {
+        const impersonatedId = localStorage.getItem('impersonated_user_id');
         const dummyUserStr = localStorage.getItem('dummy_user_id');
-        if (dummyUserStr) {
+
+        if (impersonatedId) {
+            setUser({ uid: impersonatedId, email: localStorage.getItem('impersonated_user_email') || 'impersonated@user.com' });
+            setIsImpersonating(true);
+            setLoading(false);
+        } else if (dummyUserStr) {
             setUser({ uid: dummyUserStr, email: `${dummyUserStr}@test.com` });
             setLoading(false);
         } else {
@@ -44,6 +54,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             return () => unsubscribe();
         }
     }, []);
+
+    const impersonateUser = (uid: string, email: string) => {
+        localStorage.setItem('impersonated_user_id', uid);
+        localStorage.setItem('impersonated_user_email', email);
+        setUser({ uid, email });
+        setIsImpersonating(true);
+        // Force redirect to home
+        window.location.href = '/';
+    };
+
+    const stopImpersonating = () => {
+        localStorage.removeItem('impersonated_user_id');
+        localStorage.removeItem('impersonated_user_email');
+        setIsImpersonating(false);
+        // Re-check original auth
+        const firebaseUser = auth.currentUser;
+        if (firebaseUser) {
+            setUser(firebaseUser);
+        } else {
+            setUser(null);
+        }
+        window.location.href = '/admin/users';
+    };
 
     const setDummyUser = (uid: string, email: string) => {
         localStorage.setItem('dummy_user_id', uid);
@@ -120,7 +153,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, setDummyUser, resetPassword, verifyEmail }}>
+        <AuthContext.Provider value={{
+            user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail,
+            logout, setDummyUser, resetPassword, verifyEmail,
+            impersonateUser, stopImpersonating, isImpersonating
+        }}>
             {children}
         </AuthContext.Provider>
     );

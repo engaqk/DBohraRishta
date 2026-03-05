@@ -7,10 +7,25 @@
 }
 
 @layer base {
+  :root {
+    --bg-main: #F9FAFB;
+    --text-main: #881337;
+    --card-bg: #FFFFFF;
+    --border-color: #E5E7EB;
+  }
+
+  .dark {
+    --bg-main: #0F172A;
+    --text-main: #FDF2F2;
+    --card-bg: #1E293B;
+    --border-color: #334155;
+  }
+
   body {
-    background-color: var(--color-brand-marble);
-    color: var(--color-brand-emerald);
+    background-color: var(--bg-main);
+    color: var(--text-main);
     font-family: Arial, Helvetica, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   h1,
@@ -20,7 +35,6 @@
   h5,
   h6 {
     font-family: Georgia, serif;
-    /* Elegant Serif for headings */
   }
 }
 

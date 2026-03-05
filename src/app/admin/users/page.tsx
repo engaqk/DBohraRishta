@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { collection, getDocs, orderBy, query, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw } from "lucide-react";
+import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface RegistrationUser {
@@ -40,7 +40,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 };
 
 export default function AdminUsersPage() {
-    const { user } = useAuth();
+    const { user, impersonateUser } = useAuth();
     const router = useRouter();
     const [users, setUsers] = useState<RegistrationUser[]>([]);
     const [loading, setLoading] = useState(true);
@@ -48,10 +48,16 @@ export default function AdminUsersPage() {
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterComplete, setFilterComplete] = useState<string>('all');
     const [selectedUser, setSelectedUser] = useState<RegistrationUser | null>(null);
+    const [authUsers, setAuthUsers] = useState<any[]>([]);
+    const [showAuthList, setShowAuthList] = useState(false);
+    const [loadingAuth, setLoadingAuth] = useState(false);
+    const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+    const [broadcastMsg, setBroadcastMsg] = useState('');
+    const [sendingBroadcast, setSendingBroadcast] = useState(false);
 
     // Admin auth guard
     useEffect(() => {
-        const token = localStorage.getItem('adminToken');
+        const token = localStorage.getItem('admin_auth_token');
         if (!token) { router.push('/admin/login'); return; }
     }, [router]);
 
@@ -77,7 +83,51 @@ export default function AdminUsersPage() {
         }
     };
 
-    useEffect(() => { fetchUsers(); }, []);
+    const handleSendBroadcast = async () => {
+        if (!broadcastMsg.trim()) return;
+        setSendingBroadcast(true);
+        try {
+            await addDoc(collection(db, 'broadcasts'), {
+                text: broadcastMsg,
+                adminId: user?.uid,
+                createdAt: serverTimestamp()
+            });
+            await addDoc(collection(db, 'admin_audit_logs'), {
+                adminId: user?.uid,
+                action: 'broadcast_message',
+                message: broadcastMsg,
+                timestamp: serverTimestamp()
+            });
+            toast.success('Broadcast message sent!');
+            setBroadcastMsg('');
+            setShowBroadcastModal(false);
+        } catch (e: any) {
+            toast.error('Failed: ' + e.message);
+        } finally {
+            setSendingBroadcast(false);
+        }
+    };
+
+    const fetchAuthUsers = async () => {
+        setLoadingAuth(true);
+        try {
+            const res = await fetch('/api/admin/users');
+            const data = await res.json();
+            if (data.users) {
+                setAuthUsers(data.users);
+                setShowAuthList(true);
+            }
+        } catch (e: any) {
+            toast.error('Failed to load auth users');
+        } finally {
+            setLoadingAuth(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+        fetchAuthUsers();
+    }, []);
 
     const filtered = useMemo(() => {
         return users.filter(u => {
@@ -126,26 +176,38 @@ export default function AdminUsersPage() {
                             <p className="text-white/60 text-xs mt-0.5">All Firebase-registered candidate accounts</p>
                         </div>
                     </div>
-                    <button onClick={fetchUsers}
-                        className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-xl text-sm font-bold transition-colors">
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setShowBroadcastModal(true)}
+                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-sm font-bold transition-all shadow-lg">
+                            <Send className="w-4 h-4" /> Broadcast
+                        </button>
+                        <button onClick={fetchAuthUsers} disabled={loadingAuth}
+                            className="flex items-center gap-2 bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 text-white px-3 py-2 rounded-xl text-sm font-bold transition-all border border-[#D4AF37]/30">
+                            {loadingAuth ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                            Auth List
+                        </button>
+                        <button onClick={fetchUsers}
+                            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-xl text-sm font-bold transition-colors">
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div className="max-w-7xl mx-auto px-4 py-6">
                 {/* Stats row */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
                     {[
-                        { label: 'Total Registered', value: stats.total, color: 'text-[#881337]', bg: 'bg-rose-50 border-rose-100' },
+                        { label: 'Total Auth Accounts', value: authUsers.length || '...', color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-100' },
+                        { label: 'Registration Docs', value: stats.total, color: 'text-[#881337]', bg: 'bg-rose-50 border-rose-100' },
                         { label: 'Form Complete', value: stats.complete, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-100' },
                         { label: 'Pending Review', value: stats.pending, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-100' },
                         { label: 'Verified', value: stats.verified, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100' },
                         { label: 'Archived', value: stats.archived, color: 'text-gray-500', bg: 'bg-gray-50 border-gray-100' },
                     ].map(s => (
-                        <div key={s.label} className={`${s.bg} border rounded-2xl p-4 text-center`}>
-                            <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
-                            <p className="text-xs font-bold text-gray-500 mt-1">{s.label}</p>
+                        <div key={s.label} className={`${s.bg} border rounded-2xl p-4 text-center shadow-sm`}>
+                            <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
+                            <p className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-tight">{s.label}</p>
                         </div>
                     ))}
                 </div>
@@ -308,6 +370,11 @@ export default function AdminUsersPage() {
                                             )}
                                             <div className="mt-3 flex gap-2 flex-wrap">
                                                 <button
+                                                    onClick={e => { e.stopPropagation(); impersonateUser(u.uid, u.email || 'user@example.com'); }}
+                                                    className="bg-[#D4AF37] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#c29e2f] transition-colors flex items-center gap-2">
+                                                    <User className="w-3.5 h-3.5" /> Assume Identity (Login as User)
+                                                </button>
+                                                <button
                                                     onClick={e => { e.stopPropagation(); router.push(`/admin/approvals`); }}
                                                     className="bg-[#881337] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#9F1239] transition-colors">
                                                     View in Approvals Panel →
@@ -334,6 +401,78 @@ export default function AdminUsersPage() {
                     </div>
                 )}
             </div>
+
+            {/* Auth Users Overlay List */}
+            {showAuthList && (
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex justify-end">
+                    <div className="w-full max-w-lg bg-white h-full shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
+                        <div className="p-6 bg-[#881337] text-white flex items-center justify-between">
+                            <div>
+                                <h2 className="text-xl font-black flex items-center gap-2">
+                                    <Mail className="w-5 h-5 text-[#D4AF37]" /> Firebase Auth Emails
+                                </h2>
+                                <p className="text-white/60 text-[10px] mt-0.5 uppercase tracking-widest leading-none">Total Interest: {authUsers.length} Unique Logins</p>
+                            </div>
+                            <button onClick={() => setShowAuthList(false)} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all font-bold">×</button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                            <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700 leading-relaxed">
+                                <p><strong>Note:</strong> These are accounts currently in Firebase Authentication. This includes users who registered but haven't yet filled the registration form.</p>
+                            </div>
+
+                            {authUsers.map((au, idx) => (
+                                <div key={au.uid} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl group hover:bg-white hover:shadow-sm transition-all">
+                                    <div className="flex flex-col gap-0.5">
+                                        <p className="text-xs font-black text-gray-800">{au.email || 'No Email'}</p>
+                                        <div className="flex items-center gap-2 text-[9px] text-gray-400 font-bold uppercase tracking-tight">
+                                            <span>{au.phoneNumber || au.uid.substring(0, 12)}</span>
+                                            <span>•</span>
+                                            <span>Joined: {new Date(au.creationTime).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] font-black bg-white px-2 py-0.5 rounded border border-gray-200 text-gray-400 opacity-30 group-hover:opacity-100">#{idx + 1}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-4 border-t border-gray-100 bg-gray-50 text-[10px] text-gray-400 font-bold text-center">
+                            Showing all system-registered identities
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Broadcast Modal */}
+            {showBroadcastModal && (
+                <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in duration-300">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-full flex items-center justify-center">
+                                <Send className="w-5 h-5 text-indigo-600" />
+                            </div>
+                            <h2 className="text-xl font-black text-gray-900">Broadcast Message</h2>
+                        </div>
+                        <p className="text-sm text-gray-500 mb-4">Send a platform announcement to all registered candidates (e.g., Eid greetings, maintenance, etc.)</p>
+
+                        <textarea
+                            value={broadcastMsg}
+                            onChange={e => setBroadcastMsg(e.target.value)}
+                            placeholder="Type your message here..."
+                            className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-sm outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 h-32 resize-none mb-6"
+                        />
+
+                        <div className="flex gap-3">
+                            <button onClick={() => setShowBroadcastModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 text-sm">Cancel</button>
+                            <button
+                                onClick={handleSendBroadcast}
+                                disabled={!broadcastMsg.trim() || sendingBroadcast}
+                                className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 text-sm flex items-center justify-center gap-2 disabled:opacity-40"
+                            >
+                                {sendingBroadcast ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Send to All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import GlobalNav from "@/components/GlobalNav";
+import ImpersonationBanner from "@/components/ImpersonationBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DBohraRishta | Intentional Matchmaking for the Dawoodi Bohra Community",
-  description: "A trusted, community-centric matchmaking platform for the Dawoodi Bohra community. ITS-verified profiles, dynamic photo privacy, and intentional Rishta connections.",
+  title: "DBohraRishta | Intelligent Matchmaking for the Dawoodi Bohra Community",
+  description: "A trusted, community-centric matchmaking platform for the Dawoodi Bohra community. ITS-verified profiles, dynamic photo privacy, and intelligent Rishta connections.",
   keywords: "Bohra, Dawoodi Bohra, Rishta, matchmaking, matrimony, ITS verified, Muslim matrimony",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
     title: "DBohraRishta",
   },
   openGraph: {
-    title: "DBohraRishta — Intentional Bohra Matchmaking",
+    title: "DBohraRishta — Intelligent Bohra Matchmaking",
     description: "ITS-verified profiles. Privacy-first. Bohra community matchmaking platform.",
     url: "https://dbohranisbat.web.app",
     siteName: "DBohraRishta",
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "DBohraRishta",
-    description: "Intentional matchmaking for the Dawoodi Bohra community.",
+    description: "Intelligent matchmaking for the Dawoodi Bohra community.",
   },
   other: {
     "theme-color": "#881337",
@@ -88,6 +89,7 @@ export default function RootLayout({
           `
         }} />
         <Providers>
+          <ImpersonationBanner />
           <GlobalNav />
           <div className="pt-16">
             {children}

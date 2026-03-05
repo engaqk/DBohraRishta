@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Loader2, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Loader2, ExternalLink, Sparkles } from 'lucide-react';
 import { notifyInterestSent } from '@/lib/emailService';
-import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -90,9 +90,42 @@ export default function DiscoveryCard({
             };
             sOut.forEach(process); sIn.forEach(process);
             setRequestSent(active); setRejectCount(rejects);
+
+            // Fetch Bookmark Status
+            const qB = query(collection(db, 'bookmarks'), where('userId', '==', user.uid), where('profileId', '==', id));
+            const sB = await getDocs(qB);
+            setIsBookmarked(!sB.empty);
         };
         check();
     }, [user, id]);
+
+    const handleToggleBookmark = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!user) { toast.error('Log in to bookmark'); return; }
+
+        try {
+            const q = query(collection(db, 'bookmarks'), where('userId', '==', user.uid), where('profileId', '==', id));
+            const snap = await getDocs(q);
+
+            if (!snap.empty) {
+                // Remove
+                await deleteDoc(doc(db, 'bookmarks', snap.docs[0].id));
+                setIsBookmarked(false);
+                toast.success('Removed from bookmarks');
+            } else {
+                // Add
+                await addDoc(collection(db, 'bookmarks'), {
+                    userId: user.uid,
+                    profileId: id,
+                    timestamp: serverTimestamp()
+                });
+                setIsBookmarked(true);
+                toast.success('Profile bookmarked!');
+            }
+        } catch (e: any) {
+            toast.error('Bookmark failed');
+        }
+    };
 
     const handleSendRequest = async () => {
         if (!user) { toast.error('You must be logged in'); return; }
@@ -204,7 +237,7 @@ export default function DiscoveryCard({
                                 </div>
                             )}
                             <button
-                                onClick={(e) => { e.stopPropagation(); setIsBookmarked(v => !v); toast.success(isBookmarked ? 'Removed' : 'Saved!'); }}
+                                onClick={handleToggleBookmark}
                                 className={`p-1.5 rounded-full shadow transition-all ${isBookmarked ? 'bg-[#881337] text-white' : 'bg-white/80 text-gray-500 hover:bg-white'}`}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
@@ -221,7 +254,11 @@ export default function DiscoveryCard({
                                         {displayName}, {age}
                                     </h3>
                                 </div>
-                                <p className="text-white/75 text-[11px] font-medium mt-0.5">{jamaat || 'Bohra Community'} • {hizratLocation || 'Global'}</p>
+                                <div className="bg-[#D4AF37]/20 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-lg inline-block mt-1">
+                                    <p className="text-white text-[10px] font-black uppercase tracking-widest leading-none">
+                                        {jamaat || city || 'Bohra Community'} • {hizratLocation || 'Global'}
+                                    </p>
+                                </div>
                             </div>
                             <div className={`px-2.5 py-1.5 rounded-xl text-xs font-black shadow-lg shrink-0
                                 ${requestStatus === 'accepted' ? 'bg-[#D4AF37] text-white' : rejectCount > 0 ? 'bg-red-500 text-white' : 'bg-black/50 text-[#D4AF37] backdrop-blur-sm'}`}>
@@ -246,11 +283,40 @@ export default function DiscoveryCard({
 
                 {/* ── INFO ── */}
                 <div className="p-4 flex flex-col gap-3 flex-grow">
+                    {/* Smart Highlights */}
+                    {/* Premium Section Highlights */}
+                    <div className="flex flex-wrap gap-2 py-1">
+                        {(bio?.toLowerCase().includes('hafiz') || education?.toLowerCase().includes('hafiz')) && (
+                            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-100 shadow-sm transition-transform hover:scale-105">
+                                <span className="text-[10px] font-black uppercase tracking-widest">Hafiz</span>
+                            </div>
+                        )}
+                        {(education?.toLowerCase().includes('graduate') || education?.toLowerCase().includes('mba') || education?.toLowerCase().includes('master')) && (
+                            <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg border border-blue-100 shadow-sm transition-transform hover:scale-105">
+                                <span className="text-[10px] font-black uppercase tracking-widest">Educated</span>
+                            </div>
+                        )}
+                        {(city?.toLowerCase().includes('mumbai') || jamaat?.toLowerCase().includes('mumbai')) && (
+                            <div className="flex items-center gap-1.5 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-lg border border-rose-100 shadow-sm transition-transform hover:scale-105">
+                                <span className="text-[10px] font-black uppercase tracking-widest">Mumbai Location</span>
+                            </div>
+                        )}
+                        {(bio?.toLowerCase().includes('settled') || professionType?.toLowerCase().includes('settled')) && (
+                            <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg border border-amber-100 shadow-sm transition-transform hover:scale-105">
+                                <span className="text-[10px] font-black uppercase tracking-widest">Well Settled</span>
+                            </div>
+                        )}
+                    </div>
 
                     {bio && (
-                        <p className="text-xs text-gray-500 italic border-l-2 border-[#D4AF37] pl-2.5 leading-relaxed line-clamp-2">
-                            "{bio}"
-                        </p>
+                        <div className="bg-[#D4AF37]/5 border-l-4 border-[#D4AF37] p-3 rounded-r-xl relative overflow-hidden group/bio">
+                            <div className="absolute top-0 right-0 p-1 opacity-10">
+                                <Sparkles className="w-8 h-8 text-[#D4AF37]" />
+                            </div>
+                            <p className="text-[13px] text-[#881337] font-serif italic leading-relaxed line-clamp-2 relative z-10 transition-colors group-hover/bio:text-black">
+                                "{bio}"
+                            </p>
+                        </div>
                     )}
 
                     {/* Details grid — always visible, no collapsible */}
@@ -337,7 +403,7 @@ export default function DiscoveryCard({
                             {requestStatus === 'accepted' ? '✓ Interest Accepted'
                                 : requestSent ? '✓ Request Sent'
                                     : rejectCount === 1 ? '↩ Retry Request'
-                                        : '💌 Send Interest'}
+                                        : 'Send Interest'}
                         </button>
                     )}
                 </div>

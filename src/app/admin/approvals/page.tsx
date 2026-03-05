@@ -150,6 +150,18 @@ export default function AdminVerificationPage() {
 
             // --- 📩 Email Notification to Candidate ---
             const targetUser = allUsers.find(u => u.id === userId);
+
+            // 📝 Log Action in Audit Log
+            await addDoc(collection(db, 'admin_audit_logs'), {
+                adminId: user?.uid,
+                action: 'status_change',
+                targetUserId: userId,
+                targetUserName: targetUser?.name || 'Unknown',
+                newStatus: newStatus,
+                message: updateData.adminMessage,
+                timestamp: serverTimestamp()
+            });
+
             const userEmail = targetUser?.email || targetUser?.mobileEmail; // Fallback to auto-detected field if available
 
             if (userEmail && userEmail.includes('@')) {
@@ -208,6 +220,17 @@ export default function AdminVerificationPage() {
                 adminMessage: newAdminMsg.trim(),
                 hasUnreadAdminMessage: true,
             });
+
+            // 📝 Log Action in Audit Log
+            await addDoc(collection(db, 'admin_audit_logs'), {
+                adminId: user?.uid,
+                action: 'send_message',
+                targetUserId: selectedUser.id,
+                targetUserName: selectedUser.name,
+                message: newAdminMsg.trim(),
+                timestamp: serverTimestamp()
+            });
+
             setNewAdminMsg("");
             toast.success("Message sent to user.");
         } catch (e: any) {
@@ -276,6 +299,18 @@ export default function AdminVerificationPage() {
                             className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-blue-200"
                         >
                             <Users className="w-4 h-4" /> Registered Users
+                        </button>
+                        <button
+                            onClick={() => router.push('/admin/broadcast')}
+                            className="bg-purple-50 hover:bg-purple-100 text-purple-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-purple-200"
+                        >
+                            <Send className="w-4 h-4" /> Broadcast Push
+                        </button>
+                        <button
+                            onClick={() => router.push('/admin/audit-logs')}
+                            className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-gray-700"
+                        >
+                            <ShieldAlert className="w-4 h-4" /> Audit Logs
                         </button>
                         <button
                             onClick={() => {

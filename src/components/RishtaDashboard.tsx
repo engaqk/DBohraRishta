@@ -4,10 +4,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import toast from 'react-hot-toast';
 import { driver } from "driver.js";
@@ -68,6 +68,7 @@ export default function RishtaDashboard() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const tabParam = searchParams.get('tab');
+    const adminChatParam = searchParams.get('adminChat');
 
     // UI State
     const [activeTab, setActiveTab] = useState<'mybiodata' | 'discovery' | 'requests' | 'messages' | 'notifications'>('discovery');
@@ -82,6 +83,18 @@ export default function RishtaDashboard() {
             router.replace('/', { scroll: false });
         }
     }, [tabParam, router]);
+
+    // Handle Admin Chat deep link (Help Icon)
+    useEffect(() => {
+        if (adminChatParam === 'open') {
+            setShowAdminHelpChat(true);
+            // Clean up URL to prevent continuous reopening
+            const params = new URLSearchParams(searchParams.toString());
+            params.delete('adminChat');
+            const newQuery = params.toString();
+            router.replace(newQuery ? `/?${newQuery}` : '/', { scroll: false });
+        }
+    }, [adminChatParam, router, searchParams]);
     const [dataLoading, setDataLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -104,6 +117,44 @@ export default function RishtaDashboard() {
     const [showVerifiedCelebration, setShowVerifiedCelebration] = useState(false);
     const [showAdminHelpChat, setShowAdminHelpChat] = useState(false);
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+    const [recentViews, setRecentViews] = useState<any[]>([]);
+    const [bookmarkedProfileIds, setBookmarkedProfileIds] = useState<Set<string>>(new Set());
+    const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
+
+    // Subscribe to bookmarks
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, 'bookmarks'), where('userId', '==', user.uid));
+        const unsub = onSnapshot(q, (snap) => {
+            const ids = new Set<string>();
+            snap.docs.forEach(d => ids.add(d.data().profileId));
+            setBookmarkedProfileIds(ids);
+        });
+        return () => unsub();
+    }, [user]);
+
+    // Subscribe to profile views
+    useEffect(() => {
+        if (!user) return;
+        const q = query(
+            collection(db, 'profile_views'),
+            where('profileId', '==', user.uid),
+            orderBy('timestamp', 'desc'),
+            limit(10)
+        );
+        const unsub = onSnapshot(q, (snap) => {
+            // Deduplicate by viewerId to show only unique recent visitors
+            const unique = new Map();
+            snap.docs.forEach(d => {
+                const data = d.data();
+                if (!unique.has(data.viewerId)) {
+                    unique.set(data.viewerId, { id: d.id, ...data });
+                }
+            });
+            setRecentViews(Array.from(unique.values()));
+        });
+        return () => unsub();
+    }, [user]);
 
     // Accept Request Contact Modal
     const [acceptingRequest, setAcceptingRequest] = useState<RishtaRequest | null>(null);
@@ -709,7 +760,15 @@ export default function RishtaDashboard() {
                                                         <span>✉️ {msg.otherUserEmail}</span>
                                                     </div>
                                                 </div>
-                                                <span className={`text-xs ${msg.isIncoming ? 'text-[#D4AF37] font-bold bg-[#D4AF37]/10 px-2 py-1 rounded-full' : 'text-gray-400'}`}>Accepted Matched</span>
+                                                <div className="flex flex-col items-end gap-1.5">
+                                                    <span className={`text-xs ${msg.isIncoming ? 'text-[#D4AF37] font-bold bg-[#D4AF37]/10 px-2 py-1 rounded-full' : 'text-gray-400'}`}>Accepted Matched</span>
+                                                    {/* Premium Badges for Matches */}
+                                                    <div className="flex gap-1">
+                                                        {msg.otherUserEducation?.toLowerCase().includes('hafiz') && <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm border border-emerald-200">Hafiz</span>}
+                                                        {(msg.otherUserEducation?.toLowerCase().includes('graduate') || msg.otherUserEducation?.toLowerCase().includes('mba')) && <span className="bg-blue-100 text-blue-800 text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm border border-blue-200">Educated</span>}
+                                                        {msg.otherUserLocation?.toLowerCase().includes('mumbai') && <span className="bg-rose-100 text-rose-800 text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm border border-rose-200">Mumbai</span>}
+                                                    </div>
+                                                </div>
                                             </div>
                                             <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'} mb-4 mt-2`}>Alhamdulillah, Interest Request Accepted! Direct contact info is now visible.</p>
                                             <div className="flex flex-wrap gap-2">
@@ -793,26 +852,38 @@ export default function RishtaDashboard() {
 
                 const availableProfiles = discoveryProfiles.filter(p => !hiddenProfileIds.has(p.id));
 
-                const filteredProfiles = availableProfiles.filter(p =>
-                    !searchQuery ||
-                    p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    p.jamaat?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    p.hizratLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    p.education?.toLowerCase().includes(searchQuery.toLowerCase())
-                ).sort((a, b) => computeMatchScore(myProfile, b) - computeMatchScore(myProfile, a));
+                const filteredProfiles = availableProfiles.filter(p => {
+                    const matchesSearch = !searchQuery ||
+                        p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        p.jamaat?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        p.hizratLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        p.education?.toLowerCase().includes(searchQuery.toLowerCase());
+
+                    if (showOnlyBookmarked) {
+                        return matchesSearch && bookmarkedProfileIds.has(p.id);
+                    }
+                    return matchesSearch;
+                }).sort((a, b) => computeMatchScore(myProfile, b) - computeMatchScore(myProfile, a));
 
                 return (
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                             <h2 className="text-2xl font-bold font-serif">Community Discovery</h2>
                             <div className="flex gap-2 w-full md:w-auto">
+                                <button
+                                    onClick={() => setShowOnlyBookmarked(!showOnlyBookmarked)}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-sm ${showOnlyBookmarked ? 'bg-[#881337] text-white border-[#881337]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'}`}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={showOnlyBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
+                                    {showOnlyBookmarked ? 'Saved Only' : 'Show Saved'}
+                                </button>
                                 <input
                                     id="discovery-search-input"
                                     type="text"
-                                    placeholder="Search by name, jamaat, education..."
+                                    placeholder="Search..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="px-4 py-2 rounded-xl text-sm border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] w-full md:w-64"
+                                    className="px-4 py-2 rounded-xl text-sm border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] w-full md:w-48"
                                 />
                             </div>
                         </div>
@@ -877,48 +948,6 @@ export default function RishtaDashboard() {
                         ))}
                     </nav>
                 </div>
-
-                {/* ── Bell + Help Chat Icons ── */}
-                <div className="flex items-center gap-2 shrink-0">
-
-                    {/* 🔔 Notification Bell with unread badge */}
-                    <button
-                        id="notifications-bell"
-                        onClick={() => {
-                            setActiveTab('notifications');
-                            if (user) {
-                                localStorage.setItem(`lastReadNotif_${user.uid}`, Date.now().toString());
-                                setUnreadNotifCount(0);
-                            }
-                        }}
-                        className="relative w-10 h-10 bg-white rounded-full shadow-sm border border-gray-200 flex items-center justify-center hover:bg-rose-50 transition-colors"
-                        title="Notifications"
-                    >
-                        <Bell className="w-5 h-5 text-gray-600" />
-                        {unreadNotifCount > 0 && (
-                            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#881337] text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-lg animate-pulse">
-                                {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
-                            </span>
-                        )}
-                    </button>
-
-                    {/* 💬 Admin Help Chat */}
-                    <button
-                        id="admin-help-chat"
-                        onClick={() => setShowAdminHelpChat(v => !v)}
-                        className={`relative w-10 h-10 rounded-full shadow-sm border flex items-center justify-center transition-colors ${showAdminHelpChat
-                            ? 'bg-[#881337] border-[#881337] text-white'
-                            : 'bg-white border-gray-200 text-gray-600 hover:bg-rose-50'
-                            }`}
-                        title="Help &amp; Chat with Admin"
-                    >
-                        <HelpCircle className="w-5 h-5" />
-                        {adminMsgThread.filter(m => m.from === 'admin').length > 0 && !showAdminHelpChat && (
-                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white" />
-                        )}
-                    </button>
-                </div>
-
                 {/* ── Floating Admin Help Chat Panel ── */}
                 {showAdminHelpChat && (
                     <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden" style={{ maxHeight: '460px' }}>
@@ -1045,9 +1074,53 @@ export default function RishtaDashboard() {
                                         {showAdminMessages ? 'Hide' : 'Message Admin'}
                                         {adminMsgThread.length > 0 && <span className="bg-[#881337] text-white rounded-full px-1.5 text-[9px]">{adminMsgThread.length}</span>}
                                     </button>
+                                    <button
+                                        onClick={() => router.push('/success-stories')}
+                                        className="h-10 px-4 bg-rose-50 border border-rose-100 text-[#881337] rounded-xl text-xs font-bold hover:bg-rose-100 transition-colors flex items-center gap-2"
+                                    >
+                                        <Sparkles className="w-4 h-4 text-[#D4AF37]" /> Success Stories
+                                    </button>
                                 </div>
                             </div>
                         </div>
+
+                        {/* Recent Profile Visitors Section */}
+                        {recentViews.length > 0 && (
+                            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6 group animate-in slide-in-from-top duration-500">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center">
+                                            <Users className="w-4 h-4 text-[#881337]" />
+                                        </div>
+                                        <h3 className="text-sm font-black text-[#881337] uppercase tracking-wider">Profile Visitors</h3>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full uppercase">Last 10 Views</span>
+                                </div>
+                                <div className="flex items-center gap-4 overflow-x-auto pb-2 scrollbar-none">
+                                    {recentViews.map((visitor) => (
+                                        <div
+                                            key={visitor.id}
+                                            onClick={() => router.push(`/profile?id=${visitor.viewerId}`)}
+                                            className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group/v"
+                                        >
+                                            <div className="relative">
+                                                <div className="w-14 h-14 rounded-full border-2 border-white shadow-sm overflow-hidden ring-2 ring-transparent group-hover/v:ring-[#881337]/20 transition-all">
+                                                    {visitor.viewerLibasUrl ? (
+                                                        <img src={visitor.viewerLibasUrl} alt={visitor.viewerName} className="w-full h-full object-cover grayscale-[0.5] group-hover/v:grayscale-0 transition-all blur-[2px] group-hover/v:blur-0" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-rose-50 flex items-center justify-center text-[#881337] font-black text-xl">
+                                                            {visitor.viewerName[0]}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white" title="Active" />
+                                            </div>
+                                            <p className="text-[10px] font-bold text-gray-600 truncate w-16 text-center group-hover/v:text-[#881337]">{visitor.viewerName.split(' ')[0]}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Collapsible message thread */}
@@ -1261,7 +1334,7 @@ export default function RishtaDashboard() {
                     <ShieldCheck className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Biodata</span>
                 </button>
                 <button onClick={() => setActiveTab('discovery')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'discovery' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <Heart className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Search</span>
+                    <Search className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Search</span>
                 </button>
                 <button onClick={() => setActiveTab('requests')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'requests' ? 'text-[#881337]' : 'text-gray-400'}`}>
                     <ShieldCheck className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Requests</span>

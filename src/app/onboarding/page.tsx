@@ -28,6 +28,8 @@ export default function OnboardingPage() {
         education: "",
         hizratLocation: "",
         bio: "",
+        informationProvidedBy: "Myself (Candidate)",
+        isBlurSecurityEnabled: true,
     });
 
     // Email will be intentionally kept blank for the user to fill out.
@@ -301,20 +303,19 @@ export default function OnboardingPage() {
                                 <h2 className="text-2xl font-bold font-serif">Identity & Community</h2>
                             </div>
 
-                            {/* ⏰ Verification Timeline Notice — Step 2 (highlighted, ITS upload step) */}
-                            <div className="rounded-xl overflow-hidden border-2 border-blue-300 shadow-sm">
-                                <div className="bg-blue-600 px-4 py-2 flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-white" />
-                                    <p className="text-white text-xs font-black tracking-wide">📋 Verification Timeline — Important</p>
-                                </div>
-                                <div className="bg-blue-50 px-4 py-3">
-                                    <p className="text-xs text-blue-800 leading-relaxed">
-                                        Once your <strong>original ITS card photo</strong> is uploaded, it will be reviewed by our admin team <strong>within 24 hours</strong>.
-                                        After successful verification, visit your profile again to unlock all features and start sending interest requests.
-                                        Please upload a <strong>clear, single photo</strong> of your ITS card for faster approval.
+                            {/* Verification Notice - Highlight 1 moved from Step 3 */}
+                            <div className="mb-6 p-4 bg-amber-50 border-2 border-amber-400 rounded-xl flex gap-3 items-start shadow-sm animate-in fade-in slide-in-from-left-4 duration-500">
+                                <span className="text-2xl shrink-0">⏳</span>
+                                <div>
+                                    <p className="text-sm font-black text-amber-800 mb-1">Important: Verification Process</p>
+                                    <p className="text-sm text-amber-700 font-medium leading-relaxed">
+                                        Once your <strong>original ITS photo</strong> is uploaded, it will be reviewed <strong>on or before 24 hours</strong>.
+                                        After verification, visit your profile again to <strong>access all features</strong>.
                                     </p>
                                 </div>
                             </div>
+
+
 
                             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 flex gap-3 text-sm text-yellow-800 mb-2">
                                 <ShieldCheck className="w-5 h-5 shrink-0" />
@@ -472,13 +473,38 @@ export default function OnboardingPage() {
                                 <p className="text-sm text-gray-500">Education and current Hizrat (Location) preferences.</p>
                             </div>
 
-                            {/* ⏰ Verification Timeline Notice — Step 3 */}
-                            <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
-                                <Clock className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                                <p className="text-xs text-blue-600 leading-relaxed">
-                                    <strong className="text-blue-700">Almost done!</strong> Once you submit, your ITS photo will be reviewed <strong>within 24 hours</strong>.
-                                    After verification you can access all features. Upload a clear and single photo for faster approval.
-                                </p>
+                            {/* Guardian Mode - Highlight 2 moved from Registration */}
+                            <div className="bg-rose-50 p-5 rounded-2xl border-2 border-rose-100 shadow-sm">
+                                <label className="block text-sm font-black text-[#881337] mb-2 uppercase tracking-tight">Rishta Guardian Mode</label>
+                                <p className="text-xs text-gray-500 mb-4 leading-relaxed font-medium">Is this profile managed by the candidate themselves or a Parent/Guardian?</p>
+                                <select
+                                    name="informationProvidedBy"
+                                    onChange={handleChange}
+                                    value={formData.informationProvidedBy}
+                                    className="w-full bg-white border border-rose-200 rounded-xl px-4 py-3.5 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-[#881337] outline-none shadow-inner"
+                                >
+                                    <option value="Myself (Candidate)">Managed by Candidate (Self)</option>
+                                    <option value="Parent/Guardian (Wali)">Managed by Parent/Guardian (Wali Mode)</option>
+                                    <option value="Sibling">Managed by Sibling</option>
+                                    <option value="Friend/Relative">Managed by Friend/Relative</option>
+                                </select>
+                            </div>
+
+                            {/* Privacy Toggle / Highlight 3 */}
+                            <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
+                                <div className="flex-1">
+                                    <p className="text-sm font-black text-gray-800 mb-1 uppercase tracking-tight">Photo Privacy Control</p>
+                                    <p className="text-[10px] text-gray-500 font-medium leading-relaxed">
+                                        Enable <strong>Blur Mode</strong> for extra security. Photos only unblur for accepted requests.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData(p => ({ ...p, isBlurSecurityEnabled: !p.isBlurSecurityEnabled }))}
+                                    className={`w-12 h-6 rounded-full relative transition-all duration-300 ${formData.isBlurSecurityEnabled ? 'bg-[#881337]' : 'bg-gray-300'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${formData.isBlurSecurityEnabled ? 'right-1' : 'left-1'}`} />
+                                </button>
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Highest Education</label>

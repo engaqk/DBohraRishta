@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { ArrowLeft, Loader2, ShieldCheck, ExternalLink, Lock } from 'lucide-react';
+import { ArrowLeft, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { notifyInterestSent } from '@/lib/emailService';
 
@@ -36,11 +36,12 @@ function ProfileContent() {
         const fetchAllData = async () => {
             if (!user) return;
             try {
+                let meData: any = null;
                 const meDoc = await getDoc(doc(db, 'users', user.uid));
                 if (meDoc.exists()) {
-                    const me = meDoc.data();
-                    setIsMyProfileVerified(me.status === 'verified' || me.status === 'approved' || me.isItsVerified === true);
-                    setViewerItsNumber(me.itsNumber || '');
+                    meData = meDoc.data();
+                    setIsMyProfileVerified(meData.status === 'verified' || meData.status === 'approved' || meData.isItsVerified === true);
+                    setViewerItsNumber(meData.itsNumber || '');
                 }
 
                 if (id) {
@@ -66,6 +67,20 @@ function ProfileContent() {
                     };
                     sOut.forEach(check); sIn.forEach(check);
                     setRequestSent(active); setRejectCount(rejects); setRequestStatus(status);
+
+                    // 👁️ Record Profile View (if not me)
+                    if (user.uid !== id && !id.startsWith('dummy') && meData) {
+                        const viewRef = collection(db, 'profile_views');
+                        const viewKey = `${user.uid}_${id}`;
+                        await addDoc(viewRef, {
+                            viewerId: user.uid,
+                            viewerName: meData.name || 'Anonymous',
+                            viewerLibasUrl: meData.libasImageUrl || null,
+                            profileId: id,
+                            timestamp: serverTimestamp(),
+                            viewKey: viewKey
+                        });
+                    }
                 }
             } catch (e) {
                 toast.error('Failed to load profile');
@@ -78,7 +93,7 @@ function ProfileContent() {
 
     const isAccepted = requestStatus === 'accepted';
     const isFemale = profile?.gender === 'female';
-    const canZoom = profile && (!profile.isBlurSecurityEnabled || isAccepted || !isFemale);
+    const canZoom = profile && (profile.isBlurSecurityEnabled === false || isAccepted || !isFemale);
 
     // 🔒 Hide female surname until accepted
     const displayName = (() => {
@@ -151,7 +166,7 @@ function ProfileContent() {
         hobbies, partnerQualities, bio, isItsVerified, heightFeet, heightInch,
         maritalStatus, educationDetails, education, professionType, fatherName,
         motherName, city, state, country, mobile, mobileCode, email, dob,
-        siblings, noOfChildren, citizenOf, ancestralWatan, landlineCode, landline, address,
+        siblings, noOfChildren, citizenOf, ancestralWatan, address,
         hifzStatus, completedUpto, serviceType, employmentDetails } = profile;
 
     return (
@@ -236,32 +251,66 @@ function ProfileContent() {
                                             {displayName}{age ? `, ${age}` : ''}
                                         </h1>
                                     </div>
-                                    <p className="text-white/70 text-xs font-medium mt-0.5">
-                                        {jamaat || 'Bohra Community'} • {hizratLocation || city || 'Global'}
-                                    </p>
+                                    <div className="bg-[#D4AF37]/20 backdrop-blur-sm border border-white/20 px-2.5 py-1 rounded-lg inline-block mt-2">
+                                        <p className="text-white text-[11px] font-black uppercase tracking-widest leading-none">
+                                            {jamaat || city || 'Bohra Community'} • {hizratLocation || 'Global'}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Gallery dots */}
-                        {photos.length > 1 && (
-                            <div className="absolute bottom-16 left-0 right-0 flex justify-center gap-2 z-30">
-                                {photos.map((_, idx) => (
-                                    <button key={idx} onClick={() => setActivePhotoIdx(idx)}
-                                        className={`w-2 h-2 rounded-full transition-all ${activePhotoIdx === idx ? 'bg-[#D4AF37] w-4' : 'bg-white/50 hover:bg-white'}`} />
-                                ))}
-                            </div>
-                        )}
+                            {/* Gallery dots */}
+                            {photos.length > 1 && (
+                                <div className="absolute bottom-16 left-0 right-0 flex justify-center gap-2 z-30">
+                                    {photos.map((_, idx) => (
+                                        <button key={idx} onClick={() => setActivePhotoIdx(idx)}
+                                            className={`w-2 h-2 rounded-full transition-all ${activePhotoIdx === idx ? 'bg-[#D4AF37] w-4' : 'bg-white/50 hover:bg-white'}`} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* ── DETAILS ── */}
                     <div className="p-4 flex flex-col gap-4">
+                        {/* Premium Highlights Section */}
+                        <div className="flex flex-wrap gap-2.5 py-1">
+                            {bio?.toLowerCase().includes('hafiz') && (
+                                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-xl border border-emerald-100 shadow-sm animate-in zoom-in duration-300">
+                                    <div className="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center text-[10px]">✨</div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest leading-none">Holy Quran Hafiz</span>
+                                </div>
+                            )}
+                            {(education?.toLowerCase().includes('graduate') || education?.toLowerCase().includes('mba') || education?.toLowerCase().includes('master')) && (
+                                <div className="flex items-center gap-2 bg-blue-50 text-blue-800 px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm animate-in zoom-in duration-300 delay-75">
+                                    <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-[10px]">🎓</div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest leading-none">Highly Educated</span>
+                                </div>
+                            )}
+                            {(city?.toLowerCase().includes('mumbai') || jamaat?.toLowerCase().includes('mumbai')) && (
+                                <div className="flex items-center gap-2 bg-rose-50 text-rose-800 px-3 py-1.5 rounded-xl border border-rose-100 shadow-sm animate-in zoom-in duration-300 delay-100">
+                                    <div className="w-5 h-5 bg-rose-500 text-white rounded-full flex items-center justify-center text-[10px]">📍</div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest leading-none">Mumbai Based</span>
+                                </div>
+                            )}
+                            {bio?.toLowerCase().includes('settled') && (
+                                <div className="flex items-center gap-2 bg-amber-50 text-amber-800 px-3 py-1.5 rounded-xl border border-amber-100 shadow-sm animate-in zoom-in duration-300 delay-150">
+                                    <div className="w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center text-[10px]">💰</div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest leading-none">Well Settled</span>
+                                </div>
+                            )}
+                        </div>
 
-                        {/* Bio */}
+                        {/* Bio / Tagline */}
                         {bio && (
-                            <p className="text-xs text-gray-500 italic border-l-2 border-[#D4AF37] pl-3 leading-relaxed">
-                                "{bio}"
-                            </p>
+                            <div className="bg-[#D4AF37]/5 border-l-4 border-[#D4AF37] p-4 rounded-r-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-2 opacity-10">
+                                    <Sparkles className="w-10 h-10 text-[#D4AF37]" />
+                                </div>
+                                <p className="text-sm text-[#881337] font-serif italic leading-relaxed relative z-10 font-medium">
+                                    "{bio}"
+                                </p>
+                            </div>
                         )}
 
                         {/* Info grid — always visible, matches DiscoveryCard EXACTLY */}
@@ -417,7 +466,7 @@ function ProfileContent() {
                                     {isAccepted ? '✓ Interest Accepted'
                                         : requestSent ? '✓ Request Sent'
                                             : rejectCount === 1 ? '↩ Retry Interest Request'
-                                                : '💌 Send Interest Request'}
+                                                : 'Send Interest Request'}
                                 </button>
                             )}
                         </div>

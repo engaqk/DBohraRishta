@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, Home, User, LogOut, Bell } from 'lucide-react';
+import { Menu, X, Home, User, LogOut, Bell, HelpCircle } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
@@ -65,20 +65,30 @@ export default function GlobalNav() {
                         <span className="font-serif font-bold text-[#881337] tracking-tight text-lg">DBohra<span className="font-light italic">Rishta</span></span>
                     </div>
 
-                    {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center space-x-4">
+                    {/* Desktop Bell + Help */}
+                    <div className="hidden md:flex items-center gap-1">
                         {user && (
-                            <button
-                                onClick={() => router.push('/?tab=notifications')}
-                                className={`relative p-2 transition-all duration-300 rounded-xl ${isNotificationsActive ? 'text-white bg-[#881337] shadow-md ring-2 ring-rose-100' : 'text-gray-500 hover:text-[#881337] hover:bg-rose-50'}`}
-                            >
-                                <Bell className="w-5 h-5" />
-                                {unreadCount > 0 && (
-                                    <span className={`absolute -top-1 -right-1 min-w-[16px] h-4 text-[9px] font-black flex items-center justify-center rounded-full border-2 ${isNotificationsActive ? 'bg-[#D4AF37] text-[#881337] border-[#881337]' : 'bg-red-500 text-white border-white'}`}>
-                                        {unreadCount}
-                                    </span>
-                                )}
-                            </button>
+                            <>
+                                <button
+                                    onClick={() => router.push('/?tab=notifications')}
+                                    className={`relative p-2 transition-all duration-300 rounded-xl ${isNotificationsActive ? 'text-white bg-[#881337] shadow-md ring-2 ring-rose-100' : 'text-gray-500 hover:text-[#881337] hover:bg-rose-50'}`}
+                                    title="Notifications"
+                                >
+                                    <Bell className="w-5 h-5" />
+                                    {unreadCount > 0 && (
+                                        <span className={`absolute -top-1 -right-1 min-w-[16px] h-4 text-[9px] font-black flex items-center justify-center rounded-full border-2 ${isNotificationsActive ? 'bg-[#D4AF37] text-[#881337] border-[#881337]' : 'bg-red-500 text-white border-white'}`}>
+                                            {unreadCount}
+                                        </span>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => router.push('/?adminChat=open')}
+                                    className="p-2 text-gray-500 hover:text-[#881337] hover:bg-rose-50 transition-all rounded-xl"
+                                    title="Help & Chat with Admin"
+                                >
+                                    <HelpCircle className="w-5 h-5" />
+                                </button>
+                            </>
                         )}
                         {user ? (
                             <>
@@ -99,20 +109,30 @@ export default function GlobalNav() {
                         )}
                     </div>
 
-                    {/* Mobile Menu Button + Bell */}
+                    {/* Mobile Bell + Help + Menu */}
                     <div className="md:hidden flex items-center gap-1">
                         {user && (
-                            <button
-                                onClick={() => router.push('/?tab=notifications')}
-                                className={`relative p-2 transition-all rounded-xl ${isNotificationsActive ? 'text-white bg-[#881337] shadow-lg' : 'text-[#881337]'}`}
-                            >
-                                <Bell className="w-6 h-6" />
-                                {unreadCount > 0 && (
-                                    <span className={`absolute -top-1 -right-1 w-5 h-5 text-[10px] font-black flex items-center justify-center rounded-full border-2 animate-pulse ${isNotificationsActive ? 'bg-[#D4AF37] text-[#881337] border-[#881337]' : 'bg-red-500 text-white border-white'}`}>
-                                        {unreadCount}
-                                    </span>
-                                )}
-                            </button>
+                            <>
+                                <button
+                                    onClick={() => router.push('/?tab=notifications')}
+                                    className={`relative p-2 transition-all rounded-xl ${isNotificationsActive ? 'text-white bg-[#881337] shadow-lg' : 'text-[#881337]'}`}
+                                    title="Notifications"
+                                >
+                                    <Bell className="w-5 h-5" />
+                                    {unreadCount > 0 && (
+                                        <span className={`absolute -top-1 -right-1 w-4 h-4 text-[9px] font-black flex items-center justify-center rounded-full border-2 animate-pulse ${isNotificationsActive ? 'bg-[#D4AF37] text-[#881337] border-[#881337]' : 'bg-red-500 text-white border-white'}`}>
+                                            {unreadCount}
+                                        </span>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => router.push('/?adminChat=open')}
+                                    className="p-2 text-[#881337] hover:bg-rose-50 transition-all rounded-xl"
+                                    title="Help & Chat with Admin"
+                                >
+                                    <HelpCircle className="w-5 h-5" />
+                                </button>
+                            </>
                         )}
                         <button onClick={() => setIsOpen(!isOpen)} className="text-[#881337] focus:outline-none p-2">
                             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

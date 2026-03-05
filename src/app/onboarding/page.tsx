@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { User, ShieldCheck, Camera, UploadCloud, CheckCircle2, Loader2 } from "lucide-react";
+import { User, ShieldCheck, Camera, UploadCloud, CheckCircle2, Loader2, Clock, AlertCircle } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -232,6 +232,17 @@ export default function OnboardingPage() {
                                 <User className="w-8 h-8 text-[#D4AF37]" />
                                 <h2 className="text-2xl font-bold font-serif">Basic Profile</h2>
                             </div>
+
+                            {/* ⏰ Verification Timeline Notice — Step 1 */}
+                            <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-2">
+                                <Clock className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-xs font-black text-blue-700 mb-0.5">Verification Timeline</p>
+                                    <p className="text-xs text-blue-600 leading-relaxed">
+                                        Once your original ITS photo is uploaded, it will be reviewed <strong>within 24 hours</strong>. After verification, visit your profile again to access all features.
+                                    </p>
+                                </div>
+                            </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Full Name</label>
                                 <input name="name" onChange={handleChange} value={formData.name} className={`w-full bg-gray-50 border ${errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. Murtaza Ali" />
@@ -288,6 +299,21 @@ export default function OnboardingPage() {
                             <div className="flex items-center gap-3 mb-4">
                                 <ShieldCheck className="w-8 h-8 text-[#D4AF37]" />
                                 <h2 className="text-2xl font-bold font-serif">Identity & Community</h2>
+                            </div>
+
+                            {/* ⏰ Verification Timeline Notice — Step 2 (highlighted, ITS upload step) */}
+                            <div className="rounded-xl overflow-hidden border-2 border-blue-300 shadow-sm">
+                                <div className="bg-blue-600 px-4 py-2 flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-white" />
+                                    <p className="text-white text-xs font-black tracking-wide">📋 Verification Timeline — Important</p>
+                                </div>
+                                <div className="bg-blue-50 px-4 py-3">
+                                    <p className="text-xs text-blue-800 leading-relaxed">
+                                        Once your <strong>original ITS card photo</strong> is uploaded, it will be reviewed by our admin team <strong>within 24 hours</strong>.
+                                        After successful verification, visit your profile again to unlock all features and start sending interest requests.
+                                        Please upload a <strong>clear, single photo</strong> of your ITS card for faster approval.
+                                    </p>
+                                </div>
                             </div>
 
                             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 flex gap-3 text-sm text-yellow-800 mb-2">
@@ -441,9 +467,18 @@ export default function OnboardingPage() {
                     {/* STEP 3: Dunyawi Profile Details */}
                     {step === 3 && (
                         <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="flex items-start flex-col mb-6">
-                                <h2 className="text-2xl font-bold font-serif mb-2">Dunyawi Details</h2>
+                            <div className="flex items-start flex-col mb-4">
+                                <h2 className="text-2xl font-bold font-serif mb-1">Dunyawi Details</h2>
                                 <p className="text-sm text-gray-500">Education and current Hizrat (Location) preferences.</p>
+                            </div>
+
+                            {/* ⏰ Verification Timeline Notice — Step 3 */}
+                            <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                                <Clock className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                                <p className="text-xs text-blue-600 leading-relaxed">
+                                    <strong className="text-blue-700">Almost done!</strong> Once you submit, your ITS photo will be reviewed <strong>within 24 hours</strong>.
+                                    After verification you can access all features. Upload a clear and single photo for faster approval.
+                                </p>
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">Highest Education</label>

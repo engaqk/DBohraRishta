@@ -673,13 +673,6 @@ export default function CandidateRegistrationPage() {
                                         </div>
                                     )}
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Landline (Optional)</label>
-                                    <div className="flex gap-2">
-                                        <input name="landlineCode" onChange={handleChange} value={formData.landlineCode} className="w-1/4 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none" placeholder="022" />
-                                        <input name="landline" onChange={handleChange} value={formData.landline} className="w-3/4 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. 2345678" />
-                                    </div>
-                                </div>
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Residential Address</label>
                                     <textarea name="address" onChange={handleChange} value={formData.address} rows={2} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none resize-none focus:ring-2 focus:ring-[#881337]" />

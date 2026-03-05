@@ -361,9 +361,17 @@ function ProfileContent() {
                             </div>
                         )}
 
+                        {/* General Contact Info (No Mobile/Email) */}
+                        {address && (
+                            <div className="bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100 mt-2">
+                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-1">General Info</p>
+                                <p className="text-xs text-gray-600"><strong>Address:</strong> {address}</p>
+                            </div>
+                        )}
+
                         {/* Contact — only after accepted */}
                         {isAccepted && (
-                            <div className="bg-emerald-50 rounded-xl px-3 py-3 border border-emerald-200">
+                            <div className="bg-emerald-50 rounded-xl px-3 py-3 border border-emerald-200 mt-2">
                                 <p className="text-[8px] font-black text-emerald-700 uppercase tracking-wider mb-1.5">✓ Contact Details (Shared)</p>
                                 {mobile && <p className="text-sm font-bold text-emerald-700">📞 {mobileCode} {mobile}</p>}
                                 {email && <p className="text-sm font-bold text-emerald-700">✉️ {email}</p>}

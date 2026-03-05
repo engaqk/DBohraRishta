@@ -12,6 +12,7 @@
     "@emailjs/browser": "^4.4.1",
     "driver.js": "^1.4.0",
     "firebase": "^12.9.0",
+    "firebase-admin": "^13.7.0",
     "framer-motion": "^12.34.3",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.575.0",

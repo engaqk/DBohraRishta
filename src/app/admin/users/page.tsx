@@ -108,25 +108,10 @@ export default function AdminUsersPage() {
         }
     };
 
-    const fetchAuthUsers = async () => {
-        setLoadingAuth(true);
-        try {
-            const res = await fetch('/api/admin/users');
-            const data = await res.json();
-            if (data.users) {
-                setAuthUsers(data.users);
-                setShowAuthList(true);
-            }
-        } catch (e: any) {
-            toast.error('Failed to load auth users');
-        } finally {
-            setLoadingAuth(false);
-        }
-    };
+    const fetchAuthUsers = async () => { };
 
     useEffect(() => {
         fetchUsers();
-        fetchAuthUsers();
     }, []);
 
     const filtered = useMemo(() => {
@@ -181,14 +166,9 @@ export default function AdminUsersPage() {
                             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-sm font-bold transition-all shadow-lg">
                             <Send className="w-4 h-4" /> Broadcast
                         </button>
-                        <button onClick={fetchAuthUsers} disabled={loadingAuth}
-                            className="flex items-center gap-2 bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 text-white px-3 py-2 rounded-xl text-sm font-bold transition-all border border-[#D4AF37]/30">
-                            {loadingAuth ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                            Auth List
-                        </button>
                         <button onClick={fetchUsers}
-                            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-xl text-sm font-bold transition-colors">
-                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors">
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh Data
                         </button>
                     </div>
                 </div>
@@ -198,8 +178,7 @@ export default function AdminUsersPage() {
                 {/* Stats row */}
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
                     {[
-                        { label: 'Total Auth Accounts', value: authUsers.length || '...', color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-100' },
-                        { label: 'Registration Docs', value: stats.total, color: 'text-[#881337]', bg: 'bg-rose-50 border-rose-100' },
+                        { label: 'Registered Candidates', value: stats.total, color: 'text-[#881337]', bg: 'bg-rose-50 border-rose-100' },
                         { label: 'Form Complete', value: stats.complete, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-100' },
                         { label: 'Pending Review', value: stats.pending, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-100' },
                         { label: 'Verified', value: stats.verified, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100' },

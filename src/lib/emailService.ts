@@ -1,21 +1,12 @@
 /**
- * EmailJS-based email notification service (client-side, works with static export).
- * Uses Gmail SMTP via EmailJS.
- *
- * Setup:
- *  1. Create a FREE account at https://emailjs.com
- *  2. Add a Gmail service (Service ID: e.g. "service_gmail")
- *  3. Create an email template with variables:
- *       {{to_email}}, {{subject}}, {{message_html}}, {{from_name}}
- *  4. Copy your Public Key from Account > API Keys
- *  5. Set the three constants below (or move to .env.local as NEXT_PUBLIC_EMAILJS_*)
+ * Hybrid Email Notification Service.
+ * 1. Tries Nodemailer (Server-side Gmail SMTP via /api/notify API)
+ * 2. Fallbacks to EmailJS (Client-side Gmail SMTP) for static builds.
  */
 
-// ── CONFIGURE THESE ────────────────────────────────────────────
 const EMAILJS_SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || 'service_dbohra';
 const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || 'template_notify';
 const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || '';
-// ───────────────────────────────────────────────────────────────
 
 export const ADMIN_EMAIL = 'abdulqadirkhanji52@gmail.com';
 
@@ -24,35 +15,61 @@ export interface EmailPayload {
     subject: string;
     htmlBody: string;
     fromName?: string;
+    cc?: string | string[];
 }
 
 /**
- * Send an email notification via EmailJS (client-side Gmail).
- * Admin is always CC'd automatically.
+ * Universal sendEmail function that attempts API first, then EmailJS.
  */
 export async function sendEmail(payload: EmailPayload): Promise<void> {
+    const recipients = Array.isArray(payload.toEmail) ? payload.toEmail : [payload.toEmail];
+
+    // 1. Try server-side API Route (Nodemailer Gmail SMTP)
+    try {
+        const response = await fetch("/api/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                to: recipients,
+                cc: payload.cc || ADMIN_EMAIL,
+                subject: payload.subject,
+                html: payload.htmlBody
+            })
+        });
+
+        if (response.ok) {
+            console.log("[EmailService] Sent via Gmail SMTP API");
+            return;
+        }
+    } catch (apiError) {
+        console.warn("[EmailService] API Route failed or unreachable (Static Export?), falling back to EmailJS.");
+    }
+
+    // 2. Fallback to EmailJS (Client-side)
     if (!EMAILJS_PUBLIC_KEY) {
-        console.warn('[EmailService] EMAILJS_PUBLIC_KEY not set — skipping email.');
+        console.warn('[EmailService] EMAILJS_PUBLIC_KEY not set — cannot send email.');
         return;
     }
 
-    const { default: emailjs } = await import('@emailjs/browser');
+    try {
+        const { default: emailjs } = await import('@emailjs/browser');
+        const allRecipients = [...new Set([...recipients, ADMIN_EMAIL])].filter(e => e?.includes('@'));
 
-    const recipients = Array.isArray(payload.toEmail) ? payload.toEmail : [payload.toEmail];
-    const allRecipients = [...new Set([...recipients, ADMIN_EMAIL])].filter(e => e?.includes('@'));
-
-    // EmailJS free tier sends one email at a time, so we send to main recipient + cc admin in template
-    await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        {
-            to_email: allRecipients.join(','),
-            subject: payload.subject,
-            message_html: payload.htmlBody,
-            from_name: payload.fromName || 'DBohraRishta',
-        },
-        EMAILJS_PUBLIC_KEY,
-    );
+        await emailjs.send(
+            EMAILJS_SERVICE_ID,
+            EMAILJS_TEMPLATE_ID,
+            {
+                to_email: allRecipients.join(','),
+                subject: payload.subject,
+                message_html: payload.htmlBody,
+                from_name: payload.fromName || 'DBohraRishta',
+            },
+            EMAILJS_PUBLIC_KEY,
+        );
+        console.log("[EmailService] Sent via EmailJS Fallback");
+    } catch (ejsError) {
+        console.error("[EmailService] Both API and EmailJS failed:", ejsError);
+    }
 }
 
 // ── Pre-built notification helpers ────────────────────────────
@@ -81,7 +98,7 @@ export async function notifyInterestSent(opts: {
                     Open Dashboard
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">DBohraRishta Notification System • ablqadir16@gmail.com is CC'd for admin records</p>
+                <p style="font-size:11px;color:#999">DBohraRishta Notification System</p>
             </div>`,
     });
 }
@@ -93,7 +110,6 @@ export async function notifyRequestAccepted(opts: {
     requesterEmail: string;
     requesterName: string;
 }) {
-    // Notify the requester
     await sendEmail({
         toEmail: opts.requesterEmail,
         subject: '🎉 Your Interest was Accepted! – DBohraRishta',

@@ -245,20 +245,12 @@ export default function DiscoveryCard({
                         </div>
                     </div>
 
-                    {/* Name overlay at bottom of photo */}
                     <div className="absolute bottom-0 left-0 right-0 z-30 px-4 pb-3 pt-8">
                         <div className="flex items-end justify-between gap-2">
                             <div>
-                                <div className="flex items-center gap-2">
-                                    <h3 className="text-white font-black text-xl font-serif leading-tight drop-shadow">
-                                        {displayName}, {age}
-                                    </h3>
-                                </div>
-                                <div className="bg-[#D4AF37]/20 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-lg inline-block mt-1">
-                                    <p className="text-white text-[10px] font-black uppercase tracking-widest leading-none">
-                                        {jamaat || city || 'Bohra Community'} • {hizratLocation || 'Global'}
-                                    </p>
-                                </div>
+                                <h3 className="text-white font-black text-xl font-serif leading-tight drop-shadow">
+                                    {displayName}, {age}
+                                </h3>
                             </div>
                             <div className={`px-2.5 py-1.5 rounded-xl text-xs font-black shadow-lg shrink-0
                                 ${requestStatus === 'accepted' ? 'bg-[#D4AF37] text-white' : rejectCount > 0 ? 'bg-red-500 text-white' : 'bg-black/50 text-[#D4AF37] backdrop-blur-sm'}`}>
@@ -267,45 +259,50 @@ export default function DiscoveryCard({
                         </div>
                     </div>
 
-
+                    {/* Photo count indicator */}
+                    {photos.length > 1 && (
+                        <div className="absolute bottom-3 left-3 bg-black/40 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full border border-white/10 flex items-center gap-1">
+                            <span>📸</span> {photos.length} Photos
+                        </div>
+                    )}
 
                     {/* Gallery dots */}
                     {photos.length > 1 && canZoom && (
                         <div className="absolute bottom-14 left-0 right-0 flex justify-center gap-1.5 z-30">
                             {photos.map((_, idx) => (
-                                <button key={idx} onClick={() => setActivePhotoIdx(idx)}
+                                <button key={idx} onClick={(e) => { e.stopPropagation(); setActivePhotoIdx(idx); }}
                                     className={`w-1.5 h-1.5 rounded-full transition-all ${activePhotoIdx === idx ? 'bg-[#D4AF37] w-3' : 'bg-white/50 hover:bg-white'}`} />
                             ))}
                         </div>
                     )}
-
                 </div>
 
-                {/* ── INFO ── */}
                 <div className="p-4 flex flex-col gap-3 flex-grow">
                     {/* Smart Highlights */}
-                    {/* Premium Section Highlights */}
-                    <div className="flex flex-wrap gap-2 py-1">
-                        {(bio?.toLowerCase().includes('hafiz') || education?.toLowerCase().includes('hafiz')) && (
-                            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-100 shadow-sm transition-transform hover:scale-105">
-                                <span className="text-[10px] font-black uppercase tracking-widest">Hafiz</span>
-                            </div>
-                        )}
-                        {(education?.toLowerCase().includes('graduate') || education?.toLowerCase().includes('mba') || education?.toLowerCase().includes('master')) && (
-                            <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg border border-blue-100 shadow-sm transition-transform hover:scale-105">
-                                <span className="text-[10px] font-black uppercase tracking-widest">Educated</span>
-                            </div>
-                        )}
-                        {(city?.toLowerCase().includes('mumbai') || jamaat?.toLowerCase().includes('mumbai')) && (
-                            <div className="flex items-center gap-1.5 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-lg border border-rose-100 shadow-sm transition-transform hover:scale-105">
-                                <span className="text-[10px] font-black uppercase tracking-widest">Mumbai Location</span>
-                            </div>
-                        )}
-                        {(bio?.toLowerCase().includes('settled') || professionType?.toLowerCase().includes('settled')) && (
-                            <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg border border-amber-100 shadow-sm transition-transform hover:scale-105">
-                                <span className="text-[10px] font-black uppercase tracking-widest">Well Settled</span>
-                            </div>
-                        )}
+                    <div className="flex flex-col gap-2">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Preference :</p>
+                        <div className="flex flex-wrap gap-2">
+                            {(bio?.toLowerCase().includes('hafiz') || education?.toLowerCase().includes('hafiz')) && (
+                                <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-100 shadow-sm transition-transform hover:scale-105">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Hafiz</span>
+                                </div>
+                            )}
+                            {(education?.toLowerCase().includes('graduate') || education?.toLowerCase().includes('mba') || education?.toLowerCase().includes('master')) && (
+                                <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg border border-blue-100 shadow-sm transition-transform hover:scale-105">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Educated</span>
+                                </div>
+                            )}
+                            {(city?.toLowerCase().includes('mumbai') || jamaat?.toLowerCase().includes('mumbai')) && (
+                                <div className="flex items-center gap-1.5 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-lg border border-rose-100 shadow-sm transition-transform hover:scale-105">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Mumbai Location</span>
+                                </div>
+                            )}
+                            {(bio?.toLowerCase().includes('settled') || professionType?.toLowerCase().includes('settled')) && (
+                                <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg border border-amber-100 shadow-sm transition-transform hover:scale-105">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Well Settled</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {bio && (
@@ -317,7 +314,8 @@ export default function DiscoveryCard({
                                 "{bio}"
                             </p>
                         </div>
-                    )}
+                    )
+                    }
 
                     {/* Details grid — always visible, no collapsible */}
                     <div className="grid grid-cols-2 gap-1.5">
@@ -337,32 +335,38 @@ export default function DiscoveryCard({
                     </div>
 
                     {/* Parents */}
-                    {(fatherName || motherName) && (
-                        <div className="bg-rose-50/50 rounded-xl px-3 py-2 border border-rose-100/50">
-                            <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Parents</p>
-                            <p className="text-xs font-semibold text-gray-600">
-                                Father: <span className="text-[#881337]">{fatherName || 'N/A'}</span>
-                                {' '}&nbsp;|&nbsp;{' '}
-                                Mother: <span className="text-[#881337]">{motherName || 'N/A'}</span>
-                            </p>
-                        </div>
-                    )}
+                    {
+                        (fatherName || motherName) && (
+                            <div className="bg-rose-50/50 rounded-xl px-3 py-2 border border-rose-100/50">
+                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Parents</p>
+                                <p className="text-xs font-semibold text-gray-600">
+                                    Father: <span className="text-[#881337]">{fatherName || 'N/A'}</span>
+                                    {' '}&nbsp;|&nbsp;{' '}
+                                    Mother: <span className="text-[#881337]">{motherName || 'N/A'}</span>
+                                </p>
+                            </div>
+                        )
+                    }
 
                     {/* Partner qualities */}
-                    {partnerQualities && (
-                        <div className="text-xs text-gray-500 italic border-l-2 border-[#D4AF37] pl-2.5 leading-relaxed mt-2.5">
-                            <span className="font-bold text-[#881337] not-italic mr-1 text-[11px]">PP =</span>"{partnerQualities}"
-                        </div>
-                    )}
+                    {
+                        partnerQualities && (
+                            <div className="text-xs text-gray-500 italic border-l-2 border-[#D4AF37] pl-2.5 leading-relaxed mt-2.5">
+                                <span className="font-bold text-[#881337] not-italic mr-1 text-[11px]">PP =</span>"{partnerQualities}"
+                            </div>
+                        )
+                    }
 
                     {/* Contact — only after accepted */}
-                    {requestStatus === 'accepted' && (
-                        <div className="bg-emerald-50 rounded-xl px-3 py-2.5 border border-emerald-200">
-                            <p className="text-[8px] font-black text-emerald-700 uppercase tracking-wider mb-1">✓ Contact Shared</p>
-                            {mobile && <p className="text-xs font-bold text-emerald-700">📞 {mobileCode} {mobile}</p>}
-                            {email && <p className="text-xs font-bold text-emerald-700">✉️ {email}</p>}
-                        </div>
-                    )}
+                    {
+                        requestStatus === 'accepted' && (
+                            <div className="bg-emerald-50 rounded-xl px-3 py-2.5 border border-emerald-200">
+                                <p className="text-[8px] font-black text-emerald-700 uppercase tracking-wider mb-1">✓ Contact Shared</p>
+                                {mobile && <p className="text-xs font-bold text-emerald-700">📞 {mobileCode} {mobile}</p>}
+                                {email && <p className="text-xs font-bold text-emerald-700">✉️ {email}</p>}
+                            </div>
+                        )
+                    }
 
                     {/* Profile link */}
                     <button
@@ -372,93 +376,98 @@ export default function DiscoveryCard({
                     </button>
 
                     {/* CTA Button */}
-                    {rejectCount >= 2 && !requestSent ? (
-                        <div className="w-full py-3 bg-gray-50 text-gray-400 font-bold rounded-xl border border-gray-100 text-xs text-center">
-                            Request limit reached for this profile
-                        </div>
-                    ) : !isMyProfileVerified ? (
-                        <div className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
-                            <p className="text-amber-800 font-bold text-xs">🔐 ITS Verification required to send requests</p>
-                            <p className="text-amber-600 text-[10px] mt-0.5">Awaiting admin approval</p>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (isMyProfileVerified && !requestSent && !isDummy) {
-                                    setShowIcebreakerModal(true);
-                                } else {
-                                    handleSendRequest();
-                                }
-                            }}
-                            disabled={requestSent || loading}
-                            className={`w-full py-3.5 rounded-xl font-black text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
+                    {
+                        rejectCount >= 2 && !requestSent ? (
+                            <div className="w-full py-3 bg-gray-50 text-gray-400 font-bold rounded-xl border border-gray-100 text-xs text-center">
+                                Request limit reached for this profile
+                            </div>
+                        ) : !isMyProfileVerified ? (
+                            <div className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
+                                <p className="text-amber-800 font-bold text-xs">🔐 Your ITS Verification required to send requests</p>
+                                <p className="text-amber-600 text-[10px] mt-0.5">Awaiting admin approval</p>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isMyProfileVerified && !requestSent && !isDummy) {
+                                        setShowIcebreakerModal(true);
+                                    } else {
+                                        handleSendRequest();
+                                    }
+                                }}
+                                disabled={requestSent || loading}
+                                className={`w-full py-3.5 rounded-xl font-black text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
                                 ${requestStatus === 'accepted'
-                                    ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed border border-emerald-200 shadow-none'
-                                    : requestSent
-                                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 shadow-none'
-                                        : 'bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white hover:shadow-lg'}`}
-                        >
-                            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                            {requestStatus === 'accepted' ? '✓ Interest Accepted'
-                                : requestSent ? '✓ Request Sent'
-                                    : rejectCount === 1 ? '↩ Retry Request'
-                                        : 'Send Interest'}
-                        </button>
-                    )}
+                                        ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed border border-emerald-200 shadow-none'
+                                        : requestSent
+                                            ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 shadow-none'
+                                            : 'bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white hover:shadow-lg'}`}
+                            >
+                                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {requestStatus === 'accepted' ? '✓ Interest Accepted'
+                                    : requestSent ? '✓ Request Sent'
+                                        : rejectCount === 1 ? '↩ Retry Request'
+                                            : 'Send Interest'}
+                            </button>
+                        )}
                 </div>
             </div>
 
             {/* Icebreaker Modal */}
-            {showIcebreakerModal && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowIcebreakerModal(false)}>
-                    <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-xl font-bold font-serif text-[#881337] mb-2">Send Interest Request</h3>
-                        <p className="text-sm text-gray-500 mb-4 leading-relaxed">An optional halal icebreaker increases your chances of being accepted!</p>
-                        <textarea
-                            value={icebreakerText}
-                            onChange={e => setIcebreakerText(e.target.value)}
-                            placeholder="e.g. I see we both value our Deeni & Dunyawi balance..."
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none resize-none focus:ring-2 focus:ring-[#D4AF37] text-sm mb-4 h-24"
-                            maxLength={120}
-                        />
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowIcebreakerModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 text-sm">Cancel</button>
-                            <button onClick={handleSendRequest} className="flex-1 py-3 bg-[#D4AF37] text-white rounded-xl font-bold hover:bg-[#c29e2f] text-sm flex items-center justify-center gap-2">
-                                {loading && <Loader2 className="w-4 h-4 animate-spin" />} Send
-                            </button>
+            {
+                showIcebreakerModal && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowIcebreakerModal(false)}>
+                        <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+                            <h3 className="text-xl font-bold font-serif text-[#881337] mb-2">Send Interest Request</h3>
+                            <p className="text-sm text-gray-500 mb-4 leading-relaxed">An optional halal icebreaker increases your chances of being accepted!</p>
+                            <textarea
+                                value={icebreakerText}
+                                onChange={e => setIcebreakerText(e.target.value)}
+                                placeholder="e.g. I see we both value our Deeni & Dunyawi balance..."
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none resize-none focus:ring-2 focus:ring-[#D4AF37] text-sm mb-4 h-24"
+                                maxLength={120}
+                            />
+                            <div className="flex gap-3">
+                                <button onClick={() => setShowIcebreakerModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 text-sm">Cancel</button>
+                                <button onClick={handleSendRequest} className="flex-1 py-3 bg-[#D4AF37] text-white rounded-xl font-bold hover:bg-[#c29e2f] text-sm flex items-center justify-center gap-2">
+                                    {loading && <Loader2 className="w-4 h-4 animate-spin" />} Send
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Lightbox */}
-            {showLightbox && canZoom && currentPhoto && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4" onClick={() => setShowLightbox(false)}>
-                    <button
-                        className="absolute top-6 right-6 z-[110] w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#881337] shadow-2xl hover:scale-110 transition-all"
-                        onClick={e => { e.stopPropagation(); setShowLightbox(false); }}
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                    <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
-                        <img src={currentPhoto} alt="Full View" className="max-w-full max-h-full object-contain shadow-2xl rounded-lg" />
-                        {photos.length > 1 && (
-                            <>
-                                <button onClick={() => setActivePhotoIdx(p => (p - 1 + photos.length) % photos.length)} className="absolute left-2 md:-left-16 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition-all">
-                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
-                                </button>
-                                <button onClick={() => setActivePhotoIdx(p => (p + 1) % photos.length)} className="absolute right-2 md:-right-16 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition-all">
-                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
-                                </button>
-                            </>
-                        )}
-                        <div className="absolute -bottom-10 left-0 right-0 text-center text-white/50 text-sm font-bold tracking-widest uppercase">
-                            Photo {activePhotoIdx + 1} of {photos.length}
+            {
+                showLightbox && canZoom && currentPhoto && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4" onClick={() => setShowLightbox(false)}>
+                        <button
+                            className="absolute top-6 right-6 z-[110] w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#881337] shadow-2xl hover:scale-110 transition-all"
+                            onClick={e => { e.stopPropagation(); setShowLightbox(false); }}
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                        <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+                            <img src={currentPhoto} alt="Full View" className="max-w-full max-h-full object-contain shadow-2xl rounded-lg" />
+                            {photos.length > 1 && (
+                                <>
+                                    <button onClick={(e) => { e.stopPropagation(); setActivePhotoIdx(prev => (prev - 1 + photos.length) % photos.length); }} className="absolute left-2 md:-left-16 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition-all">
+                                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
+                                    </button>
+                                    <button onClick={(e) => { e.stopPropagation(); setActivePhotoIdx(prev => (prev + 1) % photos.length); }} className="absolute right-2 md:-right-16 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-sm transition-all">
+                                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                                    </button>
+                                </>
+                            )}
+                            <div className="absolute -bottom-10 left-0 right-0 text-center text-white/50 text-sm font-bold tracking-widest uppercase">
+                                Photo {activePhotoIdx + 1} of {photos.length}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </>
     );
 }

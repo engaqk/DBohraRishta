@@ -8,7 +8,8 @@ import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2,
 import { notifyInterestSent, notifyRequestAccepted, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { db, messaging } from '@/lib/firebase/config';
+import { requestNotificationPermission } from '@/lib/firebase/messaging';
 import toast from 'react-hot-toast';
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
@@ -124,6 +125,7 @@ export default function RishtaDashboard() {
     // Subscribe to bookmarks
     useEffect(() => {
         if (!user) return;
+        requestNotificationPermission(user.uid);
         const q = query(collection(db, 'bookmarks'), where('userId', '==', user.uid));
         const unsub = onSnapshot(q, (snap) => {
             const ids = new Set<string>();
@@ -555,29 +557,14 @@ export default function RishtaDashboard() {
             // Updated Email Notifications for Acceptance (Consolidated with Admin CC)
             const adminEmail = ADMIN_EMAIL;
 
-            // 1. Notify the one who accepted (the current user) + Admin
-            if (acceptEmail && acceptEmail.includes('@')) {
-                try {
-                    await fetch("/api/notify", {
-                        method: "POST",
-                        body: JSON.stringify({
-                            to: acceptEmail,
-                            cc: adminEmail,
-                            subject: "Interest Request Accepted - Contact Details Shared",
-                            html: `
-                                <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-                                    <h2 style="color: #881337;">Alhamdulillah! Connection Successful</h2>
-                                    <p>You have accepted the interest request from <strong>${acceptingRequest.otherUserName}</strong>.</p>
-                                    <p>Your contact details (Mobile: ${acceptMobile}, Email: ${acceptEmail}) have been shared with them.</p>
-                                    <p>You can now see their unblurred photos and full details on your dashboard under "Unblurred Alignments".</p>
-                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-                                    <p style="font-size: 10px; color: #999;">DBohraRishta Notification System</p>
-                                </div>
-                            `
-                        })
-                    });
-                } catch (e) { }
-            }
+                        // Integrated Hybrid Email Notifications for Acceptance
+            notifyRequestAccepted({
+                acceptorName: myProfile?.name || 'Candidate',
+                acceptorMobile: acceptMobile,
+                acceptorEmail: acceptEmail,
+                requesterEmail: acceptingRequest.otherUserEmail,
+                requesterName: acceptingRequest.otherUserName
+            }).catch(e => console.error("Email notify error", e));
 
             // 2. Notify the requester + Admin
             if (acceptingRequest.otherUserEmail && acceptingRequest.otherUserEmail.includes('@')) {
@@ -948,6 +935,23 @@ export default function RishtaDashboard() {
                         ))}
                     </nav>
                 </div>
+
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowAdminHelpChat(true)}
+                        className="w-10 h-10 bg-white rounded-2xl shadow-sm border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#881337] transition-colors"
+                        title="Help & Support"
+                    >
+                        <HelpCircle className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={logout}
+                        className="w-10 h-10 bg-white rounded-2xl shadow-sm border border-gray-200 flex items-center justify-center text-gray-500 hover:text-red-600 transition-colors"
+                        title="Logout"
+                    >
+                        <LogOut className="w-5 h-5" />
+                    </button>
+                </div>
                 {/* ── Floating Admin Help Chat Panel ── */}
                 {showAdminHelpChat && (
                     <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden" style={{ maxHeight: '460px' }}>
@@ -1067,12 +1071,11 @@ export default function RishtaDashboard() {
                                         </label>
                                     )}
                                     <button
-                                        onClick={() => setShowAdminMessages(!showAdminMessages)}
+                                        onClick={() => setShowAdminHelpChat(true)}
                                         className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition-all flex items-center gap-1.5"
                                     >
                                         <MessageCircle className="w-3.5 h-3.5" />
-                                        {showAdminMessages ? 'Hide' : 'Message Admin'}
-                                        {adminMsgThread.length > 0 && <span className="bg-[#881337] text-white rounded-full px-1.5 text-[9px]">{adminMsgThread.length}</span>}
+                                        Message Admin
                                     </button>
                                     <button
                                         onClick={() => router.push('/success-stories')}
@@ -1123,37 +1126,6 @@ export default function RishtaDashboard() {
                         )}
                     </div>
 
-                    {/* Collapsible message thread */}
-                    {showAdminMessages && (
-                        <div className="border-t border-gray-200 p-4 md:p-5">
-                            <div className="flex flex-col gap-2.5 max-h-56 overflow-y-auto mb-3 bg-white rounded-xl p-3 border border-gray-100">
-                                {adminMsgThread.length === 0 && (
-                                    <p className="text-center text-gray-400 text-xs py-4">No messages yet. Send a query below.</p>
-                                )}
-                                {adminMsgThread.map(msg => (
-                                    <div key={msg.id} className={`flex ${msg.from === 'admin' ? 'justify-start' : 'justify-end'}`}>
-                                        <div className={`max-w-[80%] px-3.5 py-2 rounded-xl text-sm shadow-sm ${msg.from === 'admin' ? 'bg-gray-100 text-gray-800 rounded-tl-sm' : 'bg-[#881337] text-white rounded-tr-sm'}`}>
-                                            <p className="text-[10px] font-bold uppercase opacity-60 mb-0.5">{msg.from === 'admin' ? 'Admin' : 'You'}</p>
-                                            <p>{msg.text}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={userMsgInput}
-                                    onChange={e => setUserMsgInput(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleSendMessageToAdmin(); }}
-                                    placeholder="Write a query to admin..."
-                                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#881337] bg-gray-50"
-                                />
-                                <button onClick={handleSendMessageToAdmin} className="bg-[#881337] text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-rose-900 transition-colors shadow-sm flex items-center gap-1.5">
-                                    <Send className="w-4 h-4" /> Send
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
 
@@ -1165,8 +1137,8 @@ export default function RishtaDashboard() {
                         <div id="profile-completeness-section" className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
 
                             <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-rose-50 mb-4 shadow-md relative">
-                                {myProfile.itsImageUrl ? (
-                                    <img src={myProfile.itsImageUrl} alt="Biodata" className="w-full h-full object-cover" />
+                                {myProfile.libasImageUrl || myProfile.extraImageUrl || myProfile.itsImageUrl ? (
+                                    <img src={myProfile.libasImageUrl || myProfile.extraImageUrl || myProfile.itsImageUrl} alt="Biodata" className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-4xl">
                                         {myProfile.name?.charAt(0)}
@@ -1273,42 +1245,8 @@ export default function RishtaDashboard() {
                             </div>
                         )}
 
-                        {/* Admin Message Thread */}
-                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-                                <MessageCircle className="w-4 h-4 text-[#881337]" />
-                                <h3 className="font-bold text-sm text-[#881337] uppercase tracking-wide">💬 Chat with Admin to Resolve Above</h3>
-                            </div>
-                            <div className="flex flex-col gap-2.5 min-h-[120px] max-h-72 overflow-y-auto p-4">
-                                {adminMsgThread.length === 0 ? (
-                                    <p className="text-center text-gray-400 text-sm py-8">No messages from admin yet.</p>
-                                ) : (
-                                    adminMsgThread.map(msg => (
-                                        <div key={msg.id} className={`flex ${msg.from === 'admin' ? 'justify-start' : 'justify-end'}`}>
-                                            <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm shadow-sm ${msg.from === 'admin' ? 'bg-gray-100 text-gray-800 rounded-tl-sm' : 'bg-[#881337] text-white rounded-tr-sm'}`}>
-                                                <p className="text-[10px] font-bold uppercase opacity-60 mb-0.5">{msg.from === 'admin' ? 'Admin' : 'You'}</p>
-                                                <p>{msg.text}</p>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                            <div className="flex gap-2 p-4 border-t border-gray-100 bg-gray-50/50">
-                                <input
-                                    type="text"
-                                    value={userMsgInput}
-                                    onChange={e => setUserMsgInput(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleSendMessageToAdmin(); }}
-                                    placeholder="Send a message to admin..."
-                                    className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#881337] bg-white"
-                                />
-                                <button onClick={handleSendMessageToAdmin} className="bg-[#881337] text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-rose-900 transition-colors shadow-sm flex items-center gap-1.5">
-                                    <Send className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
 
-                        {adminMsgThread.length === 0 && !showVerifiedCelebration && myProfile?.status !== 'rejected' && myProfile?.status !== 'hold' && (
+                        {!showVerifiedCelebration && myProfile?.status !== 'rejected' && myProfile?.status !== 'hold' && (
                             <div className="text-center py-12 text-gray-400">
                                 <div className="text-5xl mb-3">🔔</div>
                                 <p className="font-bold text-sm">All Caught Up!</p>
@@ -1353,7 +1291,11 @@ export default function RishtaDashboard() {
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setShowMyProfileModal(false)}>
                         <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
                             <div className="relative h-48 bg-gray-200 overflow-hidden shrink-0">
-                                {myProfile.libasImageUrl ? <img src={myProfile.libasImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-80" /> : <div className="absolute inset-0 bg-gray-300" />}
+                                {(myProfile.libasImageUrl || myProfile.extraImageUrl || myProfile.itsImageUrl) ? (
+                                    <img src={myProfile.libasImageUrl || myProfile.extraImageUrl || myProfile.itsImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-80" />
+                                ) : (
+                                    <div className="absolute inset-0 bg-gray-300" />
+                                )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/20" />
                                 <button onClick={() => setShowMyProfileModal(false)} className="absolute top-4 right-4 bg-black/40 text-white rounded-full p-2 z-20"><X className="w-4 h-4" /></button>
                                 <div className="absolute bottom-6 left-6 z-10">

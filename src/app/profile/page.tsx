@@ -150,7 +150,9 @@ function ProfileContent() {
     const { jamaat, hizratLocation, libasImageUrl, extraImageUrl, gender,
         hobbies, partnerQualities, bio, isItsVerified, heightFeet, heightInch,
         maritalStatus, educationDetails, education, professionType, fatherName,
-        motherName, city, state, country, mobile, mobileCode, email } = profile;
+        motherName, city, state, country, mobile, mobileCode, email, dob,
+        siblings, noOfChildren, citizenOf, ancestralWatan, landlineCode, landline, address,
+        hifzStatus, completedUpto, serviceType, employmentDetails } = profile;
 
     return (
         <div className="min-h-screen bg-[#F9FAFB]">
@@ -201,18 +203,20 @@ function ProfileContent() {
                         {/* Gradient overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent z-20 pointer-events-none" />
 
-                        {/* Privacy pill */}
-                        {!canZoom && currentPhoto && (
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 bg-black/40 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2">
-                                <ShieldCheck className="w-4 h-4 text-white/80" />
-                                <span className="text-white text-xs font-bold whitespace-nowrap">Unlocks after acceptance</span>
-                            </div>
-                        )}
+                        {/* Top badges */}
+                        <div className="absolute top-3 left-3 z-30 flex flex-col items-start gap-2">
+                            {!canZoom && currentPhoto && (
+                                <div className="bg-black/60 backdrop-blur-md rounded-full px-2.5 py-1 flex items-center gap-1.5 shadow border border-white/20">
+                                    <ShieldCheck className="w-3 h-3 text-white/90" />
+                                    <span className="text-white text-[9px] font-bold whitespace-nowrap uppercase tracking-wider">Unlocks after acceptance</span>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Top badges */}
                         <div className="absolute top-3 right-3 z-30 flex flex-col items-end gap-2">
                             {isItsVerified && (
-                                <div className="flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow border border-white/30">
+                                <div className="flex items-center gap-1 bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow border border-white/30">
                                     <ShieldCheck className="w-3 h-3" /> ITS Verified
                                 </div>
                             )}
@@ -231,11 +235,6 @@ function ProfileContent() {
                                         <h1 className="text-white font-black text-2xl font-serif leading-tight drop-shadow">
                                             {displayName}{age ? `, ${age}` : ''}
                                         </h1>
-                                        {gender === 'female' && !isAccepted && (
-                                            <div className="flex items-center gap-1 bg-black/40 backdrop-blur-sm text-white/70 text-[9px] font-bold px-2 py-0.5 rounded-full">
-                                                <Lock className="w-2.5 h-2.5" /> Surname hidden
-                                            </div>
-                                        )}
                                     </div>
                                     <p className="text-white/70 text-xs font-medium mt-0.5">
                                         {jamaat || 'Bohra Community'} • {hizratLocation || city || 'Global'}
@@ -265,35 +264,85 @@ function ProfileContent() {
                             </p>
                         )}
 
-                        {/* Info grid — always visible */}
-                        <div>
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Profile Details</h3>
-                            <div className="grid grid-cols-2 gap-2">
-                                {[
-                                    { label: 'Education', value: educationDetails || education },
-                                    { label: 'Profession', value: professionType },
-                                    { label: 'Marital Status', value: maritalStatus || 'Single' },
-                                    { label: 'Height', value: heightFeet ? `${heightFeet}'${heightInch || 0}"` : null },
-                                    { label: 'Jamaat', value: jamaat },
-                                    { label: 'Location', value: [city, state, country].filter(Boolean).join(', ') || hizratLocation },
-                                ].filter(d => d.value).map(d => (
-                                    <div key={d.label} className="bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100">
-                                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">{d.label}</p>
-                                        <p className="text-xs font-bold text-gray-700 truncate">{d.value}</p>
-                                    </div>
-                                ))}
-                            </div>
+                        {/* Info grid — always visible, matches DiscoveryCard EXACTLY */}
+                        <div className="grid grid-cols-2 gap-1.5">
+                            {[
+                                { label: 'Education', value: completedUpto || education || educationDetails },
+                                { label: 'Profession', value: professionType },
+                                { label: 'Marital', value: maritalStatus || 'Single' },
+                                { label: 'Height', value: heightFeet ? `${heightFeet}'${heightInch || '0'}"` : null },
+                                { label: 'City', value: city || hizratLocation },
+                                { label: 'DOB', value: dob },
+                            ].filter(d => d.value).map(d => (
+                                <div key={d.label} className="bg-gray-50 rounded-xl px-3 py-2 border border-gray-100">
+                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">{d.label}</p>
+                                    <p className="text-xs font-bold text-gray-700 truncate">{d.value}</p>
+                                </div>
+                            ))}
                         </div>
 
-                        {/* Parents — hidden for female until accepted */}
-                        {(fatherName || motherName) && (isAccepted || gender !== 'female') && (
-                            <div className="bg-rose-50/50 rounded-xl px-3 py-2.5 border border-rose-100/50">
-                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-1">Family</p>
-                                <p className="text-xs font-semibold text-gray-600">
-                                    Father: <span className="text-[#881337]">{fatherName || 'N/A'}</span>
-                                    &nbsp;|&nbsp;
-                                    Mother: <span className="text-[#881337]">{motherName || 'N/A'}</span>
-                                </p>
+                        {/* Parents & Family Details */}
+                        {(fatherName || motherName || siblings || noOfChildren || citizenOf || ancestralWatan) && (isAccepted || gender !== 'female') && (
+                            <div className="bg-rose-50/50 rounded-xl px-3 py-3 border border-rose-100/50 space-y-2">
+                                <div>
+                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Parents</p>
+                                    <p className="text-xs font-semibold text-gray-600">
+                                        Father: <span className="text-[#881337]">{fatherName || 'N/A'}</span>
+                                        {' '}&nbsp;|&nbsp;{' '}
+                                        Mother: <span className="text-[#881337]">{motherName || 'N/A'}</span>
+                                    </p>
+                                </div>
+                                {(siblings || noOfChildren) && (
+                                    <div className="flex gap-4 border-t border-rose-100/50 pt-2">
+                                        {siblings && (
+                                            <div>
+                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Siblings</p>
+                                                <p className="text-xs font-semibold text-gray-600">{siblings}</p>
+                                            </div>
+                                        )}
+                                        {noOfChildren && (
+                                            <div>
+                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Children</p>
+                                                <p className="text-xs font-semibold text-gray-600">{noOfChildren}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {(citizenOf || ancestralWatan) && (
+                                    <div className="flex gap-4 border-t border-rose-100/50 pt-2">
+                                        {citizenOf && (
+                                            <div>
+                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Citizen Of</p>
+                                                <p className="text-xs font-semibold text-gray-600">{citizenOf}</p>
+                                            </div>
+                                        )}
+                                        {ancestralWatan && (
+                                            <div>
+                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Ancestral Watan</p>
+                                                <p className="text-xs font-semibold text-gray-600">{ancestralWatan}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Education Deep Dive */}
+                        {(educationDetails || hifzStatus) && (
+                            <div className="bg-blue-50/50 rounded-xl px-3 py-2.5 border border-blue-100/50">
+                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-1">Education & Deeni Taleem</p>
+                                {completedUpto && <p className="text-xs text-gray-700 font-bold mb-1">{completedUpto}</p>}
+                                {educationDetails && <p className="text-xs text-gray-600 leading-relaxed mb-1">{educationDetails}</p>}
+                                {hifzStatus && <p className="text-xs font-medium text-emerald-700 bg-emerald-100/50 inline-block px-1.5 py-0.5 rounded mt-1">Hifz: {hifzStatus}</p>}
+                            </div>
+                        )}
+
+                        {/* Occupation Deep Dive */}
+                        {(employmentDetails || serviceType) && (
+                            <div className="bg-indigo-50/50 rounded-xl px-3 py-2.5 border border-indigo-100/50">
+                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-1">Occupation Details</p>
+                                {serviceType && <p className="text-xs text-gray-700 font-bold mb-1">{serviceType}</p>}
+                                {employmentDetails && <p className="text-xs text-gray-600 leading-relaxed">{employmentDetails}</p>}
                             </div>
                         )}
 
@@ -307,9 +356,8 @@ function ProfileContent() {
 
                         {/* Partner qualities */}
                         {partnerQualities && (
-                            <div className="bg-amber-50 rounded-xl px-3 py-2.5 border border-amber-100">
-                                <p className="text-[8px] font-bold text-amber-500 uppercase tracking-wider mb-0.5">💛 Partner Expectations</p>
-                                <p className="text-xs text-amber-800 font-medium leading-relaxed">{partnerQualities}</p>
+                            <div className="text-xs text-gray-500 italic border-l-2 border-[#D4AF37] pl-3 leading-relaxed">
+                                <span className="font-bold text-[#881337] not-italic mr-1 text-[11px]">PP =</span>"{partnerQualities}"
                             </div>
                         )}
 

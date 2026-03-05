@@ -183,17 +183,23 @@ export default function DiscoveryCard({
 
                     {/* Top badges */}
                     <div className="absolute top-3 left-3 right-3 z-30 flex items-start justify-between">
-                        <div className="flex flex-col gap-1.5">
-                            {isDummy && <span className="bg-[#881337] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Sample</span>}
+                        <div className="flex flex-col gap-1.5 items-start">
+                            {isDummy && <span className="bg-[#881337] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase shadow">Sample</span>}
                             {isOnline && (
-                                <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />Active
                                 </span>
+                            )}
+                            {!canZoom && (
+                                <div className="bg-black/60 backdrop-blur-md rounded-full px-2.5 py-1 flex items-center gap-1.5 shadow border border-white/20">
+                                    <ShieldCheck className="w-3 h-3 text-white/90" />
+                                    <span className="text-white text-[9px] font-bold whitespace-nowrap uppercase tracking-wider">Unlocks after acceptance</span>
+                                </div>
                             )}
                         </div>
                         <div className="flex flex-col items-end gap-1.5">
                             {isItsVerified && (
-                                <div className="flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow border border-white/30">
+                                <div className="flex items-center gap-1 bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow border border-white/30">
                                     <ShieldCheck className="w-2.5 h-2.5" /> ITS VERIFIED
                                 </div>
                             )}
@@ -214,12 +220,6 @@ export default function DiscoveryCard({
                                     <h3 className="text-white font-black text-xl font-serif leading-tight drop-shadow">
                                         {displayName}, {age}
                                     </h3>
-                                    {gender === 'female' && requestStatus !== 'accepted' && (
-                                        <div className="bg-black/60 backdrop-blur-md rounded-md px-1.5 py-0.5 border border-[#881337] flex items-center gap-1 shadow flex-shrink-0">
-                                            <ShieldCheck className="w-2.5 h-2.5 text-[#D4AF37]" />
-                                            <span className="text-[#D4AF37] text-[8px] font-black uppercase tracking-wider">Surname Hidden</span>
-                                        </div>
-                                    )}
                                 </div>
                                 <p className="text-white/75 text-[11px] font-medium mt-0.5">{jamaat || 'Bohra Community'} • {hizratLocation || 'Global'}</p>
                             </div>
@@ -230,15 +230,7 @@ export default function DiscoveryCard({
                         </div>
                     </div>
 
-                    {/* Privacy pill — prominent, centered */}
-                    {!canZoom && (
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-2">
-                            <div className="bg-black/60 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-2 shadow-lg border border-white/20">
-                                <ShieldCheck className="w-4 h-4 text-white/90" />
-                                <span className="text-white text-xs font-bold whitespace-nowrap">Unlocks after acceptance</span>
-                            </div>
-                        </div>
-                    )}
+
 
                     {/* Gallery dots */}
                     {photos.length > 1 && canZoom && (
@@ -292,9 +284,8 @@ export default function DiscoveryCard({
 
                     {/* Partner qualities */}
                     {partnerQualities && (
-                        <div className="bg-amber-50 rounded-xl px-3 py-2 border border-amber-100">
-                            <p className="text-[8px] font-bold text-amber-500 uppercase tracking-wider mb-0.5">💛 Partner Qualities</p>
-                            <p className="text-xs text-amber-800 font-medium leading-relaxed line-clamp-2">{partnerQualities}</p>
+                        <div className="text-xs text-gray-500 italic border-l-2 border-[#D4AF37] pl-2.5 leading-relaxed mt-2.5">
+                            <span className="font-bold text-[#881337] not-italic mr-1 text-[11px]">PP =</span>"{partnerQualities}"
                         </div>
                     )}
 
@@ -340,7 +331,7 @@ export default function DiscoveryCard({
                                     ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed border border-emerald-200 shadow-none'
                                     : requestSent
                                         ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 shadow-none'
-                                        : 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white hover:shadow-lg'}`}
+                                        : 'bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white hover:shadow-lg'}`}
                         >
                             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                             {requestStatus === 'accepted' ? '✓ Interest Accepted'

@@ -8,6 +8,7 @@ import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "fireb
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { deriveBase32Secret, verifyTOTP } from "@/lib/totp-helpers";
+import { notifyAdminNewRegistration } from "@/lib/emailService";
 
 const ErrorMsg = ({ msg }: { msg?: string }) => msg ? <p className="text-red-500 text-xs mt-1 font-semibold animate-in fade-in">{msg}</p> : null;
 
@@ -353,31 +354,15 @@ export default function CandidateRegistrationPage() {
 
                 await updateDoc(doc(db, "users", user.uid), updateObj);
 
-                // Email Notification Call to Admin
-                try {
-                    await fetch("/api/notify", {
-                        method: "POST",
-                        body: JSON.stringify({
-                            to: "abdulqadirkhanji52@gmail.com",
-                            subject: "Profile Verification Required: " + fullName,
-                            html: `
-                                <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-                                    <h2 style="color: #881337;">New Profile Verification Request</h2>
-                                    <p>A new candidate has submitted their biodata for verification:</p>
-                                    <ul style="list-style: none; padding: 0;">
-                                        <li><strong>Name:</strong> ${fullName}</li>
-                                        <li><strong>ITS:</strong> ${formData.ejamaatId}</li>
-                                        <li><strong>Gender:</strong> ${formData.gender}</li>
-                                        <li><strong>City:</strong> ${formData.city || 'Not specified'}</li>
-                                    </ul>
-                                    <p style="margin-top: 20px;">Please login to the admin dashboard to review and approve/reject this profile.</p>
-                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-                                    <p style="font-size: 10px; color: #999;">DBohraRishta Notification System</p>
-                                </div>
-                            `
-                        })
-                    });
-                } catch (e) { }
+                // ✅ Email Admin via EmailJS (works with static export)
+                notifyAdminNewRegistration({
+                    candidateName: fullName,
+                    candidateEmail: formData.email,
+                    itsNumber: formData.ejamaatId,
+                    gender: formData.gender,
+                    city: formData.city,
+                    isResubmission: formData.status === 'rejected',
+                }).catch(() => { });
 
                 toast.success("Biodata Updated Successfully!");
                 router.push("/");

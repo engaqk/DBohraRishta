@@ -4,7 +4,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, Heart, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle } from 'lucide-react';
+import { notifyInterestSent, notifyRequestAccepted, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -99,6 +100,7 @@ export default function RishtaDashboard() {
     const [showAdminMessages, setShowAdminMessages] = useState(false);
     const [itsReuploadUrl, setItsReuploadUrl] = useState<string | null>(null);
     const [showVerifiedCelebration, setShowVerifiedCelebration] = useState(false);
+    const [showAdminHelpChat, setShowAdminHelpChat] = useState(false);
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
     // Accept Request Contact Modal
@@ -332,6 +334,8 @@ export default function RishtaDashboard() {
                     const uRef = await getDoc(doc(db, "users", targetId));
                     if (uRef.exists()) {
                         const uData = uRef.data();
+                        // Skip archived profiles — they should not appear in requests or accepted sections
+                        if (uData.status === 'archived') continue;
                         resolvedRequests.push({
                             ...req,
                             otherUserName: uData.name || "Unknown Member",
@@ -496,7 +500,7 @@ export default function RishtaDashboard() {
             await handleRequestAction(acceptingRequest.id, "accepted");
 
             // Updated Email Notifications for Acceptance (Consolidated with Admin CC)
-            const adminEmail = "abdulqadirkhanji52@gmail.com";
+            const adminEmail = ADMIN_EMAIL;
 
             // 1. Notify the one who accepted (the current user) + Admin
             if (acceptEmail && acceptEmail.includes('@')) {
@@ -871,6 +875,106 @@ export default function RishtaDashboard() {
                         ))}
                     </nav>
                 </div>
+
+                {/* ── Bell + Help Chat Icons ── */}
+                <div className="flex items-center gap-2 shrink-0">
+
+                    {/* 🔔 Notification Bell with unread badge */}
+                    <button
+                        id="notifications-bell"
+                        onClick={() => {
+                            setActiveTab('notifications');
+                            if (user) {
+                                localStorage.setItem(`lastReadNotif_${user.uid}`, Date.now().toString());
+                                setUnreadNotifCount(0);
+                            }
+                        }}
+                        className="relative w-10 h-10 bg-white rounded-full shadow-sm border border-gray-200 flex items-center justify-center hover:bg-rose-50 transition-colors"
+                        title="Notifications"
+                    >
+                        <Bell className="w-5 h-5 text-gray-600" />
+                        {unreadNotifCount > 0 && (
+                            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#881337] text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow-lg animate-pulse">
+                                {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                            </span>
+                        )}
+                    </button>
+
+                    {/* 💬 Admin Help Chat */}
+                    <button
+                        id="admin-help-chat"
+                        onClick={() => setShowAdminHelpChat(v => !v)}
+                        className={`relative w-10 h-10 rounded-full shadow-sm border flex items-center justify-center transition-colors ${showAdminHelpChat
+                                ? 'bg-[#881337] border-[#881337] text-white'
+                                : 'bg-white border-gray-200 text-gray-600 hover:bg-rose-50'
+                            }`}
+                        title="Help &amp; Chat with Admin"
+                    >
+                        <HelpCircle className="w-5 h-5" />
+                        {adminMsgThread.filter(m => m.from === 'admin').length > 0 && !showAdminHelpChat && (
+                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white" />
+                        )}
+                    </button>
+                </div>
+
+                {/* ── Floating Admin Help Chat Panel ── */}
+                {showAdminHelpChat && (
+                    <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden" style={{ maxHeight: '460px' }}>
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-[#881337] to-[#9F1239] px-4 py-3 flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center text-white text-sm">🛡️</div>
+                                <div>
+                                    <p className="text-white font-bold text-sm">Admin Support</p>
+                                    <p className="text-white/70 text-[10px]">DBohraRishta Team</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowAdminHelpChat(false)} className="text-white/80 hover:text-white"><X className="w-4 h-4" /></button>
+                        </div>
+
+                        {/* Messages */}
+                        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 bg-gray-50">
+                            {adminMsgThread.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <p className="text-2xl mb-2">👋</p>
+                                    <p className="text-gray-500 text-sm font-bold">Need help?</p>
+                                    <p className="text-gray-400 text-xs mt-1">Send a message and the admin team will reply shortly.</p>
+                                </div>
+                            ) : (
+                                adminMsgThread.map(msg => (
+                                    <div key={msg.id} className={`flex ${msg.from === 'admin' ? 'justify-start' : 'justify-end'}`}>
+                                        <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm shadow-sm ${msg.from === 'admin'
+                                                ? 'bg-white text-gray-800 rounded-tl-sm border border-gray-100'
+                                                : 'bg-[#881337] text-white rounded-tr-sm'
+                                            }`}>
+                                            <p className="text-[9px] font-bold uppercase opacity-60 mb-0.5">{msg.from === 'admin' ? 'Admin' : 'You'}</p>
+                                            <p>{msg.text}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Input */}
+                        <div className="border-t border-gray-100 p-3 bg-white flex gap-2 shrink-0">
+                            <input
+                                type="text"
+                                value={userMsgInput}
+                                onChange={e => setUserMsgInput(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessageToAdmin(); } }}
+                                placeholder="Type your message..."
+                                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#881337]/30 focus:border-[#881337]"
+                            />
+                            <button
+                                onClick={handleSendMessageToAdmin}
+                                disabled={!userMsgInput.trim()}
+                                className="w-9 h-9 bg-[#881337] text-white rounded-xl flex items-center justify-center hover:bg-[#9F1239] transition-colors disabled:opacity-40"
+                            >
+                                <Send className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
 
             </header>
 

@@ -76,10 +76,12 @@ export default function RishtaDashboard() {
     useEffect(() => {
         if (tabParam === 'notifications') {
             setActiveTab('notifications');
+            router.replace('/', { scroll: false });
         } else if (tabParam === 'discovery') {
             setActiveTab('discovery');
+            router.replace('/', { scroll: false });
         }
-    }, [tabParam]);
+    }, [tabParam, router]);
     const [dataLoading, setDataLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -905,8 +907,8 @@ export default function RishtaDashboard() {
                         id="admin-help-chat"
                         onClick={() => setShowAdminHelpChat(v => !v)}
                         className={`relative w-10 h-10 rounded-full shadow-sm border flex items-center justify-center transition-colors ${showAdminHelpChat
-                                ? 'bg-[#881337] border-[#881337] text-white'
-                                : 'bg-white border-gray-200 text-gray-600 hover:bg-rose-50'
+                            ? 'bg-[#881337] border-[#881337] text-white'
+                            : 'bg-white border-gray-200 text-gray-600 hover:bg-rose-50'
                             }`}
                         title="Help &amp; Chat with Admin"
                     >
@@ -944,8 +946,8 @@ export default function RishtaDashboard() {
                                 adminMsgThread.map(msg => (
                                     <div key={msg.id} className={`flex ${msg.from === 'admin' ? 'justify-start' : 'justify-end'}`}>
                                         <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm shadow-sm ${msg.from === 'admin'
-                                                ? 'bg-white text-gray-800 rounded-tl-sm border border-gray-100'
-                                                : 'bg-[#881337] text-white rounded-tr-sm'
+                                            ? 'bg-white text-gray-800 rounded-tl-sm border border-gray-100'
+                                            : 'bg-[#881337] text-white rounded-tr-sm'
                                             }`}>
                                             <p className="text-[9px] font-bold uppercase opacity-60 mb-0.5">{msg.from === 'admin' ? 'Admin' : 'You'}</p>
                                             <p>{msg.text}</p>

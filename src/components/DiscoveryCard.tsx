@@ -142,10 +142,12 @@ export default function DiscoveryCard({
 
     return (
         <>
-            <div className={`bg-white rounded-2xl shadow-lg border overflow-hidden w-full flex flex-col transition-all duration-300
+            <div
+                onClick={() => router.push(`/profile?id=${id}`)}
+                className={`bg-white rounded-2xl shadow-lg border overflow-hidden w-full flex flex-col transition-all duration-300 cursor-pointer
                 ${requestStatus === 'accepted'
-                    ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30 shadow-[0_0_20px_rgba(212,175,55,0.15)]'
-                    : 'border-gray-100 hover:shadow-xl hover:-translate-y-0.5'}`}>
+                        ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30 shadow-[0_0_20px_rgba(212,175,55,0.15)]'
+                        : 'border-gray-100 hover:shadow-xl hover:-translate-y-0.5'}`}>
 
                 {/* ── PHOTO ── */}
                 <div className="relative h-72 bg-gray-200 overflow-hidden shrink-0">
@@ -153,7 +155,7 @@ export default function DiscoveryCard({
                         <>
                             <img
                                 src={currentPhoto} alt="Profile"
-                                onClick={() => { if (canZoom) setShowLightbox(true); }}
+                                onClick={(e) => { e.stopPropagation(); if (canZoom) setShowLightbox(true); }}
                                 className={`absolute inset-0 w-full h-full object-cover transition-all duration-500
                                     ${canZoom ? 'cursor-zoom-in filter-none scale-100' : 'blur-xl scale-110 brightness-75'}`}
                             />
@@ -305,8 +307,9 @@ export default function DiscoveryCard({
                     )}
 
                     {/* Profile link */}
-                    <button onClick={() => router.push(`/profile?id=${id}`)}
-                        className="text-[10px] font-bold text-[#881337]/60 hover:text-[#881337] flex items-center gap-1 mx-auto transition-colors">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); router.push(`/profile?id=${id}`); }}
+                        className="text-[10px] font-bold text-[#881337]/60 hover:text-[#881337] flex items-center gap-1 mx-auto transition-colors mt-2 mb-2 relative z-40">
                         <ExternalLink className="w-3 h-3" /> View Full Profile
                     </button>
 

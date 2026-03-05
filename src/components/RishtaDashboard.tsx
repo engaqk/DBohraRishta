@@ -646,11 +646,7 @@ export default function RishtaDashboard() {
                                             <div className="flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => {
-                                                        if (myProfile?.isPremium) {
-                                                            setActiveChat({ id: msg.id, name: msg.otherUserName, imageUrl: msg.otherUserLibasUrl || undefined });
-                                                        } else {
-                                                            setShowPremiumModal(true);
-                                                        }
+                                                        setActiveChat({ id: msg.id, name: msg.otherUserName, imageUrl: msg.otherUserLibasUrl || undefined });
                                                     }}
                                                     className="bg-[#881337] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-[#9F1239] transition-all flex items-center gap-2">
                                                     <MessageCircle className="w-4 h-4" /> Start Protected Chat
@@ -1105,32 +1101,7 @@ export default function RishtaDashboard() {
                 </button>
             </nav>
 
-            {/* Premium Modal */}
-            {
-                showPremiumModal && (
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-white max-w-sm w-full rounded-3xl overflow-hidden shadow-2xl">
-                            <div className="bg-gradient-to-r from-[#D4AF37] to-[#F1D16A] p-6 text-center relative">
-                                <button onClick={() => setShowPremiumModal(false)} className="absolute top-4 right-4 bg-black/10 rounded-full p-2 text-[#881337]"><X className="w-4 h-4" /></button>
-                                <Sparkles className="w-12 h-12 text-[#881337] mx-auto mb-3" />
-                                <h2 className="text-2xl font-bold text-[#881337] font-serif mb-1">Unlock Halal Chats</h2>
-                                <p className="text-[#881337] opacity-90 text-sm font-medium">Unlimited Matches &amp; Chat</p>
-                            </div>
-                            <div className="p-8 text-center space-y-6">
-                                <h3 className="text-4xl font-extrabold text-[#881337] flex justify-center items-start"><span className="text-xl mt-1">&#8377;</span>53<span className="text-base text-gray-500 font-normal mt-auto mb-1">/mo</span></h3>
-                                <ul className="text-left text-sm text-gray-600 space-y-3 font-medium">
-                                    <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> Encrypted end-to-end chat</li>
-                                    <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> Dynamic profile photo unblurring</li>
-                                    <li className="flex gap-2"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> See who viewed your profile</li>
-                                </ul>
-                                <button onClick={handleUpgradeToPremium} disabled={paying} className="w-full bg-[#881337] hover:bg-[#9F1239] text-white py-4 rounded-xl font-bold shadow-md flex justify-center items-center gap-2">
-                                    {paying ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Pay Now (Mock)</>}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
+            {/* Premium Modal — hidden as premium payments are not active yet */}
 
             {/* My Profile Preview Modal */}
             {

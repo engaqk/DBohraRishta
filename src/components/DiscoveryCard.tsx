@@ -173,17 +173,17 @@ export default function DiscoveryCard({
                 timestamp: serverTimestamp()
             });
 
-            // Enhanced Email Notification to Target Candidate, Requester, and Admin
             const adminEmail = "abdulqadirkhanji52@gmail.com";
-            const recipients = [adminEmail];
-            if (email && email.includes('@')) recipients.push(email);
-            if (user.email && user.email.includes('@')) recipients.push(user.email);
+            const targetRecipients = [];
+            if (email && email.includes('@')) targetRecipients.push(email);
+            if (user.email && user.email.includes('@')) targetRecipients.push(user.email);
 
             try {
                 await fetch("/api/notify", {
                     method: "POST",
                     body: JSON.stringify({
-                        to: recipients,
+                        to: targetRecipients,
+                        cc: [adminEmail],
                         subject: "Interest Request - DBohraRishta",
                         html: `
                             <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">

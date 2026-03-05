@@ -3,10 +3,11 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverTimestamp, orderBy, collectionGroup } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { ADMIN_EMAIL } from '@/lib/emailService';
 
 interface PendingUser {
     id: string;
@@ -165,7 +166,7 @@ export default function AdminVerificationPage() {
                         method: "POST",
                         body: JSON.stringify({
                             to: userEmail,
-                            cc: "abdulqadirkhanji52@gmail.com",
+                            cc: ADMIN_EMAIL,
                             subject: `Profile Status Update: ${statusLabel} - DBohraRishta`,
                             html: `
                                 <div style="font-family: serif; padding: 25px; border: 1px solid #eee; border-radius: 15px; max-width: 600px; margin: auto;">
@@ -270,6 +271,12 @@ export default function AdminVerificationPage() {
                                 <Key className="w-4 h-4" /> Grant Me Admin
                             </button>
                         )}
+                        <button
+                            onClick={() => router.push('/admin/users')}
+                            className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-blue-200"
+                        >
+                            <Users className="w-4 h-4" /> Registered Users
+                        </button>
                         <button
                             onClick={() => {
                                 localStorage.removeItem("admin_auth_token");

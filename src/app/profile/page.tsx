@@ -176,12 +176,8 @@ function ProfileContent() {
                                     alt="Profile"
                                     onClick={() => { if (canZoom) setShowLightbox(true); }}
                                     className={`absolute inset-0 w-full h-full object-cover transition-all duration-500
-                                        ${canZoom ? 'cursor-zoom-in filter-none scale-100' : 'blur-xl scale-110 brightness-75'}`}
+                                        ${canZoom ? 'cursor-zoom-in filter-none scale-100' : 'blur-[3px] scale-105'}`}
                                 />
-                                {/* Dark overlay reinforces blur privacy effect */}
-                                {!canZoom && (
-                                    <div className="absolute inset-0 bg-black/30 z-10 pointer-events-none" />
-                                )}
                                 {/* Watermark */}
                                 {canZoom && viewerItsNumber && (
                                     <div className="absolute inset-0 pointer-events-none z-10 flex flex-wrap overflow-hidden opacity-[0.06] items-center justify-center">

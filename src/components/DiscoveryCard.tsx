@@ -53,7 +53,7 @@ export default function DiscoveryCard({
     isOnline = false, viewerItsNumber = '', extraImageUrl,
     ejamaatId, itsNumber, maritalStatus, mobile, mobileCode, email,
     fatherName, motherName, professionType, educationDetails,
-    city, state,
+    city, state, gender,
 }: DiscoveryCardProps) {
     const { user } = useAuth();
     const router = useRouter();
@@ -71,6 +71,10 @@ export default function DiscoveryCard({
     const currentPhoto = photos[activePhotoIdx] || libasImageUrl;
     const age = dob ? Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000) : 25;
     const canZoom = !isBlurSecurityEnabled || requestStatus === 'accepted';
+
+    const firstName = name?.split(' ')[0] || 'Member';
+    const displaySurname = (gender === 'female' && requestStatus !== 'accepted') ? '●●●●' : name?.split(' ').slice(1).join(' ');
+    const displayName = `${firstName} ${displaySurname}`.trim();
 
     useEffect(() => {
         const check = async () => {
@@ -203,9 +207,17 @@ export default function DiscoveryCard({
                     <div className="absolute bottom-0 left-0 right-0 z-30 px-4 pb-3 pt-8">
                         <div className="flex items-end justify-between gap-2">
                             <div>
-                                <h3 className="text-white font-black text-xl font-serif leading-tight drop-shadow">
-                                    {name || 'Verified Member'}, {age}
-                                </h3>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-white font-black text-xl font-serif leading-tight drop-shadow">
+                                        {displayName}, {age}
+                                    </h3>
+                                    {gender === 'female' && requestStatus !== 'accepted' && (
+                                        <div className="bg-black/60 backdrop-blur-md rounded-md px-1.5 py-0.5 border border-[#881337] flex items-center gap-1 shadow flex-shrink-0">
+                                            <ShieldCheck className="w-2.5 h-2.5 text-[#D4AF37]" />
+                                            <span className="text-[#D4AF37] text-[8px] font-black uppercase tracking-wider">Surname Hidden</span>
+                                        </div>
+                                    )}
+                                </div>
                                 <p className="text-white/75 text-[11px] font-medium mt-0.5">{jamaat || 'Bohra Community'} • {hizratLocation || 'Global'}</p>
                             </div>
                             <div className={`px-2.5 py-1.5 rounded-xl text-xs font-black shadow-lg shrink-0

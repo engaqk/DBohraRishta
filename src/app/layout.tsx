@@ -17,9 +17,31 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DBohraRishta | Intentional Matchmaking for the Dawoodi Bohra Community",
   description: "A trusted, community-centric matchmaking platform for the Dawoodi Bohra community. ITS-verified profiles, dynamic photo privacy, and intentional Rishta connections.",
-  keywords: "Bohra, Dawoodi Bohra, Rishta, matchmaking, matrimony, ITS verified",
+  keywords: "Bohra, Dawoodi Bohra, Rishta, matchmaking, matrimony, ITS verified, Muslim matrimony",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "DBohraRishta",
+  },
+  openGraph: {
+    title: "DBohraRishta — Intentional Bohra Matchmaking",
+    description: "ITS-verified profiles. Privacy-first. Bohra community matchmaking platform.",
+    url: "https://dbohranisbat.web.app",
+    siteName: "DBohraRishta",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DBohraRishta",
+    description: "Intentional matchmaking for the Dawoodi Bohra community.",
+  },
   other: {
     "theme-color": "#881337",
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
   },
 };
 

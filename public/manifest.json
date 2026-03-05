@@ -1,0 +1,30 @@
+{
+    "name": "DBohraRishta — Intentional Matchmaking",
+    "short_name": "DBohraRishta",
+    "description": "A trusted, community-centric matchmaking platform for the Dawoodi Bohra community.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#881337",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": [
+        "lifestyle",
+        "social"
+    ],
+    "lang": "en",
+    "scope": "/"
+}

@@ -88,7 +88,7 @@ export default function AdminUsersPage() {
         setSendingBroadcast(true);
         try {
             await addDoc(collection(db, 'broadcasts'), {
-                text: broadcastMsg,
+                message: broadcastMsg,
                 adminId: user?.uid,
                 createdAt: serverTimestamp()
             });

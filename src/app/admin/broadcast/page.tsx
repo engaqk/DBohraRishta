@@ -232,11 +232,11 @@ export default function AdminBroadcastPage() {
                                     {history.map(item => (
                                         <div key={item.id} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                                             <div className="flex items-center justify-between mb-1">
-                                                <p className="text-xs font-bold truncate pr-2">{item.title}</p>
+                                                <p className="text-xs font-bold truncate pr-2">{item.title || 'General Announcement'}</p>
                                                 <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
                                             </div>
                                             <p className="text-[10px] text-gray-500 line-clamp-2 mb-2 leading-relaxed">
-                                                {item.message}
+                                                {item.message || (item as any).text}
                                             </p>
                                             <p className="text-[9px] text-gray-400 font-medium">
                                                 {item.createdAt?.toDate().toLocaleDateString()} at {item.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

@@ -1044,7 +1044,7 @@ export default function RishtaDashboard() {
                         <div className="flex-1">
                             <h3 className="font-black text-xl text-indigo-900 mb-1">{latestBroadcast.title || '📣 Official Announcement'}</h3>
                             <p className="text-indigo-800 text-sm leading-relaxed whitespace-pre-wrap">
-                                {latestBroadcast.message}
+                                {latestBroadcast.message || (latestBroadcast as any).text}
                             </p>
                             <div className="flex gap-3 mt-3 flex-wrap">
                                 <button

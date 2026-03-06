@@ -24,7 +24,7 @@ export async function POST(req: Request) {
         }
 
         const mailOptions = {
-            from: `"DBohraRishta" <${process.env.GMAIL_USER}>`,
+            from: `"53DBohraRishta" <${process.env.GMAIL_USER}>`,
             to: Array.isArray(to) ? to.join(', ') : to,
             cc: cc ? (Array.isArray(cc) ? cc.join(', ') : cc) : undefined,
             subject: subject,

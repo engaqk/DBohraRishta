@@ -76,21 +76,21 @@ export async function POST(req: Request) {
                     const chunk = emails.slice(i, i + chunkSize);
 
                     const mailOptions = {
-                        from: `"DBohraRishta" <${process.env.GMAIL_USER}>`,
+                        from: `"53DBohraRishta" <${process.env.GMAIL_USER}>`,
                         bcc: chunk.join(', '), // BCC so everyone doesn't see each other's emails
                         subject: title || 'Platform Announcement',
                         html: `
                             <div style="font-family: Arial, sans-serif; background-color: #f9fafb; padding: 30px;">
                                 <div style="max-w: 600px; margin: auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
                                     <div style="background-color: #881337; color: white; padding: 20px; text-align: center;">
-                                        <h2 style="margin: 0;">DBohraRishta Announcement</h2>
+                                        <h2 style="margin: 0;">53DBohraRishta Announcement</h2>
                                     </div>
                                     <div style="padding: 30px; color: #374151;">
                                         <h3 style="margin-top: 0; color: #111827;">${title || 'Important Message'}</h3>
                                         <p style="white-space: pre-wrap; line-height: 1.6;">${message}</p>
                                     </div>
                                     <div style="background-color: #f3f4f6; padding: 15px; text-align: center; color: #9ca3af; font-size: 12px;">
-                                        &copy; ${new Date().getFullYear()} DBohraRishta Online Community
+                                        &copy; ${new Date().getFullYear()} 53DBohraRishta Online Community
                                     </div>
                                 </div>
                             </div>

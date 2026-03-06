@@ -8,7 +8,7 @@ const EMAILJS_SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || 'servic
 const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || 'template_notify';
 const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || '';
 
-export const ADMIN_EMAIL = 'abdulqadirkhanji52@gmail.com';
+export const ADMIN_EMAIL = '53dbohrarishta@gmail.com';
 
 export interface EmailPayload {
     toEmail: string | string[];
@@ -59,12 +59,12 @@ export async function notifyInterestSent(opts: {
 }) {
     await sendEmail({
         toEmail: opts.recipientEmail,
-        subject: '💌 New Interest Request – DBohraRishta',
+        subject: '💌 New Interest Request – 53DBohraRishta',
         htmlBody: `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
                 <h2 style="color:#881337;margin-bottom:8px">New Interest Request Received</h2>
                 <p>As-salaamu alaykum <strong>${opts.recipientName}</strong>,</p>
-                <p>You have received a new Interest Request on <strong>DBohraRishta</strong> from
+                <p>You have received a new Interest Request on <strong>53DBohraRishta</strong> from
                    <strong>${opts.senderName}</strong>.</p>
                 ${opts.icebreaker ? `
                 <div style="background:#f9f9f9;padding:14px;border-radius:8px;border-left:3px solid #D4AF37;margin:16px 0">
@@ -75,7 +75,7 @@ export async function notifyInterestSent(opts: {
                     Open Dashboard
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">DBohraRishta Notification System</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Notification System</p>
             </div>`,
     });
 }
@@ -89,7 +89,7 @@ export async function notifyRequestAccepted(opts: {
 }) {
     await sendEmail({
         toEmail: opts.requesterEmail,
-        subject: '🎉 Your Interest was Accepted! – DBohraRishta',
+        subject: '🎉 Your Interest was Accepted! – 53DBohraRishta',
         htmlBody: `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
                 <h2 style="color:#881337">Mubarak! Interest Request Accepted 🎊</h2>
@@ -105,7 +105,7 @@ export async function notifyRequestAccepted(opts: {
                     Go to Dashboard
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">DBohraRishta Notification System</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Notification System</p>
             </div>`,
     });
 }
@@ -138,7 +138,7 @@ export async function notifyAdminNewRegistration(opts: {
                     Review in Admin Panel
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">DBohraRishta Notification System</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Notification System</p>
             </div>`,
     });
 }

@@ -71,10 +71,28 @@ export default function AdminBroadcastPage() {
             });
 
             // 2. Trigger Cloud Function or API route for mass delivery
-            // For now, we simulate success for UI-only implementation
-            // In a real PWA with FCM, you would call a backend route here.
+            const res = await fetch('/api/broadcast/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: formData.title,
+                    message: formData.message,
+                    sendPush: formData.sendPush,
+                    sendInApp: formData.sendInApp,
+                    sendEmail: formData.sendEmail,
+                    adminId: user?.uid
+                }),
+            });
 
-            toast.success("Broadcast initiated successfully!");
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Failed to send mass broadcast via API');
+            }
+
+            const data = await res.json();
+            console.log("Broadcast success:", data);
+
+            toast.success(`Broadcast sent! Push: ${data.pushSent}, Emails: ${data.emailsSent}`);
             setFormData({ title: "", message: "", sendPush: true, sendInApp: true, sendEmail: false });
             fetchHistory();
         } catch (error: any) {

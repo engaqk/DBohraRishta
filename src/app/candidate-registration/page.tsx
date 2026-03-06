@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { deriveBase32Secret, verifyTOTP } from "@/lib/totp-helpers";
+import { deriveBase32Secret, verifyTOTP, buildOtpAuthUrl } from "@/lib/totp-helpers";
 import { notifyAdminNewRegistration } from "@/lib/emailService";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -245,15 +245,10 @@ export default function CandidateRegistrationPage() {
         if (newMobile.length < 8) { toast.error("Please enter a valid mobile number"); return; }
         setLoading(true);
         try {
-            const res = await fetch("/api/otp/send", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ phone: newMobile })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Failed to generate setup code");
-            setQrUrl(data.qrUrl);
-            setManualKey(data.secret);
+            const secretStr = deriveBase32Secret(newMobile);
+            const otpUrl = buildOtpAuthUrl(newMobile, secretStr);
+            setQrUrl(otpUrl);
+            setManualKey(secretStr);
             setQrShown(true);
         } catch (error: any) {
             toast.error(error.message);

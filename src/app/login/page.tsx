@@ -31,7 +31,7 @@ export default function LoginPage() {
     const router = useRouter();
 
     // TOTP state
-    const [totpPhone, setTotpPhone] = useState("+91");
+    const [totpPhone, setTotpPhone] = useState('+91');
     const [totpCode, setTotpCode] = useState("");
     const [qrShown, setQrShown] = useState(false);
     const [qrUrl, setQrUrl] = useState("");

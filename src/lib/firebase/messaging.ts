@@ -10,7 +10,7 @@ import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
  * 2. Generate a 'Web Push Certificate' Key (VAPID Key).
  * 3. Copy the 'Key Pair' string and paste it into the 'vapidKey' variable below.
  */
-const VAPID_KEY = ''; // <-- PASTE YOUR FIREBASE VAPID KEY HERE
+const VAPID_KEY = 'BIxYKJCTw4FWuOzFcbcGcm8JnileE2bsJtE_F0PJVILaqGmhzL5wUifgCFMFLB1RRpJsaIdCmQnmrXTiXh52om8'; // <-- PASTE YOUR FIREBASE VAPID KEY HERE
 
 export async function requestNotificationPermission(userId: string) {
     const m = messaging;

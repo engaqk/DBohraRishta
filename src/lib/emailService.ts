@@ -26,7 +26,9 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
 
     // 1. Try server-side API Route (Nodemailer Gmail SMTP)
     try {
-        const response = await fetch("/api/notify", {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+        const fetchUrl = typeof window !== 'undefined' ? '/api/notify' : `${baseUrl}/api/notify`;
+        const response = await fetch(fetchUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

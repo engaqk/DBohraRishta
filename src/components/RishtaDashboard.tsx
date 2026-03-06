@@ -557,7 +557,7 @@ export default function RishtaDashboard() {
             // Updated Email Notifications for Acceptance (Consolidated with Admin CC)
             const adminEmail = ADMIN_EMAIL;
 
-                        // Integrated Hybrid Email Notifications for Acceptance
+            // Integrated Hybrid Email Notifications for Acceptance
             notifyRequestAccepted({
                 acceptorName: myProfile?.name || 'Candidate',
                 acceptorMobile: acceptMobile,
@@ -1289,36 +1289,28 @@ export default function RishtaDashboard() {
             {
                 showMyProfileModal && myProfile && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setShowMyProfileModal(false)}>
-                        <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                            <div className="relative h-48 bg-gray-200 overflow-hidden shrink-0">
-                                {(myProfile.libasImageUrl || myProfile.extraImageUrl || myProfile.itsImageUrl) ? (
-                                    <img src={myProfile.libasImageUrl || myProfile.extraImageUrl || myProfile.itsImageUrl} alt="Profile" className="absolute inset-0 w-full h-full object-cover blur-md scale-110 opacity-80" />
-                                ) : (
-                                    <div className="absolute inset-0 bg-gray-300" />
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/20" />
-                                <button onClick={() => setShowMyProfileModal(false)} className="absolute top-4 right-4 bg-black/40 text-white rounded-full p-2 z-20"><X className="w-4 h-4" /></button>
-                                <div className="absolute bottom-6 left-6 z-10">
-                                    <h2 className="text-3xl font-bold font-serif text-white">{myProfile.name}, {myProfile.dob ? Math.floor((Date.now() - new Date(myProfile.dob).getTime()) / 31557600000) : '--'}</h2>
-                                    <p className="text-[#D4AF37] font-medium flex items-center gap-2 mt-1"><CheckCircle className="w-4 h-4" /> {myProfile.isItsVerified ? 'ITS Verified' : 'Unverified'}</p>
-                                </div>
+                        <div className="relative bg-transparent max-w-sm w-full" onClick={e => e.stopPropagation()}>
+                            <div className="mb-4 bg-white/90 backdrop-blur-sm p-4 rounded-xl text-center shadow-lg border border-gray-200">
+                                <h3 className="font-bold text-[#881337]">How Others See You</h3>
+                                <p className="text-xs text-gray-500">This is how your profile appears in the community discovery feed.</p>
                             </div>
-                            <div className="p-6 overflow-y-auto space-y-4">
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="text-gray-400 text-xs font-bold mb-1">Jamaat</p><p className="text-[#881337] font-semibold text-sm">{myProfile.jamaat || 'N/A'}</p></div>
-                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100"><p className="text-gray-400 text-xs font-bold mb-1">Location</p><p className="text-[#881337] font-semibold text-sm">{myProfile.hizratLocation || 'N/A'}</p></div>
-                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2"><p className="text-gray-400 text-xs font-bold mb-1">Profession</p><p className="text-[#881337] font-semibold text-sm">{myProfile.professionType || myProfile.profession || 'N/A'}</p></div>
-                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2"><p className="text-gray-400 text-xs font-bold mb-1">Hobbies</p><p className="text-[#881337] font-semibold text-sm">{myProfile.hobbies || 'Not specified'}</p></div>
-                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2"><p className="text-gray-400 text-xs font-bold mb-1">Partner Qualities</p><p className="text-[#881337] font-semibold text-sm">{myProfile.partnerQualities || 'Not specified'}</p></div>
-                                </div>
-                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-3 items-start">
-                                    <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                                    <p className="text-sm text-blue-700">Photos and contact info remain blurred until an interest is mutually accepted.</p>
-                                </div>
+                            <div className="pointer-events-none">
+                                <DiscoveryCard
+                                    key={myProfile.id || "preview"}
+                                    {...myProfile}
+                                    id={myProfile.id || "preview"}
+                                    name={myProfile.name}
+                                    isDummy={false}
+                                    matchScore={100}
+                                    isMyProfileVerified={myProfile.isItsVerified === true}
+                                    bio={myProfile.bio}
+                                    isBlurSecurityEnabled={myProfile.isBlurSecurityEnabled !== false}
+                                    viewerItsNumber={myProfile.itsNumber || ''}
+                                />
                             </div>
-                            <div className="p-5 border-t shrink-0">
-                                <button onClick={() => { setShowMyProfileModal(false); router.push('/candidate-registration'); }} className="w-full py-3 rounded-xl font-bold bg-[#D4AF37] text-white hover:bg-[#c29e2f]">Edit Profile Details</button>
-                            </div>
+                            <button onClick={() => setShowMyProfileModal(false)} className="mt-4 w-full bg-[#881337] text-white py-3 rounded-xl font-bold shadow-lg hover:bg-rose-900 transition-colors flex items-center justify-center gap-2">
+                                <X className="w-4 h-4" /> Close Preview
+                            </button>
                         </div>
                     </div>
                 )

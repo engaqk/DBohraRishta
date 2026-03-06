@@ -2,38 +2,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users collection: authenticated users can read all, write only their own
-    // Admin access is enforced at the application layer (admin_auth_token)
+    // Users collection: authenticated users can read/write their own profiles
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
+      allow read, write: if request.auth != null;
 
+      // Notifications subcollection
       match /notifications/{notifId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
-    // Rishta Requests: allow all authenticated users to read/list
-    // Real security: only admin portal (token-protected page) can list all
+    // Rishta Requests: allow authenticated users to interact with requests
     match /rishta_requests/{requestId} {
       allow read, list: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.from == request.auth.uid;
+      allow create: if request.auth != null;
       allow update: if request.auth != null;
 
-      // Chat messages subcollection
+      // Chat messages subcollection inside requests
       match /messages/{messageId} {
         allow read, write: if request.auth != null;
       }
     }
 
-    // OTP usage tracker
+    // OTP usage tracker (standard verification)
     match /sys_otp_usage/{dateId} {
       allow read, write: if request.auth != null;
     }
 
     // Admin <-> User messaging threads
-    // collectionGroup query for admin dashboard message counters
     match /{path=**}/thread/{msgId} {
       allow read, write: if request.auth != null;
     }

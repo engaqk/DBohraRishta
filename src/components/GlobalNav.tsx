@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X, Home, User, LogOut, Bell, HelpCircle } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
 export default function GlobalNav() {
@@ -14,21 +14,16 @@ export default function GlobalNav() {
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
 
-    // Listen for notifications (admin messages)
+    // Listen for notifications
     useEffect(() => {
         if (!user) return;
-        const msgRef = collection(db, 'admin_messages', user.uid, 'thread');
-        const q = query(msgRef, orderBy('createdAt', 'asc'));
+        const q = query(
+            collection(db, 'users', user.uid, 'notifications'),
+            where('isRead', '==', false)
+        );
 
         const unsub = onSnapshot(q, (snap) => {
-            const msgs = snap.docs.map(d => d.data());
-            const lastRead = localStorage.getItem(`lastReadNotif_${user.uid}`) || '0';
-            const newUnread = msgs.filter(m => {
-                if (m.from !== 'admin') return false;
-                const ts = m.createdAt?.toMillis?.() || m.createdAt?.seconds * 1000 || 0;
-                return ts > parseInt(lastRead);
-            }).length;
-            setUnreadCount(newUnread);
+            setUnreadCount(snap.size);
         });
 
         return () => unsub();

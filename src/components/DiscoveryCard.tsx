@@ -197,13 +197,6 @@ export default function DiscoveryCard({
                             {!canZoom && (
                                 <div className="absolute inset-0 bg-black/10 z-10 pointer-events-none" />
                             )}
-                            {canZoom && viewerItsNumber && (
-                                <div className="absolute inset-0 pointer-events-none z-10 flex flex-wrap overflow-hidden opacity-[0.06] items-center justify-center">
-                                    {Array.from({ length: 30 }).map((_, i) => (
-                                        <span key={i} className="text-black font-extrabold text-sm whitespace-nowrap px-4 py-6 -rotate-45 select-none">{viewerItsNumber}</span>
-                                    ))}
-                                </div>
-                            )}
                         </>
                     ) : (
                         <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">

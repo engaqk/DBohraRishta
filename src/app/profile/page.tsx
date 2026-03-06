@@ -200,14 +200,6 @@ function ProfileContent() {
                                 {!canZoom && (
                                     <div className="absolute inset-0 bg-black/10 z-10 pointer-events-none" />
                                 )}
-                                {/* Watermark */}
-                                {canZoom && viewerItsNumber && (
-                                    <div className="absolute inset-0 pointer-events-none z-10 flex flex-wrap overflow-hidden opacity-[0.06] items-center justify-center">
-                                        {Array.from({ length: 30 }).map((_, i) => (
-                                            <span key={i} className="text-black font-extrabold text-sm whitespace-nowrap px-4 py-6 -rotate-45 select-none">{viewerItsNumber}</span>
-                                        ))}
-                                    </div>
-                                )}
                             </>
                         ) : (
                             <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
@@ -483,13 +475,6 @@ function ProfileContent() {
                     </button>
                     <div className="relative max-w-3xl max-h-[90vh] w-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
                         <img src={currentPhoto} alt="Full view" className="max-w-full max-h-full object-contain shadow-2xl rounded-lg" />
-                        {viewerItsNumber && (
-                            <div className="absolute inset-0 pointer-events-none flex flex-wrap overflow-hidden opacity-[0.06] items-center justify-center rounded-lg">
-                                {Array.from({ length: 60 }).map((_, i) => (
-                                    <span key={i} className="text-white font-extrabold text-sm whitespace-nowrap px-4 py-8 -rotate-45 select-none">{viewerItsNumber}</span>
-                                ))}
-                            </div>
-                        )}
                         {photos.length > 1 && (
                             <>
                                 <button onClick={() => setActivePhotoIdx(p => (p - 1 + photos.length) % photos.length)}

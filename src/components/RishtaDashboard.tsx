@@ -1042,7 +1042,7 @@ export default function RishtaDashboard() {
                             <Megaphone className="w-5 h-5 text-white" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="font-black text-xl text-indigo-900 mb-1">{latestBroadcast.title || 'Platform Announcement'}</h3>
+                            <h3 className="font-black text-xl text-indigo-900 mb-1">{latestBroadcast.title || '📣 Official Announcement'}</h3>
                             <p className="text-indigo-800 text-sm leading-relaxed whitespace-pre-wrap">
                                 {latestBroadcast.message}
                             </p>
@@ -1099,7 +1099,7 @@ export default function RishtaDashboard() {
                                 <p className="text-gray-700 text-sm mb-2">
                                     {myProfile.status === 'rejected'
                                         ? 'An Admin has reviewed your profile and requested some adjustments. Please fix the issue below and resubmit.'
-                                        : 'See the Admin message below to understand what needs to be corrected to get your profile Accepted. You may also send a message to Admin by the below chat option.'}
+                                        : 'See the message from Administration below to understand what needs to be corrected to get your profile Accepted. You may also send a message to Admin by the below chat option.'}
                                 </p>
                                 {myProfile.adminMessage && (
                                     <div className={`px-4 py-3 rounded-xl text-sm italic font-medium border ${myProfile.status === 'rejected' ? 'bg-white border-rose-100 text-rose-800' : 'bg-white border-yellow-100 text-yellow-800'}`}>

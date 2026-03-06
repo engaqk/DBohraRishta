@@ -428,7 +428,7 @@ export default function AdminUsersPage() {
                             <div className="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-full flex items-center justify-center">
                                 <Send className="w-5 h-5 text-indigo-600" />
                             </div>
-                            <h2 className="text-xl font-black text-gray-900">Broadcast Message</h2>
+                            <h2 className="text-xl font-black text-gray-900">Broadcast Announcement</h2>
                         </div>
                         <p className="text-sm text-gray-500 mb-4">Send a platform announcement to all registered candidates (e.g., Eid greetings, maintenance, etc.)</p>
 

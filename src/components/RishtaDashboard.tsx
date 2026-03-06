@@ -125,7 +125,10 @@ export default function RishtaDashboard() {
     // Subscribe to bookmarks
     useEffect(() => {
         if (!user) return;
-        requestNotificationPermission(user.uid);
+
+        // Delay permission prompt slightly for UX and ensure auth has settled
+        setTimeout(() => requestNotificationPermission(user.uid), 2500);
+
         const q = query(collection(db, 'bookmarks'), where('userId', '==', user.uid));
         const unsub = onSnapshot(q, (snap) => {
             const ids = new Set<string>();

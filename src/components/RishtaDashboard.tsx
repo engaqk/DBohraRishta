@@ -1338,28 +1338,42 @@ export default function RishtaDashboard() {
             {
                 showMyProfileModal && myProfile && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setShowMyProfileModal(false)}>
-                        <div className="relative bg-transparent max-w-sm w-full" onClick={e => e.stopPropagation()}>
-                            <div className="mb-4 bg-white/90 backdrop-blur-sm p-4 rounded-xl text-center shadow-lg border border-gray-200">
-                                <h3 className="font-bold text-[#881337]">How Others See You</h3>
-                                <p className="text-xs text-gray-500">This is how your profile appears in the community discovery feed.</p>
+                        <div className="relative bg-transparent max-w-sm w-full max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+
+                            {/* Make content scrollable so it fits on mobile */}
+                            <div className="flex-1 overflow-y-auto no-scrollbar rounded-xl pb-safe">
+                                <div className="mb-4 bg-white/95 backdrop-blur-md p-4 rounded-xl text-center shadow-lg border border-gray-200 relative sticky top-0 z-10">
+                                    <h3 className="font-bold text-[#881337]">How Others See You</h3>
+                                    <p className="text-xs text-gray-500 mt-0.5">This is how your profile appears in the feed.</p>
+
+                                    <button onClick={() => setShowMyProfileModal(false)} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 active:scale-95 transition-all">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <div className="pointer-events-none mb-4">
+                                    <DiscoveryCard
+                                        key={myProfile.id || "preview"}
+                                        {...myProfile}
+                                        id={myProfile.id || "preview"}
+                                        name={myProfile.name}
+                                        isDummy={false}
+                                        matchScore={100}
+                                        isMyProfileVerified={myProfile.isItsVerified === true}
+                                        bio={myProfile.bio}
+                                        isBlurSecurityEnabled={myProfile.isBlurSecurityEnabled !== false}
+                                        viewerItsNumber={myProfile.itsNumber || ''}
+                                    />
+                                </div>
                             </div>
-                            <div className="pointer-events-none">
-                                <DiscoveryCard
-                                    key={myProfile.id || "preview"}
-                                    {...myProfile}
-                                    id={myProfile.id || "preview"}
-                                    name={myProfile.name}
-                                    isDummy={false}
-                                    matchScore={100}
-                                    isMyProfileVerified={myProfile.isItsVerified === true}
-                                    bio={myProfile.bio}
-                                    isBlurSecurityEnabled={myProfile.isBlurSecurityEnabled !== false}
-                                    viewerItsNumber={myProfile.itsNumber || ''}
-                                />
+
+                            {/* Bottom fixed close button */}
+                            <div className="mt-2 shrink-0">
+                                <button onClick={() => setShowMyProfileModal(false)} className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-rose-900 transition-colors flex items-center justify-center gap-2">
+                                    <X className="w-5 h-5" /> Close Preview
+                                </button>
                             </div>
-                            <button onClick={() => setShowMyProfileModal(false)} className="mt-4 w-full bg-[#881337] text-white py-3 rounded-xl font-bold shadow-lg hover:bg-rose-900 transition-colors flex items-center justify-center gap-2">
-                                <X className="w-4 h-4" /> Close Preview
-                            </button>
+
                         </div>
                     </div>
                 )

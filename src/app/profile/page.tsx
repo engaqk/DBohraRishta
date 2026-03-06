@@ -138,6 +138,7 @@ function ProfileContent() {
             if (profile?.email) {
                 notifyInterestSent({
                     senderName: user.displayName || user.email || 'A Candidate',
+                    senderEmail: user.email || '',
                     recipientEmail: profile.email,
                     recipientName: displayName,
                 }).catch(() => { });

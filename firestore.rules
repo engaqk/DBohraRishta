@@ -56,5 +56,10 @@ service cloud.firestore {
     match /bookmarks/{bookmarkId} {
       allow read, write: if request.auth != null;
     }
+
+    // Profile Views / Visitors
+    match /profile_views/{viewId} {
+      allow read, write: if request.auth != null;
+    }
   }
 }

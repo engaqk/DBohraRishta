@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
@@ -121,6 +121,24 @@ export default function RishtaDashboard() {
     const [recentViews, setRecentViews] = useState<any[]>([]);
     const [bookmarkedProfileIds, setBookmarkedProfileIds] = useState<Set<string>>(new Set());
     const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
+    const [latestBroadcast, setLatestBroadcast] = useState<{ id: string; title?: string; message: string; type?: string } | null>(null);
+
+    // Subscribe to latest broadcast
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, 'broadcasts'), orderBy('createdAt', 'desc'), limit(1));
+        const unsub = onSnapshot(q, (snap) => {
+            if (!snap.empty) {
+                const bDoc = snap.docs[0];
+                const bId = bDoc.id;
+                const dismissed = localStorage.getItem(`dismissed_broadcast_${bId}`);
+                if (!dismissed) {
+                    setLatestBroadcast({ id: bId, ...bDoc.data() } as any);
+                }
+            }
+        });
+        return () => unsub();
+    }, [user]);
 
     // Subscribe to bookmarks
     useEffect(() => {
@@ -1015,6 +1033,34 @@ export default function RishtaDashboard() {
                 )}
 
             </header>
+
+            {/* 📢 Broadcast Banner */}
+            {latestBroadcast && (
+                <div className="max-w-7xl mx-auto mb-5 rounded-2xl border-2 border-indigo-300 bg-gradient-to-r from-indigo-50 to-blue-50 shadow-lg overflow-hidden animate-in slide-in-from-top-4">
+                    <div className="flex items-start gap-4 p-5 md:p-6">
+                        <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center shrink-0 shadow-md">
+                            <Megaphone className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-black text-xl text-indigo-900 mb-1">{latestBroadcast.title || 'Platform Announcement'}</h3>
+                            <p className="text-indigo-800 text-sm leading-relaxed whitespace-pre-wrap">
+                                {latestBroadcast.message}
+                            </p>
+                            <div className="flex gap-3 mt-3 flex-wrap">
+                                <button
+                                    onClick={() => {
+                                        localStorage.setItem(`dismissed_broadcast_${latestBroadcast.id}`, 'true');
+                                        setLatestBroadcast(null);
+                                    }}
+                                    className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-xs font-bold shadow hover:bg-indigo-700 transition-all"
+                                >
+                                    Dismiss Message
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* 🎉 Verified Celebration Banner */}
             {showVerifiedCelebration && (

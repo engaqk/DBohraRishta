@@ -389,7 +389,7 @@ export default function CandidateRegistrationPage() {
 
                 await updateDoc(doc(db, "users", user.uid), updateObj);
 
-                // ✅ Email Admin via EmailJS (works with static export)
+                // ✅ Email Admin via Gmail SMTP API
                 notifyAdminNewRegistration({
                     candidateName: fullName,
                     candidateEmail: formData.email,

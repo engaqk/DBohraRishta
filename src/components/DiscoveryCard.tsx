@@ -154,7 +154,7 @@ export default function DiscoveryCard({
                 icebreaker: icebreakerText.trim(), timestamp: serverTimestamp(),
             });
 
-            // Email notification via EmailJS (client-side Gmail, works with static export)
+            // Email notification via Gmail SMTP API
             if (email) {
                 notifyInterestSent({
                     senderName: user.displayName || user.email || 'A Candidate',

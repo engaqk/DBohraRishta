@@ -1,12 +1,7 @@
 /**
  * Hybrid Email Notification Service.
- * 1. Tries Nodemailer (Server-side Gmail SMTP via /api/notify API)
- * 2. Fallbacks to EmailJS (Client-side Gmail SMTP) for static builds.
+ * Uses Gmail SMTP via NodeMailer (/api/notify API route).
  */
-
-const EMAILJS_SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || 'service_dbohra';
-const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || 'template_notify';
-const EMAILJS_PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || '';
 
 export const ADMIN_EMAIL = '53dbohrarishta@gmail.com';
 
@@ -19,7 +14,7 @@ export interface EmailPayload {
 }
 
 /**
- * Universal sendEmail function that attempts NodeMailer API (Gmail SMTP).
+ * Universal sendEmail function that uses NodeMailer API (Gmail SMTP).
  */
 export async function sendEmail(payload: EmailPayload): Promise<void> {
     const recipients = Array.isArray(payload.toEmail) ? payload.toEmail : [payload.toEmail];

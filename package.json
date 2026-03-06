@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@emailjs/browser": "^4.4.1",
     "@types/nodemailer": "^7.0.11",
     "driver.js": "^1.4.0",
     "firebase": "^12.9.0",

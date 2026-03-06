@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
@@ -45,6 +45,15 @@ interface UserProfile {
     country?: string;
     extraImageUrl?: string;
     isBlurSecurityEnabled?: boolean;
+    siblings?: string;
+    noOfChildren?: string;
+    citizenOf?: string;
+    ancestralWatan?: string;
+    hifzStatus?: string;
+    employmentDetails?: string;
+    serviceType?: string;
+    address?: string;
+    completedUpto?: string;
 }
 
 interface RishtaRequest {
@@ -110,6 +119,7 @@ export default function RishtaDashboard() {
     const [paying, setPaying] = useState(false);
     const [showMyProfileModal, setShowMyProfileModal] = useState(false);
     const [activePreviewPhotoIdx, setActivePreviewPhotoIdx] = useState(0);
+    const [showPreviewLightbox, setShowPreviewLightbox] = useState(false);
 
     // Admin Messaging State
     const [adminMsgThread, setAdminMsgThread] = useState<{ id: string; text: string; from: 'admin' | 'user'; createdAt: any }[]>([]);
@@ -119,6 +129,7 @@ export default function RishtaDashboard() {
     const [showVerifiedCelebration, setShowVerifiedCelebration] = useState(false);
     const [showAdminHelpChat, setShowAdminHelpChat] = useState(false);
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+    const [notifications, setNotifications] = useState<any[]>([]);
     const [recentViews, setRecentViews] = useState<any[]>([]);
     const [bookmarkedProfileIds, setBookmarkedProfileIds] = useState<Set<string>>(new Set());
     const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
@@ -186,42 +197,87 @@ export default function RishtaDashboard() {
     const [acceptEmail, setAcceptEmail] = useState('');
     const [acceptError, setAcceptError] = useState('');
 
-    // Subscribe to admin message thread for current user
+    // Subscribe to notifications collection
     useEffect(() => {
         if (!user) return;
-        const msgRef = collection(db, 'admin_messages', user.uid, 'thread');
-        const q = query(msgRef, orderBy('createdAt', 'asc'));
+        const q = query(
+            collection(db, 'users', user.uid, 'notifications'),
+            orderBy('createdAt', 'desc'),
+            limit(30)
+        );
         const unsub = onSnapshot(q, (snap) => {
-            const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-            setAdminMsgThread(msgs);
+            const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+            setNotifications(notifs);
 
-            // Calculate unread count based on last read timestamp
-            const lastRead = localStorage.getItem(`lastReadNotif_${user.uid}`) || '0';
-            const newUnread = msgs.filter(m => {
-                if (m.from !== 'admin') return false;
-                const ts = m.createdAt?.toMillis?.() || m.createdAt?.seconds * 1000 || 0;
-                return ts > parseInt(lastRead);
-            }).length;
-
-            // Also count celebration/rejection/hold if they haven't been cleared
-            const extra = (showVerifiedCelebration || myProfile?.status === 'rejected' || myProfile?.status === 'hold') ? 1 : 0;
-            setUnreadNotifCount(newUnread + extra);
-        }, (err) => {
-            console.error("Firestore onSnapshot error (admin_messages):", err);
-            if (err.code === 'permission-denied') {
-                toast.error("Contact permission issue. Please update Firestore Rules.");
-            }
+            // Calculate unread
+            const unread = notifs.filter(n => !n.isRead).length;
+            setUnreadNotifCount(unread);
         });
         return () => unsub();
-    }, [user, myProfile?.status, showVerifiedCelebration]);
+    }, [user]);
+
+    const markAllNotificationsRead = async () => {
+        if (!user || notifications.length === 0) return;
+        const unread = notifications.filter(n => !n.isRead);
+        if (unread.length === 0) return;
+
+        const { writeBatch, doc } = await import('firebase/firestore');
+        const batch = writeBatch(db);
+        unread.forEach(n => {
+            const ref = doc(db, 'users', user.uid, 'notifications', n.id);
+            batch.update(ref, { isRead: true });
+        });
+        await batch.commit();
+    };
+
+    const dismissNotification = async (notificationId: string) => {
+        if (!user) return;
+        try {
+            const { deleteDoc, doc } = await import('firebase/firestore');
+            await deleteDoc(doc(db, 'users', user.uid, 'notifications', notificationId));
+        } catch (e) {
+            toast.error("Failed to dismiss notification.");
+        }
+    };
 
     // Handle tab change to clear notifications
     useEffect(() => {
         if (activeTab === 'notifications' && user) {
-            localStorage.setItem(`lastReadNotif_${user.uid}`, Date.now().toString());
-            setUnreadNotifCount(0);
+            markAllNotificationsRead();
         }
     }, [activeTab, user]);
+
+    // 🚀 Deployment Watcher: Keep App Updated
+    useEffect(() => {
+        const clientVersion = process.env.NEXT_PUBLIC_BUILD_ID;
+        if (!clientVersion) return;
+
+        const checkVersion = async () => {
+            try {
+                // Fetch with cache bust
+                const res = await fetch(`/api/version?t=${Date.now()}`);
+                const data = await res.json();
+                if (data.version && data.version !== clientVersion) {
+                    console.log('New deployment detected. Refreshing app...');
+                    // Automatically reload to latest version
+                    window.location.reload();
+                }
+            } catch (e) {
+                // Silent fail if offline or API error
+            }
+        };
+
+        // Check every 5 minutes
+        const interval = setInterval(checkVersion, 5 * 60 * 1000);
+
+        // Also check when window regains focus (user returns to app)
+        window.addEventListener('focus', checkVersion);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('focus', checkVersion);
+        };
+    }, []);
 
     const handleSendMessageToAdmin = async () => {
         if (!userMsgInput.trim() || !user) return;
@@ -522,6 +578,20 @@ export default function RishtaDashboard() {
             // Optimistic UI update
             setAllRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
 
+            // --- 🔔 In-App Notification to Requester ---
+            const requestGroup = allRequests.find(r => r.id === requestId);
+            if (requestGroup && requestGroup.from && requestGroup.from !== user?.uid) {
+                await addDoc(collection(db, 'users', requestGroup.from, 'notifications'), {
+                    type: newStatus === 'accepted' ? 'request_accepted' : 'request_declined',
+                    title: newStatus === 'accepted' ? 'INTEREST ACCEPTED' : 'REQUEST DECLINED',
+                    message: newStatus === 'accepted'
+                        ? `${myProfile?.name || 'Someone'} has accepted your interest! You can now view their contact details.`
+                        : `${myProfile?.name || 'Someone'} has declined your interest request.`,
+                    isRead: false,
+                    createdAt: serverTimestamp()
+                });
+            }
+
             if (newStatus === "rejected") {
                 toast(
                     (t) => (
@@ -576,51 +646,19 @@ export default function RishtaDashboard() {
             });
             await handleRequestAction(acceptingRequest.id, "accepted");
 
-            // Updated Email Notifications for Acceptance (Consolidated with Admin CC)
-            const adminEmail = ADMIN_EMAIL;
-
-            // Integrated Hybrid Email Notifications for Acceptance
+            // Integrated Hybrid Email Notifications for Acceptance (Dual Party + Admin CC)
             notifyRequestAccepted({
                 acceptorName: myProfile?.name || 'Candidate',
-                acceptorMobile: acceptMobile,
                 acceptorEmail: acceptEmail,
+                acceptorMobile: acceptMobile,
+                requesterName: acceptingRequest.otherUserName,
                 requesterEmail: acceptingRequest.otherUserEmail,
-                requesterName: acceptingRequest.otherUserName
+                requesterMobile: acceptingRequest.otherUserMobile
             }).catch(e => console.error("Email notify error", e));
-
-            // 2. Notify the requester + Admin
-            if (acceptingRequest.otherUserEmail && acceptingRequest.otherUserEmail.includes('@')) {
-                try {
-                    await fetch("/api/notify", {
-                        method: "POST",
-                        body: JSON.stringify({
-                            to: acceptingRequest.otherUserEmail,
-                            cc: adminEmail,
-                            subject: "Interest Request Accepted! - DBohraRishta",
-                            html: `
-                                <div style="font-family: serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-                                    <h2 style="color: #881337;">Mubarak! Your Interest Request was Accepted</h2>
-                                    <p><strong>${myProfile?.name}</strong> has accepted your interest request.</p>
-                                    <p>Their contact details are now visible on your dashboard under "Unblurred Alignments".</p>
-                                    <p><strong>Contact Info:</strong></p>
-                                    <ul style="list-style: none; padding: 0;">
-                                        <li>Mobile: ${acceptMobile}</li>
-                                        <li>Email: ${acceptEmail}</li>
-                                    </ul>
-                                    <p>Login now to see their full profile and photos!</p>
-                                    <div style="margin-top: 25px;">
-                                        <a href="https://53dbohrarishta.in" style="background: #881337; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold;">Go to Dashboard</a>
-                                    </div>
-                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-                                    <p style="font-size: 10px; color: #999;">DBohraRishta Notification System</p>
-                                </div>
-                            `
-                        })
-                    });
-                } catch (e) { }
-            }
-
+            setAcceptMobile('');
+            setAcceptEmail('');
             setAcceptingRequest(null);
+            toast.success("Request accepted! Contacts shared.");
         } catch (err: any) {
             toast.error("Failed to accept: " + err.message);
         }
@@ -1255,22 +1293,72 @@ export default function RishtaDashboard() {
 
                 {/* NOTIFICATIONS TAB */}
                 {activeTab === 'notifications' && (
-                    <div className="max-w-2xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <h2 className="text-lg font-black text-[#881337] uppercase tracking-widest mb-2">🔔 Notifications</h2>
+                    <div className="max-w-2xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+                        <h2 className="text-lg font-black text-[#881337] uppercase tracking-widest mb-2 flex items-center justify-between">
+                            <span>🔔 Notifications</span>
+                            {notifications.length > 0 && <span className="text-[10px] bg-rose-50 text-[#881337] px-2 py-0.5 rounded-full lowercase tracking-normal">showing latest {notifications.length}</span>}
+                        </h2>
 
-                        {/* Verified celebration */}
+                        {/* Special Status Notifications */}
                         {showVerifiedCelebration && (
-                            <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-300 rounded-2xl p-5 shadow-sm flex gap-4 items-start">
+                            <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-300 rounded-2xl p-5 shadow-sm flex gap-4 items-start relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:rotate-12 transition-transform">✨</div>
                                 <div className="text-3xl animate-bounce shrink-0">🎊</div>
                                 <div className="flex-1">
                                     <p className="font-black text-emerald-800 text-base">Mubarak! Your Profile is Successfully Verified ✨</p>
                                     <p className="text-emerald-700 text-sm mt-1 leading-relaxed">You can now send Rishta requests and access all the amazing features. May Allah bless you and help you find your Soulmate soon. <strong>Shukran! 🤲</strong></p>
-                                    <button onClick={() => { setActiveTab('discovery'); setShowVerifiedCelebration(false); }} className="mt-3 bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all">🌟 Start Discovering</button>
+                                    <button onClick={() => { setActiveTab('discovery'); setShowVerifiedCelebration(false); }} className="mt-3 bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all shadow-md active:scale-95">🌟 Start Discovering</button>
                                 </div>
                             </div>
                         )}
 
-                        {/* Rejected alert */}
+                        {/* List dynamic notifications */}
+                        {notifications.length > 0 ? (
+                            <div className="space-y-3">
+                                {notifications.map((n) => (
+                                    <div key={n.id} className={`p-4 rounded-2xl border transition-all flex gap-3 items-start relative group ${n.isRead ? 'bg-white border-gray-100' : 'bg-rose-50/30 border-rose-100 shadow-sm ring-1 ring-rose-200/50'}`}>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); dismissNotification(n.id); }}
+                                            className="absolute top-3 right-3 p-1 text-gray-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="Dismiss"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+
+                                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 border border-gray-100 mt-0.5">
+                                            {n.type === 'admin_message' && <MessageCircle className="w-5 h-5 text-[#881337]" />}
+                                            {n.type === 'request_accepted' && <CheckCircle className="w-5 h-5 text-emerald-500" />}
+                                            {n.type === 'request_declined' && <X className="w-5 h-5 text-rose-500" />}
+                                            {n.type === 'status_update' && <ShieldCheck className="w-5 h-5 text-[#D4AF37]" />}
+                                        </div>
+                                        <div className="flex-1 pr-6">
+                                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
+                                                <p className="text-xs font-black text-[#881337] uppercase tracking-wider">{n.title || n.type.replace('_', ' ')}</p>
+                                                <p className="text-[10px] text-gray-400 font-bold whitespace-nowrap">
+                                                    {n.createdAt?.seconds ? new Date(n.createdAt.seconds * 1000).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'just now'}
+                                                </p>
+                                            </div>
+                                            <p className="text-sm text-gray-700 mt-1 leading-relaxed">
+                                                {n.message}
+                                            </p>
+                                            {n.type === 'admin_message' && (
+                                                <button onClick={() => setShowAdminHelpChat(true)} className="mt-2 text-[10px] font-black italic text-[#881337] underline decoration-dotted">View Thread →</button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            !showVerifiedCelebration && myProfile?.status !== 'rejected' && myProfile?.status !== 'hold' && (
+                                <div className="text-center py-20 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
+                                    <div className="text-5xl mb-3 opacity-20">🔔</div>
+                                    <p className="font-bold text-sm text-gray-400">All Caught Up!</p>
+                                    <p className="text-xs text-gray-400 mt-1">No new notifications right now.</p>
+                                </div>
+                            )
+                        )}
+
+                        {/* Existing Status alerts as fallbacks if not in notification list */}
                         {myProfile?.status === 'rejected' && (
                             <div className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-5 shadow-sm flex gap-4 items-start">
                                 <div className="text-3xl shrink-0">⚠️</div>
@@ -1278,12 +1366,11 @@ export default function RishtaDashboard() {
                                     <p className="font-black text-[#881337] text-base">Profile Verification Rejected</p>
                                     <p className="text-gray-700 text-sm mt-1">Your biodata verification was rejected. Please reapply with correct data to access the Send Request feature and all other features.</p>
                                     {myProfile.adminMessage && <p className="mt-2 italic text-rose-700 text-sm bg-white border border-rose-100 px-3 py-2 rounded-xl">💬 "{myProfile.adminMessage}"</p>}
-                                    <button onClick={() => router.push('/candidate-registration')} className="mt-3 bg-[#881337] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-rose-900 transition-all">✏️ Update &amp; Resubmit Profile</button>
+                                    <button onClick={() => router.push('/candidate-registration')} className="mt-3 bg-[#881337] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-rose-900 transition-all shadow-md">✏️ Update &amp; Resubmit Profile</button>
                                 </div>
                             </div>
                         )}
 
-                        {/* Hold alert */}
                         {myProfile?.status === 'hold' && (
                             <div className="bg-yellow-50 border-2 border-yellow-300 rounded-2xl p-5 shadow-sm flex gap-4 items-start">
                                 <div className="text-3xl shrink-0">⏸️</div>
@@ -1292,15 +1379,6 @@ export default function RishtaDashboard() {
                                     <p className="text-gray-700 text-sm mt-1">Your profile is temporarily on hold pending admin review.</p>
                                     {myProfile.adminMessage && <p className="mt-2 italic text-yellow-700 text-sm bg-white border border-yellow-100 px-3 py-2 rounded-xl">💬 "{myProfile.adminMessage}"</p>}
                                 </div>
-                            </div>
-                        )}
-
-
-                        {!showVerifiedCelebration && myProfile?.status !== 'rejected' && myProfile?.status !== 'hold' && (
-                            <div className="text-center py-12 text-gray-400">
-                                <div className="text-5xl mb-3">🔔</div>
-                                <p className="font-bold text-sm">All Caught Up!</p>
-                                <p className="text-xs mt-1">No new notifications right now.</p>
                             </div>
                         )}
                     </div>
@@ -1362,15 +1440,33 @@ export default function RishtaDashboard() {
                                 {/* Content Area */}
                                 <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
                                     {/* 1. PHOTO SECTION */}
-                                    <div className="relative h-96 bg-gray-200">
+                                    <div
+                                        className="relative h-96 bg-gray-200 cursor-zoom-in group/photo"
+                                        onClick={() => setShowPreviewLightbox(true)}
+                                    >
                                         {photos[activePreviewPhotoIdx] ? (
-                                            <img
-                                                src={photos[activePreviewPhotoIdx]}
-                                                alt="Profile"
-                                                className={`w-full h-full object-cover transition-all duration-300 ${isFemale && myProfile.isBlurSecurityEnabled !== false ? 'blur-[5px] scale-105' : ''}`}
-                                            />
+                                            <div className="relative w-full h-full overflow-hidden">
+                                                {/* Stacked Effect for Multiple Photos */}
+                                                {photos.length > 1 && (
+                                                    <div className="absolute top-2 right-2 w-full h-full border-4 border-white/20 rounded-3xl translate-x-2 translate-y-2 -z-10 bg-gray-300/50" />
+                                                )}
+
+                                                <img
+                                                    src={photos[activePreviewPhotoIdx]}
+                                                    alt="Profile"
+                                                    className={`w-full h-full object-cover transition-all duration-700 group-hover/photo:scale-105 ${isFemale && myProfile.isBlurSecurityEnabled !== false ? 'blur-[5px] scale-110' : ''}`}
+                                                />
+
+                                                {/* Expand Hint */}
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover/photo:opacity-100 transition-opacity">
+                                                    <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-full border border-white/30 flex items-center gap-2">
+                                                        <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                                                        <span className="text-white text-xs font-bold uppercase tracking-widest">Click to Expand</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center bg-gray-100 text-6xl">👤</div>
+                                            <div className="w-full h-full flex items-center justify-center bg-gray-100 text-6xl text-gray-300">👤</div>
                                         )}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
 
@@ -1386,12 +1482,42 @@ export default function RishtaDashboard() {
                                             </div>
                                         </div>
 
-                                        {/* Gallery Dots */}
+                                        {/* Multi-Photo Indicator */}
                                         {photos.length > 1 && (
-                                            <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-1.5">
+                                            <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/20 shadow-xl z-50">
+                                                <Layers className="w-3.5 h-3.5 text-[#D4AF37]" />
+                                                <span>{photos.length} PHOTOS</span>
+                                            </div>
+                                        )}
+
+                                        {/* Mobile Friendly Navigation Overlays */}
+                                        {photos.length > 1 && (
+                                            <>
+                                                <div
+                                                    onClick={(e) => { e.stopPropagation(); setActivePreviewPhotoIdx((activePreviewPhotoIdx - 1 + photos.length) % photos.length); }}
+                                                    className="absolute left-0 top-0 bottom-0 w-1/2 z-40 cursor-pointer flex items-center justify-start pl-4 group"
+                                                >
+                                                    <div className="bg-black/20 backdrop-blur-sm p-1.5 rounded-full text-white md:group-hover:opacity-100 transition-opacity">
+                                                        <ChevronLeft className="w-5 h-5" />
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    onClick={(e) => { e.stopPropagation(); setActivePreviewPhotoIdx((activePreviewPhotoIdx + 1) % photos.length); }}
+                                                    className="absolute right-0 top-0 bottom-0 w-1/4 z-40 cursor-pointer flex items-center justify-end pr-2 group"
+                                                >
+                                                    <div className="bg-black/20 backdrop-blur-sm p-1.5 rounded-full text-white md:group-hover:opacity-100 transition-opacity">
+                                                        <ChevronRight className="w-5 h-5" />
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Gallery dots - Mobile Optimized */}
+                                        {photos.length > 1 && (
+                                            <div className="absolute bottom-12 left-0 right-0 flex justify-center gap-1 z-40">
                                                 {photos.map((_, idx) => (
-                                                    <button key={idx} onClick={() => setActivePreviewPhotoIdx(idx)}
-                                                        className={`w-1.5 h-1.5 rounded-full transition-all ${activePreviewPhotoIdx === idx ? 'bg-[#D4AF37] w-3' : 'bg-white/50'}`} />
+                                                    <div key={idx}
+                                                        className={`h-1 rounded-full transition-all duration-300 ${activePreviewPhotoIdx === idx ? 'bg-[#D4AF37] w-6' : 'bg-white/30 w-2'}`} />
                                                 ))}
                                             </div>
                                         )}
@@ -1431,15 +1557,15 @@ export default function RishtaDashboard() {
                                             )}
                                         </div>
 
-                                        {/* Info Grid */}
-                                        <div className="grid grid-cols-2 gap-3">
+                                        {/* info grid — exactly matching screenshot */}
+                                        <div className="grid grid-cols-2 gap-3 mb-4">
                                             {[
                                                 { label: 'Education', value: myProfile.completedUpto || myProfile.education || myProfile.educationDetails },
                                                 { label: 'Profession', value: myProfile.professionType },
                                                 { label: 'Marital', value: myProfile.maritalStatus || 'Single' },
                                                 { label: 'Height', value: myProfile.heightFeet ? `${myProfile.heightFeet}'${myProfile.heightInch || '0'}"` : null },
                                                 { label: 'City', value: myProfile.city || myProfile.hizratLocation },
-                                                { label: 'Gender', value: myProfile.gender },
+                                                { label: 'DOB', value: myProfile.dob },
                                             ].filter(d => d.value).map(d => (
                                                 <div key={d.label} className="bg-white rounded-2xl px-4 py-3 border border-gray-100 shadow-sm">
                                                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{d.label}</p>
@@ -1449,33 +1575,74 @@ export default function RishtaDashboard() {
                                         </div>
 
                                         {/* Family Info */}
-                                        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-3">
-                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Family Details</p>
-                                            <div className="grid grid-cols-1 gap-2">
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-gray-500 font-medium tracking-wide leading-none uppercase text-[10px]">Father</span>
-                                                    <span className="font-bold text-gray-800">{myProfile.fatherName || 'N/A'}</span>
+                                        {(myProfile.fatherName || myProfile.motherName || myProfile.siblings || myProfile.noOfChildren || myProfile.citizenOf || myProfile.ancestralWatan) && (
+                                            <div className="bg-rose-50/50 rounded-2xl p-4 border border-rose-100/50 space-y-3 mb-4">
+                                                <div>
+                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Parents</p>
+                                                    <p className="text-xs font-semibold text-gray-600">
+                                                        Father: <span className="text-[#881337] font-bold">{myProfile.fatherName || 'N/A'}</span>
+                                                        {' '}&nbsp;|&nbsp;{' '}
+                                                        Mother: <span className="text-[#881337] font-bold">{myProfile.motherName || 'N/A'}</span>
+                                                    </p>
                                                 </div>
-                                                <div className="flex justify-between items-center text-xs border-t border-gray-50 pt-2">
-                                                    <span className="text-gray-500 font-medium tracking-wide leading-none uppercase text-[10px]">Mother</span>
-                                                    <span className="font-bold text-gray-800">{myProfile.motherName || 'N/A'}</span>
-                                                </div>
-                                                {myProfile.siblings && (
-                                                    <div className="flex justify-between items-center text-xs border-t border-gray-50 pt-2">
-                                                        <span className="text-gray-500 font-medium tracking-wide leading-none uppercase text-[10px]">Siblings</span>
-                                                        <span className="font-bold text-gray-800">{myProfile.siblings}</span>
+                                                {(myProfile.siblings || myProfile.noOfChildren) && (
+                                                    <div className="grid grid-cols-2 gap-2 border-t border-rose-100/30 pt-3">
+                                                        <div>
+                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Siblings</p>
+                                                            <p className="text-xs font-bold text-gray-800">{myProfile.siblings || '0'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Children</p>
+                                                            <p className="text-xs font-bold text-gray-800">{myProfile.noOfChildren || '0'}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {myProfile.citizenOf && (
+                                                    <div className="border-t border-rose-100/30 pt-3">
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Citizen Of</p>
+                                                        <p className="text-xs font-bold text-gray-800">{myProfile.citizenOf}</p>
                                                     </div>
                                                 )}
                                             </div>
-                                        </div>
+                                        )}
+
+                                        {/* Education Deep Dive */}
+                                        {(myProfile.educationDetails || myProfile.hifzStatus) && (
+                                            <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-100/50 mb-4">
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Education & Deeni Taleem</p>
+                                                <p className="text-xs text-gray-800 font-bold mb-1">{myProfile.completedUpto || myProfile.education}</p>
+                                                {myProfile.educationDetails && <p className="text-xs text-gray-600 leading-relaxed italic">"{myProfile.educationDetails}"</p>}
+                                                {myProfile.hifzStatus && (
+                                                    <div className="mt-2 inline-block bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-bold">
+                                                        Hifz: {myProfile.hifzStatus}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Occupation Deep Dive */}
+                                        {(myProfile.employmentDetails || myProfile.serviceType) && (
+                                            <div className="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100/50 mb-4">
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Occupation Details</p>
+                                                <p className="text-xs text-gray-800 font-bold mb-1">{myProfile.serviceType || myProfile.professionType}</p>
+                                                {myProfile.employmentDetails && <p className="text-xs text-gray-600 leading-relaxed italic">"{myProfile.employmentDetails}"</p>}
+                                            </div>
+                                        )}
+
+                                        {/* Hobbies */}
+                                        {myProfile.hobbies && (
+                                            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 mb-4">
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Hobbies & Interests</p>
+                                                <p className="text-xs text-gray-700 font-medium">{myProfile.hobbies}</p>
+                                            </div>
+                                        )}
 
                                         {/* Partner Qualities */}
                                         {myProfile.partnerQualities && (
-                                            <div className="space-y-2">
-                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Partner Preferences</p>
-                                                <div className="bg-emerald-50/30 p-4 rounded-2xl border border-emerald-100/50">
-                                                    <p className="text-xs text-gray-700 leading-relaxed italic">"{myProfile.partnerQualities}"</p>
-                                                </div>
+                                            <div className="bg-rose-50/30 rounded-2xl p-4 border border-rose-100/50 relative overflow-hidden mb-6">
+                                                <Sparkles className="absolute -right-2 -top-2 w-16 h-16 text-rose-100/50 rotate-12" />
+                                                <p className="text-[9px] font-black text-[#881337] uppercase tracking-widest mb-2">Partner Preferences</p>
+                                                <p className="text-xs text-rose-900 italic font-medium leading-relaxed relative z-10">"{myProfile.partnerQualities}"</p>
                                             </div>
                                         )}
 
@@ -1502,6 +1669,42 @@ export default function RishtaDashboard() {
                                     >
                                         <X className="w-5 h-5" /> Close Public Preview
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()
+            }
+
+            {/* Preview Lightbox (Full View) */}
+            {
+                showPreviewLightbox && myProfile && (() => {
+                    const photos = [myProfile.libasImageUrl, myProfile.extraImageUrl].filter(Boolean) as string[];
+                    return (
+                        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4" onClick={() => setShowPreviewLightbox(false)}>
+                            <button
+                                className="absolute top-6 right-6 z-[210] w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#881337] shadow-2xl hover:scale-110 transition-all active:scale-95"
+                                onClick={(e) => { e.stopPropagation(); setShowPreviewLightbox(false); }}
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                            <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+                                <img src={photos[activePreviewPhotoIdx]} alt="Full View" className="max-w-full max-h-full object-contain shadow-2xl rounded-2xl border border-white/10" />
+
+                                {photos.length > 1 && (
+                                    <>
+                                        <button onClick={(e) => { e.stopPropagation(); setActivePreviewPhotoIdx(prev => (prev - 1 + photos.length) % photos.length); }} className="absolute left-2 md:-left-20 p-5 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all border border-white/5 shadow-xl">
+                                            <ChevronLeft className="w-10 h-10" />
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); setActivePreviewPhotoIdx(prev => (prev + 1) % photos.length); }} className="absolute right-2 md:-right-20 p-5 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md transition-all border border-white/5 shadow-xl">
+                                            <ChevronRight className="w-10 h-10" />
+                                        </button>
+                                    </>
+                                )}
+                                <div className="absolute -bottom-12 left-0 right-0 text-center">
+                                    <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.3em] bg-white/5 inline-block px-4 py-2 rounded-full border border-white/10">
+                                        Photo {activePreviewPhotoIdx + 1} of {photos.length}
+                                    </p>
                                 </div>
                             </div>
                         </div>

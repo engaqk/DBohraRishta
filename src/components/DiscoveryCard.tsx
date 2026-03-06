@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Loader2, ExternalLink, Sparkles } from 'lucide-react';
+import { ShieldCheck, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark } from 'lucide-react';
 import { notifyInterestSent } from '@/lib/emailService';
 import { collection, addDoc, query, where, getDocs, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -158,6 +158,7 @@ export default function DiscoveryCard({
             if (email) {
                 notifyInterestSent({
                     senderName: user.displayName || user.email || 'A Candidate',
+                    senderEmail: user.email || '',
                     recipientEmail: email,
                     recipientName: name,
                     icebreaker: icebreakerText.trim() || undefined,
@@ -184,15 +185,28 @@ export default function DiscoveryCard({
                         : 'border-gray-100 hover:shadow-xl hover:-translate-y-0.5'}`}>
 
                 {/* ── PHOTO ── */}
-                <div className="relative h-72 bg-gray-200 overflow-hidden shrink-0">
+                <div className="relative h-72 cursor-pointer overflow-hidden group/image" onClick={() => canZoom && setShowLightbox(true)}>
                     {currentPhoto ? (
                         <>
+                            {/* Stacked Effect for Multiple Photos */}
+                            {photos.length > 1 && (
+                                <div className="absolute top-1.5 right-1.5 w-full h-full border-2 border-white/10 rounded-2xl translate-x-1.5 translate-y-1.5 -z-10 bg-gray-200/50" />
+                            )}
+
                             <img
-                                src={currentPhoto} alt="Profile"
-                                onClick={(e) => { e.stopPropagation(); if (canZoom) setShowLightbox(true); }}
-                                className={`absolute inset-0 w-full h-full object-cover transition-all duration-500
-                                    ${canZoom ? 'cursor-zoom-in filter-none scale-100' : 'blur-[5px] scale-105'}`}
+                                src={currentPhoto}
+                                alt={displayName}
+                                className={`w-full h-full object-cover transition-all duration-700 group-hover/image:scale-110 ${!canZoom ? 'blur-[8px] scale-110' : ''}`}
                             />
+
+                            {/* Center Expand Hint */}
+                            {canZoom && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 group-hover/image:opacity-100 transition-opacity z-10 pointer-events-none">
+                                    <div className="bg-white/30 backdrop-blur-md p-3 rounded-full border border-white/20">
+                                        <Sparkles className="w-5 h-5 text-white" />
+                                    </div>
+                                </div>
+                            )}
                             {/* Dark overlay reinforces blur privacy effect */}
                             {!canZoom && (
                                 <div className="absolute inset-0 bg-black/10 z-10 pointer-events-none" />
@@ -254,17 +268,40 @@ export default function DiscoveryCard({
 
                     {/* Photo count indicator */}
                     {photos.length > 1 && (
-                        <div className="absolute bottom-3 left-3 bg-black/40 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full border border-white/10 flex items-center gap-1">
-                            <span>📸</span> {photos.length} Photos
+                        <div className="absolute top-3 right-12 bg-black/60 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5 z-30 shadow-lg">
+                            <Layers className="w-3 h-3 text-[#D4AF37]" />
+                            <span>{photos.length}</span>
                         </div>
                     )}
 
-                    {/* Gallery dots */}
-                    {photos.length > 1 && canZoom && (
-                        <div className="absolute bottom-14 left-0 right-0 flex justify-center gap-1.5 z-30">
+                    {/* Mobile Friendly Navigation Overlays */}
+                    {photos.length > 1 && (
+                        <>
+                            <div
+                                onClick={(e) => { e.stopPropagation(); setActivePhotoIdx((activePhotoIdx - 1 + photos.length) % photos.length); }}
+                                className="absolute left-0 top-0 bottom-0 w-1/3 z-40 cursor-pointer flex items-center justify-start pl-2 group"
+                            >
+                                <div className="bg-black/20 backdrop-blur-sm p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <ChevronLeft className="w-5 h-5" />
+                                </div>
+                            </div>
+                            <div
+                                onClick={(e) => { e.stopPropagation(); setActivePhotoIdx((activePhotoIdx + 1) % photos.length); }}
+                                className="absolute right-0 top-0 bottom-0 w-1/3 z-40 cursor-pointer flex items-center justify-end pr-2 group"
+                            >
+                                <div className="bg-black/20 backdrop-blur-sm p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <ChevronRight className="w-5 h-5" />
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Gallery dots - Mobile Optimized */}
+                    {photos.length > 1 && (
+                        <div className="absolute bottom-12 left-0 right-0 flex justify-center gap-1.5 z-40">
                             {photos.map((_, idx) => (
-                                <button key={idx} onClick={(e) => { e.stopPropagation(); setActivePhotoIdx(idx); }}
-                                    className={`w-1.5 h-1.5 rounded-full transition-all ${activePhotoIdx === idx ? 'bg-[#D4AF37] w-3' : 'bg-white/50 hover:bg-white'}`} />
+                                <div key={idx}
+                                    className={`h-1 rounded-full transition-all duration-300 ${activePhotoIdx === idx ? 'bg-[#D4AF37] w-4' : 'bg-white/40 w-1.5'}`} />
                             ))}
                         </div>
                     )}

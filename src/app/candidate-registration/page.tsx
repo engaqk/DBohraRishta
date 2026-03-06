@@ -399,6 +399,14 @@ export default function CandidateRegistrationPage() {
                     isResubmission: formData.status === 'rejected',
                 }).catch(() => { });
 
+                // ✅ Email Candidate via Gmail SMTP API
+                const { notifyUserRegistrationReceived } = await import('@/lib/emailService');
+                notifyUserRegistrationReceived({
+                    candidateName: fullName,
+                    candidateEmail: formData.email,
+                    itsNumber: formData.ejamaatId
+                }).catch(() => { });
+
                 toast.success("Biodata Updated Successfully!");
                 router.push("/");
             } else {

@@ -165,42 +165,23 @@ export default function AdminVerificationPage() {
             const userEmail = targetUser?.email || targetUser?.mobileEmail; // Fallback to auto-detected field if available
 
             if (userEmail && userEmail.includes('@')) {
-                try {
-                    const statusLabels: any = {
-                        verified: "Verified & Approved",
-                        approved: "Approved",
-                        rejected: "Action Required / Profile Rejected",
-                        hold: "Profile Put On Hold"
-                    };
-                    const statusLabel = statusLabels[newStatus] || newStatus;
-
-                    await fetch("/api/notify", {
-                        method: "POST",
-                        body: JSON.stringify({
-                            to: userEmail,
-                            cc: ADMIN_EMAIL,
-                            subject: `Profile Status Update: ${statusLabel} - DBohraRishta`,
-                            html: `
-                                <div style="font-family: serif; padding: 25px; border: 1px solid #eee; border-radius: 15px; max-width: 600px; margin: auto;">
-                                    <h2 style="color: #881337; border-bottom: 2px solid #881337; padding-bottom: 10px;">Status Update Alert</h2>
-                                    <p>As-salaamu alaykum <strong>${targetUser?.name || 'Candidate'}</strong>,</p>
-                                    <p>Your profile status on <strong>DBohraRishta</strong> has been updated by the administration.</p>
-                                    <div style="background: #fdf2f2; border-left: 5px solid #881337; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                        <p style="margin: 0; font-weight: bold; color: #881337;">New Status: <span style="text-transform: capitalize;">${statusLabel}</span></p>
-                                        ${updateData.adminMessage ? `<p style="margin-top: 10px; color: #555; font-style: italic;">" ${updateData.adminMessage} "</p>` : ''}
-                                    </div>
-                                    <p>Please log in to your dashboard to see your current status and any next steps required.</p>
-                                    <div style="margin-top: 30px; text-align: center;">
-                                        <a href="https://53dbohrarishta.in" style="background: #881337; color: white; padding: 14px 30px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(136, 19, 55, 0.2);">Log in to Dashboard</a>
-                                    </div>
-                                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-                                    <p style="font-size: 11px; color: #999; text-align: center;">DBohraRishta Official Notification</p>
-                                </div>
-                            `
-                        })
-                    });
-                } catch (emailErr) { console.error("Admin status notification failed", emailErr); }
+                const { notifyStatusUpdate } = await import('@/lib/emailService');
+                notifyStatusUpdate({
+                    candidateName: targetUser?.name || 'Candidate',
+                    candidateEmail: userEmail,
+                    newStatus: newStatus,
+                    adminMessage: updateData.adminMessage
+                }).catch(e => console.error("Status email failed", e));
             }
+
+            // --- 🔔 In-App Notification to Candidate ---
+            await addDoc(collection(db, 'users', userId, 'notifications'), {
+                type: 'status_update',
+                title: 'PROFILE STATUS UPDATED',
+                message: `Your profile status is now: ${newStatus.toUpperCase()}. ${updateData.adminMessage ? `Admin says: "${updateData.adminMessage}"` : 'Please check your dashboard for details.'}`,
+                isRead: false,
+                createdAt: serverTimestamp()
+            });
         } catch (error: any) {
             console.error("Error updating status:", error);
             toast.error("Failed to update status: " + error.message);
@@ -233,6 +214,26 @@ export default function AdminVerificationPage() {
 
             setNewAdminMsg("");
             toast.success("Message sent to user.");
+
+            // Send email notification for important admin messages
+            const userEmail = selectedUser.email || selectedUser.mobileEmail;
+            if (userEmail && userEmail.includes('@')) {
+                const { notifyNewAdminMessage } = await import('@/lib/emailService');
+                notifyNewAdminMessage({
+                    candidateName: selectedUser.name,
+                    candidateEmail: userEmail,
+                    messageSnippet: newAdminMsg.trim()
+                }).catch(e => console.error("Admin msg email failed", e));
+            }
+
+            // --- 🔔 In-App Notification to Candidate ---
+            await addDoc(collection(db, 'users', selectedUser.id, 'notifications'), {
+                type: 'admin_message',
+                title: 'NEW ADMIN MESSAGE',
+                message: newAdminMsg.trim(),
+                isRead: false,
+                createdAt: serverTimestamp()
+            });
         } catch (e: any) {
             toast.error("Could not send message: " + e.message);
         }

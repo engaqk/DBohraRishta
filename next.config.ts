@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  env: {
+    NEXT_PUBLIC_BUILD_ID: String(Date.now()),
+  },
 };
 
 export default nextConfig;

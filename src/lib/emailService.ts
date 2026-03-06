@@ -19,12 +19,11 @@ export interface EmailPayload {
 }
 
 /**
- * Universal sendEmail function that attempts API first, then EmailJS.
+ * Universal sendEmail function that attempts NodeMailer API (Gmail SMTP).
  */
 export async function sendEmail(payload: EmailPayload): Promise<void> {
     const recipients = Array.isArray(payload.toEmail) ? payload.toEmail : [payload.toEmail];
 
-    // 1. Try server-side API Route (Nodemailer Gmail SMTP)
     try {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
         const fetchUrl = typeof window !== 'undefined' ? '/api/notify' : `${baseUrl}/api/notify`;
@@ -42,35 +41,11 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
         if (response.ok) {
             console.log("[EmailService] Sent via Gmail SMTP API");
             return;
+        } else {
+            console.error("[EmailService] Gmail SMTP API failed with status", response.status);
         }
     } catch (apiError) {
-        console.warn("[EmailService] API Route failed or unreachable (Static Export?), falling back to EmailJS.");
-    }
-
-    // 2. Fallback to EmailJS (Client-side)
-    if (!EMAILJS_PUBLIC_KEY) {
-        console.warn('[EmailService] EMAILJS_PUBLIC_KEY not set — cannot send email.');
-        return;
-    }
-
-    try {
-        const { default: emailjs } = await import('@emailjs/browser');
-        const allRecipients = [...new Set([...recipients, ADMIN_EMAIL])].filter(e => e?.includes('@'));
-
-        await emailjs.send(
-            EMAILJS_SERVICE_ID,
-            EMAILJS_TEMPLATE_ID,
-            {
-                to_email: allRecipients.join(','),
-                subject: payload.subject,
-                message_html: payload.htmlBody,
-                from_name: payload.fromName || 'DBohraRishta',
-            },
-            EMAILJS_PUBLIC_KEY,
-        );
-        console.log("[EmailService] Sent via EmailJS Fallback");
-    } catch (ejsError) {
-        console.error("[EmailService] Both API and EmailJS failed:", ejsError);
+        console.error("[EmailService] API Route unreachable or error:", apiError);
     }
 }
 

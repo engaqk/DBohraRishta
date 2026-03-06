@@ -111,6 +111,7 @@ export async function POST(req: Request) {
                     const chunk = emails.slice(i, i + chunkSize);
                     const mailOptions = {
                         from: `"53DBohraRishta" <${process.env.GMAIL_USER}>`,
+                        to: process.env.GMAIL_USER, // Gmail often requires a 'To' address even when using BCC
                         bcc: chunk.join(', '),
                         subject: title || 'Platform Announcement',
                         html: `
@@ -132,19 +133,18 @@ export async function POST(req: Request) {
                     };
 
                     try {
-                        console.log(`Sending email chunk ${i / chunkSize + 1}...`);
+                        console.log(`Sending email chunk ${i / chunkSize + 1} to ${chunk.length} recipients...`);
                         await transporter.sendMail(mailOptions);
                         emailSuccessCount += chunk.length;
                     } catch (e: any) {
                         console.error(`Email error:`, e);
-                        if (e.message?.includes('Invalid login') || e.code === 'EAUTH') {
-                            return NextResponse.json({
-                                success: false,
-                                error: "Gmail SMTP Authentication failed. Check App Password.",
-                                emailsSent: emailSuccessCount,
-                                emailsFound
-                            }, { status: 500 });
-                        }
+                        // Return error immediately so we can see what's wrong
+                        return NextResponse.json({
+                            success: false,
+                            error: "Email sending failed: " + (e.message || "Unknown SMTP Error"),
+                            emailsSent: emailSuccessCount,
+                            emailsFound
+                        }, { status: 500 });
                     }
                 }
             }

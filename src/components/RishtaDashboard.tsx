@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
@@ -109,6 +109,7 @@ export default function RishtaDashboard() {
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [paying, setPaying] = useState(false);
     const [showMyProfileModal, setShowMyProfileModal] = useState(false);
+    const [activePreviewPhotoIdx, setActivePreviewPhotoIdx] = useState(0);
 
     // Admin Messaging State
     const [adminMsgThread, setAdminMsgThread] = useState<{ id: string; text: string; from: 'admin' | 'user'; createdAt: any }[]>([]);
@@ -1336,47 +1337,176 @@ export default function RishtaDashboard() {
 
             {/* My Profile Preview Modal */}
             {
-                showMyProfileModal && myProfile && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={() => setShowMyProfileModal(false)}>
-                        <div className="relative bg-transparent max-w-sm w-full max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                showMyProfileModal && myProfile && (() => {
+                    const photos = [myProfile.libasImageUrl, myProfile.extraImageUrl].filter(Boolean) as string[];
+                    const age = myProfile.dob ? Math.floor((Date.now() - new Date(myProfile.dob).getTime()) / 31557600000) : null;
+                    const isFemale = myProfile.gender === 'female';
+                    // Show how others see it: Blurred surname for females
+                    const firstName = myProfile.name?.split(' ')[0] || 'Member';
+                    const displayName = isFemale ? `${firstName} ●●●●` : myProfile.name;
 
-                            {/* Make content scrollable so it fits on mobile */}
-                            <div className="flex-1 overflow-y-auto no-scrollbar rounded-xl pb-safe">
-                                <div className="mb-4 bg-white/95 backdrop-blur-md p-4 rounded-xl text-center shadow-lg border border-gray-200 relative sticky top-0 z-10">
-                                    <h3 className="font-bold text-[#881337]">How Others See You</h3>
-                                    <p className="text-xs text-gray-500 mt-0.5">This is how your profile appears in the feed.</p>
+                    return (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md" onClick={() => setShowMyProfileModal(false)}>
+                            <div className="relative bg-[#F9FAFB] w-full max-w-lg h-full sm:h-auto sm:max-h-[85vh] sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
 
-                                    <button onClick={() => setShowMyProfileModal(false)} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 active:scale-95 transition-all">
-                                        <X className="w-4 h-4" />
+                                {/* Header Overlay (Mobile Only) */}
+                                <div className="absolute top-4 left-4 right-4 z-50 flex justify-between items-center pointer-events-none">
+                                    <div className="bg-white/90 backdrop-blur px-3 py-1.5 rounded-full shadow-lg border border-white/20">
+                                        <p className="text-[10px] font-black text-[#881337] uppercase tracking-widest">Public Preview</p>
+                                    </div>
+                                    <button onClick={() => setShowMyProfileModal(false)} className="w-10 h-10 rounded-full bg-white/90 backdrop-blur shadow-lg flex items-center justify-center text-gray-900 pointer-events-auto active:scale-95 transition-all border border-white/20">
+                                        <X className="w-5 h-5" />
                                     </button>
                                 </div>
 
-                                <div className="pointer-events-none mb-4">
-                                    <DiscoveryCard
-                                        key={myProfile.id || "preview"}
-                                        {...myProfile}
-                                        id={myProfile.id || "preview"}
-                                        name={myProfile.name}
-                                        isDummy={false}
-                                        matchScore={100}
-                                        isMyProfileVerified={myProfile.isItsVerified === true}
-                                        bio={myProfile.bio}
-                                        isBlurSecurityEnabled={myProfile.isBlurSecurityEnabled !== false}
-                                        viewerItsNumber={myProfile.itsNumber || ''}
-                                    />
+                                {/* Content Area */}
+                                <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
+                                    {/* 1. PHOTO SECTION */}
+                                    <div className="relative h-96 bg-gray-200">
+                                        {photos[activePreviewPhotoIdx] ? (
+                                            <img
+                                                src={photos[activePreviewPhotoIdx]}
+                                                alt="Profile"
+                                                className={`w-full h-full object-cover transition-all duration-300 ${isFemale && myProfile.isBlurSecurityEnabled !== false ? 'blur-[5px] scale-105' : ''}`}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-gray-100 text-6xl">👤</div>
+                                        )}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent pointer-events-none" />
+
+                                        {/* Name Overlay */}
+                                        <div className="absolute bottom-6 left-6 right-6">
+                                            <h2 className="text-white text-3xl font-black font-serif drop-shadow-lg">
+                                                {displayName}{age && `, ${age}`}
+                                            </h2>
+                                            <div className="bg-[#D4AF37] px-3 py-1 rounded-lg inline-block mt-2 shadow-sm">
+                                                <p className="text-white text-[10px] font-black uppercase tracking-widest">
+                                                    {myProfile.jamaat || myProfile.city || 'ITS Verified Profile'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Gallery Dots */}
+                                        {photos.length > 1 && (
+                                            <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-1.5">
+                                                {photos.map((_, idx) => (
+                                                    <button key={idx} onClick={() => setActivePreviewPhotoIdx(idx)}
+                                                        className={`w-1.5 h-1.5 rounded-full transition-all ${activePreviewPhotoIdx === idx ? 'bg-[#D4AF37] w-3' : 'bg-white/50'}`} />
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Verified Badge */}
+                                        {myProfile.isItsVerified && (
+                                            <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg border border-white/40">
+                                                <ShieldCheck className="w-3.5 h-3.5" /> ITS VERIFIED
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 2. BODY CONTENT */}
+                                    <div className="px-6 py-6 space-y-6">
+                                        {/* Bio */}
+                                        {myProfile.bio && (
+                                            <div className="bg-rose-50/50 border-l-4 border-[#881337] p-4 rounded-r-2xl">
+                                                <p className="text-sm text-[#881337] font-serif italic leading-relaxed">
+                                                    "{myProfile.bio}"
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Highlights */}
+                                        <div className="flex flex-wrap gap-2">
+                                            {myProfile.bio?.toLowerCase().includes('hafiz') && (
+                                                <div className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-100 flex items-center gap-2">
+                                                    <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-[8px] text-white">✨</div>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Hafiz</span>
+                                                </div>
+                                            )}
+                                            {(myProfile.city?.toLowerCase().includes('mumbai')) && (
+                                                <div className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-100 flex items-center gap-2">
+                                                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-[8px] text-white">📍</div>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Mumbai Location</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Info Grid */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {[
+                                                { label: 'Education', value: myProfile.completedUpto || myProfile.education || myProfile.educationDetails },
+                                                { label: 'Profession', value: myProfile.professionType },
+                                                { label: 'Marital', value: myProfile.maritalStatus || 'Single' },
+                                                { label: 'Height', value: myProfile.heightFeet ? `${myProfile.heightFeet}'${myProfile.heightInch || '0'}"` : null },
+                                                { label: 'City', value: myProfile.city || myProfile.hizratLocation },
+                                                { label: 'Gender', value: myProfile.gender },
+                                            ].filter(d => d.value).map(d => (
+                                                <div key={d.label} className="bg-white rounded-2xl px-4 py-3 border border-gray-100 shadow-sm">
+                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{d.label}</p>
+                                                    <p className="text-xs font-bold text-gray-800 truncate">{d.value}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Family Info */}
+                                        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-3">
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Family Details</p>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-gray-500 font-medium tracking-wide leading-none uppercase text-[10px]">Father</span>
+                                                    <span className="font-bold text-gray-800">{myProfile.fatherName || 'N/A'}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs border-t border-gray-50 pt-2">
+                                                    <span className="text-gray-500 font-medium tracking-wide leading-none uppercase text-[10px]">Mother</span>
+                                                    <span className="font-bold text-gray-800">{myProfile.motherName || 'N/A'}</span>
+                                                </div>
+                                                {myProfile.siblings && (
+                                                    <div className="flex justify-between items-center text-xs border-t border-gray-50 pt-2">
+                                                        <span className="text-gray-500 font-medium tracking-wide leading-none uppercase text-[10px]">Siblings</span>
+                                                        <span className="font-bold text-gray-800">{myProfile.siblings}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Partner Qualities */}
+                                        {myProfile.partnerQualities && (
+                                            <div className="space-y-2">
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Partner Preferences</p>
+                                                <div className="bg-emerald-50/30 p-4 rounded-2xl border border-emerald-100/50">
+                                                    <p className="text-xs text-gray-700 leading-relaxed italic">"{myProfile.partnerQualities}"</p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Security Notice */}
+                                        <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100 flex gap-4">
+                                            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+                                                <Lock className="w-5 h-5 text-amber-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-black text-amber-800 uppercase tracking-widest">Privacy Protection Active</p>
+                                                <p className="text-[10px] text-amber-700 mt-0.5 leading-relaxed">
+                                                    Your **mobile number** and **email address** are hidden. They are only shared automatically when you accept a request.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bottom Close CTA */}
+                                <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur border-t border-gray-100 sm:rounded-b-3xl">
+                                    <button
+                                        onClick={() => setShowMyProfileModal(false)}
+                                        className="w-full bg-[#881337] text-white py-4 rounded-2xl font-black shadow-lg shadow-rose-900/20 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-2"
+                                    >
+                                        <X className="w-5 h-5" /> Close Public Preview
+                                    </button>
                                 </div>
                             </div>
-
-                            {/* Bottom fixed close button */}
-                            <div className="mt-2 shrink-0">
-                                <button onClick={() => setShowMyProfileModal(false)} className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-rose-900 transition-colors flex items-center justify-center gap-2">
-                                    <X className="w-5 h-5" /> Close Preview
-                                </button>
-                            </div>
-
                         </div>
-                    </div>
-                )
+                    );
+                })()
             }
 
             {/* Accept Request Modal */}

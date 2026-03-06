@@ -36,23 +36,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isImpersonating, setIsImpersonating] = useState(false);
 
     useEffect(() => {
-        const impersonatedId = localStorage.getItem('impersonated_user_id');
-        const dummyUserStr = localStorage.getItem('dummy_user_id');
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+            const impersonatedId = localStorage.getItem('impersonated_user_id');
+            const dummyUserStr = localStorage.getItem('dummy_user_id');
 
-        if (impersonatedId) {
-            setUser({ uid: impersonatedId, email: localStorage.getItem('impersonated_user_email') || 'impersonated@user.com' });
-            setIsImpersonating(true);
-            setLoading(false);
-        } else if (dummyUserStr) {
-            setUser({ uid: dummyUserStr, email: `${dummyUserStr}@test.com` });
-            setLoading(false);
-        } else {
-            const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+            if (impersonatedId) {
+                setUser({ uid: impersonatedId, email: localStorage.getItem('impersonated_user_email') || 'impersonated@user.com' });
+                setIsImpersonating(true);
+            } else if (dummyUserStr && !firebaseUser) {
+                // Only use dummy if no real user is logged in
+                setUser({ uid: dummyUserStr, email: `${dummyUserStr}@test.com` });
+            } else {
                 setUser(firebaseUser);
-                setLoading(false);
-            });
-            return () => unsubscribe();
-        }
+                setIsImpersonating(false);
+                // If we have a real user, clear dummy state from storage to avoid confusion
+                if (firebaseUser) {
+                    localStorage.removeItem('dummy_user_id');
+                }
+            }
+            setLoading(false);
+        });
+        return () => unsubscribe();
     }, []);
 
     const impersonateUser = (uid: string, email: string) => {

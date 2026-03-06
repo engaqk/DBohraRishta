@@ -7,9 +7,7 @@ import toast from "react-hot-toast";
 import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { deriveBase32Secret, verifyTOTP, buildOtpAuthUrl } from "@/lib/totp-helpers";
 import { notifyAdminNewRegistration } from "@/lib/emailService";
-import { QRCodeSVG } from "qrcode.react";
 
 const ErrorMsg = ({ msg }: { msg?: string }) => msg ? <p className="text-red-500 text-xs mt-1 font-semibold animate-in fade-in">{msg}</p> : null;
 
@@ -24,11 +22,6 @@ export default function CandidateRegistrationPage() {
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [submitError, setSubmitError] = useState("");
 
-    const [qrShown, setQrShown] = useState(false);
-    const [qrUrl, setQrUrl] = useState("");
-    const [manualKey, setManualKey] = useState("");
-    const [keyCopied, setKeyCopied] = useState(false);
-    const [isMobileDevice, setIsMobileDevice] = useState(false);
 
     // Full ITNC Candidate Form Data State
     const [formData, setFormData] = useState({
@@ -151,9 +144,6 @@ export default function CandidateRegistrationPage() {
         return () => clearTimeout(timeout);
     }, [formData, user]);
 
-    useEffect(() => {
-        setIsMobileDevice(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -238,59 +228,24 @@ export default function CandidateRegistrationPage() {
         }
     };
 
-    const handleGenerateQr = async () => {
+    const handleDirectMobileUpdate = async () => {
         const mobileInput = document.getElementById('newMobileInput') as HTMLInputElement;
         const newMobile = mobileInput?.value?.replace(/[^0-9+]/g, '').replace(/(?!^)\+/g, '') || "";
-        if (!newMobile) { toast.error("Please enter your mobile number"); return; }
-        if (newMobile.length < 8) { toast.error("Please enter a valid mobile number"); return; }
-        setLoading(true);
-        try {
-            const secretStr = deriveBase32Secret(newMobile);
-            const otpUrl = buildOtpAuthUrl(newMobile, secretStr);
-            setQrUrl(otpUrl);
-            setManualKey(secretStr);
-            setQrShown(true);
-        } catch (error: any) {
-            toast.error(error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
 
-    const copyKey = () => {
-        navigator.clipboard.writeText(manualKey);
-        setKeyCopied(true);
-        setTimeout(() => setKeyCopied(false), 2000);
-    };
-
-    const verifyAndUpdateMobile = async (newMobile: string, authCode: string) => {
-        if (!authCode || !newMobile) {
-            toast.error("Both new mobile number and Authenticator code are required.");
+        if (!newMobile || newMobile.length < 8) {
+            toast.error("Please enter a valid mobile number.");
             return;
         }
+
         if (!user) return;
+        setLoading(true);
         try {
-            setLoading(true);
-
-            // 1. Client-side TOTP validation (shares secret derivation with login page)
-            const secret = deriveBase32Secret(newMobile);
-            if (!verifyTOTP(secret, authCode)) {
-                toast.error("Invalid or expired code. Please use the system's login-standard OTP from your app.");
-                return;
-            }
-
-            // 2. Success - Update Firestore directly
             await updateDoc(doc(db, "users", user.uid), { mobile: newMobile });
             setFormData(prev => ({ ...prev, mobile: newMobile }));
-            toast.success("Mobile number updated successfully.");
-
-            const mobileInput = document.getElementById('newMobileInput') as HTMLInputElement;
-            const authInput = document.getElementById('authCodeInput') as HTMLInputElement;
+            toast.success("Mobile number updated directly!");
             if (mobileInput) mobileInput.value = '';
-            if (authInput) authInput.value = '';
-            setQrShown(false);
         } catch (error: any) {
-            toast.error("Failed to update mobile number.");
+            toast.error("Failed to update: " + error.message);
         } finally {
             setLoading(false);
         }
@@ -659,74 +614,20 @@ export default function CandidateRegistrationPage() {
                                     </div>
                                     <ErrorMsg msg={errors.mobile} />
 
-                                    {/* Edit Mobile Secion inline */}
+                                    {/* Edit Mobile Section inline */}
                                     {user && (
                                         <div className="bg-rose-50 rounded-xl p-4 border border-rose-100 shadow-inner mt-2">
-                                            <h3 className="font-bold text-[#881337] text-xs mb-1 uppercase tracking-wide">Update Mobile (Requires Verify)</h3>
+                                            <h3 className="font-bold text-[#881337] text-xs mb-1 uppercase tracking-wide">Update Mobile Directly</h3>
                                             <p className="text-[11px] text-rose-800 mb-3 leading-relaxed font-medium">
-                                                Update your mobile number via the mobile authenticator app.
+                                                To change your primary mobile number, enter the new number below and click Update.
                                             </p>
                                             <div className="space-y-3">
-                                                {!qrShown ? (
-                                                    <>
-                                                        <input type="tel" inputMode="tel" defaultValue="+91" placeholder="New mobile number (e.g. +919876543210)" className="border border-rose-200 focus:outline-none focus:ring-1 focus:ring-[#881337] rounded-lg w-full p-2.5 text-sm bg-white" id="newMobileInput" />
-                                                        <button type="button" onClick={handleGenerateQr} disabled={loading}
-                                                            className="w-full bg-[#D4AF37] text-white py-2.5 rounded-xl text-xs font-bold shadow-sm hover:bg-[#c29e2f] active:scale-95 flex items-center justify-center gap-2">
-                                                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
-                                                            Generate My Setup Code
-                                                        </button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <input type="hidden" id="newMobileInput" value={(document.getElementById('newMobileInput') as HTMLInputElement)?.value || ''} />
-                                                        <div className={`rounded-xl p-3 text-[10px] leading-snug border ${isMobileDevice ? 'bg-green-50 border-green-200 text-green-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
-                                                            {isMobileDevice ? (
-                                                                <p><strong>📱 You're on mobile!</strong> Tap the button below to open directly in your authenticator app.</p>
-                                                            ) : (
-                                                                <p><strong>🖥️ You're on desktop.</strong> Open your authenticator app on your phone and scan the QR code.</p>
-                                                            )}
-                                                        </div>
-
-                                                        {isMobileDevice && (
-                                                            <a href={qrUrl} className="w-full bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-sm hover:bg-emerald-700 active:scale-95 flex items-center justify-center gap-1.5 no-underline">
-                                                                <ExternalLink className="w-3.5 h-3.5" /> Open in Authenticator App
-                                                            </a>
-                                                        )}
-
-                                                        {!isMobileDevice && (
-                                                            <div className="flex justify-center bg-white p-2 rounded-xl shadow-sm border border-gray-200 w-max mx-auto">
-                                                                <QRCodeSVG value={qrUrl} size={100} bgColor="#FFFFFF" fgColor="#881337" level="M" />
-                                                            </div>
-                                                        )}
-
-                                                        <div className="bg-rose-50 border border-rose-100 rounded-xl p-2.5">
-                                                            <p className="text-[10px] font-bold text-amber-900 mb-1.5">🔑 Or enter manually in the app:</p>
-                                                            <div className="flex items-center gap-1 bg-white rounded-lg p-1.5 border border-gray-200">
-                                                                <code className="text-xs font-mono text-[#881337] break-all tracking-widest flex-1">{manualKey}</code>
-                                                                <button type="button" onClick={copyKey} className="shrink-0 bg-[#D4AF37] text-white rounded p-1 text-[10px] font-bold hover:bg-[#c29e2f]">
-                                                                    {keyCopied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                                                </button>
-                                                            </div>
-                                                        </div>
-
-                                                        <input type="text" inputMode="numeric" placeholder="6-digit Authenticator Code" className="border border-rose-200 focus:outline-none focus:ring-1 focus:ring-[#881337] rounded-lg w-full p-2.5 text-sm bg-white tracking-[0.2em] font-mono text-center" id="authCodeInput" maxLength={6} />
-
-                                                        <div className="flex justify-end pt-1 gap-2">
-                                                            <button type="button" onClick={() => setQrShown(false)} className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-xl transition-colors w-full shadow-sm">Cancel</button>
-                                                            <button type="button" disabled={loading} onClick={() => {
-                                                                const mobileInput = document.getElementById('newMobileInput') as HTMLInputElement;
-                                                                const authInput = document.getElementById('authCodeInput') as HTMLInputElement;
-                                                                if (mobileInput && mobileInput.value && authInput) {
-                                                                    verifyAndUpdateMobile(mobileInput.value, authInput.value);
-                                                                } else {
-                                                                    toast.error("Please fill both fields.");
-                                                                }
-                                                            }} className="px-3 py-2 bg-[#881337] hover:bg-rose-900 text-white text-xs font-bold rounded-xl transition-colors w-full shadow-sm flex items-center justify-center gap-1.5">
-                                                                {loading && <Loader2 className="w-3 h-3 animate-spin" />} Verify & Update
-                                                            </button>
-                                                        </div>
-                                                    </>
-                                                )}
+                                                <input type="tel" inputMode="tel" defaultValue="+91" placeholder="New mobile number (e.g. +919876543210)" className="border border-rose-200 focus:outline-none focus:ring-1 focus:ring-[#881337] rounded-lg w-full p-2.5 text-sm bg-white" id="newMobileInput" />
+                                                <button type="button" onClick={handleDirectMobileUpdate} disabled={loading}
+                                                    className="w-full bg-[#881337] text-white py-2.5 rounded-xl text-xs font-bold shadow-sm hover:bg-rose-900 active:scale-95 flex items-center justify-center gap-2">
+                                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
+                                                    Update Mobile Directly
+                                                </button>
                                             </div>
                                         </div>
                                     )}

@@ -126,20 +126,21 @@ export default function LoginPage() {
                     }
                 } else { throw signInError; }
             }
-            if (signedIn) {
+            if (signedIn && auth.currentUser) {
                 // Check if user is archived — block login
                 const { getDoc, doc } = await import('firebase/firestore');
                 const { signOut } = await import('firebase/auth');
-                try {
-                    const userSnap = await getDoc(doc(db, 'users', auth.currentUser?.uid || ''));
-                    if (userSnap.exists() && userSnap.data().status === 'archived') {
-                        await signOut(auth);
-                        setErrorMsg('Your account has been deactivated by the administration. Please contact support for assistance.');
-                        setAuthLoading(false);
-                        return;
-                    }
-                } catch (_) { }
+                const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+
+                if (userDoc.exists() && userDoc.data().status === 'archived') {
+                    await signOut(auth);
+                    setErrorMsg('Your account has been deactivated by the administration. Please contact support for assistance.');
+                    setAuthLoading(false);
+                    return;
+                }
+
                 toast.success('Verified! Redirecting...');
+                router.push(userDoc.exists() ? "/" : "/onboarding");
             }
         } catch (error: any) {
             setErrorMsg(error.message?.replace('Firebase: ', '') || 'Sign-in failed. Try again.');

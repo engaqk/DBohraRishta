@@ -29,6 +29,7 @@ export default function AdminBroadcastPage() {
         sendPush: true,
         sendInApp: true,
         sendEmail: false,
+        includeAllAuthUsers: false,
     });
 
     useEffect(() => {
@@ -80,6 +81,7 @@ export default function AdminBroadcastPage() {
                     sendPush: formData.sendPush,
                     sendInApp: formData.sendInApp,
                     sendEmail: formData.sendEmail,
+                    includeAllAuthUsers: formData.includeAllAuthUsers,
                     adminId: user?.uid
                 }),
             });
@@ -93,7 +95,7 @@ export default function AdminBroadcastPage() {
             console.log("Broadcast success:", data);
 
             toast.success(`Broadcast sent! Push: ${data.pushSent}, Emails: ${data.emailsSent}`);
-            setFormData({ title: "", message: "", sendPush: true, sendInApp: true, sendEmail: false });
+            setFormData({ title: "", message: "", sendPush: true, sendInApp: true, sendEmail: false, includeAllAuthUsers: false });
             fetchHistory();
         } catch (error: any) {
             toast.error("Failed to send broadcast: " + error.message);
@@ -188,6 +190,21 @@ export default function AdminBroadcastPage() {
                                         </div>
                                     </button>
                                 </div>
+
+                                {formData.sendEmail && (
+                                    <div className="flex items-center gap-2 px-2 py-1">
+                                        <input
+                                            type="checkbox"
+                                            id="includeAllAuthUsers"
+                                            checked={formData.includeAllAuthUsers}
+                                            onChange={e => setFormData({ ...formData, includeAllAuthUsers: e.target.checked })}
+                                            className="w-4 h-4 text-[#881337] rounded border-gray-300 focus:ring-[#881337]"
+                                        />
+                                        <label htmlFor="includeAllAuthUsers" className="text-xs font-bold text-gray-600 cursor-pointer">
+                                            Include all registered users (including those with incomplete profiles)
+                                        </label>
+                                    </div>
+                                )}
                             </div>
 
                             <button

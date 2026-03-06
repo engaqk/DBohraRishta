@@ -163,6 +163,15 @@ export default function DiscoveryCard({
                     recipientName: name,
                     icebreaker: icebreakerText.trim() || undefined,
                 }).catch(() => { });
+
+                // --- 🔔 In-App Notification to Recipient ---
+                await addDoc(collection(db, 'users', id, 'notifications'), {
+                    type: 'interest_received',
+                    title: 'NEW INTEREST REQUEST',
+                    message: `${user.displayName || 'A Candidate'} has sent you an interest request. Login to your dashboard to review.`,
+                    isRead: false,
+                    createdAt: serverTimestamp()
+                });
             }
 
             setRequestSent(true);

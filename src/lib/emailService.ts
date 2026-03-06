@@ -286,3 +286,44 @@ export async function notifyUserRegistrationReceived(opts: {
             </div>`,
     });
 }
+
+/**
+ * Notify both parties when an Interest Request is declined.
+ */
+export async function notifyInterestDeclined(opts: {
+    declinerName: string;
+    declinerEmail: string;
+    requesterName: string;
+    requesterEmail: string;
+}) {
+    // Email to Requester
+    await sendEmail({
+        toEmail: opts.requesterEmail,
+        cc: ADMIN_EMAIL,
+        subject: 'Interest Update – 53DBohraRishta',
+        htmlBody: `
+            <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
+                <h2 style="color:#555">Interest Request Update</h2>
+                <p>As-salaamu alaykum <strong>${opts.requesterName}</strong>,</p>
+                <p>Regarding your Interest Request sent to <strong>${opts.declinerName}</strong>, they are unable to proceed at this time and have declined the request.</p>
+                <p>Don't worry, there are many other suitable profiles waiting for you! Keep exploring.</p>
+                <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
+                <p style="font-size:11px;color:#999">53DBohraRishta Notification System • CC: ${ADMIN_EMAIL}</p>
+            </div>`,
+    });
+
+    // Confirmation Email to Decliner
+    await sendEmail({
+        toEmail: opts.declinerEmail,
+        cc: ADMIN_EMAIL,
+        subject: 'Request Declined Confirmation',
+        htmlBody: `
+            <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
+                <h2 style="color:#555">Request Declined</h2>
+                <p>As-salaamu alaykum <strong>${opts.declinerName}</strong>,</p>
+                <p>You have declined the Interest Request from <strong>${opts.requesterName}</strong>. They have been notified politely.</p>
+                <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
+                <p style="font-size:11px;color:#999">53DBohraRishta Notification System • CC: ${ADMIN_EMAIL}</p>
+            </div>`,
+    });
+}

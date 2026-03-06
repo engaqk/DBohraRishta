@@ -5,7 +5,7 @@ import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
 import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
-import { notifyInterestSent, notifyRequestAccepted, ADMIN_EMAIL } from '@/lib/emailService';
+import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
 import { db, messaging } from '@/lib/firebase/config';
@@ -590,6 +590,16 @@ export default function RishtaDashboard() {
                     isRead: false,
                     createdAt: serverTimestamp()
                 });
+
+                // --- 💌 Email Notification for Declined Requests ---
+                if (newStatus === "rejected") {
+                    notifyInterestDeclined({
+                        declinerName: myProfile?.name || 'Candidate',
+                        declinerEmail: myProfile?.email || user?.email || '',
+                        requesterName: requestGroup.otherUserName || 'Candidate',
+                        requesterEmail: requestGroup.otherUserEmail || ''
+                    }).catch(e => console.error("Email notify error", e));
+                }
             }
 
             if (newStatus === "rejected") {

@@ -21,19 +21,18 @@ export async function POST(req: Request) {
 
         console.log(`Starting broadcast: Title="${title}", Push=${sendPush}, Email=${sendEmail}, AllAuth=${includeAllAuthUsers}`);
 
-        // We will collect success counts
         let pushSuccessCount = 0;
         let pFailCount = 0;
         let emailSuccessCount = 0;
+        const emailSet = new Set<string>();
 
         // Fetch all candidates from Firestore
         const usersSnapshot = await adminDb.collection('users').get();
         const firestoreUsers = usersSnapshot.docs.map(doc => doc.data());
         console.log(`Found ${firestoreUsers.length} users in Firestore.`);
 
-        // 1. Send Push Notifications (FCM) - Only works for users with tokens in Firestore
+        // 1. Send Push Notifications (FCM)
         if (sendPush) {
-            // Collect all unique FCM tokens
             const allTokens = new Set<string>();
             firestoreUsers.forEach(u => {
                 if (u.fcmTokens && Array.isArray(u.fcmTokens)) {
@@ -44,7 +43,6 @@ export async function POST(req: Request) {
             const tokensArray = Array.from(allTokens);
             console.log(`Sending push to ${tokensArray.length} unique tokens.`);
 
-            // Firebase limits sendMulticast to 500 tokens at a time
             const chunkSize = 500;
             for (let i = 0; i < tokensArray.length; i += chunkSize) {
                 const chunk = tokensArray.slice(i, i + chunkSize);
@@ -68,48 +66,52 @@ export async function POST(req: Request) {
             }
         }
 
-        // 2. Send Emails via NodeMailer
+        // 2. Prepare Emails
+        firestoreUsers.forEach(u => {
+            const e = (u.email || '').toString().trim().toLowerCase();
+            if (e.includes('@')) emailSet.add(e);
+        });
+
+        if (includeAllAuthUsers) {
+            try {
+                console.log("Fetching users from Firebase Auth...");
+                let nextPageToken;
+                do {
+                    const listUsersResult = await adminAuth.listUsers(1000, nextPageToken);
+                    listUsersResult.users.forEach((userRecord) => {
+                        if (userRecord.email) {
+                            emailSet.add(userRecord.email.toLowerCase().trim());
+                        }
+                    });
+                    nextPageToken = listUsersResult.pageToken;
+                } while (nextPageToken);
+            } catch (e) {
+                console.error("Error fetching users from Auth:", e);
+            }
+        }
+
+        const emails = Array.from(emailSet);
+        const emailsFound = emails.length;
+        console.log(`Collected ${emailsFound} total unique emails for broadcast.`);
+
+        // 3. Send Emails
         if (sendEmail) {
-            const emailSet = new Set<string>();
-
-            // Add emails from Firestore users
-            firestoreUsers.forEach(u => {
-                const e = (u.email || '').toString().trim().toLowerCase();
-                if (e.includes('@')) emailSet.add(e);
-            });
-
-            // If flag enabled, also fetch from Firebase Auth
-            if (includeAllAuthUsers) {
-                try {
-                    console.log("Fetching users from Firebase Auth...");
-                    let nextPageToken;
-                    do {
-                        const listUsersResult = await adminAuth.listUsers(1000, nextPageToken);
-                        listUsersResult.users.forEach((userRecord) => {
-                            if (userRecord.email) {
-                                emailSet.add(userRecord.email.toLowerCase().trim());
-                            }
-                        });
-                        nextPageToken = listUsersResult.pageToken;
-                    } while (nextPageToken);
-                    console.log(`Email set expanded to ${emailSet.size} unique addresses using Auth records.`);
-                } catch (e) {
-                    console.error("Error fetching users from Auth:", e);
-                }
+            if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+                console.error("CRITICAL: GMAIL_USER or GMAIL_APP_PASSWORD missing.");
+                return NextResponse.json({
+                    success: false,
+                    error: "Email credentials missing on server. Set GMAIL_USER/GMAIL_APP_PASSWORD in Vercel.",
+                    emailsFound
+                }, { status: 500 });
             }
 
-            const emails = Array.from(emailSet);
-            console.log(`Collected ${emails.length} total unique emails for broadcast.`);
-
-            if (emails.length > 0 && process.env.GMAIL_USER) {
-                // Send in chunks of 50 to avoid SMTP rate limits / spam flags
+            if (emailsFound > 0) {
                 const chunkSize = 50;
                 for (let i = 0; i < emails.length; i += chunkSize) {
                     const chunk = emails.slice(i, i + chunkSize);
-
                     const mailOptions = {
                         from: `"53DBohraRishta" <${process.env.GMAIL_USER}>`,
-                        bcc: chunk.join(', '), // BCC so everyone doesn't see each other's emails
+                        bcc: chunk.join(', '),
                         subject: title || 'Platform Announcement',
                         html: `
                             <div style="font-family: Arial, sans-serif; background-color: #f9fafb; padding: 30px;">
@@ -130,11 +132,19 @@ export async function POST(req: Request) {
                     };
 
                     try {
+                        console.log(`Sending email chunk ${i / chunkSize + 1}...`);
                         await transporter.sendMail(mailOptions);
                         emailSuccessCount += chunk.length;
-                        console.log(`Sent email chunk ${i / chunkSize + 1} successfully.`);
-                    } catch (e) {
-                        console.error(`Email broadcast error in chunk starting with ${chunk[0]}:`, e);
+                    } catch (e: any) {
+                        console.error(`Email error:`, e);
+                        if (e.message?.includes('Invalid login') || e.code === 'EAUTH') {
+                            return NextResponse.json({
+                                success: false,
+                                error: "Gmail SMTP Authentication failed. Check App Password.",
+                                emailsSent: emailSuccessCount,
+                                emailsFound
+                            }, { status: 500 });
+                        }
                     }
                 }
             }
@@ -144,7 +154,8 @@ export async function POST(req: Request) {
             success: true,
             pushSent: pushSuccessCount,
             pushFailed: pFailCount,
-            emailsSent: emailSuccessCount
+            emailsSent: emailSuccessCount,
+            emailsFound: emailsFound
         });
 
     } catch (error: any) {

@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import toast from "react-hot-toast";
+import { notifyDuplicateRegistration } from "@/lib/emailService";
 
 export default function OnboardingPage() {
     const router = useRouter();
@@ -79,7 +80,7 @@ export default function OnboardingPage() {
         }
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         let newErrors: { [key: string]: string } = {};
 
         if (step === 1) {
@@ -110,6 +111,33 @@ export default function OnboardingPage() {
                 newErrors.itsNumber = "ITS Number is required.";
             } else if (!/^\d{8}$/.test(formData.itsNumber)) {
                 newErrors.itsNumber = "ITS Number must be exactly 8 digits.";
+            } else {
+                // Check for duplicate ITS Number
+                try {
+                    const { collection, query, where, getDocs } = await import('firebase/firestore');
+                    const q = query(collection(db, "users"), where("itsNumber", "==", formData.itsNumber));
+                    const snap = await getDocs(q);
+                    let isDuplicate = false;
+                    snap.forEach(d => {
+                        if (d.id !== user?.uid) isDuplicate = true;
+                    });
+
+                    if (isDuplicate) {
+                        toast.error("This ITS Number is already registered on another profile.");
+                        newErrors.itsNumber = "This ITS Number is already in use.";
+
+                        // Notify via email as requested
+                        if (formData.email) {
+                            notifyDuplicateRegistration({
+                                candidateName: formData.name || "User",
+                                candidateEmail: formData.email,
+                                itsNumber: formData.itsNumber
+                            }).catch(err => console.error("Failed to send duplicate notification email:", err));
+                        }
+                    }
+                } catch (e) {
+                    console.error("Duplicate ITS check error:", e);
+                }
             }
             if (!formData.jamaat) newErrors.jamaat = "Primary Jamaat is required.";
             if (!itsImage) newErrors.itsImage = "Please upload or capture your ITS card.";

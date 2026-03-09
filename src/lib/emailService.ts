@@ -126,6 +126,9 @@ export async function notifyRequestAccepted(opts: {
                     <p style="margin:8px 0 0;color:#166534;font-size:15px">✉️ Email: <strong>${opts.acceptorEmail}</strong></p>
                 </div>
                 <p>You can now contact them directly to proceed with family discussions.</p>
+                <a href="https://53dbohrarishta.in" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
+                    Go to Dashboard
+                </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
                 <p style="font-size:11px;color:#999">53DBohraRishta Notification System • CC: ${ADMIN_EMAIL}</p>
             </div>`,
@@ -147,6 +150,9 @@ export async function notifyRequestAccepted(opts: {
                     <p style="margin:8px 0 0;color:#166534;font-size:15px">✉️ Email: <strong>${opts.requesterEmail}</strong></p>
                 </div>
                 <p>Their details are also permanently available in your "Accepted" section on the dashboard.</p>
+                <a href="https://53dbohrarishta.in" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
+                    Go to Dashboard
+                </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
                 <p style="font-size:11px;color:#999">53DBohraRishta Notification System • CC: ${ADMIN_EMAIL}</p>
             </div>`,
@@ -307,6 +313,9 @@ export async function notifyInterestDeclined(opts: {
                 <p>As-salaamu alaykum <strong>${opts.requesterName}</strong>,</p>
                 <p>Regarding your Interest Request sent to <strong>${opts.declinerName}</strong>, they are unable to proceed at this time and have declined the request.</p>
                 <p>Don't worry, there are many other suitable profiles waiting for you! Keep exploring.</p>
+                <a href="https://53dbohrarishta.in" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
+                    Explore More Profiles
+                </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
                 <p style="font-size:11px;color:#999">53DBohraRishta Notification System • CC: ${ADMIN_EMAIL}</p>
             </div>`,
@@ -322,8 +331,72 @@ export async function notifyInterestDeclined(opts: {
                 <h2 style="color:#555">Request Declined</h2>
                 <p>As-salaamu alaykum <strong>${opts.declinerName}</strong>,</p>
                 <p>You have declined the Interest Request from <strong>${opts.requesterName}</strong>. They have been notified politely.</p>
+                <a href="https://53dbohrarishta.in" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
+                    Back to Dashboard
+                </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
                 <p style="font-size:11px;color:#999">53DBohraRishta Notification System • CC: ${ADMIN_EMAIL}</p>
             </div>`,
     });
 }
+
+/**
+ * Notify Candidate of Duplicate Registration Attempt.
+ */
+export async function notifyDuplicateRegistration(opts: {
+    candidateName: string;
+    candidateEmail: string;
+    itsNumber: string;
+}) {
+    await sendEmail({
+        toEmail: opts.candidateEmail,
+        cc: ADMIN_EMAIL,
+        subject: `⚠️ Duplicate Registration Attempt – 53DBohraRishta`,
+        htmlBody: `
+            <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
+                <h2 style="color:#881337">Duplicate Registration Attempt</h2>
+                <p>As-salaamu alaykum <strong>${opts.candidateName}</strong>,</p>
+                <p>We noticed an attempt to register a new profile using the ITS Number <strong>${opts.itsNumber}</strong>.</p>
+                <div style="background:#fef2f2;border-left:5px solid #881337;padding:20px;border-radius:8px;margin:20px 0">
+                    <p style="margin:0;color:#555;font-size:15px">You are already registered. Please edit your existing profile instead of refilling the form, as duplicate registrations are not permitted.</p>
+                </div>
+                <p>If you need access to your profile, please login to your dashboard.</p>
+                <a href="https://53dbohrarishta.in/login" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
+                    Login to Dashboard
+                </a>
+                <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
+                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification</p>
+            </div>`,
+    });
+}
+
+/**
+ * Notify User to Complete Onboarding ASAP.
+ */
+export async function notifyWelcomeOnboarding(opts: {
+    candidateName?: string;
+    candidateEmail: string;
+}) {
+    await sendEmail({
+        toEmail: opts.candidateEmail,
+        cc: ADMIN_EMAIL,
+        subject: `✨ Complete Your Profile & Find Your Perfect Match – 53DBohraRishta`,
+        htmlBody: `
+            <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
+                <h2 style="color:#881337;margin-bottom:8px">Welcome to 53DBohraRishta ✨</h2>
+                <p>As-salaamu alaykum <strong>${opts.candidateName || 'Candidate'}</strong>,</p>
+                <p>Khushamadeed! We noticed you recently joined our platform but haven't completed your onboarding yet.</p>
+                <div style="background:#f9f9f9;border-left:5px solid #D4AF37;padding:20px;border-radius:8px;margin:20px 0">
+                    <p style="margin:0;font-size:15px;color:#333">Complete your profile today to start discovering matches within our community <strong>free of cost</strong>. Get benefited from all our premium features including photo privacy and direct interest requests.</p>
+                </div>
+                <p>It only takes 2 minutes to get started!</p>
+                <a href="https://53dbohrarishta.in/onboarding" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
+                    Complete Onboarding Now
+                </a>
+                <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
+                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification • CC: ${ADMIN_EMAIL}</p>
+            </div>`,
+    });
+}
+
+

@@ -69,17 +69,19 @@ function ProfileContent() {
                     setRequestSent(active); setRejectCount(rejects); setRequestStatus(status);
 
                     // 👁️ Record Profile View (if not me)
-                    if (user.uid !== id && !id.startsWith('dummy') && meData) {
+                    if (user.uid !== id && meData) {
                         const viewRef = collection(db, 'profile_views');
                         const viewKey = `${user.uid}_${id}`;
-                        await addDoc(viewRef, {
+
+                        // Optional: Debounce to prevent multiple records in rapid succession
+                        addDoc(viewRef, {
                             viewerId: user.uid,
                             viewerName: meData.name || 'Anonymous',
                             viewerLibasUrl: meData.libasImageUrl || null,
                             profileId: id,
                             timestamp: serverTimestamp(),
                             viewKey: viewKey
-                        });
+                        }).catch(e => console.error("Error logging profile view", e));
                     }
                 }
             } catch (e) {

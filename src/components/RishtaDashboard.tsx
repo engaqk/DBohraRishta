@@ -433,6 +433,19 @@ export default function RishtaDashboard() {
             if (outSnap) { outSnap.forEach((d: any) => requestsRaw.push({ id: d.id, isIncoming: false, ...d.data() })); }
             if (inSnap) { inSnap.forEach((d: any) => requestsRaw.push({ id: d.id, isIncoming: true, ...d.data() })); }
 
+            // Deduplicate to show only the latest request per target user
+            const latestRequests = new Map();
+            for (const req of requestsRaw) {
+                const targetId = req.isIncoming ? req.from : req.to;
+                const existing = latestRequests.get(targetId);
+                const reqTime = req.timestamp?.toMillis ? req.timestamp.toMillis() : (req.timestamp || 0);
+                const extTime = existing?.timestamp?.toMillis ? existing.timestamp.toMillis() : (existing?.timestamp || 0);
+                if (!existing || reqTime > extTime) {
+                    latestRequests.set(targetId, req);
+                }
+            }
+            requestsRaw = Array.from(latestRequests.values());
+
             const resolvedRequests: RishtaRequest[] = [];
             for (const req of requestsRaw) {
                 const targetId = req.isIncoming ? req.from : req.to;
@@ -1152,7 +1165,7 @@ export default function RishtaDashboard() {
                                 </p>
                                 {myProfile.adminMessage && (
                                     <div className={`px-4 py-3 rounded-xl text-sm italic font-medium border ${myProfile.status === 'rejected' ? 'bg-white border-rose-100 text-rose-800' : 'bg-white border-yellow-100 text-yellow-800'}`}>
-                                        💬 "{myProfile.adminMessage}"
+                                        💬 &quot;{myProfile.adminMessage}&quot;
                                     </div>
                                 )}
                                 <div className="flex gap-3 mt-3 flex-wrap">
@@ -1546,7 +1559,7 @@ export default function RishtaDashboard() {
                                         {myProfile.bio && (
                                             <div className="bg-rose-50/50 border-l-4 border-[#881337] p-4 rounded-r-2xl">
                                                 <p className="text-sm text-[#881337] font-serif italic leading-relaxed">
-                                                    "{myProfile.bio}"
+                                                    &quot;{myProfile.bio}&quot;
                                                 </p>
                                             </div>
                                         )}
@@ -1621,7 +1634,7 @@ export default function RishtaDashboard() {
                                             <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-100/50 mb-4">
                                                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Education & Deeni Taleem</p>
                                                 <p className="text-xs text-gray-800 font-bold mb-1">{myProfile.completedUpto || myProfile.education}</p>
-                                                {myProfile.educationDetails && <p className="text-xs text-gray-600 leading-relaxed italic">"{myProfile.educationDetails}"</p>}
+                                                {myProfile.educationDetails && <p className="text-xs text-gray-600 leading-relaxed italic">&quot;{myProfile.educationDetails}&quot;</p>}
                                                 {myProfile.hifzStatus && (
                                                     <div className="mt-2 inline-block bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-bold">
                                                         Hifz: {myProfile.hifzStatus}
@@ -1635,7 +1648,7 @@ export default function RishtaDashboard() {
                                             <div className="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100/50 mb-4">
                                                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Occupation Details</p>
                                                 <p className="text-xs text-gray-800 font-bold mb-1">{myProfile.serviceType || myProfile.professionType}</p>
-                                                {myProfile.employmentDetails && <p className="text-xs text-gray-600 leading-relaxed italic">"{myProfile.employmentDetails}"</p>}
+                                                {myProfile.employmentDetails && <p className="text-xs text-gray-600 leading-relaxed italic">&quot;{myProfile.employmentDetails}&quot;</p>}
                                             </div>
                                         )}
 
@@ -1652,7 +1665,7 @@ export default function RishtaDashboard() {
                                             <div className="bg-rose-50/30 rounded-2xl p-4 border border-rose-100/50 relative overflow-hidden mb-6">
                                                 <Sparkles className="absolute -right-2 -top-2 w-16 h-16 text-rose-100/50 rotate-12" />
                                                 <p className="text-[9px] font-black text-[#881337] uppercase tracking-widest mb-2">Partner Preferences</p>
-                                                <p className="text-xs text-rose-900 italic font-medium leading-relaxed relative z-10">"{myProfile.partnerQualities}"</p>
+                                                <p className="text-xs text-rose-900 italic font-medium leading-relaxed relative z-10">&quot;{myProfile.partnerQualities}&quot;</p>
                                             </div>
                                         )}
 

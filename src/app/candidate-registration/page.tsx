@@ -64,7 +64,7 @@ export default function CandidateRegistrationPage() {
 
         // Occupation
         dawatKhidmat: "",
-        professionType: "IT Professional",
+        professionType: "",
         serviceType: "",
         selfEmployedType: "",
         employmentDetails: "",
@@ -115,8 +115,8 @@ export default function CandidateRegistrationPage() {
                         motherName: data.motherName || prev.motherName,
                         maritalStatus: data.maritalStatus || prev.maritalStatus,
                         mobile: data.mobile || prev.mobile,
-                        educationDetails: data.education || prev.educationDetails,
-                        professionType: data.profession || prev.professionType,
+                        educationDetails: data.educationDetails || data.education || prev.educationDetails,
+                        professionType: data.professionType || data.profession || prev.professionType,
                         bio: data.bio || prev.bio,
                         status: data.status || prev.status,
                         adminMessage: data.adminMessage || '',
@@ -676,9 +676,17 @@ export default function CandidateRegistrationPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Profession Type</label>
-                                    <select name="professionType" onChange={handleChange} value={formData.professionType} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none">
-                                        <option>Accountant</option><option>Doctor</option><option>Engineer</option><option>Designer</option><option>Teacher</option>
-                                        <option>IT Professional</option><option>Technician/Mechanic</option><option>Business</option><option>Other</option>
+                                    <select name="professionType" onChange={handleChange} value={formData.professionType || ""} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none">
+                                        <option value="" disabled>Select Profession...</option>
+                                        <option value="Accountant">Accountant</option>
+                                        <option value="Doctor">Doctor</option>
+                                        <option value="Engineer">Engineer</option>
+                                        <option value="Designer">Designer</option>
+                                        <option value="Teacher">Teacher</option>
+                                        <option value="IT Professional">IT Professional</option>
+                                        <option value="Technician/Mechanic">Technician/Mechanic</option>
+                                        <option value="Business">Business</option>
+                                        <option value="Other">Other</option>
                                     </select>
                                 </div>
                                 <div>

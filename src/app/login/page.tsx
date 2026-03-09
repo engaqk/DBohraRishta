@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { QRCodeSVG } from "qrcode.react";
+import { notifyWelcomeOnboarding } from "@/lib/emailService";
 import * as OTPAuth from "otpauth";
 import {
     signInWithEmailAndPassword,
@@ -60,7 +61,18 @@ export default function LoginPage() {
             if (!loading && user) {
                 try {
                     const userDoc = await getDoc(doc(db, "users", user.uid));
-                    router.push(userDoc.exists() ? "/" : "/onboarding");
+                    if (userDoc.exists()) {
+                        router.push("/");
+                    } else {
+                        // User exists in Auth but not in Firestore "users" -> incomplete onboarding
+                        if (user.email) {
+                            notifyWelcomeOnboarding({
+                                candidateName: user.displayName || undefined,
+                                candidateEmail: user.email
+                            }).catch(err => console.error("Failed to send welcome onboarding email:", err));
+                        }
+                        router.push("/onboarding");
+                    }
                 } catch { router.push("/onboarding"); }
             }
         };

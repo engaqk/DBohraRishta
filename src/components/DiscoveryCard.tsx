@@ -139,6 +139,21 @@ export default function DiscoveryCard({
 
         try {
             setLoading(true);
+
+            // Prevent duplicate requests
+            const checkQ = query(collection(db, 'rishta_requests'), where('from', '==', user.uid), where('to', '==', id));
+            const checkSnap = await getDocs(checkQ);
+            let hasActive = false;
+            checkSnap.forEach(d => {
+                if (d.data().status !== 'rejected' && d.data().status !== 'ended') hasActive = true;
+            });
+            if (hasActive) {
+                toast.error('An active request already exists.');
+                setRequestSent(true);
+                setLoading(false);
+                return;
+            }
+
             const spamQ = query(collection(db, 'rishta_requests'), where('from', '==', user.uid));
             const spamSnap = await getDocs(spamQ);
             const cutoff = Date.now() - 86400000;

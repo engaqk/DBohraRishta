@@ -48,36 +48,42 @@ export async function POST(req: Request) {
 
         const textbeeUrl = `https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`;
 
-        const textbeeRes = await fetch(textbeeUrl, {
-            method: 'POST',
-            headers: {
-                'x-api-key': apiKey,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
+        try {
+            const { default: axios } = await import('axios');
+            const response = await axios.post(textbeeUrl, {
                 receivers: [smsTo],
                 smsBody: smsText
-            })
-        });
+            }, {
+                headers: {
+                    'x-api-key': apiKey,
+                    'Content-Type': 'application/json'
+                }
+            });
 
-        if (!textbeeRes.ok) {
+            console.log("Textbee SMS API Success:", response.data);
+
+            return NextResponse.json({
+                success: true,
+                message: 'OTP sent successfully'
+            });
+
+        } catch (apiError: any) {
             let errorMsg = 'Failed to send SMS message';
-            try {
-                const errorData = await textbeeRes.json();
-                console.error("Textbee API error:", JSON.stringify(errorData, null, 2));
-                errorMsg = errorData.message || errorMsg;
-            } catch {
-                console.error("Textbee API error: Unparseable response");
+            if (apiError.response) {
+                console.error("Textbee API Error Data:", apiError.response.data);
+                errorMsg = apiError.response.data?.message || `Textbee API Error: ${apiError.response.statusText}`;
+            } else if (apiError.request) {
+                console.error("Textbee API No Response:", apiError.request);
+                errorMsg = "No response from SMS service provider.";
+            } else {
+                console.error("Textbee Request Error:", apiError.message);
+                errorMsg = `SMS Error: ${apiError.message}`;
             }
+
             return NextResponse.json({
                 error: errorMsg,
             }, { status: 500 });
         }
-
-        return NextResponse.json({
-            success: true,
-            message: 'OTP sent successfully'
-        });
 
     } catch (error: any) {
         console.error('OTP send error:', error);

@@ -116,7 +116,7 @@ export default function CandidateRegistrationPage() {
                         maritalStatus: data.maritalStatus || prev.maritalStatus,
                         mobile: data.mobile || prev.mobile,
                         educationDetails: data.educationDetails || data.education || prev.educationDetails,
-                        professionType: data.professionType || data.profession || prev.professionType,
+                        professionType: data.professionType || (typeof data.profession === 'string' ? data.profession : '') || prev.professionType,
                         bio: data.bio || prev.bio,
                         status: data.status || prev.status,
                         adminMessage: data.adminMessage || '',
@@ -272,10 +272,13 @@ export default function CandidateRegistrationPage() {
         }
 
         // Mobile validation
-        if (!formData.mobile) {
+        if (formData.mobile) {
+            if (!/^\+?\d+$/.test(formData.mobile) || formData.mobile.length < 8 || formData.mobile.length > 15) {
+                newErrors.mobile = "Please enter a valid mobile number (digits and optional + at start, length 8-15)";
+            }
+        } else {
+            // Only require if it's completely missing
             newErrors.mobile = "Mobile number is required";
-        } else if (!/^\d+$/.test(formData.mobile) || formData.mobile.length < 8 || formData.mobile.length > 15) {
-            newErrors.mobile = "Please enter a valid mobile number (digits only, length 8-15)";
         }
 
         // Additional Required Form Validation Check
@@ -608,7 +611,7 @@ export default function CandidateRegistrationPage() {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number *</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number {formData.mobile ? "(Verified)" : "*"}</label>
                                     <div className="mb-3">
                                         <input disabled name="mobile" onChange={handleChange} value={formData.mobile} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.mobile ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} placeholder="e.g. +919876543210" />
                                     </div>

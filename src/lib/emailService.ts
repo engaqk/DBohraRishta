@@ -399,4 +399,27 @@ export async function notifyWelcomeOnboarding(opts: {
     });
 }
 
+/**
+ * Send an OTP code via Email
+ */
+export async function sendVerificationEmail(opts: {
+    toEmail: string;
+    otpCode: string;
+}) {
+    await sendEmail({
+        toEmail: opts.toEmail,
+        subject: `🔒 ${opts.otpCode} is your verification code - 53DBohraRishta`,
+        htmlBody: `
+            <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
+                <h2 style="color:#881337;margin-bottom:8px">Verification Code</h2>
+                <p>As-salaamu alaykum,</p>
+                <p>Your verification code for <strong>53DBohraRishta</strong> is:</p>
+                <div style="background:#f9f9f9;border-left:5px solid #D4AF37;padding:20px;border-radius:8px;margin:20px 0;text-align:center;">
+                    <span style="font-size:32px;font-weight:bold;letter-spacing:10px;color:#333;">${opts.otpCode}</span>
+                </div>
+                <p>This code will expire in 5 minutes. Do not share this code with anyone.</p>
+                <p style="font-size:11px;color:#999;margin-top:30px;">If you did not request this code, please ignore this email.</p>
+            </div>`,
+    });
+}
 

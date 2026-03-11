@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@types/nodemailer": "^7.0.11",
+    "@upstash/redis": "^1.36.3",
     "driver.js": "^1.4.0",
     "firebase": "^12.9.0",
     "firebase-admin": "^13.7.0",
@@ -19,6 +20,7 @@
     "next": "16.1.6",
     "nodemailer": "^8.0.1",
     "otpauth": "^9.5.0",
+    "otplib": "^13.3.0",
     "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
     "react": "19.2.3",

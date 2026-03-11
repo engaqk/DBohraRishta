@@ -45,24 +45,44 @@ export default function AdminVerificationPage() {
     const { user } = useAuth();
     const router = useRouter();
 
-    const filteredUsers = useMemo(() => {
-        return allUsers.filter(u =>
+    const [sortConfig, setSortConfig] = useState<{ key: keyof PendingUser; direction: 'asc' | 'desc' }>({ key: 'createdAt', direction: 'desc' });
+
+    const sortedUsers = useMemo(() => {
+        const filtered = allUsers.filter(u =>
             !searchQuery ||
             u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             u.itsNumber?.includes(searchQuery) ||
             u.hizratLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             u.jamaat?.toLowerCase().includes(searchQuery.toLowerCase())
         );
-    }, [allUsers, searchQuery]);
+
+        return [...filtered].sort((a, b) => {
+            let valA = a[sortConfig.key];
+            let valB = b[sortConfig.key];
+
+            // Handle date strings or Firestore timestamps
+            if (sortConfig.key === 'createdAt') {
+                valA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
+                valB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
+            }
+
+            if (!valA) return 1;
+            if (!valB) return -1;
+
+            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [allUsers, searchQuery, sortConfig]);
 
     const analytics = useMemo(() => {
         return {
-            totalUsers: filteredUsers.length,
-            pendingCount: filteredUsers.filter(u => !u.status || u.status === 'pending' || u.status === 'pending_verification').length,
-            holdCount: filteredUsers.filter(u => u.status === 'hold').length,
+            totalUsers: sortedUsers.length,
+            pendingCount: sortedUsers.filter(u => !u.status || u.status === 'pending' || u.status === 'pending_verification').length,
+            holdCount: sortedUsers.filter(u => u.status === 'hold').length,
             acceptedRatio: requestStats.total > 0 ? Math.round((requestStats.accepted / requestStats.total) * 100) : 0,
         };
-    }, [filteredUsers, requestStats]);
+    }, [sortedUsers, requestStats]);
 
     useEffect(() => {
         const isAdmin = localStorage.getItem("admin_auth_token");
@@ -531,55 +551,82 @@ export default function AdminVerificationPage() {
 
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 hidden md:grid grid-cols-12 gap-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                <div className="col-span-2">Profile / Name</div>
-                                <div className="col-span-2">ITS Number</div>
-                                <div className="col-span-2">Location</div>
-                                <div className="col-span-2">Status</div>
-                                <div className="col-span-2">Recent Activity</div>
+                                <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'name', direction: p.key === 'name' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                                    Profile / Name {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                </div>
+                                <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'itsNumber', direction: p.key === 'itsNumber' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                                    ITS Number {sortConfig.key === 'itsNumber' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                </div>
+                                <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'hizratLocation', direction: p.key === 'hizratLocation' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                                    Location {sortConfig.key === 'hizratLocation' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                </div>
+                                <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'status', direction: p.key === 'status' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                                    Status {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                </div>
+                                <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'createdAt', direction: p.key === 'createdAt' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                                    Joined Date {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                </div>
                                 <div className="col-span-2 text-right">Actions</div>
                             </div>
                             <div className="divide-y divide-gray-100">
-                                {filteredUsers.length === 0 ? (
+                                {sortedUsers.length === 0 ? (
                                     <div className="p-10 text-center text-gray-400 font-bold uppercase text-sm">No users found</div>
                                 ) : (
-                                    filteredUsers.map((u) => (
-                                        <div key={u.id} className="p-4 md:px-6 md:py-4 flex flex-col md:grid md:grid-cols-12 gap-4 items-center cursor-pointer transition-colors hover:bg-gray-50/80" onClick={() => openDetails(u)}>
-                                            <div className="col-span-2 flex items-center gap-3 w-full">
-                                                <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0 border border-gray-100">
-                                                    {u.libasImageUrl ? <img src={u.libasImageUrl} alt="Profile" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[#881337] font-bold bg-rose-50">{u.name?.charAt(0) || '?'}</div>}
+                                    sortedUsers.map((u) => {
+                                        const now = Date.now();
+                                        const createdTime = u.createdAt?.seconds ? u.createdAt.seconds * 1000 : new Date(u.createdAt || 0).getTime();
+                                        const isNew = now - createdTime < 24 * 60 * 60 * 1000;
+                                        const hasNewMsg = msgCounts[u.id]?.userMsgs > 0;
+
+                                        return (
+                                            <div
+                                                key={u.id}
+                                                className={`p-4 md:px-6 md:py-4 flex flex-col md:grid md:grid-cols-12 gap-4 items-center cursor-pointer transition-colors relative ${hasNewMsg ? 'bg-blue-50/50 hover:bg-blue-100/50 border-l-4 border-blue-500' : isNew ? 'bg-amber-50/30 hover:bg-amber-100/30 border-l-4 border-amber-400' : 'hover:bg-gray-50/80'}`}
+                                                onClick={() => openDetails(u)}
+                                            >
+                                                <div className="col-span-2 flex items-center gap-3 w-full">
+                                                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0 border border-gray-100">
+                                                        {u.libasImageUrl ? <img src={u.libasImageUrl} alt="Profile" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[#881337] font-bold bg-rose-50">{u.name?.charAt(0) || '?'}</div>}
+                                                    </div>
+                                                    <div className="flex-1 truncate">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <p className="font-bold text-[#881337] truncate">{u.name}</p>
+                                                            {isNew && <span className="bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm">NEW</span>}
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-400 truncate">{u.mobile || u.mobileNumber || "No mobile"}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex-1 truncate">
-                                                    <p className="font-bold text-[#881337] truncate">{u.name}</p>
-                                                    <p className="text-[10px] text-gray-400 truncate">{u.mobile || u.mobileNumber || "No mobile"}</p>
+                                                <div className="col-span-2 w-full text-sm font-medium text-gray-700">{u.itsNumber}</div>
+                                                <div className="col-span-2 w-full text-sm text-gray-500 truncate">{u.hizratLocation || 'N/A'}</div>
+                                                <div className="col-span-2 w-full">
+                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(u.status)}`}>{getStatusLabel(u.status)}</span>
                                                 </div>
-                                            </div>
-                                            <div className="col-span-2 w-full text-sm font-medium text-gray-700">{u.itsNumber}</div>
-                                            <div className="col-span-2 w-full text-sm text-gray-500 truncate">{u.hizratLocation || 'N/A'}</div>
-                                            <div className="col-span-2 w-full">
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(u.status)}`}>{getStatusLabel(u.status)}</span>
-                                            </div>
-                                            <div className="col-span-2 w-full flex items-center gap-2">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); openDetails(u, 'messages'); }}
-                                                    className="flex items-center gap-1.5 text-[#881337] hover:bg-rose-50 px-2 py-1 rounded-lg transition-all text-[10px] font-bold border border-transparent hover:border-rose-100"
-                                                >
-                                                    <MessageCircle className="w-3.5 h-3.5" />
-                                                    <span>View Chat</span>
-                                                    {msgCounts[u.id] && (
-                                                        <span className="ml-1 bg-rose-100 text-[#881337] px-1.5 py-0.5 rounded-full border border-rose-200">
-                                                            {msgCounts[u.id].userMsgs}/{msgCounts[u.id].total}
-                                                        </span>
+                                                <div className="col-span-2 w-full flex flex-col items-start gap-1">
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                                        {u.createdAt ? (new Date(createdTime).toLocaleDateString()) : 'N/A'}
+                                                    </p>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); openDetails(u, 'messages'); }}
+                                                        className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all text-[10px] font-bold border ${hasNewMsg ? 'bg-blue-100 text-blue-700 border-blue-200 shadow-sm' : 'text-[#881337] hover:bg-rose-50 border-transparent hover:border-rose-100'}`}
+                                                    >
+                                                        <MessageCircle className={`w-3.5 h-3.5 ${hasNewMsg ? 'animate-bounce' : ''}`} />
+                                                        <span>{hasNewMsg ? 'New Message' : 'View Chat'}</span>
+                                                        {msgCounts[u.id] && (
+                                                            <span className={`ml-1 px-1.5 py-0.5 rounded-full border ${hasNewMsg ? 'bg-blue-200 border-blue-300' : 'bg-rose-100 border-rose-200'}`}>
+                                                                {msgCounts[u.id].userMsgs}/{msgCounts[u.id].total}
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                                <div className="col-span-2 w-full flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                                                    <button onClick={() => openDetails(u)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 shadow-sm transition-colors" title="Open Complete Details"><ArrowRight className="w-4 h-4" /></button>
+                                                    {(!u.status || u.status === 'pending_verification' || u.status === 'pending') && (
+                                                        <button onClick={() => handleStatusMove(u.id, 'verified')} className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg hover:bg-emerald-100 shadow-sm" title="Quick Verify"><CheckCircle className="w-4 h-4" /></button>
                                                     )}
-                                                </button>
+                                                </div>
                                             </div>
-                                            <div className="col-span-2 w-full flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                                <button onClick={() => openDetails(u)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 shadow-sm transition-colors" title="Open Complete Details"><ArrowRight className="w-4 h-4" /></button>
-                                                {(!u.status || u.status === 'pending_verification' || u.status === 'pending') && (
-                                                    <button onClick={() => handleStatusMove(u.id, 'verified')} className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg hover:bg-emerald-100 shadow-sm" title="Quick Verify"><CheckCircle className="w-4 h-4" /></button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
                         </div>

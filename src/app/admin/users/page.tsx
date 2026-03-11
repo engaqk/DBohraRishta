@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { collection, getDocs, orderBy, query, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, orderBy, addDoc, serverTimestamp, onSnapshot, collectionGroup } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send } from "lucide-react";
+import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send, MessageCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface RegistrationUser {
@@ -54,6 +54,9 @@ export default function AdminUsersPage() {
     const [showBroadcastModal, setShowBroadcastModal] = useState(false);
     const [broadcastMsg, setBroadcastMsg] = useState('');
     const [sendingBroadcast, setSendingBroadcast] = useState(false);
+    const [sortConfig, setSortConfig] = useState<{ key: keyof RegistrationUser; direction: 'asc' | 'desc' }>({ key: 'createdAt', direction: 'desc' });
+    const [msgCounts, setMsgCounts] = useState<Record<string, { total: number, userMsgs: number }>>({});
+
 
     // Admin auth guard
     useEffect(() => {
@@ -61,26 +64,40 @@ export default function AdminUsersPage() {
         if (!token) { router.push('/admin/login'); return; }
     }, [router]);
 
-    const fetchUsers = async () => {
-        setLoading(true);
-        try {
-            const snap = await getDocs(collection(db, 'users'));
+    useEffect(() => {
+        const usersUnsub = onSnapshot(collection(db, 'users'), (snap) => {
             const list: RegistrationUser[] = snap.docs.map(d => ({
                 uid: d.id,
                 ...d.data(),
             }));
-            // Sort: newest first (by createdAt if available, else by name)
-            list.sort((a, b) => {
-                const ta = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
-                const tb = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
-                return tb - ta;
-            });
             setUsers(list);
-        } catch (e: any) {
-            toast.error('Failed to load users: ' + e.message);
-        } finally {
             setLoading(false);
-        }
+        });
+
+        // Listen for all message threads to count new messages
+        const threadUnsub = onSnapshot(collectionGroup(db, "thread"), (snapshot) => {
+            const counts: Record<string, { total: number, userMsgs: number }> = {};
+            snapshot.docs.forEach(doc => {
+                const parentId = doc.ref.parent.parent?.id;
+                if (!parentId) return;
+                const data = doc.data();
+                if (!counts[parentId]) counts[parentId] = { total: 0, userMsgs: 0 };
+                counts[parentId].total++;
+                if (data.from === 'user') counts[parentId].userMsgs++;
+            });
+            setMsgCounts(counts);
+        });
+
+        return () => {
+            usersUnsub();
+            threadUnsub();
+        };
+    }, []);
+
+    const fetchUsers = async () => {
+        setLoading(true);
+        // This is now handled by onSnapshot, but we can keep it as a manual refresh if needed
+        setLoading(false);
     };
 
     const handleSendBroadcast = async () => {
@@ -110,12 +127,10 @@ export default function AdminUsersPage() {
 
     const fetchAuthUsers = async () => { };
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
 
-    const filtered = useMemo(() => {
-        return users.filter(u => {
+
+    const filteredAndSorted = useMemo(() => {
+        const filtered = users.filter(u => {
             const matchSearch = !search ||
                 u.name?.toLowerCase().includes(search.toLowerCase()) ||
                 u.email?.toLowerCase().includes(search.toLowerCase()) ||
@@ -132,7 +147,24 @@ export default function AdminUsersPage() {
 
             return matchSearch && matchStatus && matchComplete;
         });
-    }, [users, search, filterStatus, filterComplete]);
+
+        return [...filtered].sort((a, b) => {
+            let valA = a[sortConfig.key];
+            let valB = b[sortConfig.key];
+
+            if (sortConfig.key === 'createdAt') {
+                valA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
+                valB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
+            }
+
+            if (!valA) return 1;
+            if (!valB) return -1;
+
+            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [users, search, filterStatus, filterComplete, sortConfig]);
 
     const stats = useMemo(() => ({
         total: users.length,
@@ -140,7 +172,8 @@ export default function AdminUsersPage() {
         pending: users.filter(u => u.status === 'pending_verification').length,
         verified: users.filter(u => u.status === 'verified' || u.status === 'approved').length,
         archived: users.filter(u => u.status === 'archived').length,
-    }), [users]);
+        filtered: filteredAndSorted.length
+    }), [users, filteredAndSorted]);
 
     const age = (dob?: string) => dob ? Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000) : null;
 
@@ -221,28 +254,49 @@ export default function AdminUsersPage() {
                     </select>
                 </div>
 
+                {/* Table Header for Desktop */}
+                <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-white border border-gray-100 rounded-t-2xl text-[10px] font-black text-gray-400 border-b-2 uppercase tracking-widest shadow-sm mb-2">
+                    <div className="col-span-5 cursor-pointer hover:text-[#881337] flex items-center gap-1" onClick={() => setSortConfig(p => ({ key: 'name', direction: p.key === 'name' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                        Name / Basic Info {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </div>
+                    <div className="col-span-2 cursor-pointer hover:text-[#881337] flex items-center gap-1" onClick={() => setSortConfig(p => ({ key: 'status', direction: p.key === 'status' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                        Status {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </div>
+                    <div className="col-span-2 cursor-pointer hover:text-[#881337] flex items-center gap-1" onClick={() => setSortConfig(p => ({ key: 'ejamaatId', direction: p.key === 'ejamaatId' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                        ITS Number {sortConfig.key === 'ejamaatId' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </div>
+                    <div className="col-span-3 cursor-pointer hover:text-[#881337] flex items-center gap-1" onClick={() => setSortConfig(p => ({ key: 'createdAt', direction: p.key === 'createdAt' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                        Joined Date {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </div>
+                </div>
+
                 {/* Results count */}
                 <p className="text-xs text-gray-400 font-bold mb-3 tracking-wide uppercase">
-                    Showing {filtered.length} of {users.length} users
+                    Showing {filteredAndSorted.length} of {users.length} users
                 </p>
 
                 {loading ? (
                     <div className="flex items-center justify-center py-24">
                         <div className="w-10 h-10 border-4 border-[#881337]/20 border-t-[#881337] rounded-full animate-spin" />
                     </div>
-                ) : filtered.length === 0 ? (
+                ) : filteredAndSorted.length === 0 ? (
                     <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
                         <Users className="w-12 h-12 text-gray-200 mx-auto mb-3" />
                         <p className="text-gray-400 font-bold">No users found</p>
                     </div>
                 ) : (
                     <div className="grid gap-3">
-                        {filtered.map(u => {
+                        {filteredAndSorted.map(u => {
                             const statusCfg = STATUS_CONFIG[u.status || ''] || STATUS_CONFIG['pending_verification'];
                             const userAge = age(u.dob);
+                            const now = Date.now();
+                            const createdTime = u.createdAt?.seconds ? u.createdAt.seconds * 1000 : new Date(u.createdAt || 0).getTime();
+                            const isNew = now - createdTime < 24 * 60 * 60 * 1000;
+                            const hasNewMsg = msgCounts[u.uid]?.userMsgs > 0;
+
                             return (
                                 <div key={u.uid}
-                                    className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                                    className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer relative ${hasNewMsg ? 'bg-blue-50/50 border-l-4 border-blue-500' : isNew ? 'bg-amber-50/30 border-l-4 border-amber-400' : ''}`}
                                     onClick={() => setSelectedUser(selectedUser?.uid === u.uid ? null : u)}>
 
                                     {/* Row */}
@@ -268,6 +322,14 @@ export default function AdminUsersPage() {
                                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black border ${statusCfg.color}`}>
                                                     {statusCfg.icon} {statusCfg.label}
                                                 </span>
+                                                {isNew && (
+                                                    <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">NEW</span>
+                                                )}
+                                                {hasNewMsg && (
+                                                    <span className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse flex items-center gap-1">
+                                                        <MessageCircle className="w-2.5 h-2.5" /> NEW MSG
+                                                    </span>
+                                                )}
                                                 {u.isCandidateFormComplete ? (
                                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-100">
                                                         <CheckCircle className="w-2.5 h-2.5" /> Form Done

@@ -1,36 +1,11 @@
 import { NextResponse } from 'next/server';
-import * as OTPAuth from 'otpauth';
-import QRCode from 'qrcode';
-import crypto from 'crypto';
+import * as OTPAuth from "otpauth";
+import { Redis } from '@upstash/redis';
 
-const TOTP_MASTER_SECRET = process.env.TOTP_MASTER_SECRET || 'dbohrarishta_totp_master_2026';
-
-/**
- * Given a phone number, deterministically derive a TOTP secret.
- * This means the same phone always gets the same QR code — no DB needed.
- */
-function deriveSecret(phone: string): string {
-    const cleanPhone = phone.replace(/[\s\-\+()]/g, '');
-    // Create a 20-byte HMAC-SHA1 (perfect size for TOTP base32 secret)
-    const hmac = crypto.createHmac('sha1', TOTP_MASTER_SECRET).update(cleanPhone).digest();
-    // Encode as base32 (required by TOTP/Google Authenticator)
-    const base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    let bits = 0;
-    let value = 0;
-    let output = '';
-    for (const byte of hmac) {
-        value = (value << 8) | byte;
-        bits += 8;
-        while (bits >= 5) {
-            output += base32Chars[(value >>> (bits - 5)) & 31];
-            bits -= 5;
-        }
-    }
-    if (bits > 0) {
-        output += base32Chars[(value << (5 - bits)) & 31];
-    }
-    return output;
-}
+const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL || '',
+    token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+});
 
 export async function POST(req: Request) {
     try {
@@ -45,39 +20,67 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 });
         }
 
-        // 1. Derive deterministic secret for this phone number
-        const secretStr = deriveSecret(phone);
-
-        // 2. Build the TOTP URL (otpauth:// URI)
+        // 1. Generate a 6-digit OTP using otpauth (more compatible with ESM/Serverless)
+        const secret = new OTPAuth.Secret({ size: 20 }).base32;
         const totp = new OTPAuth.TOTP({
-            issuer: 'DBohraRishta',
-            label: cleanPhone,
-            algorithm: 'SHA1',
+            secret: secret,
             digits: 6,
-            period: 30,
-            secret: OTPAuth.Secret.fromBase32(secretStr),
+            period: 300, // 5 minutes
+        });
+        const otp = totp.generate();
+
+        // 2. Save the secret to Redis (linked to phone number) for 5 minutes
+        await redis.set(`otp:${cleanPhone}`, secret, { ex: 300 });
+
+        // 3. Send SMS via Textbee Android App Gateway
+        const deviceId = process.env.TEXTBEE_DEVICE_ID;
+        const apiKey = process.env.TEXTBEE_API_KEY;
+
+        if (!deviceId || !apiKey) {
+            console.error("Textbee credentials missing from environment variables");
+            return NextResponse.json({ error: 'SMS service not configured on server' }, { status: 500 });
+        }
+
+        const smsText = `Your 53DBohraRishta verification code is: ${otp}. Do not share it with anyone.`;
+
+        // E.164 required for SMS API
+        const smsTo = phone; // Assuming frontend enforces +91 format
+
+        const textbeeUrl = `https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`;
+
+        const textbeeRes = await fetch(textbeeUrl, {
+            method: 'POST',
+            headers: {
+                'x-api-key': apiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                receivers: [smsTo],
+                smsBody: smsText
+            })
         });
 
-        const otpauthUrl = totp.toString();
-
-        // 3. Generate QR code as a base64 data URL
-        const qrDataUrl = await QRCode.toDataURL(otpauthUrl, {
-            width: 256,
-            margin: 2,
-            color: { dark: '#881337', light: '#FFFFFF' },
-        });
+        if (!textbeeRes.ok) {
+            let errorMsg = 'Failed to send SMS message';
+            try {
+                const errorData = await textbeeRes.json();
+                console.error("Textbee API error:", JSON.stringify(errorData, null, 2));
+                errorMsg = errorData.message || errorMsg;
+            } catch {
+                console.error("Textbee API error: Unparseable response");
+            }
+            return NextResponse.json({
+                error: errorMsg,
+            }, { status: 500 });
+        }
 
         return NextResponse.json({
             success: true,
-            qrDataUrl,
-            otpauthUrl,
-            phone,
-            // Hint: secretStr can be shown as manual entry fallback
-            manualKey: secretStr,
+            message: 'OTP sent successfully'
         });
 
     } catch (error: any) {
-        console.error('TOTP setup error:', error);
+        console.error('OTP send error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

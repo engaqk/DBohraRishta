@@ -219,6 +219,7 @@ export default function OnboardingPage() {
                 itsImageUrl: itsImageUrl || null,
                 libasImageUrl: libasImageUrl || null,
                 isItsVerified: false, // Default to false, explicitly requires an Admin to flip this!
+                isCandidateFormComplete: true,
                 status: "pending_verification",
                 createdAt: new Date().toISOString()
             });

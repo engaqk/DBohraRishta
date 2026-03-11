@@ -9,7 +9,6 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { QRCodeSVG } from "qrcode.react";
 import { notifyWelcomeOnboarding } from "@/lib/emailService";
-import * as OTPAuth from "otpauth";
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
@@ -18,12 +17,6 @@ import {
     ConfirmationResult,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
-import {
-    deriveBase32Secret,
-    verifyTOTP,
-    buildOtpAuthUrl,
-    phoneToFirebaseCredentials
-} from "@/lib/totp-helpers";
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -31,13 +24,10 @@ export default function LoginPage() {
     const { user, loading, signInWithGoogle, setDummyUser } = useAuth();
     const router = useRouter();
 
-    // TOTP state
-    const [totpPhone, setTotpPhone] = useState('+91');
-    const [totpCode, setTotpCode] = useState("");
-    const [qrShown, setQrShown] = useState(false);
-    const [qrUrl, setQrUrl] = useState("");
-    const [manualKey, setManualKey] = useState("");
-    const [keyCopied, setKeyCopied] = useState(false);
+    // OTP state
+    const [phone, setPhone] = useState('+91');
+    const [otpCode, setOtpCode] = useState("");
+    const [otpSent, setOtpSent] = useState(false);
     const [isMobileDevice, setIsMobileDevice] = useState(false);
 
     // Firebase Phone Auth (SMS) tab state — HIDDEN (requires Blaze billing), code kept for future use
@@ -61,10 +51,12 @@ export default function LoginPage() {
             if (!loading && user) {
                 try {
                     const userDoc = await getDoc(doc(db, "users", user.uid));
-                    if (userDoc.exists()) {
+                    const isComplete = userDoc.exists() && userDoc.data()?.isCandidateFormComplete === true;
+
+                    if (isComplete) {
                         router.push("/");
                     } else {
-                        // User exists in Auth but not in Firestore "users" -> incomplete onboarding
+                        // User exists in Auth but hasn't submitted all 3 steps -> send reminder only if truly incomplete
                         if (user.email) {
                             notifyWelcomeOnboarding({
                                 candidateName: user.displayName || undefined,
@@ -81,9 +73,9 @@ export default function LoginPage() {
 
 
 
-    // ── TOTP: Step 1 — Generate QR ────────────────────────────────────────────
-    const handleGenerateQr = () => {
-        const clean = totpPhone.trim();
+    // ── OTP: Step 1 — Send OTP ────────────────────────────────────────────
+    const handleSendOtp = async () => {
+        const clean = phone.trim();
         if (!clean || !clean.startsWith('+')) {
             setErrorMsg("Enter a valid number starting with +, e.g. +919876543210");
             return;
@@ -93,28 +85,53 @@ export default function LoginPage() {
             return;
         }
         setErrorMsg("");
-        const secret = deriveBase32Secret(totpPhone);
-        setManualKey(secret);
-        setQrUrl(buildOtpAuthUrl(totpPhone, secret));
-        setQrShown(true);
+        setAuthLoading(true);
+
+        try {
+            const response = await fetch('/api/otp/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: clean })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                setOtpSent(true);
+                toast.success("OTP sent to your mobile!");
+            } else {
+                setErrorMsg(data.error || "Failed to send OTP. Try again.");
+            }
+        } catch (err: any) {
+            setErrorMsg("Connection error. Check your internet.");
+        } finally {
+            setAuthLoading(false);
+        }
     };
 
-    // ── TOTP: Step 2 — Verify code and sign in ────────────────────────────────
-    const handleVerifyTotp = async () => {
-        if (!totpCode || totpCode.length !== 6) {
-            setErrorMsg("Enter the 6-digit code from your authenticator app.");
+    // ── OTP: Step 2 — Verify OTP and sign in ────────────────────────────────
+    const handleVerifyOtp = async () => {
+        if (!otpCode || otpCode.length !== 6) {
+            setErrorMsg("Enter the 6-digit verification code.");
             return;
         }
         setErrorMsg("");
         setAuthLoading(true);
-        const secret = deriveBase32Secret(totpPhone);
-        if (!verifyTOTP(secret, totpCode)) {
-            setErrorMsg("Incorrect code. Make sure your phone clock is synced and try the latest code shown.");
-            setAuthLoading(false);
-            return;
-        }
+
         try {
-            const { internalEmail, internalPassword } = phoneToFirebaseCredentials(totpPhone);
+            const clean = phone.trim().toLowerCase();
+            const response = await fetch('/api/otp/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: clean, code: otpCode })
+            });
+
+            const data = await response.json();
+            if (!data.success) {
+                setErrorMsg(data.error || "Incorrect Code. Please try again.");
+                setAuthLoading(false);
+                return;
+            }
+            const { internalEmail, internalPassword } = data;
             let signedIn = false;
             try {
                 await signInWithEmailAndPassword(auth, internalEmail, internalPassword);
@@ -133,20 +150,19 @@ export default function LoginPage() {
                             await signInWithEmailAndPassword(auth, internalEmail, internalPassword);
                             signedIn = true;
                         } else if (createError.code === 'auth/operation-not-allowed') {
-                            throw new Error('Email/Password sign-in is not enabled in Firebase Console → Authentication → Sign-in methods.');
+                            throw new Error('Email/Password sign-in is not enabled in Firebase Console.');
                         } else { throw createError; }
                     }
                 } else { throw signInError; }
             }
             if (signedIn && auth.currentUser) {
-                // Check if user is archived — block login
                 const { getDoc, doc } = await import('firebase/firestore');
-                const { signOut } = await import('firebase/auth');
                 const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
 
                 if (userDoc.exists() && userDoc.data().status === 'archived') {
+                    const { signOut } = await import('firebase/auth');
                     await signOut(auth);
-                    setErrorMsg('Your account has been deactivated by the administration. Please contact support for assistance.');
+                    setErrorMsg('Your account has been deactivated. Please contact support.');
                     setAuthLoading(false);
                     return;
                 }
@@ -155,7 +171,7 @@ export default function LoginPage() {
                 router.push(userDoc.exists() ? "/" : "/onboarding");
             }
         } catch (error: any) {
-            setErrorMsg(error.message?.replace('Firebase: ', '') || 'Sign-in failed. Try again.');
+            setErrorMsg(error.message?.replace('Firebase: ', '') || 'Sign-in failed.');
         } finally { setAuthLoading(false); }
     };
 
@@ -200,12 +216,7 @@ export default function LoginPage() {
         } finally { setAuthLoading(false); }
     };
 
-    const copyKey = () => {
-        navigator.clipboard.writeText(manualKey);
-        setKeyCopied(true);
-        toast.success("Key copied!");
-        setTimeout(() => setKeyCopied(false), 2500);
-    };
+
 
     const handleGoogleLogin = async () => {
         setAuthLoading(true);
@@ -271,125 +282,60 @@ export default function LoginPage() {
                         <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100 mb-4">{errorMsg}</div>
                     )}
 
-                    {/* ══════════════ AUTHENTICATOR TOTP ══════════════ */}
+                    {/* ══════════════ SMS OTP LOGIN ══════════════ */}
                     <div className="space-y-4 mb-5">
-                        {!qrShown ? (
+                        {!otpSent ? (
                             /* ── Step 1: Enter phone number ── */
                             <>
                                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 leading-relaxed">
-                                    <p className="font-bold mb-1">📱 Mobile Login (Verification)</p>
-                                    <p>Enter your mobile number to get a setup code for your authenticator app. Works on any device, no internet needed after setup.</p>
+                                    <p className="font-bold mb-1">📱 SMS Mobile Login</p>
+                                    <p>Enter your mobile number to receive a 6-digit verification code via SMS.</p>
                                 </div>
                                 <div className="relative">
                                     <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                                     <input type="tel" inputMode="tel" placeholder="+919876543210"
                                         maxLength={16}
-                                        value={totpPhone}
+                                        value={phone}
                                         onChange={(e) => {
                                             const val = e.target.value;
-                                            // Allow only numbers and a plus sign at the start
                                             const sanitized = val.replace(/[^0-9+]/g, '').replace(/(?!^)\+/g, '');
-                                            setTotpPhone(sanitized);
+                                            setPhone(sanitized);
                                         }}
                                         className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none" />
                                 </div>
-                                <button onClick={handleGenerateQr}
+                                <button onClick={handleSendOtp} disabled={authLoading}
                                     className="w-full bg-[#D4AF37] text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-[#c29e2f] active:scale-95 flex items-center justify-center gap-2">
-                                    <Smartphone className="w-4 h-4" /> Generate My Setup Code
+                                    {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
+                                    Send Verification Code
                                 </button>
                             </>
                         ) : (
-                            /* ── Step 2: Browser-friendly setup UI ── */
+                            /* ── Step 2: Enter OTP code ── */
                             <>
-                                {/* Context-aware header */}
-                                <div className={`rounded-xl p-3 text-xs border ${isMobileDevice ? 'bg-green-50 border-green-200 text-green-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
-                                    {isMobileDevice ? (
-                                        <p><strong>📱 You're on mobile!</strong> Tap the button below to open directly in your authenticator app — no QR scanning needed.</p>
-                                    ) : (
-                                        <p><strong>🖥️ You're on desktop.</strong> Open your authenticator app on your phone and scan the QR code, or manually enter the key shown below.</p>
-                                    )}
+                                <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-xs text-green-800">
+                                    <p><strong>Code Sent!</strong> Please check your messages on <strong>{phone}</strong> and enter the 6-digit code below.</p>
                                 </div>
 
-                                {/* Mobile: Deep-link button (tap to open authenticator directly) */}
-                                {isMobileDevice && (
-                                    <a
-                                        href={qrUrl}
-                                        className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-emerald-700 active:scale-95 flex items-center justify-center gap-2 no-underline"
-                                    >
-                                        <ExternalLink className="w-4 h-4" />
-                                        Open in Google Authenticator / FreeOTP
-                                    </a>
-                                )}
-
-                                {/* Desktop: QR code */}
-                                {!isMobileDevice && (
-                                    <div className="flex justify-center">
-                                        <div className="p-3 bg-white rounded-2xl border-4 border-[#D4AF37] shadow-lg inline-block">
-                                            <QRCodeSVG value={qrUrl} size={160} bgColor="#FFFFFF" fgColor="#881337" level="M" />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Steps — adapted per device */}
-                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-700 space-y-1.5">
-                                    <p className="font-bold text-[#881337] mb-2">
-                                        {isMobileDevice ? "How to set up (mobile):" : "How to set up (desktop):"}
-                                    </p>
-                                    {isMobileDevice ? (<>
-                                        <p>① Install <strong>Google Authenticator</strong> or <strong>FreeOTP</strong> on this phone</p>
-                                        <p>② Tap <strong>"Open in Google Authenticator"</strong> above</p>
-                                        <p>③ The app adds <strong>DBohraRishta</strong> automatically</p>
-                                        <p>④ Enter the 6-digit code shown in the app below</p>
-                                    </>) : (<>
-                                        <p>① Install <strong>Google Authenticator</strong> or <strong>FreeOTP</strong> on your phone</p>
-                                        <p>② Open the app → tap <strong>"+"</strong> → <strong>"Scan QR code"</strong></p>
-                                        <p>③ Point your phone camera at the QR above</p>
-                                        <p>④ Enter the 6-digit code from the app below</p>
-                                    </>)}
-                                    <p className="text-amber-700 font-bold pt-1 flex items-center gap-1.5">
-                                        <span className="text-sm">💡</span> After setup, skip this screen — just enter the 6-digit code directly next time.
-                                    </p>
-                                </div>
-
-                                {/* Manual key — always visible, prominent copy */}
-                                <div className="bg-rose-50 border border-[#881337]/20 rounded-xl p-3">
-                                    <p className="text-sm font-bold text-amber-900 mb-2 flex items-center gap-1.5">
-                                        <span className="p-1 bg-amber-200 rounded-lg text-xs">🔑</span> Can't scan / open app? Enter this key manually in the app:
-                                    </p>
-                                    <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-gray-200">
-                                        <code className="text-sm font-mono text-[#881337] break-all tracking-widest flex-1 select-all">{manualKey}</code>
-                                        <button
-                                            onClick={copyKey}
-                                            className="shrink-0 bg-[#D4AF37] text-white rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1 hover:bg-[#c29e2f] transition-colors"
-                                        >
-                                            {keyCopied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                                            {keyCopied ? "Copied!" : "Copy"}
-                                        </button>
-                                    </div>
-                                    <p className="text-xs text-gray-400 mt-1.5">In the app, tap "+" → "Enter a setup key" → paste the key above. Set account name: <em>DBohraRishta</em></p>
-                                </div>
-
-                                {/* Code entry */}
                                 <div className="relative">
                                     <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                                     <input
                                         type="text"
                                         inputMode="numeric"
                                         maxLength={6}
-                                        placeholder="Enter 6-digit code from app"
-                                        value={totpCode}
-                                        onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                                        placeholder="Enter 6-digit OTP"
+                                        value={otpCode}
+                                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                                         className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none text-center tracking-[0.5em] font-mono text-xl"
                                         autoFocus
                                     />
                                 </div>
-                                <button onClick={handleVerifyTotp} disabled={authLoading}
+                                <button onClick={handleVerifyOtp} disabled={authLoading}
                                     className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-[#9F1239] active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2">
                                     {authLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                                     Verify &amp; Login
                                 </button>
                                 <button
-                                    onClick={() => { setQrShown(false); setTotpCode(""); setErrorMsg(""); }}
+                                    onClick={() => { setOtpSent(false); setOtpCode(""); setErrorMsg(""); }}
                                     className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors"
                                 >
                                     ← Change Mobile Number

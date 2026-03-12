@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, ShieldCheck, Camera, UploadCloud, CheckCircle2, Loader2, Clock, AlertCircle } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import toast from "react-hot-toast";
 import { notifyDuplicateRegistration } from "@/lib/emailService";
@@ -241,9 +241,22 @@ export default function OnboardingPage() {
                 loginMethod: loginMethod || 'google',
                 verifiedPhone: verifiedPhone || formData.mobile || null,
                 notificationEmail: formData.email || null,
+                isOnline: true,
+                lastActive: serverTimestamp(),
                 // Mark welcome email as sent atomically to prevent duplicates
                 welcomeEmailSent: !!(formData.email && !formData.email.endsWith('@dbohrarishta.local')),
             });
+
+            // 2b. Automated Admin Welcome Message
+            try {
+                await addDoc(collection(db, 'admin_messages', userId, 'thread'), {
+                    text: `Welcome to 53 DBohraRishta, ${formData.name}! 👋 Your biodata has been submitted and is now in the verification pipeline. Verification typically takes less than 24 hours. In the meantime, you can browse other profiles. If you have any questions, feel free to ask here!`,
+                    from: 'admin',
+                    createdAt: serverTimestamp(),
+                });
+            } catch (adminErr) {
+                console.warn('Admin welcome message failed:', adminErr);
+            }
 
             // 3. Clear sessionStorage after successful onboarding
             sessionStorage.removeItem('verifiedPhone');

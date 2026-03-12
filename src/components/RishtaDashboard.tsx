@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
@@ -54,6 +54,9 @@ interface UserProfile {
     serviceType?: string;
     address?: string;
     completedUpto?: string;
+    isOnline?: boolean;
+    lastActive?: any;
+    isEmailVerified?: boolean;
 }
 
 interface RishtaRequest {
@@ -135,9 +138,40 @@ export default function RishtaDashboard() {
     const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
     const [latestBroadcast, setLatestBroadcast] = useState<{ id: string; title?: string; message: string; type?: string } | null>(null);
 
+    // Filter State for Discovery
+    const [filters, setFilters] = useState({
+        education: '',
+        location: '',
+        maritalStatus: '',
+    });
+
+    // Unblur Request State
+    const [unblurRequests, setUnblurRequests] = useState<any[]>([]);
+
     // Subscribe to latest broadcast
     useEffect(() => {
         if (!user) return;
+
+        // --- Heartbeat Logic ---
+        const updateStatus = async (status: boolean) => {
+            try {
+                await updateDoc(doc(db, 'users', user.uid), {
+                    isOnline: status,
+                    lastActive: serverTimestamp()
+                });
+            } catch (e) { }
+        };
+
+        updateStatus(true);
+        const interval = setInterval(() => updateStatus(true), 3 * 60 * 1000); // Heartbeat every 3m
+
+        // Cleanup: Set offline when tab closes/unmounts
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') updateStatus(false);
+            else updateStatus(true);
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
         const q = query(collection(db, 'broadcasts'), orderBy('createdAt', 'desc'), limit(1));
         const unsub = onSnapshot(q, (snap) => {
             if (!snap.empty) {
@@ -149,7 +183,12 @@ export default function RishtaDashboard() {
                 }
             }
         });
-        return () => unsub();
+        return () => {
+            unsub();
+            clearInterval(interval);
+            updateStatus(false);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, [user]);
 
     // Subscribe to bookmarks
@@ -480,7 +519,6 @@ export default function RishtaDashboard() {
                     const uRef = await getDoc(doc(db, "users", targetId));
                     if (uRef.exists()) {
                         const uData = uRef.data();
-                        // Skip archived profiles — they should not appear in requests or accepted sections
                         if (uData.status === 'archived') continue;
                         resolvedRequests.push({
                             ...req,
@@ -524,9 +562,7 @@ export default function RishtaDashboard() {
                 const profileData = meRef.data();
                 setMyProfile(profileData);
 
-                // 🎉 Show verified celebration if newly verified
-                const isVerified = profileData.isItsVerified === true ||
-                    profileData.status === 'verified' || profileData.status === 'approved';
+                const isVerified = profileData.isItsVerified === true || profileData.status === 'verified' || profileData.status === 'approved';
                 const celebKey = `verified_celebrated_${user.uid}`;
                 if (isVerified && !localStorage.getItem(celebKey)) {
                     setShowVerifiedCelebration(true);
@@ -541,7 +577,6 @@ export default function RishtaDashboard() {
                 let profiles: UserProfile[] = [];
                 const oppositeGender = profileData.gender === 'male' ? 'female' : 'male';
 
-                // Real-time on discovery not usually done as it fetches too much, but we getDocs again if our own profile changes
                 const q = query(collection(db, "users"), where("isItsVerified", "==", true));
                 const snap = await getDocs(q);
                 snap.forEach(d => {
@@ -559,19 +594,47 @@ export default function RishtaDashboard() {
                     ];
                 }
                 setDiscoveryProfiles(profiles);
-            } catch (err) {
-                console.error("Discovery Error", err);
+                setDataLoading(false);
+            } catch (e) {
+                setDataLoading(false);
             }
         });
+
+        // --- Unblur Requests Listener ---
+        const unblurQ = query(collection(db, "unblur_requests"), where("to", "==", user.uid), where("status", "==", "pending"));
+        const unsubUnblur = onSnapshot(unblurQ, (snap) => {
+            setUnblurRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        });
+
+        // --- Heartbeat Logic ---
+        const updateOnlineStatus = async (online: boolean) => {
+            if (!user) return;
+            try {
+                await updateDoc(doc(db, "users", user.uid), {
+                    isOnline: online,
+                    lastActive: serverTimestamp()
+                });
+            } catch (e) { }
+        };
+
+        const heartbeat = setInterval(() => updateOnlineStatus(true), 30000);
+        updateOnlineStatus(true);
+
+        const handleVisibilityChange = () => {
+            updateOnlineStatus(document.visibilityState === 'visible');
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         setupRequestsListeners();
 
         return () => {
-            unsubMe();
+            clearInterval(heartbeat);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
             if (unsubOutgoing) unsubOutgoing();
             if (unsubIncoming) unsubIncoming();
+            unsubMe();
+            unsubUnblur();
         };
-
     }, [user, loading, router]);
 
 
@@ -929,34 +992,97 @@ export default function RishtaDashboard() {
                         p.hizratLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         p.education?.toLowerCase().includes(searchQuery.toLowerCase());
 
+                    const matchesEducation = !filters.education || p.education?.toLowerCase().includes(filters.education.toLowerCase());
+                    const matchesLocation = !filters.location || p.hizratLocation?.toLowerCase().includes(filters.location.toLowerCase()) || p.city?.toLowerCase().includes(filters.location.toLowerCase());
+                    const matchesMarital = !filters.maritalStatus || p.maritalStatus?.toLowerCase() === filters.maritalStatus.toLowerCase();
+
                     if (showOnlyBookmarked) {
-                        return matchesSearch && bookmarkedProfileIds.has(p.id);
+                        return matchesSearch && matchesEducation && matchesLocation && matchesMarital && bookmarkedProfileIds.has(p.id);
                     }
-                    return matchesSearch;
+                    return matchesSearch && matchesEducation && matchesLocation && matchesMarital;
                 }).sort((a, b) => computeMatchScore(myProfile, b) - computeMatchScore(myProfile, a));
 
                 return (
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                            <h2 className="text-2xl font-bold font-serif">Community Discovery</h2>
-                            <div className="flex gap-2 w-full md:w-auto">
-                                <button
-                                    onClick={() => setShowOnlyBookmarked(!showOnlyBookmarked)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-sm ${showOnlyBookmarked ? 'bg-[#881337] text-white border-[#881337]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'}`}
+                        <div className="mb-6">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                                <h2 className="text-2xl font-bold font-serif">Community Discovery</h2>
+                                <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1">
+                                    <button
+                                        onClick={() => setShowOnlyBookmarked(!showOnlyBookmarked)}
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-sm shrink-0 ${showOnlyBookmarked ? 'bg-[#881337] text-white border-[#881337]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'}`}
+                                    >
+                                        <Bookmark className="w-3.5 h-3.5" fill={showOnlyBookmarked ? 'currentColor' : 'none'} />
+                                        {showOnlyBookmarked ? 'Saved' : 'Saved'}
+                                    </button>
+                                    <input
+                                        id="discovery-search-input"
+                                        type="text"
+                                        placeholder="Name, Jamaat, Education..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="px-4 py-2 rounded-xl text-sm border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] w-full md:w-48"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* --- SMART FILTERS --- */}
+                            <div className="grid grid-cols-3 gap-2 bg-white/50 backdrop-blur-sm p-2 rounded-2xl border border-[#D4AF37]/20 shadow-sm">
+                                <select
+                                    value={filters.location}
+                                    onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))}
+                                    className="bg-white border-none rounded-xl text-[10px] font-bold text-gray-600 focus:ring-1 focus:ring-[#D4AF37] p-2 outline-none"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={showOnlyBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
-                                    {showOnlyBookmarked ? 'Saved Only' : 'Show Saved'}
-                                </button>
-                                <input
-                                    id="discovery-search-input"
-                                    type="text"
-                                    placeholder="Search..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="px-4 py-2 rounded-xl text-sm border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] w-full md:w-48"
-                                />
+                                    <option value="">Any Location</option>
+                                    <option value="Mumbai">Mumbai</option>
+                                    <option value="Karachi">Karachi</option>
+                                    <option value="Dubai">Dubai</option>
+                                    <option value="London">London</option>
+                                    <option value="Colombo">Colombo</option>
+                                </select>
+                                <select
+                                    value={filters.maritalStatus}
+                                    onChange={(e) => setFilters(f => ({ ...f, maritalStatus: e.target.value }))}
+                                    className="bg-white border-none rounded-xl text-[10px] font-bold text-gray-600 focus:ring-1 focus:ring-[#D4AF37] p-2 outline-none"
+                                >
+                                    <option value="">Marital Status</option>
+                                    <option value="Single">Always Single</option>
+                                    <option value="Divorced">Divorced</option>
+                                    <option value="Widowed">Widowed</option>
+                                </select>
+                                <select
+                                    value={filters.education}
+                                    onChange={(e) => setFilters(f => ({ ...f, education: e.target.value }))}
+                                    className="bg-white border-none rounded-xl text-[10px] font-bold text-gray-600 focus:ring-1 focus:ring-[#D4AF37] p-2 outline-none"
+                                >
+                                    <option value="">Education Level</option>
+                                    <option value="Masters">Post-Graduate</option>
+                                    <option value="Graduate">Graduate</option>
+                                    <option value="Hafiz">Hafiz-ul-Quran</option>
+                                </select>
                             </div>
                         </div>
+
+                        {/* --- UNBLUR NOTIFICATION PILL --- */}
+                        {unblurRequests.length > 0 && (
+                            <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between animate-pulse">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-amber-100 p-2 rounded-full">
+                                        <Lock className="w-5 h-5 text-amber-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-black text-amber-900 uppercase">Unblur Request Received</p>
+                                        <p className="text-[10px] text-amber-700 font-bold">Someone wants to see your photos! Check notifications.</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setActiveTab('notifications')}
+                                    className="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase shadow-md active:scale-95"
+                                >
+                                    Review
+                                </button>
+                            </div>
+                        )}
 
                         {filteredProfiles.length === 0 ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100">
@@ -1284,13 +1410,49 @@ export default function RishtaDashboard() {
                                 return (
                                     <div id="profile-completeness-section" className="w-full bg-gray-50 p-4 border border-gray-100 rounded-xl flex flex-col items-center">
                                         <div className="w-full flex justify-between text-xs font-bold text-gray-500 mb-2">
-                                            <span>Biodata Completeness</span><span className="text-[#881337]">{pct}%</span>
+                                            <span>Biodata Health</span><span className="text-[#881337]">{pct}%</span>
                                         </div>
-                                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
+                                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-4">
                                             <div className="h-full bg-gradient-to-r from-[#D4AF37] to-[#881337] transition-all duration-1000" style={{ width: `${pct}%` }} />
                                         </div>
+
+                                        {/* --- INTERACTIVE TO-DO LIST --- */}
+                                        <div className="w-full space-y-2 mb-4">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-1">Onboarding To-Do</p>
+
+                                            <div className={`p-3 rounded-xl border flex items-center justify-between transition-all ${myProfile.isCandidateFormComplete ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-white border-gray-100 text-gray-700'}`}>
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.isCandidateFormComplete ? 'bg-emerald-500 text-white' : 'border-2 border-gray-200'}`}>
+                                                        {myProfile.isCandidateFormComplete && <Check className="w-3 h-3" />}
+                                                    </div>
+                                                    <span className="text-xs font-bold">Registration Form</span>
+                                                </div>
+                                                {!myProfile.isCandidateFormComplete && <ArrowRight className="w-3.5 h-3.5 text-gray-300" />}
+                                            </div>
+
+                                            <div className={`p-3 rounded-xl border flex items-center justify-between transition-all ${user?.emailVerified || myProfile.isEmailVerified ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-white border-gray-100 text-gray-700'}`}>
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${user?.emailVerified || myProfile.isEmailVerified ? 'bg-emerald-500 text-white' : 'border-2 border-gray-200'}`}>
+                                                        {(user?.emailVerified || myProfile.isEmailVerified) && <Check className="w-3 h-3" />}
+                                                    </div>
+                                                    <span className="text-xs font-bold">Email Verification</span>
+                                                </div>
+                                                {!(user?.emailVerified || myProfile.isEmailVerified) && <ArrowRight className="w-3.5 h-3.5 text-gray-300" />}
+                                            </div>
+
+                                            <div className={`p-3 rounded-xl border flex items-center justify-between transition-all ${myProfile.libasImageUrl ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-white border-gray-100 text-gray-700'}`}>
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.libasImageUrl ? 'bg-emerald-500 text-white' : 'border-2 border-gray-200'}`}>
+                                                        {myProfile.libasImageUrl && <Check className="w-3 h-3" />}
+                                                    </div>
+                                                    <span className="text-xs font-bold">Upload Photos</span>
+                                                </div>
+                                                {!myProfile.libasImageUrl && <ArrowRight className="w-3.5 h-3.5 text-gray-300" />}
+                                            </div>
+                                        </div>
+
                                         {pct < 100 && (
-                                            <button onClick={() => router.push('/candidate-registration')} className="w-full bg-[#881337] text-white py-2.5 rounded-xl text-sm font-bold shadow hover:bg-[#9F1239] transition-all mt-1">Complete ITNC Registration Form</button>
+                                            <button onClick={() => router.push('/candidate-registration')} className="w-full bg-[#881337] text-white py-2.5 rounded-xl text-sm font-bold shadow hover:bg-[#9F1239] transition-all mt-1">Enhance Your Biodata</button>
                                         )}
                                         {pct >= 100 && !myProfile.isItsVerified && (
                                             <div className="w-full bg-yellow-50 text-yellow-700 py-2 rounded-lg text-xs font-bold text-center border border-yellow-200 mt-1">ITS Verification Pending — you can still browse</div>

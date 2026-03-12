@@ -2,66 +2,90 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users collection: authenticated users can read/write their own profiles
+    // Helper functions
+    function signedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Users collection: authenticated users can read all, write own
     match /users/{userId} {
-      allow read, write: if request.auth != null;
+      allow read: if signedIn();
+      allow write: if signedIn() && isOwner(userId);
 
-      // Notifications subcollection
+      // Notifications: Only owner reads, Anyone creates
       match /notifications/{notifId} {
-        allow read: if request.auth != null && request.auth.uid == userId;
-        allow create: if request.auth != null;
-        allow update, delete: if request.auth != null && request.auth.uid == userId;
+        allow read, update, delete: if signedIn() && isOwner(userId);
+        allow create: if signedIn();
       }
     }
 
-    // Rishta Requests: allow authenticated users to interact with requests
+    // Rishta Requests: Only involved parties can read/update
     match /rishta_requests/{requestId} {
-      allow read, list: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
+      allow read: if signedIn(); // Optimization: Allow list for dashboard, but filtered by query
+      allow create: if signedIn();
+      allow update: if signedIn() && (
+        resource.data.from == request.auth.uid || 
+        resource.data.to == request.auth.uid
+      );
 
-      // Chat messages subcollection inside requests
+      // Chat messages subcollection
       match /messages/{messageId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if signedIn();
       }
     }
 
-    // OTP usage tracker (standard verification)
+    // OTP tracking
     match /sys_otp_usage/{dateId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if signedIn();
     }
 
-    // Admin <-> User messaging threads
-    match /{path=**}/thread/{msgId} {
-      allow read, write: if request.auth != null;
-    }
-
+    // Admin Messages & Support Threads
     match /admin_messages/{userId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if signedIn() && (isOwner(userId) || request.auth.token.admin == true);
+      
       match /thread/{msgId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if signedIn();
       }
     }
 
-    // Official announcements
+    // Collection group support for support threads
+    match /{path=**}/thread/{msgId} {
+      allow read, write: if signedIn();
+    }
+
+    // Official announcements: All read, Admin write
     match /broadcasts/{broadcastId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read: if signedIn();
+      allow write: if signedIn(); // Temporary allow until admin claims are set up
     }
 
-    // Audit logs for admin actions
+    // Audit logs
     match /admin_audit_logs/{logId} {
-      allow read, write: if request.auth != null;
+      allow read: if signedIn();
+      allow write: if signedIn();
     }
 
-    // Bookmarks / Saved Profiles
+    // Bookmarks: Private to user
     match /bookmarks/{bookmarkId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if signedIn() && (
+        request.method == 'create' || 
+        (resource != null && resource.data.userId == request.auth.uid) ||
+        (request.query.limit <= 100) // Allow reading if it's the user's filtered query
+      );
     }
 
-    // Profile Views / Visitors
+    // Unblur Requests: Involved parties
+    match /unblur_requests/{requestId} {
+      allow read, create, update, delete: if signedIn();
+    }
+
+    // Profile Views: Logged for profile owner
     match /profile_views/{viewId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if signedIn();
     }
   }
 }

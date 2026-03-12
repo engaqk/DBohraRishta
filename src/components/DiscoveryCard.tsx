@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, ShieldAlert, Lock } from 'lucide-react';
 import { notifyInterestSent } from '@/lib/emailService';
-import { collection, addDoc, query, where, getDocs, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, serverTimestamp, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -67,14 +67,13 @@ export default function DiscoveryCard({
     const [activePhotoIdx, setActivePhotoIdx] = useState(0);
     const [showLightbox, setShowLightbox] = useState(false);
 
-    const [unblurRequestStatus, setUnblurRequestStatus] = useState<string | null>(null);
-    const [sendingUnblur, setSendingUnblur] = useState(false);
+    const [profileData, setProfileData] = useState<any>(null);
 
-    const photos = [libasImageUrl, extraImageUrl].filter(Boolean) as string[];
+    const photos = [profileData?.libasImageUrl || libasImageUrl, profileData?.extraImageUrl || extraImageUrl].filter(Boolean) as string[];
     const currentPhoto = photos[activePhotoIdx] || libasImageUrl;
     const age = dob ? Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000) : 25;
     const isFemale = gender === 'female';
-    const canZoom = !isBlurSecurityEnabled || requestStatus === 'accepted' || (unblurRequestStatus === 'accepted') || !isFemale;
+    const canZoom = !isBlurSecurityEnabled || requestStatus === 'accepted' || !isFemale;
 
     const firstName = name?.split(' ')[0] || 'Member';
     const displaySurname = (gender === 'female' && requestStatus !== 'accepted') ? '●●●●' : name?.split(' ').slice(1).join(' ');
@@ -98,48 +97,19 @@ export default function DiscoveryCard({
             const qB = query(collection(db, 'bookmarks'), where('userId', '==', user.uid), where('profileId', '==', id));
             const sB = await getDocs(qB);
             setIsBookmarked(!sB.empty);
-
-            // Fetch Unblur Request Status
-            const qU = query(collection(db, 'unblur_requests'), where('from', '==', user.uid), where('to', '==', id));
-            const sU = await getDocs(qU);
-            if (!sU.empty) {
-                setUnblurRequestStatus(sU.docs[0].data().status);
-            }
         };
         check();
+
+        // Live status listener
+        const unsub = onSnapshot(doc(db, "users", id), (snap) => {
+            if (snap.exists()) {
+                setProfileData(snap.data());
+            }
+        });
+
+        return () => unsub();
     }, [user, id]);
 
-    const handleSendUnblurRequest = async (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!user) { toast.error('Log in to request unblur'); return; }
-        if (unblurRequestStatus) return;
-
-        try {
-            setSendingUnblur(true);
-            await addDoc(collection(db, 'unblur_requests'), {
-                from: user.uid,
-                to: id,
-                status: 'pending',
-                timestamp: serverTimestamp()
-            });
-
-            // Notify user
-            await addDoc(collection(db, 'users', id, 'notifications'), {
-                type: 'unblur_request',
-                title: 'UNBLUR REQUEST',
-                message: `${user.displayName || 'A Candidate'} has requested to see your profile photos.`,
-                isRead: false,
-                createdAt: serverTimestamp()
-            });
-
-            setUnblurRequestStatus('pending');
-            toast.success('Unblur request sent!');
-        } catch (err: any) {
-            toast.error('Failed to send request');
-        } finally {
-            setSendingUnblur(false);
-        }
-    };
 
     const handleToggleBookmark = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -277,31 +247,11 @@ export default function DiscoveryCard({
                                 <div className="absolute inset-0 z-40 flex items-center justify-center p-6 text-center">
                                     <div className="bg-black/40 backdrop-blur-xl border border-white/20 p-5 rounded-3xl shadow-2xl flex flex-col items-center gap-3 animate-in zoom-in-95 duration-300">
                                         <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
-                                            {unblurRequestStatus === 'pending' ? (
-                                                <Clock className="w-6 h-6 text-[#D4AF37] animate-pulse" />
-                                            ) : unblurRequestStatus === 'rejected' ? (
-                                                <ShieldAlert className="w-6 h-6 text-red-400" />
-                                            ) : (
-                                                <Lock className="w-6 h-6 text-white/80" />
-                                            )}
+                                            <Lock className="w-6 h-6 text-white/80" />
                                         </div>
                                         <div>
                                             <p className="text-white font-black text-[10px] uppercase tracking-[0.2em] mb-1">Private Photo</p>
-                                            <button
-                                                onClick={handleSendUnblurRequest}
-                                                disabled={sendingUnblur || !!unblurRequestStatus}
-                                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all
-                                                    ${unblurRequestStatus === 'pending'
-                                                        ? 'bg-amber-500/20 text-amber-200 border border-amber-500/30 cursor-wait'
-                                                        : unblurRequestStatus === 'rejected'
-                                                            ? 'bg-red-500/20 text-red-200 border border-red-500/30'
-                                                            : 'bg-white text-[#881337] hover:bg-white/90 active:scale-95 shadow-lg'}`}
-                                            >
-                                                {sendingUnblur ? 'Sending...'
-                                                    : unblurRequestStatus === 'pending' ? 'Request Pending'
-                                                        : unblurRequestStatus === 'rejected' ? 'Access Restricted'
-                                                            : 'Request to Unblur'}
-                                            </button>
+                                            <p className="text-white/60 text-[10px] font-medium leading-tight">Unlocks automatically when your interest is accepted</p>
                                         </div>
                                     </div>
                                 </div>
@@ -324,9 +274,19 @@ export default function DiscoveryCard({
                     <div className="absolute top-3 left-3 right-3 z-30 flex items-start justify-between">
                         <div className="flex flex-col gap-1.5 items-start">
                             {isDummy && <span className="bg-[#881337] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase shadow">Sample</span>}
-                            {isOnline && (
+                            {(profileData?.isOnline || isOnline) ? (
                                 <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-                                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />Active
+                                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />Active Now
+                                </span>
+                            ) : profileData?.lastActive && (
+                                <span className="bg-gray-800/60 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                                    {(() => {
+                                        const last = profileData.lastActive?.toDate ? profileData.lastActive.toDate() : new Date(profileData.lastActive);
+                                        const diff = Math.floor((Date.now() - last.getTime()) / 60000);
+                                        if (diff < 60) return `${diff}m ago`;
+                                        if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
+                                        return `${Math.floor(diff / 1440)}d ago`;
+                                    })()}
                                 </span>
                             )}
                             {!canZoom && (

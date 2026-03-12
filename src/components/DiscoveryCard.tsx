@@ -231,7 +231,7 @@ export default function DiscoveryCard({
                             <img
                                 src={currentPhoto}
                                 alt={displayName}
-                                className={`w-full h-full object-cover transition-all duration-700 group-hover/image:scale-110 ${!canZoom ? 'blur-[3px] scale-110' : ''}`}
+                                className={`w-full h-full object-cover transition-all duration-700 group-hover/image:scale-110 ${!canZoom ? 'blur-[3px] scale-105' : ''}`}
                             />
 
                             {/* Center Expand Hint */}

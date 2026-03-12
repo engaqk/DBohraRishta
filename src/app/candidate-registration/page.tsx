@@ -387,6 +387,7 @@ export default function CandidateRegistrationPage() {
                     loginMethod: (formData as any).loginMethod || undefined,
                     verifiedPhone: (formData as any).verifiedPhone || undefined,
                     notificationEmail: (formData as any).notificationEmail || formData.email || undefined,
+                    isEmailVerified: !!(formData.email && !formData.email.endsWith('@dbohrarishta.local')),
                 };
 
                 // If they were rejected, switch back to 'pending_verification' on resubmit

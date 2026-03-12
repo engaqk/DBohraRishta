@@ -243,6 +243,7 @@ export default function OnboardingPage() {
                 notificationEmail: formData.email || null,
                 isOnline: true,
                 lastActive: serverTimestamp(),
+                isEmailVerified: !!(formData.email && !formData.email.endsWith('@dbohrarishta.local')),
                 // Mark welcome email as sent atomically to prevent duplicates
                 welcomeEmailSent: !!(formData.email && !formData.email.endsWith('@dbohrarishta.local')),
             });

@@ -182,7 +182,8 @@ export default function AdminVerificationPage() {
                 timestamp: serverTimestamp()
             });
 
-            const userEmail = targetUser?.email || targetUser?.mobileEmail; // Fallback to auto-detected field if available
+            // notificationEmail is set during onboarding for mobile-registered users
+            const userEmail = targetUser?.notificationEmail || targetUser?.email || targetUser?.mobileEmail;
 
             if (userEmail && userEmail.includes('@')) {
                 const { notifyStatusUpdate } = await import('@/lib/emailService');
@@ -236,7 +237,7 @@ export default function AdminVerificationPage() {
             toast.success("Message sent to user.");
 
             // Send email notification for important admin messages
-            const userEmail = selectedUser.email || selectedUser.mobileEmail;
+            const userEmail = selectedUser.notificationEmail || selectedUser.email || selectedUser.mobileEmail;
             if (userEmail && userEmail.includes('@')) {
                 const { notifyNewAdminMessage } = await import('@/lib/emailService');
                 notifyNewAdminMessage({

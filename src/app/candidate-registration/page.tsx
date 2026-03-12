@@ -382,7 +382,11 @@ export default function CandidateRegistrationPage() {
                     itsNumber: formData.ejamaatId,
                     isCandidateFormComplete: true,
                     libasImageUrl: libasImageUrl || null,
-                    extraImageUrl: extraImageUrl || null
+                    extraImageUrl: extraImageUrl || null,
+                    // Explicitly preserve mobile-auth fields so they are never overwritten by a form update
+                    loginMethod: (formData as any).loginMethod || undefined,
+                    verifiedPhone: (formData as any).verifiedPhone || undefined,
+                    notificationEmail: (formData as any).notificationEmail || formData.email || undefined,
                 };
 
                 // If they were rejected, switch back to 'pending_verification' on resubmit

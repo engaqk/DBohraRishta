@@ -240,7 +240,9 @@ export default function OnboardingPage() {
                 createdAt: new Date().toISOString(),
                 loginMethod: loginMethod || 'google',
                 verifiedPhone: verifiedPhone || formData.mobile || null,
-                notificationEmail: formData.email || null,  // Use this email for all future notifications
+                notificationEmail: formData.email || null,
+                // Mark welcome email as sent atomically to prevent duplicates
+                welcomeEmailSent: !!(formData.email && !formData.email.endsWith('@dbohrarishta.local')),
             });
 
             // 3. Clear sessionStorage after successful onboarding
@@ -274,9 +276,6 @@ export default function OnboardingPage() {
                         candidateName: formData.name,
                         candidateEmail: formData.email,
                     });
-                    // Mark as sent in Firestore so it never fires again
-                    const { updateDoc, doc: firestoreDoc } = await import('firebase/firestore');
-                    await updateDoc(firestoreDoc(db, 'users', userId), { welcomeEmailSent: true });
                 } catch (emailErr) {
                     console.warn('Welcome email failed (non-critical):', emailErr);
                 }

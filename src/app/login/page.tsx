@@ -12,9 +12,6 @@ import { QRCodeSVG } from "qrcode.react";
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
-    RecaptchaVerifier,
-    signInWithPhoneNumber,
-    ConfirmationResult,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 
@@ -30,12 +27,7 @@ export default function LoginPage() {
     const [otpSent, setOtpSent] = useState(false);
     const [isMobileDevice, setIsMobileDevice] = useState(false);
 
-    // Firebase Phone Auth (SMS) tab state — HIDDEN (requires Blaze billing), code kept for future use
-    const [smsPhone, setSmsPhone] = useState("+91");
-    const [smsCode, setSmsCode] = useState("");
-    const [smsSent, setSmsSent] = useState(false);
-    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-    const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+
 
     // Shared
     const [authLoading, setAuthLoading] = useState(false);
@@ -120,6 +112,9 @@ export default function LoginPage() {
                         return;
                     }
 
+                    // Persist phone for onboarding pre-fill in case they haven't completed it
+                    sessionStorage.setItem('verifiedPhone', clean);
+                    sessionStorage.setItem('loginMethod', 'mobile');
                     toast.success('Welcome back! Signing you in...');
                     router.push(userDoc.exists() ? "/" : "/onboarding");
                     return;
@@ -219,47 +214,6 @@ export default function LoginPage() {
             }
         } catch (error: any) {
             setErrorMsg(error.message?.replace('Firebase: ', '') || 'Sign-in failed.');
-        } finally { setAuthLoading(false); }
-    };
-
-    // ── Firebase Phone Auth (SMS) — Hidden/disabled (requires Blaze billing) ──
-    // Code kept below for future activation when billing is enabled.
-    const setupRecaptcha = (): RecaptchaVerifier => {
-        if (recaptchaVerifierRef.current) recaptchaVerifierRef.current.clear();
-        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            size: 'invisible',
-            callback: () => { },
-            'expired-callback': () => { setErrorMsg("reCAPTCHA expired. Please try again."); recaptchaVerifierRef.current = null; },
-        });
-        recaptchaVerifierRef.current = verifier;
-        return verifier;
-    };
-    const handleSendSms = async () => {
-        const clean = smsPhone.replace(/[\s\-()]/g, '');
-        if (!clean || clean.length < 10 || !clean.startsWith('+')) { setErrorMsg("Enter a valid number with country code."); return; }
-        setErrorMsg(""); setAuthLoading(true);
-        try {
-            const verifier = setupRecaptcha();
-            const result = await signInWithPhoneNumber(auth, smsPhone, verifier);
-            setConfirmationResult(result); setSmsSent(true); toast.success("OTP sent to " + smsPhone);
-        } catch (error: any) {
-            recaptchaVerifierRef.current?.clear(); recaptchaVerifierRef.current = null;
-            if (error.code === 'auth/billing-not-enabled') setErrorMsg("Firebase SMS requires Blaze billing. Use the free Authenticator tab instead.");
-            else if (error.code === 'auth/operation-not-allowed') setErrorMsg("Phone sign-in not enabled in Firebase Console.");
-            else if (error.code === 'auth/invalid-phone-number') setErrorMsg("Invalid phone format. Use +919876543210");
-            else if (error.code === 'auth/too-many-requests') setErrorMsg("Too many attempts. Wait a few minutes.");
-            else setErrorMsg(error.message?.replace("Firebase: ", "") || "Failed to send OTP.");
-        } finally { setAuthLoading(false); }
-    };
-    const handleVerifySms = async () => {
-        if (!smsCode || smsCode.length !== 6 || !confirmationResult) { setErrorMsg("Enter the 6-digit SMS code."); return; }
-        setErrorMsg(""); setAuthLoading(true);
-        try {
-            await confirmationResult.confirm(smsCode); toast.success("Verified! Redirecting...");
-        } catch (error: any) {
-            if (error.code === 'auth/invalid-verification-code') setErrorMsg("Incorrect OTP code.");
-            else if (error.code === 'auth/code-expired') { setErrorMsg("OTP expired. Request a new one."); setSmsSent(false); }
-            else setErrorMsg(error.message?.replace("Firebase: ", "") || "Verification failed.");
         } finally { setAuthLoading(false); }
     };
 

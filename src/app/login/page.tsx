@@ -73,7 +73,7 @@ export default function LoginPage() {
 
 
 
-    // ── OTP: Step 1 — Send OTP ────────────────────────────────────────────
+    // ── OTP: Step 1 — Send OTP (or direct login for returning users) ─────────
     const handleSendOtp = async () => {
         const clean = phone.trim();
         if (!clean || !clean.startsWith('+')) {
@@ -88,6 +88,39 @@ export default function LoginPage() {
         setAuthLoading(true);
 
         try {
+            // ── Step 1a: Check if this mobile is already registered ──────────
+            // If yes, sign in directly without needing OTP again
+            const checkRes = await fetch('/api/otp/check-mobile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: clean })
+            });
+            const checkData = await checkRes.json();
+
+            if (checkData.exists && checkData.internalEmail && checkData.internalPassword) {
+                // Returning user — sign in directly, no OTP needed
+                try {
+                    await signInWithEmailAndPassword(auth, checkData.internalEmail, checkData.internalPassword);
+                    const { getDoc, doc } = await import('firebase/firestore');
+                    const userDoc = await getDoc(doc(db, 'users', auth.currentUser!.uid));
+
+                    if (userDoc.exists() && userDoc.data().status === 'archived') {
+                        const { signOut } = await import('firebase/auth');
+                        await signOut(auth);
+                        setErrorMsg('Your account has been deactivated. Please contact support.');
+                        setAuthLoading(false);
+                        return;
+                    }
+
+                    toast.success('Welcome back! Signing you in...');
+                    router.push(userDoc.exists() ? "/" : "/onboarding");
+                    return;
+                } catch {
+                    // If direct sign-in fails for any reason, fall through to OTP
+                }
+            }
+
+            // ── Step 1b: New user or check failed — send OTP ─────────────────
             const response = await fetch('/api/otp/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

@@ -15,9 +15,33 @@ export interface EmailPayload {
 
 /**
  * Universal sendEmail function that uses NodeMailer API (Gmail SMTP).
+ *
+ * GUARD: If ALL recipients are mobile-only accounts (@dbohrarishta.local),
+ * the email is silently skipped — the user hasn't provided a real email yet.
+ * Only real email addresses (submitted via onboarding form) will receive notifications.
  */
 export async function sendEmail(payload: EmailPayload): Promise<void> {
     const recipients = Array.isArray(payload.toEmail) ? payload.toEmail : [payload.toEmail];
+
+    // Filter out internal mobile-auth addresses
+    const realRecipients = recipients.filter(email =>
+        email && typeof email === 'string' && !email.endsWith('@dbohrarishta.local')
+    );
+
+    if (realRecipients.length === 0) {
+        // All recipients are mobile-only users — no real email yet
+        console.warn(
+            `[EmailService] Skipped email "${payload.subject}" — recipient(s) are mobile-only users without a verified email address yet.`
+        );
+        return;
+    }
+
+    // If some recipients were filtered out, log it
+    if (realRecipients.length < recipients.length) {
+        console.warn(
+            `[EmailService] Filtered ${recipients.length - realRecipients.length} mobile-only recipient(s) from email "${payload.subject}"`
+        );
+    }
 
     try {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
@@ -26,7 +50,7 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                to: recipients,
+                to: realRecipients,
                 cc: payload.cc || ADMIN_EMAIL,
                 subject: payload.subject,
                 html: payload.htmlBody

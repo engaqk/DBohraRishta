@@ -11,10 +11,17 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    // Users collection: authenticated users can read all, write own
+    function isAdmin() {
+      return signedIn() && (
+        request.auth.token.admin == true || 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+    
+    // Users collection: authenticated users can read all, write own OR admin
     match /users/{userId} {
       allow read: if signedIn();
-      allow write: if signedIn() && isOwner(userId);
+      allow write: if signedIn() && (isOwner(userId) || isAdmin());
 
       // Notifications: Only owner reads, Anyone creates
       match /notifications/{notifId} {

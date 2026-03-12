@@ -146,7 +146,6 @@ export default function RishtaDashboard() {
     });
 
     // Unblur Request State
-    const [unblurRequests, setUnblurRequests] = useState<any[]>([]);
 
     // Subscribe to latest broadcast
     useEffect(() => {
@@ -621,11 +620,6 @@ export default function RishtaDashboard() {
             }
         });
 
-        // --- Unblur Requests Listener ---
-        const unblurQ = query(collection(db, "unblur_requests"), where("to", "==", user.uid), where("status", "==", "pending"));
-        const unsubUnblur = onSnapshot(unblurQ, (snap) => {
-            setUnblurRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-        });
 
         // --- Heartbeat Logic ---
         const updateOnlineStatus = async (online: boolean) => {
@@ -654,7 +648,6 @@ export default function RishtaDashboard() {
             if (unsubOutgoing) unsubOutgoing();
             if (unsubIncoming) unsubIncoming();
             unsubMe();
-            unsubUnblur();
             unsubDiscovery?.();
         };
     }, [user, loading, router]);
@@ -1108,26 +1101,6 @@ export default function RishtaDashboard() {
                             </div>
                         </div>
 
-                        {/* --- UNBLUR NOTIFICATION PILL --- */}
-                        {unblurRequests.length > 0 && (
-                            <div className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between animate-pulse">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-amber-100 p-2 rounded-full">
-                                        <Lock className="w-5 h-5 text-amber-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-black text-amber-900 uppercase">Unblur Request Received</p>
-                                        <p className="text-[10px] text-amber-700 font-bold">Someone wants to see your photos! Check notifications.</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setActiveTab('notifications')}
-                                    className="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase shadow-md active:scale-95"
-                                >
-                                    Review
-                                </button>
-                            </div>
-                        )}
 
                         {filteredProfiles.length === 0 ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100">

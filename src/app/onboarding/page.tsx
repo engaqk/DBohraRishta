@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, ShieldCheck, Camera, UploadCloud, CheckCircle2, Loader2, Clock, AlertCircle } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
@@ -16,6 +16,7 @@ export default function OnboardingPage() {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    const [loginMethod, setLoginMethod] = useState<string>('');  // 'mobile' | 'google' | ''
 
     // Data State
     const [formData, setFormData] = useState({
@@ -33,7 +34,21 @@ export default function OnboardingPage() {
         isBlurSecurityEnabled: true,
     });
 
-    // Email will be intentionally kept blank for the user to fill out.
+    // Pre-fill mobile from sessionStorage if user logged in via phone OTP
+    useEffect(() => {
+        const verifiedPhone = sessionStorage.getItem('verifiedPhone');
+        const method = sessionStorage.getItem('loginMethod');
+        if (verifiedPhone) {
+            setFormData(prev => ({ ...prev, mobile: verifiedPhone }));
+        }
+        if (method) {
+            setLoginMethod(method);
+        }
+        // If user logged in via Google, pre-fill their email
+        if (user?.email && !user.email.endsWith('@dbohrarishta.local')) {
+            setFormData(prev => ({ ...prev, email: prev.email || user.email || '' }));
+        }
+    }, [user]);
 
     // Image State
     const [itsImage, setItsImage] = useState<File | null>(null);
@@ -202,6 +217,7 @@ export default function OnboardingPage() {
 
         // Fallback ID for testing UI without strict login required
         const userId = user?.uid || `guest_${Date.now()}`;
+        const verifiedPhone = sessionStorage.getItem('verifiedPhone') || formData.mobile;
 
         try {
             // 1. Convert Image to Lightweight DataURL String
@@ -218,11 +234,36 @@ export default function OnboardingPage() {
                 userId: userId,
                 itsImageUrl: itsImageUrl || null,
                 libasImageUrl: libasImageUrl || null,
-                isItsVerified: false, // Default to false, explicitly requires an Admin to flip this!
+                isItsVerified: false,
                 isCandidateFormComplete: true,
                 status: "pending_verification",
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                loginMethod: loginMethod || 'google',
+                verifiedPhone: verifiedPhone || formData.mobile || null,
+                notificationEmail: formData.email || null,  // Use this email for all future notifications
             });
+
+            // 3. Clear sessionStorage after successful onboarding
+            sessionStorage.removeItem('verifiedPhone');
+            sessionStorage.removeItem('loginMethod');
+
+            // 4. Send welcome notification — SMS if mobile user, email via standard flow otherwise
+            if (loginMethod === 'mobile' && verifiedPhone) {
+                // Send SMS welcome since we now have their verified number
+                try {
+                    await fetch('/api/notify/sms', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            phone: verifiedPhone,
+                            message: `Welcome to 53DBohraRishta, ${formData.name}! Your profile is submitted and is pending verification. We'll notify you once approved. JazakAllah!`
+                        })
+                    });
+                } catch (smsError) {
+                    console.warn('SMS welcome notification failed:', smsError);
+                    // Non-critical: don't block onboarding completion
+                }
+            }
 
             toast.success("Profile Setup Complete! Verification Pending.");
             router.push("/");
@@ -237,6 +278,26 @@ export default function OnboardingPage() {
     return (
         <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center p-6 text-[#881337] pt-12 pb-24">
             <div className="max-w-xl w-full">
+
+                {/* Close Button */}
+                <div className="flex justify-end mb-4">
+                    <button
+                        onClick={async () => {
+                            sessionStorage.removeItem('verifiedPhone');
+                            sessionStorage.removeItem('loginMethod');
+                            const { signOut } = await import('firebase/auth');
+                            const { auth } = await import('@/lib/firebase/config');
+                            await signOut(auth);
+                            router.push('/login');
+                        }}
+                        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#881337] transition-colors bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-sm"
+                        title="Exit and go back to login"
+                    >
+                        <span className="text-lg leading-none">×</span>
+                        <span>Exit</span>
+                    </button>
+                </div>
+
                 {/* Progress Bar */}
                 <div className="flex justify-between items-center mb-8 relative">
                     <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-200 -z-10 -translate-y-1/2 rounded-full"></div>

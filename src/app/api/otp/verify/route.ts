@@ -3,14 +3,14 @@ import * as OTPAuth from "otpauth";
 import { Redis } from '@upstash/redis';
 import crypto from 'crypto';
 
-const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL || '',
-    token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
-
-const FIREBASE_DETERMINISTIC_SALT = process.env.FIREBASE_DETERMINISTIC_SALT || 'dbohrarishta_firebase_salt_2026';
-
 export async function POST(req: Request) {
+    // Initialize at request time so env vars are available at runtime
+    const redis = new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL!,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
+    const FIREBASE_DETERMINISTIC_SALT = process.env.FIREBASE_DETERMINISTIC_SALT || 'dbohrarishta_firebase_salt_2026';
+
     try {
         const { phone, code } = await req.json();
 
@@ -34,14 +34,13 @@ export async function POST(req: Request) {
             period: 300,
         });
 
-        // OTP verification using otpauth
         const isValid = totp.validate({ token: code.toString(), window: 1 }) !== null;
 
         if (!isValid) {
             return NextResponse.json({ error: 'Invalid or expired OTP code' }, { status: 400 });
         }
 
-        // SUCCESS! 
+        // SUCCESS!
         // 3. Delete the OTP from Redis so it can't be reused
         await redis.del(`otp:${cleanPhone}`);
 
@@ -53,10 +52,15 @@ export async function POST(req: Request) {
             .digest('hex')
             .substring(0, 24);
 
+        // 5. Cache the verified phone in Redis for 1 hour so onboarding can read it
+        await redis.set(`verified_phone:${internalEmail}`, phone, { ex: 3600 });
+
         return NextResponse.json({
             success: true,
             internalEmail,
             internalPassword,
+            verifiedPhone: phone,    // returned to frontend to store in sessionStorage
+            loginMethod: 'mobile',   // flag so onboarding knows this is a mobile-registered user
             message: 'Phone verified successfully',
         });
 

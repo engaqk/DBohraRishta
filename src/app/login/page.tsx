@@ -131,7 +131,7 @@ export default function LoginPage() {
                 setAuthLoading(false);
                 return;
             }
-            const { internalEmail, internalPassword } = data;
+            const { internalEmail, internalPassword, verifiedPhone, loginMethod } = data;
             let signedIn = false;
             try {
                 await signInWithEmailAndPassword(auth, internalEmail, internalPassword);
@@ -165,6 +165,12 @@ export default function LoginPage() {
                     setErrorMsg('Your account has been deactivated. Please contact support.');
                     setAuthLoading(false);
                     return;
+                }
+
+                // Store verified phone and login method for onboarding to use
+                if (verifiedPhone) {
+                    sessionStorage.setItem('verifiedPhone', verifiedPhone);
+                    sessionStorage.setItem('loginMethod', loginMethod || 'mobile');
                 }
 
                 toast.success('Verified! Redirecting...');

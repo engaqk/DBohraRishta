@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import * as OTPAuth from "otpauth";
 import { Redis } from '@upstash/redis';
 
-const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL || '',
-    token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
-
 export async function POST(req: Request) {
+    // Initialize Redis at request time (not build time) so env vars are available
+    const redis = new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL!,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
     try {
         const { phone } = await req.json();
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverTimestamp, orderBy, collectionGroup } from "firebase/firestore";
+import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverTimestamp, orderBy, collectionGroup, writeBatch, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users } from "lucide-react";
 import toast from "react-hot-toast";
@@ -124,7 +124,7 @@ export default function AdminVerificationPage() {
 
                 if (!counts[userId]) counts[userId] = { total: 0, userMsgs: 0 };
                 counts[userId].total++;
-                if (data.from !== 'admin') {
+                if (data.from !== 'admin' && data.readByAdmin !== true) {
                     counts[userId].userMsgs++;
                 }
             });
@@ -259,6 +259,32 @@ export default function AdminVerificationPage() {
             toast.error("Could not send message: " + e.message);
         }
     };
+ 
+    const markMessagesAsRead = async (userId: string) => {
+        try {
+            const threadRef = collection(db, "admin_messages", userId, "thread");
+            const q = query(threadRef, where("from", "==", "user"), where("readByAdmin", "!=", true));
+            const snap = await getDocs(q);
+ 
+            if (snap.empty) return;
+ 
+            const batch = writeBatch(db);
+            snap.docs.forEach(d => {
+                batch.update(d.ref, { readByAdmin: true });
+            });
+            await batch.commit();
+        } catch (e) {
+            console.error("Failed to mark messages as read", e);
+        }
+    };
+ 
+    // Auto-mark messages as read when admin opens the tab
+    useEffect(() => {
+        if (selectedUser && activeDetailTab === 'messages') {
+            markMessagesAsRead(selectedUser.id);
+        }
+    }, [selectedUser?.id, activeDetailTab]);
+
 
     const openDetails = (u: PendingUser, tab: 'biodata' | 'messages' = 'biodata') => {
         setSelectedUser(u);

@@ -593,6 +593,24 @@ export default function RishtaDashboard() {
                         { id: "dummy3", name: "Zahra", dob: "1999-11-20", jamaat: "Husaini Jamaat, London", education: "Doctor of Medicine", hizratLocation: "London, UK", isItsVerified: true, isDummy: true, hobbies: "Photography, Swimming", partnerQualities: "Family-oriented and supportive.", bio: "Dedicated doctor with a passion for helping others.", heightFeet: "5", heightInch: "2", ejamaatId: "1082XXXX", maritalStatus: "Single", professionType: "Medical Doctor", fatherName: "Husain Bhai", motherName: "Rashida Ben", city: "London", country: "UK", libasImageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80", extraImageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=80" }
                     ];
                 }
+                // Sort discovery profiles: Online first, then by last active time descending
+                profiles.sort((a, b) => {
+                    const onlineA = a.isOnline || false;
+                    const onlineB = b.isOnline || false;
+                    if (onlineA && !onlineB) return -1;
+                    if (!onlineA && onlineB) return 1;
+
+                    const getTime = (val: any) => {
+                        if (!val) return 0;
+                        if (typeof val.toMillis === 'function') return val.toMillis();
+                        if (val.seconds) return val.seconds * 1000;
+                        const d = new Date(val);
+                        return isNaN(d.getTime()) ? 0 : d.getTime();
+                    };
+
+                    return getTime(b.lastActive) - getTime(a.lastActive);
+                });
+
                 setDiscoveryProfiles(profiles);
                 setDataLoading(false);
             } catch (e) {

@@ -23,25 +23,30 @@ export async function POST(req: Request) {
             .digest('hex')
             .substring(0, 24);
 
-        // Check if user exists using Firebase Admin
-        let userExists = false;
+        // Check if user exists in Auth AND has completed onboarding in Firestore
+        let canDirectLogin = false;
         try {
-            const { adminAuth } = await import('@/lib/firebase/admin');
-            if (adminAuth && typeof adminAuth.getUserByEmail === 'function') {
-                await adminAuth.getUserByEmail(internalEmail);
-                userExists = true;
+            const { adminAuth, adminDb } = await import('@/lib/firebase/admin');
+            if (adminAuth && adminDb && typeof adminAuth.getUserByEmail === 'function') {
+                const userRecord = await adminAuth.getUserByEmail(internalEmail);
+
+                // Now check Firestore for completed onboarding
+                const userDoc = await adminDb.collection('users').doc(userRecord.uid).get();
+                if (userDoc.exists && userDoc.data()?.isCandidateFormComplete === true) {
+                    canDirectLogin = true;
+                }
             }
         } catch (adminError: any) {
             if (adminError?.errorInfo?.code === 'auth/user-not-found' ||
                 adminError?.code === 'auth/user-not-found') {
-                userExists = false;
+                canDirectLogin = false;
             } else {
                 console.warn('[mobile-check] Admin check failed, falling back to OTP:', adminError?.message);
                 return NextResponse.json({ exists: false });
             }
         }
 
-        if (userExists) {
+        if (canDirectLogin) {
             return NextResponse.json({
                 exists: true,
                 internalEmail,

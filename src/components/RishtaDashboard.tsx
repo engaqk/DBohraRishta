@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
@@ -1310,6 +1310,69 @@ export default function RishtaDashboard() {
                                     </div>
                                 );
                             })()}
+                        </div>
+
+                        {/* ── Who Viewed My Profile ── */}
+                        <div className="mt-4 bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-7 h-7 rounded-full bg-rose-50 flex items-center justify-center">
+                                        <Eye className="w-3.5 h-3.5 text-[#881337]" />
+                                    </div>
+                                    <h3 className="text-xs font-black text-[#881337] uppercase tracking-wider">Who Viewed My Profile</h3>
+                                </div>
+                                {recentViews.length > 0 && (
+                                    <span className="text-[9px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full uppercase border border-gray-100">{recentViews.length} recent</span>
+                                )}
+                            </div>
+                            {recentViews.length === 0 ? (
+                                <div className="flex flex-col items-center py-6 text-center">
+                                    <div className="w-12 h-12 rounded-full bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center mb-2">
+                                        <Eye className="w-5 h-5 text-gray-300" />
+                                    </div>
+                                    <p className="text-xs font-bold text-gray-400">No profile views yet</p>
+                                    <p className="text-[10px] text-gray-300 mt-0.5">When someone views your biodata, they&apos;ll appear here</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-1">
+                                    {recentViews.map((visitor) => {
+                                        const viewedAt = visitor.timestamp?.seconds
+                                            ? new Date(visitor.timestamp.seconds * 1000)
+                                            : visitor.timestamp ? new Date(visitor.timestamp) : null;
+                                        const diffMs = viewedAt ? Date.now() - viewedAt.getTime() : 0;
+                                        const diffMins = Math.floor(diffMs / 60000);
+                                        const timeAgo = diffMins < 1 ? 'just now'
+                                            : diffMins < 60 ? `${diffMins}m ago`
+                                                : diffMins < 1440 ? `${Math.floor(diffMins / 60)}h ago`
+                                                    : viewedAt ? viewedAt.toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
+                                        return (
+                                            <div
+                                                key={visitor.id}
+                                                onClick={() => router.push(`/profile?id=${visitor.viewerId}`)}
+                                                className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-rose-50/40 cursor-pointer group border border-transparent hover:border-rose-100 transition-all"
+                                            >
+                                                <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-sm">
+                                                    {visitor.viewerLibasUrl ? (
+                                                        <img src={visitor.viewerLibasUrl} alt={visitor.viewerName} className="w-full h-full object-cover blur-sm group-hover:blur-0 grayscale group-hover:grayscale-0 transition-all" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-rose-50 flex items-center justify-center text-[#881337] font-black text-sm">
+                                                            {visitor.viewerName?.[0] || '?'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-bold text-sm text-gray-800 truncate group-hover:text-[#881337] transition-colors">{visitor.viewerName || 'Anonymous'}</p>
+                                                    <p className="text-[10px] text-gray-400 truncate">{visitor.viewerLocation || visitor.viewerJamaat || ''}</p>
+                                                </div>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <span className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full border border-gray-100">{timeAgo}</span>
+                                                    <ArrowRight className="w-3 h-3 text-gray-300 group-hover:text-[#881337] transition-colors" />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

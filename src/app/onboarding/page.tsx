@@ -375,8 +375,24 @@ export default function OnboardingPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number</label>
-                                    <input type="tel" name="mobile" onChange={handleChange} value={formData.mobile} className={`w-full bg-gray-50 border ${errors.mobile ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. 919876543210" />
+                                    <div className="relative">
+                                        <input
+                                            type="tel"
+                                            name="mobile"
+                                            onChange={handleChange}
+                                            value={formData.mobile}
+                                            readOnly={loginMethod === 'mobile'}
+                                            className={`w-full ${loginMethod === 'mobile' ? 'bg-gray-100 cursor-not-allowed' : 'bg-gray-50'} border ${errors.mobile ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`}
+                                            placeholder="e.g. 919876543210"
+                                        />
+                                        {loginMethod === 'mobile' && (
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                                            </div>
+                                        )}
+                                    </div>
                                     {errors.mobile && <p className="text-red-500 text-xs font-bold mt-1">{errors.mobile}</p>}
+                                    {loginMethod === 'mobile' && <p className="text-[10px] text-gray-400 mt-1 font-bold italic">✓ Verified via OTP</p>}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">

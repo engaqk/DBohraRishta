@@ -1022,7 +1022,30 @@ export default function RishtaDashboard() {
                         return matchesSearch && matchesEducation && matchesLocation && matchesMarital && bookmarkedProfileIds.has(p.id);
                     }
                     return matchesSearch && matchesEducation && matchesLocation && matchesMarital;
-                }).sort((a, b) => computeMatchScore(myProfile, b) - computeMatchScore(myProfile, a));
+                }).sort((a, b) => {
+                    // Priority 1: Online Status
+                    const onlineA = a.isOnline || false;
+                    const onlineB = b.isOnline || false;
+                    if (onlineA && !onlineB) return -1;
+                    if (!onlineA && onlineB) return 1;
+
+                    // Priority 2: Match Score (for logged-in users)
+                    if (myProfile) {
+                        const scoreA = computeMatchScore(myProfile, a);
+                        const scoreB = computeMatchScore(myProfile, b);
+                        if (scoreA !== scoreB) return scoreB - scoreA;
+                    }
+
+                    // Priority 3: Last Active Time
+                    const getTime = (val: any) => {
+                        if (!val) return 0;
+                        if (typeof val.toMillis === 'function') return val.toMillis();
+                        if (val.seconds) return val.seconds * 1000;
+                        const d = new Date(val);
+                        return isNaN(d.getTime()) ? 0 : d.getTime();
+                    };
+                    return getTime(b.lastActive) - getTime(a.lastActive);
+                });
 
                 return (
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">

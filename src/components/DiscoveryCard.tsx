@@ -231,7 +231,7 @@ export default function DiscoveryCard({
                             <img
                                 src={currentPhoto}
                                 alt={displayName}
-                                className={`w-full h-full object-cover transition-all duration-700 group-hover/image:scale-110 ${!canZoom ? 'blur-[8px] scale-110' : ''}`}
+                                className={`w-full h-full object-cover transition-all duration-700 group-hover/image:scale-110 ${!canZoom ? 'blur-[5px] scale-110' : ''}`}
                             />
 
                             {/* Center Expand Hint */}
@@ -274,6 +274,12 @@ export default function DiscoveryCard({
                                         return `${Math.floor(diff / 1440)}d ago`;
                                     })()}
                                 </span>
+                            )}
+                            {!canZoom && (
+                                <div className="bg-black/60 backdrop-blur-md rounded-full px-2.5 py-1 flex items-center gap-1.5 shadow border border-white/20">
+                                    <Lock className="w-3 h-3 text-white/90" />
+                                    <span className="text-white text-[9px] font-bold whitespace-nowrap uppercase tracking-wider">Unlocks after acceptance</span>
+                                </div>
                             )}
                         </div>
                         <div className="flex flex-col items-end gap-1.5">

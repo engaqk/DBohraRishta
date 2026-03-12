@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase/admin';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
     try {
+        if (!adminAuth || typeof adminAuth.listUsers !== 'function') {
+            return NextResponse.json({ error: 'Admin service not configured' }, { status: 503 });
+        }
         // Basic check for admin session
         // Note: In production, use genuine session validation
         const authHeader = request.headers.get('Authorization');

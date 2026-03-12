@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import * as OTPAuth from "otpauth";
 import { Redis } from '@upstash/redis';
 

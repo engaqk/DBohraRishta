@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase/admin';
 import nodemailer from 'nodemailer';
 
+export const dynamic = 'force-dynamic';
+
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -12,6 +14,9 @@ const transporter = nodemailer.createTransport({
 
 export async function POST(request: Request) {
     try {
+        if (!adminAuth || typeof adminAuth.generateEmailVerificationLink !== 'function') {
+            return NextResponse.json({ error: 'Admin service not configured' }, { status: 503 });
+        }
         const authHeader = request.headers.get('Authorization');
         if (authHeader !== 'secure_admin_session_active') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

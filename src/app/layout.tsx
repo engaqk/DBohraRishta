@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DBohraRishta — Intelligent Bohra Matchmaking",
     description: "ITS-verified profiles. Privacy-first. Bohra community matchmaking platform.",
-    url: "https://dbohranisbat.web.app",
+    url: "https://www.53dbohrarishta.in",
     siteName: "DBohraRishta",
     locale: "en_US",
     type: "website",

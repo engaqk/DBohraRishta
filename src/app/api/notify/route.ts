@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
+export const dynamic = 'force-dynamic';
+
 // Gmail SMTP Configuration
 const transporter = nodemailer.createTransport({
     service: 'gmail',

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { adminDb, adminMessaging, adminAuth } from '@/lib/firebase/admin-config';
 import nodemailer from 'nodemailer';
 
+export const dynamic = 'force-dynamic';
+
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {

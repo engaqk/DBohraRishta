@@ -553,68 +553,71 @@ export default function RishtaDashboard() {
             });
         };
 
-        const unsubMe = onSnapshot(doc(db, "users", user.uid), async (meRef) => {
-            try {
-                if (!meRef.exists()) {
-                    router.push('/onboarding');
-                    return;
-                }
-                const profileData = meRef.data();
-                setMyProfile(profileData);
+        let unsubDiscovery: (() => void) | null = null;
 
-                const isVerified = profileData.isItsVerified === true || profileData.status === 'verified' || profileData.status === 'approved';
-                const celebKey = `verified_celebrated_${user.uid}`;
-                if (isVerified && !localStorage.getItem(celebKey)) {
-                    setShowVerifiedCelebration(true);
-                    localStorage.setItem(celebKey, 'true');
-                }
+        const unsubMe = onSnapshot(doc(db, "users", user.uid), (meRef) => {
+            if (!meRef.exists()) {
+                router.push('/onboarding');
+                return;
+            }
+            const profileData = meRef.data();
+            setMyProfile(profileData);
 
-                if (profileData.status === 'rejected' || profileData.status === 'hold') {
-                    setDataLoading(false);
-                    return;
-                }
+            const isVerified = profileData.isItsVerified === true || profileData.status === 'verified' || profileData.status === 'approved';
+            const celebKey = `verified_celebrated_${user.uid}`;
+            if (isVerified && !localStorage.getItem(celebKey)) {
+                setShowVerifiedCelebration(true);
+                localStorage.setItem(celebKey, 'true');
+            }
 
-                let profiles: UserProfile[] = [];
+            if (profileData.status === 'rejected' || profileData.status === 'hold') {
+                setDataLoading(false);
+                return;
+            }
+
+            // Once my profile is loaded, subscribe to discovery profiles
+            if (!unsubDiscovery) {
                 const oppositeGender = profileData.gender === 'male' ? 'female' : 'male';
-
                 const q = query(collection(db, "users"), where("isItsVerified", "==", true));
-                const snap = await getDocs(q);
-                snap.forEach(d => {
-                    const data = d.data();
-                    if (d.id !== user.uid && data.gender === oppositeGender) {
-                        profiles.push({ id: d.id, ...data } as UserProfile);
+
+                unsubDiscovery = onSnapshot(q, (snap) => {
+                    let profiles: UserProfile[] = [];
+                    snap.forEach(d => {
+                        const data = d.data();
+                        if (d.id !== user.uid && data.gender === oppositeGender) {
+                            profiles.push({ id: d.id, ...data } as UserProfile);
+                        }
+                    });
+
+                    if (profiles.length === 0) {
+                        profiles = [
+                            { id: "dummy1", name: "Aliya", dob: "1998-10-12", jamaat: "Colpetty Jamaat, Colombo", education: "MBA in Finance", hizratLocation: "Colombo, LK", isItsVerified: true, isDummy: true, hobbies: "Traveling, Cooking", partnerQualities: "Looking for a well-educated partner with good Deeni understanding.", bio: "I am an ambitious professional balancing deen and dunya.", heightFeet: "5", heightInch: "4", ejamaatId: "3041XXXX", maritalStatus: "Single", professionType: "Finance Professional", fatherName: "Mustafa Bhai", motherName: "Zainab Ben", city: "Colombo", country: "Sri Lanka", libasImageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80", extraImageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80" },
+                            { id: "dummy2", name: "Fatima", dob: "2000-02-10", jamaat: "Saifee Park Jamaat, Dubai", education: "Software Engineer", hizratLocation: "Dubai, UAE", isItsVerified: true, isDummy: true, hobbies: "Reading, Painting", partnerQualities: "Respectful, caring, and financially stable.", bio: "Software engineer who loves reading and exploring new tech.", heightFeet: "5", heightInch: "6", ejamaatId: "2039XXXX", maritalStatus: "Single", professionType: "Software Developer", fatherName: "Abdeali Bhai", motherName: "Sakina Ben", city: "Dubai", country: "UAE", libasImageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=800&q=80", extraImageUrl: "https://images.unsplash.com/photo-1554151228-14d9def656e4?w=800&q=80" },
+                            { id: "dummy3", name: "Zahra", dob: "1999-11-20", jamaat: "Husaini Jamaat, London", education: "Doctor of Medicine", hizratLocation: "London, UK", isItsVerified: true, isDummy: true, hobbies: "Photography, Swimming", partnerQualities: "Family-oriented and supportive.", bio: "Dedicated doctor with a passion for helping others.", heightFeet: "5", heightInch: "2", ejamaatId: "1082XXXX", maritalStatus: "Single", professionType: "Medical Doctor", fatherName: "Husain Bhai", motherName: "Rashida Ben", city: "London", country: "UK", libasImageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80", extraImageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=80" }
+                        ];
                     }
+
+                    // Real-time sort: Online first, then by last active time descending
+                    profiles.sort((a, b) => {
+                        const onlineA = a.isOnline || false;
+                        const onlineB = b.isOnline || false;
+                        if (onlineA && !onlineB) return -1;
+                        if (!onlineA && onlineB) return 1;
+
+                        const getTime = (val: any) => {
+                            if (!val) return 0;
+                            if (typeof val.toMillis === 'function') return val.toMillis();
+                            if (val.seconds) return val.seconds * 1000;
+                            const d = new Date(val);
+                            return isNaN(d.getTime()) ? 0 : d.getTime();
+                        };
+
+                        return getTime(b.lastActive) - getTime(a.lastActive);
+                    });
+
+                    setDiscoveryProfiles(profiles);
+                    setDataLoading(false);
                 });
-
-                if (profiles.length === 0) {
-                    profiles = [
-                        { id: "dummy1", name: "Aliya", dob: "1998-10-12", jamaat: "Colpetty Jamaat, Colombo", education: "MBA in Finance", hizratLocation: "Colombo, LK", isItsVerified: true, isDummy: true, hobbies: "Traveling, Cooking", partnerQualities: "Looking for a well-educated partner with good Deeni understanding.", bio: "I am an ambitious professional balancing deen and dunya.", heightFeet: "5", heightInch: "4", ejamaatId: "3041XXXX", maritalStatus: "Single", professionType: "Finance Professional", fatherName: "Mustafa Bhai", motherName: "Zainab Ben", city: "Colombo", country: "Sri Lanka", libasImageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80", extraImageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80" },
-                        { id: "dummy2", name: "Fatima", dob: "2000-02-10", jamaat: "Saifee Park Jamaat, Dubai", education: "Software Engineer", hizratLocation: "Dubai, UAE", isItsVerified: true, isDummy: true, hobbies: "Reading, Painting", partnerQualities: "Respectful, caring, and financially stable.", bio: "Software engineer who loves reading and exploring new tech.", heightFeet: "5", heightInch: "6", ejamaatId: "2039XXXX", maritalStatus: "Single", professionType: "Software Developer", fatherName: "Abdeali Bhai", motherName: "Sakina Ben", city: "Dubai", country: "UAE", libasImageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=800&q=80", extraImageUrl: "https://images.unsplash.com/photo-1554151228-14d9def656e4?w=800&q=80" },
-                        { id: "dummy3", name: "Zahra", dob: "1999-11-20", jamaat: "Husaini Jamaat, London", education: "Doctor of Medicine", hizratLocation: "London, UK", isItsVerified: true, isDummy: true, hobbies: "Photography, Swimming", partnerQualities: "Family-oriented and supportive.", bio: "Dedicated doctor with a passion for helping others.", heightFeet: "5", heightInch: "2", ejamaatId: "1082XXXX", maritalStatus: "Single", professionType: "Medical Doctor", fatherName: "Husain Bhai", motherName: "Rashida Ben", city: "London", country: "UK", libasImageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80", extraImageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=80" }
-                    ];
-                }
-                // Sort discovery profiles: Online first, then by last active time descending
-                profiles.sort((a, b) => {
-                    const onlineA = a.isOnline || false;
-                    const onlineB = b.isOnline || false;
-                    if (onlineA && !onlineB) return -1;
-                    if (!onlineA && onlineB) return 1;
-
-                    const getTime = (val: any) => {
-                        if (!val) return 0;
-                        if (typeof val.toMillis === 'function') return val.toMillis();
-                        if (val.seconds) return val.seconds * 1000;
-                        const d = new Date(val);
-                        return isNaN(d.getTime()) ? 0 : d.getTime();
-                    };
-
-                    return getTime(b.lastActive) - getTime(a.lastActive);
-                });
-
-                setDiscoveryProfiles(profiles);
-                setDataLoading(false);
-            } catch (e) {
-                setDataLoading(false);
             }
         });
 
@@ -652,6 +655,7 @@ export default function RishtaDashboard() {
             if (unsubIncoming) unsubIncoming();
             unsubMe();
             unsubUnblur();
+            unsubDiscovery?.();
         };
     }, [user, loading, router]);
 

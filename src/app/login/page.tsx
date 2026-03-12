@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { QRCodeSVG } from "qrcode.react";
-import { notifyWelcomeOnboarding } from "@/lib/emailService";
+
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
@@ -56,13 +56,20 @@ export default function LoginPage() {
                     if (isComplete) {
                         router.push("/");
                     } else {
-                        // User exists in Auth but hasn't submitted all 3 steps -> send reminder only if truly incomplete
-                        if (user.email) {
+                        // Only send "complete your profile" reminder to email/Google users
+                        // Mobile-only users (whose Firebase email ends with @dbohrarishta.local) get NO email
+                        const isMobileOnly = user.email?.endsWith('@dbohrarishta.local');
+                        const alreadySentWelcome = userDoc.exists() && userDoc.data()?.welcomeEmailSent === true;
+
+                        if (!isMobileOnly && !alreadySentWelcome && user.email) {
+                            const { notifyWelcomeOnboarding } = await import('@/lib/emailService');
                             notifyWelcomeOnboarding({
                                 candidateName: user.displayName || undefined,
-                                candidateEmail: user.email
-                            }).catch(err => console.error("Failed to send welcome onboarding email:", err));
+                                candidateEmail: user.email,
+                                isReminder: true,   // tells the function to use reminder copy
+                            }).catch(err => console.error("Complete profile email failed:", err));
                         }
+
                         router.push("/onboarding");
                     }
                 } catch { router.push("/onboarding"); }
@@ -70,6 +77,7 @@ export default function LoginPage() {
         };
         checkUserStatus();
     }, [user, loading, router]);
+
 
 
 

@@ -265,6 +265,23 @@ export default function OnboardingPage() {
                 }
             }
 
+            // 5. Send ONE welcome email using the real email they just submitted
+            // This is the ONLY email a mobile-registered user ever receives before this point
+            if (formData.email && !formData.email.endsWith('@dbohrarishta.local')) {
+                try {
+                    const { notifyWelcomeOnboarding } = await import('@/lib/emailService');
+                    await notifyWelcomeOnboarding({
+                        candidateName: formData.name,
+                        candidateEmail: formData.email,
+                    });
+                    // Mark as sent in Firestore so it never fires again
+                    const { updateDoc, doc: firestoreDoc } = await import('firebase/firestore');
+                    await updateDoc(firestoreDoc(db, 'users', userId), { welcomeEmailSent: true });
+                } catch (emailErr) {
+                    console.warn('Welcome email failed (non-critical):', emailErr);
+                }
+            }
+
             toast.success("Profile Setup Complete! Verification Pending.");
             router.push("/");
         } catch (error: any) {

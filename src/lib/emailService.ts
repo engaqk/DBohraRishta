@@ -395,27 +395,49 @@ export async function notifyDuplicateRegistration(opts: {
 }
 
 /**
- * Notify User to Complete Onboarding ASAP.
+ * Dual-purpose welcome email:
+ * - isReminder: true  → "Complete your profile" reminder for email/Google users who haven't submitted onboarding yet
+ * - isReminder: false → "Profile submitted" confirmation sent once after onboarding form is submitted
+ * Mobile-only users (@dbohrarishta.local) are automatically blocked by the sendEmail guard.
  */
 export async function notifyWelcomeOnboarding(opts: {
     candidateName?: string;
     candidateEmail: string;
+    isReminder?: boolean;
 }) {
+    const isReminder = opts.isReminder ?? false;
+
     await sendEmail({
         toEmail: opts.candidateEmail,
         cc: ADMIN_EMAIL,
-        subject: `✨ Complete Your Profile & Find Your Perfect Match – 53DBohraRishta`,
-        htmlBody: `
+        subject: isReminder
+            ? `✨ Complete Your Profile & Find Your Perfect Match – 53DBohraRishta`
+            : `✅ Profile Submitted Successfully – 53DBohraRishta`,
+        htmlBody: isReminder ? `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
                 <h2 style="color:#881337;margin-bottom:8px">Welcome to 53DBohraRishta ✨</h2>
                 <p>As-salaamu alaykum <strong>${opts.candidateName || 'Candidate'}</strong>,</p>
-                <p>Khushamadeed! We noticed you recently joined our platform but haven't completed your onboarding yet.</p>
+                <p>Khushamadeed! You recently joined our platform but haven't completed your onboarding yet.</p>
                 <div style="background:#f9f9f9;border-left:5px solid #D4AF37;padding:20px;border-radius:8px;margin:20px 0">
                     <p style="margin:0;font-size:15px;color:#333">Complete your profile today to start discovering matches within our community <strong>free of cost</strong>. Get benefited from all our premium features including photo privacy and direct interest requests.</p>
                 </div>
                 <p>It only takes 2 minutes to get started!</p>
                 <a href="https://53dbohrarishta.in/onboarding" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
                     Complete Onboarding Now
+                </a>
+                <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
+                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification • CC: ${ADMIN_EMAIL}</p>
+            </div>` : `
+            <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
+                <h2 style="color:#881337;margin-bottom:8px">Profile Received! ✅</h2>
+                <p>As-salaamu alaykum <strong>${opts.candidateName || 'Candidate'}</strong>,</p>
+                <p>JazakAllah Khair! Your profile on <strong>53DBohraRishta</strong> has been successfully submitted and is currently <strong>pending admin verification</strong>.</p>
+                <div style="background:#f9f9f9;border-left:5px solid #D4AF37;padding:20px;border-radius:8px;margin:20px 0">
+                    <p style="margin:0;font-size:15px;color:#333">Once your profile is verified by the admin team, you will be able to discover matches and receive interest requests from the community.</p>
+                </div>
+                <p>You will receive another notification once your profile is approved.</p>
+                <a href="https://53dbohrarishta.in" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
+                    View My Profile
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
                 <p style="font-size:11px;color:#999">53DBohraRishta Official Notification • CC: ${ADMIN_EMAIL}</p>

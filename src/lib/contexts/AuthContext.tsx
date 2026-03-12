@@ -23,6 +23,7 @@ interface AuthContextType {
     setDummyUser: (uid: string, email: string) => void;
     resetPassword: (email: string) => Promise<void>;
     verifyEmail: () => Promise<void>;
+    refreshUser: () => Promise<void>;
     impersonateUser: (uid: string, email: string) => void;
     stopImpersonating: () => void;
     isImpersonating: boolean;
@@ -146,7 +147,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const verifyEmail = async () => {
         if (auth.currentUser) {
             try {
-                await sendEmailVerification(auth.currentUser);
+                const actionCodeSettings = {
+                    url: typeof window !== 'undefined'
+                        ? `${window.location.origin}/`
+                        : 'https://engaqk.github.io/dbohrarishta/',
+                    handleCodeInApp: false,
+                };
+                await sendEmailVerification(auth.currentUser, actionCodeSettings);
             } catch (error) {
                 console.error("Error sending verification email", error);
                 throw error;
@@ -156,10 +163,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const refreshUser = async () => {
+        if (auth.currentUser) {
+            await auth.currentUser.reload();
+            setUser({ ...auth.currentUser });
+        }
+    };
+
     return (
         <AuthContext.Provider value={{
             user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail,
-            logout, setDummyUser, resetPassword, verifyEmail,
+            logout, setDummyUser, resetPassword, verifyEmail, refreshUser,
             impersonateUser, stopImpersonating, isImpersonating
         }}>
             {children}

@@ -57,6 +57,7 @@ interface UserProfile {
     isOnline?: boolean;
     lastActive?: any;
     isEmailVerified?: boolean;
+    createdAt?: any;
 }
 
 interface RishtaRequest {
@@ -77,7 +78,7 @@ interface RishtaRequest {
 }
 
 export default function RishtaDashboard() {
-    const { user, loading, logout } = useAuth();
+    const { user, loading, logout, verifyEmail, refreshUser } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
     const tabParam = searchParams.get('tab');
@@ -1127,6 +1128,7 @@ export default function RishtaDashboard() {
                                             bio={p.bio}
                                             isBlurSecurityEnabled={blurEnabled}
                                             viewerItsNumber={myProfile?.itsNumber || ''}
+                                            createdAt={p.createdAt}
                                         />
                                     );
                                 })}
@@ -1411,10 +1413,14 @@ export default function RishtaDashboard() {
                                 {user?.emailVerified || myProfile.isEmailVerified ? (
                                     <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-blue-100"><Check className="w-3 h-3" /> Email Verified</span>
                                 ) : (
-                                    <span onClick={async () => {
-                                        const { sendEmailVerification } = require("firebase/auth");
-                                        if (user) { try { await sendEmailVerification(user); toast.success("Verification Email Sent!"); } catch { toast.error("Try later."); } }
-                                    }} className="bg-gray-50 text-gray-600 px-3 py-1 cursor-pointer hover:bg-gray-100 transition-colors rounded-full text-xs font-bold flex items-center gap-1 border border-gray-200"><Clock className="w-3 h-3" /> Verify Email</span>
+                                    <div className="flex flex-col items-center gap-1">
+                                        <span onClick={async () => {
+                                            try { await verifyEmail(); toast.success("Verification Email Sent!"); } catch (e) { toast.error("Try later."); }
+                                        }} className="bg-gray-50 text-gray-600 px-3 py-1 cursor-pointer hover:bg-gray-100 transition-colors rounded-full text-xs font-bold flex items-center gap-1 border border-gray-200">
+                                            <Clock className="w-3 h-3" /> Verify Email
+                                        </span>
+                                        <button onClick={refreshUser} className="text-[10px] text-gray-400 hover:text-[#881337] font-bold underline">Refresh status</button>
+                                    </div>
                                 )}
                             </div>
 

@@ -14,7 +14,7 @@ service cloud.firestore {
     function isAdmin() {
       return signedIn() && (
         request.auth.token.admin == true || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin'
       );
     }
     
@@ -23,9 +23,9 @@ service cloud.firestore {
       allow read: if signedIn();
       allow write: if signedIn() && (isOwner(userId) || isAdmin());
 
-      // Notifications: Only owner reads, Anyone creates
+      // Notifications: Only owner/admin reads
       match /notifications/{notifId} {
-        allow read, update, delete: if signedIn() && isOwner(userId);
+        allow read, update, delete: if signedIn() && (isOwner(userId) || isAdmin());
         allow create: if signedIn();
       }
     }

@@ -5,7 +5,7 @@ import { collection, query, orderBy, addDoc, serverTimestamp, onSnapshot, collec
 import { db } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send, MessageCircle } from "lucide-react";
+import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send, MessageCircle, ShieldAlert } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface RegistrationUser {
@@ -56,6 +56,7 @@ export default function AdminUsersPage() {
     const [sendingBroadcast, setSendingBroadcast] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: keyof RegistrationUser; direction: 'asc' | 'desc' }>({ key: 'createdAt', direction: 'desc' });
     const [msgCounts, setMsgCounts] = useState<Record<string, { total: number, userMsgs: number }>>({});
+    const [activeMainTab, setActiveMainTab] = useState<'firestore' | 'auth'>('firestore');
 
 
     // Admin auth guard
@@ -125,7 +126,31 @@ export default function AdminUsersPage() {
         }
     };
 
-    const fetchAuthUsers = async () => { };
+    const fetchAuthUsers = async () => {
+        setLoadingAuth(true);
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/auth-users', {
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            if (data.users) {
+                setAuthUsers(data.users);
+            } else if (data.error) {
+                toast.error(data.error);
+            }
+        } catch (e: any) {
+            toast.error('Failed to fetch auth users');
+        } finally {
+            setLoadingAuth(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeMainTab === 'auth' && authUsers.length === 0) {
+            fetchAuthUsers();
+        }
+    }, [activeMainTab]);
 
 
 
@@ -207,6 +232,29 @@ export default function AdminUsersPage() {
                 </div>
             </div>
 
+            {/* Sub-tabs for Section */}
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-20">
+                <div className="max-w-7xl mx-auto px-6 flex items-center gap-8">
+                    <button
+                        onClick={() => setActiveMainTab('firestore')}
+                        className={`py-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeMainTab === 'firestore' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        Registered Candidates ({stats.total})
+                        {activeMainTab === 'firestore' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                    </button>
+                    <button
+                        onClick={() => setActiveMainTab('auth')}
+                        className={`py-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeMainTab === 'auth' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <span className="flex items-center gap-2">
+                            Firebase Auth Directory
+                            {authUsers.length > 0 && <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">{authUsers.length}</span>}
+                        </span>
+                        {activeMainTab === 'auth' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                    </button>
+                </div>
+            </div>
+
             <div className="max-w-7xl mx-auto px-4 py-6">
                 {/* Stats row */}
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
@@ -272,216 +320,302 @@ export default function AdminUsersPage() {
 
                 {/* Results count */}
                 <p className="text-xs text-gray-400 font-bold mb-3 tracking-wide uppercase">
-                    Showing {filteredAndSorted.length} of {users.length} users
+                    Showing {activeMainTab === 'firestore' ? filteredAndSorted.length : authUsers.length} users
                 </p>
 
                 {loading ? (
                     <div className="flex items-center justify-center py-24">
                         <div className="w-10 h-10 border-4 border-[#881337]/20 border-t-[#881337] rounded-full animate-spin" />
                     </div>
-                ) : filteredAndSorted.length === 0 ? (
-                    <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
-                        <Users className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                        <p className="text-gray-400 font-bold">No users found</p>
-                    </div>
-                ) : (
-                    <div className="grid gap-3">
-                        {filteredAndSorted.map(u => {
-                            const statusCfg = STATUS_CONFIG[u.status || ''] || STATUS_CONFIG['pending_verification'];
-                            const userAge = age(u.dob);
-                            const now = Date.now();
-                            const createdTime = u.createdAt?.seconds ? u.createdAt.seconds * 1000 : new Date(u.createdAt || 0).getTime();
-                            const isNew = now - createdTime < 24 * 60 * 60 * 1000;
-                            const hasNewMsg = msgCounts[u.uid]?.userMsgs > 0;
+                ) : activeMainTab === 'firestore' ? (
+                    <>
+                        {filteredAndSorted.length === 0 ? (
+                            <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
+                                <Users className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                                <p className="text-gray-400 font-bold">No users found</p>
+                            </div>
+                        ) : (
+                            <div className="grid gap-3">
+                                {filteredAndSorted.map(u => {
+                                    const statusCfg = STATUS_CONFIG[u.status || ''] || STATUS_CONFIG['pending_verification'];
+                                    const userAge = age(u.dob);
+                                    const now = Date.now();
+                                    const createdTime = u.createdAt?.seconds ? u.createdAt.seconds * 1000 : new Date(u.createdAt || 0).getTime();
+                                    const isNew = now - createdTime < 24 * 60 * 60 * 1000;
+                                    const hasNewMsg = msgCounts[u.uid]?.userMsgs > 0;
 
-                            return (
-                                <div key={u.uid}
-                                    className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer relative ${hasNewMsg ? 'bg-blue-50/50 border-l-4 border-blue-500' : isNew ? 'bg-amber-50/30 border-l-4 border-amber-400' : ''}`}
-                                    onClick={() => setSelectedUser(selectedUser?.uid === u.uid ? null : u)}>
+                                    return (
+                                        <div key={u.uid}
+                                            className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer relative ${hasNewMsg ? 'bg-blue-50/50 border-l-4 border-blue-500' : isNew ? 'bg-amber-50/30 border-l-4 border-amber-400' : ''}`}
+                                            onClick={() => setSelectedUser(selectedUser?.uid === u.uid ? null : u)}>
 
-                                    {/* Row */}
-                                    <div className="flex items-center gap-4 p-4">
-                                        {/* Avatar */}
-                                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-100 shrink-0 bg-gradient-to-br from-[#881337]/10 to-[#D4AF37]/10 flex items-center justify-center">
-                                            {u.libasImageUrl ? (
-                                                <img src={u.libasImageUrl} alt={u.name} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="text-[#881337] font-black text-sm">
-                                                    {(u.name || u.email || '?').charAt(0).toUpperCase()}
-                                                </span>
-                                            )}
-                                        </div>
+                                            {/* Row */}
+                                            <div className="flex items-center gap-4 p-4">
+                                                {/* Avatar */}
+                                                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-100 shrink-0 bg-gradient-to-br from-[#881337]/10 to-[#D4AF37]/10 flex items-center justify-center">
+                                                    {u.libasImageUrl ? (
+                                                        <img src={u.libasImageUrl} alt={u.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span className="text-[#881337] font-black text-sm">
+                                                            {(u.name || u.email || '?').charAt(0).toUpperCase()}
+                                                        </span>
+                                                    )}
+                                                </div>
 
-                                        {/* Main info */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <h3 className="font-black text-gray-900 text-sm">
-                                                    {u.name || <span className="text-gray-400 italic">No name yet</span>}
-                                                    {userAge ? `, ${userAge}` : ''}
-                                                </h3>
-                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black border ${statusCfg.color}`}>
-                                                    {statusCfg.icon} {statusCfg.label}
-                                                </span>
-                                                {isNew && (
-                                                    <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">NEW</span>
-                                                )}
-                                                {hasNewMsg && (
-                                                    <span className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse flex items-center gap-1">
-                                                        <MessageCircle className="w-2.5 h-2.5" /> NEW MSG
-                                                    </span>
-                                                )}
-                                                {u.isCandidateFormComplete ? (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-100">
-                                                        <CheckCircle className="w-2.5 h-2.5" /> Form Done
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-gray-50 text-gray-400 border border-gray-100">
-                                                        <Clock className="w-2.5 h-2.5" /> Incomplete
-                                                    </span>
-                                                )}
-                                                {u.isItsVerified && (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                                        <ShieldCheck className="w-2.5 h-2.5" /> ITS ✓
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-3 mt-1 flex-wrap">
-                                                {u.email && (
-                                                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                                                        <Mail className="w-3 h-3" /> {u.email}
-                                                    </span>
-                                                )}
-                                                {u.mobile && (
-                                                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                                                        <Phone className="w-3 h-3" /> {u.mobileCode} {u.mobile}
-                                                    </span>
-                                                )}
-                                                {(u.city || u.country) && (
-                                                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                                                        <MapPin className="w-3 h-3" /> {[u.city, u.state, u.country].filter(Boolean).join(', ')}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Right info */}
-                                        <div className="hidden md:flex flex-col items-end gap-1 shrink-0 text-right">
-                                            {u.ejamaatId && <p className="text-xs font-black text-[#881337]">ITS: {u.ejamaatId}</p>}
-                                            {u.jamaat && <p className="text-xs text-gray-400">{u.jamaat}</p>}
-                                            {u.gender && <p className="text-[10px] text-gray-400 capitalize">{u.gender}</p>}
-                                            <p className="text-[10px] text-gray-300 font-bold uppercase tracking-wide">
-                                                {u.uid.substring(0, 8)}...
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Expanded detail panel */}
-                                    {selectedUser?.uid === u.uid && (
-                                        <div className="border-t border-gray-100 px-4 py-4 bg-gray-50/50 rounded-b-2xl">
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                                                {[
-                                                    { label: 'Firebase UID', value: u.uid },
-                                                    { label: 'Email', value: u.email },
-                                                    { label: 'ITS / EjamaatID', value: u.ejamaatId || u.itsNumber || '—' },
-                                                    { label: 'Mobile', value: u.mobile ? `${u.mobileCode || ''} ${u.mobile}` : '—' },
-                                                    { label: 'Gender', value: u.gender || '—' },
-                                                    { label: 'DOB', value: u.dob || '—' },
-                                                    { label: 'Marital Status', value: u.maritalStatus || '—' },
-                                                    { label: 'Height', value: u.heightFeet ? `${u.heightFeet}'${u.heightInch || 0}"` : '—' },
-                                                    { label: 'Education', value: u.educationDetails || u.education || '—' },
-                                                    { label: 'Profession', value: u.professionType || '—' },
-                                                    { label: 'Father', value: u.fatherName || '—' },
-                                                    { label: 'Mother', value: u.motherName || '—' },
-                                                    { label: 'City', value: u.city || '—' },
-                                                    { label: 'State', value: u.state || '—' },
-                                                    { label: 'Country', value: u.country || '—' },
-                                                    { label: 'Jamaat', value: u.jamaat || '—' },
-                                                ].map(f => (
-                                                    <div key={f.label} className="bg-white rounded-xl p-2.5 border border-gray-100">
-                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-0.5">{f.label}</p>
-                                                        <p className="font-bold text-gray-700 truncate">{f.value}</p>
+                                                {/* Main info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <h3 className="font-black text-gray-900 text-sm">
+                                                            {u.name || <span className="text-gray-400 italic">No name yet</span>}
+                                                            {userAge ? `, ${userAge}` : ''}
+                                                        </h3>
+                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black border ${statusCfg.color}`}>
+                                                            {statusCfg.icon} {statusCfg.label}
+                                                        </span>
+                                                        {isNew && (
+                                                            <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">NEW</span>
+                                                        )}
+                                                        {hasNewMsg && (
+                                                            <span className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse flex items-center gap-1">
+                                                                <MessageCircle className="w-2.5 h-2.5" /> NEW MSG
+                                                            </span>
+                                                        )}
+                                                        {u.isCandidateFormComplete ? (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-100">
+                                                                <CheckCircle className="w-2.5 h-2.5" /> Form Done
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-gray-50 text-gray-400 border border-gray-100">
+                                                                <Clock className="w-2.5 h-2.5" /> Incomplete
+                                                            </span>
+                                                        )}
+                                                        {u.isItsVerified && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                                <ShieldCheck className="w-2.5 h-2.5" /> ITS ✓
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                ))}
+                                                    <div className="flex items-center gap-3 mt-1 flex-wrap">
+                                                        {u.email && (
+                                                            <span className="flex items-center gap-1 text-xs text-gray-500">
+                                                                <Mail className="w-3 h-3" /> {u.email}
+                                                            </span>
+                                                        )}
+                                                        {u.mobile && (
+                                                            <span className="flex items-center gap-1 text-xs text-gray-500">
+                                                                <Phone className="w-3 h-3" /> {u.mobileCode} {u.mobile}
+                                                            </span>
+                                                        )}
+                                                        {(u.city || u.country) && (
+                                                            <span className="flex items-center gap-1 text-xs text-gray-500">
+                                                                <MapPin className="w-3 h-3" /> {[u.city, u.state, u.country].filter(Boolean).join(', ')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Right info */}
+                                                <div className="hidden md:flex flex-col items-end gap-1 shrink-0 text-right">
+                                                    {u.ejamaatId && <p className="text-xs font-black text-[#881337]">ITS: {u.ejamaatId}</p>}
+                                                    {u.jamaat && <p className="text-xs text-gray-400">{u.jamaat}</p>}
+                                                    {u.gender && <p className="text-[10px] text-gray-400 capitalize">{u.gender}</p>}
+                                                    <p className="text-[10px] text-gray-300 font-bold uppercase tracking-wide">
+                                                        {u.uid.substring(0, 8)}...
+                                                    </p>
+                                                </div>
                                             </div>
-                                            {u.bio && (
-                                                <div className="mt-3 bg-white rounded-xl p-3 border border-gray-100">
-                                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-1">Bio</p>
-                                                    <p className="text-xs text-gray-600 italic">{u.bio}</p>
+
+                                            {/* Expanded detail panel */}
+                                            {selectedUser?.uid === u.uid && (
+                                                <div className="border-t border-gray-100 px-4 py-4 bg-gray-50/50 rounded-b-2xl">
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                                        {[
+                                                            { label: 'Firebase UID', value: u.uid },
+                                                            { label: 'Email', value: u.email },
+                                                            { label: 'ITS / EjamaatID', value: u.ejamaatId || u.itsNumber || '—' },
+                                                            { label: 'Mobile', value: u.mobile ? `${u.mobileCode || ''} ${u.mobile}` : '—' },
+                                                            { label: 'Gender', value: u.gender || '—' },
+                                                            { label: 'DOB', value: u.dob || '—' },
+                                                            { label: 'Marital Status', value: u.maritalStatus || '—' },
+                                                            { label: 'Height', value: u.heightFeet ? `${u.heightFeet}'${u.heightInch || 0}"` : '—' },
+                                                            { label: 'Education', value: u.educationDetails || u.education || '—' },
+                                                            { label: 'Profession', value: u.professionType || '—' },
+                                                            { label: 'Father', value: u.fatherName || '—' },
+                                                            { label: 'Mother', value: u.motherName || '—' },
+                                                            { label: 'City', value: u.city || '—' },
+                                                            { label: 'State', value: u.state || '—' },
+                                                            { label: 'Country', value: u.country || '—' },
+                                                            { label: 'Jamaat', value: u.jamaat || '—' },
+                                                        ].map(f => (
+                                                            <div key={f.label} className="bg-white rounded-xl p-2.5 border border-gray-100">
+                                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-0.5">{f.label}</p>
+                                                                <p className="font-bold text-gray-700 truncate">{f.value}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    {u.bio && (
+                                                        <div className="mt-3 bg-white rounded-xl p-3 border border-gray-100">
+                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-1">Bio</p>
+                                                            <p className="text-xs text-gray-600 italic">{u.bio}</p>
+                                                        </div>
+                                                    )}
+                                                    <div className="mt-3 flex gap-2 flex-wrap">
+                                                        <button
+                                                            onClick={e => { e.stopPropagation(); impersonateUser(u.uid, u.email || 'user@example.com'); }}
+                                                            className="bg-[#D4AF37] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#c29e2f] transition-colors flex items-center gap-2">
+                                                            <User className="w-3.5 h-3.5" /> Assume Identity (Login as User)
+                                                        </button>
+                                                        <button
+                                                            onClick={e => { e.stopPropagation(); router.push(`/admin/approvals`); }}
+                                                            className="bg-[#881337] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#9F1239] transition-colors">
+                                                            View in Approvals Panel →
+                                                        </button>
+                                                        <button
+                                                            onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(u.uid); toast.success('UID copied!'); }}
+                                                            className="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors">
+                                                            Copy UID
+                                                        </button>
+                                                        {u.email && (
+                                                            <a
+                                                                href={`mailto:${u.email}`}
+                                                                onClick={e => e.stopPropagation()}
+                                                                className="bg-blue-50 border border-blue-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors flex items-center gap-1">
+                                                                <Mail className="w-3 h-3" /> Email
+                                                            </a>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
-                                            <div className="mt-3 flex gap-2 flex-wrap">
-                                                <button
-                                                    onClick={e => { e.stopPropagation(); impersonateUser(u.uid, u.email || 'user@example.com'); }}
-                                                    className="bg-[#D4AF37] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#c29e2f] transition-colors flex items-center gap-2">
-                                                    <User className="w-3.5 h-3.5" /> Assume Identity (Login as User)
-                                                </button>
-                                                <button
-                                                    onClick={e => { e.stopPropagation(); router.push(`/admin/approvals`); }}
-                                                    className="bg-[#881337] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#9F1239] transition-colors">
-                                                    View in Approvals Panel →
-                                                </button>
-                                                <button
-                                                    onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(u.uid); toast.success('UID copied!'); }}
-                                                    className="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors">
-                                                    Copy UID
-                                                </button>
-                                                {u.email && (
-                                                    <a
-                                                        href={`mailto:${u.email}`}
-                                                        onClick={e => e.stopPropagation()}
-                                                        className="bg-blue-50 border border-blue-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors flex items-center gap-1">
-                                                        <Mail className="w-3 h-3" /> Email
-                                                    </a>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    /* Auth Directory Tab */
+                    <div className="space-y-4">
+                        <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-3xl flex items-center justify-between">
+                            <div className="flex gap-4 items-center">
+                                <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg">
+                                    <Mail className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-indigo-900 font-black text-xl">Identity Manager</h3>
+                                    <p className="text-indigo-600 text-sm font-medium">All Unique Signups ({authUsers.length})</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={fetchAuthUsers}
+                                disabled={loadingAuth}
+                                className="bg-white text-indigo-600 px-6 py-2.5 rounded-2xl text-sm font-black border-2 border-indigo-100 hover:bg-indigo-50 transition-all flex items-center gap-2"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${loadingAuth ? 'animate-spin' : ''}`} /> Sync Directory
+                            </button>
+                        </div>
+
+                        {loadingAuth ? (
+                            <div className="flex items-center justify-center py-24">
+                                <div className="w-10 h-10 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
+                            </div>
+                        ) : authUsers.length === 0 ? (
+                            <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
+                                <Mail className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                                <p className="text-gray-400 font-bold">No identities found in Auth</p>
+                            </div>
+                        ) : (
+                            <div className="grid gap-2">
+                                {authUsers.map((au, idx) => {
+                                    const hasFirestore = users.some(u => u.uid === au.uid);
+                                    const isGoogle = au.providers?.includes('google.com');
+
+                                    const handleSendVerification = async (uid: string, email: string) => {
+                                        try {
+                                            const token = localStorage.getItem('admin_auth_token');
+                                            const res = await fetch('/api/admin/send-verification', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Authorization': token || '',
+                                                    'Content-Type': 'application/json'
+                                                },
+                                                body: JSON.stringify({ uid, email })
+                                            });
+                                            const data = await res.json();
+                                            if (data.success) toast.success('Verification link sent!');
+                                            else toast.error(data.error || 'Failed to send link');
+                                        } catch (e) {
+                                            toast.error('API Error');
+                                        }
+                                    };
+
+                                    return (
+                                        <div key={au.uid} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl group hover:shadow-md transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 font-black text-xs border border-gray-100 shrink-0">
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm font-black text-gray-900">{au.email || 'Anonymous Account'}</p>
+                                                        {au.emailVerified ? (
+                                                            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                                                        ) : (
+                                                            <Clock className="w-3.5 h-3.5 text-amber-400" />
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-3 text-[10px] text-gray-400 font-black uppercase tracking-tight">
+                                                        <span className="bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 font-mono">{au.uid.substring(0, 16)}...</span>
+                                                        <span className={`px-1.5 py-0.5 rounded border flex items-center gap-1 ${isGoogle ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-gray-50 border-gray-100 text-gray-500'}`}>
+                                                            {isGoogle ? 'Google' : 'Password'}
+                                                        </span>
+                                                        <span>•</span>
+                                                        <span>Joined: {new Date(au.creationTime).toLocaleDateString()}</span>
+                                                        {au.lastSignInTime && (
+                                                            <>
+                                                                <span>•</span>
+                                                                <span>Active: {new Date(au.lastSignInTime).toLocaleDateString()}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {!au.emailVerified && au.email && (
+                                                    <button
+                                                        onClick={() => handleSendVerification(au.uid, au.email)}
+                                                        className="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-xl text-[9px] font-black border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5"
+                                                    >
+                                                        <Mail className="w-3 h-3" /> SEND VERIFICATION
+                                                    </button>
                                                 )}
+                                                {hasFirestore ? (
+                                                    <span className="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full text-[9px] font-black border border-emerald-100 tracking-widest flex items-center gap-1.5">
+                                                        <CheckCircle className="w-2.5 h-2.5" /> HAS BIODATA
+                                                    </span>
+                                                ) : (
+                                                    <span className="bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full text-[9px] font-black border border-amber-100 tracking-widest flex items-center gap-1.5">
+                                                        <ShieldAlert className="w-2.5 h-2.5" /> PENDING BIODATA
+                                                    </span>
+                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(au.uid);
+                                                        toast.success('UID copied!');
+                                                    }}
+                                                    className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"
+                                                    title="Copy UID"
+                                                >
+                                                    <User className="w-4 h-4" />
+                                                </button>
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
-
-            {/* Auth Users Overlay List */}
-            {showAuthList && (
-                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex justify-end">
-                    <div className="w-full max-w-lg bg-white h-full shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
-                        <div className="p-6 bg-[#881337] text-white flex items-center justify-between">
-                            <div>
-                                <h2 className="text-xl font-black flex items-center gap-2">
-                                    <Mail className="w-5 h-5 text-[#D4AF37]" /> Firebase Auth Emails
-                                </h2>
-                                <p className="text-white/60 text-[10px] mt-0.5 uppercase tracking-widest leading-none">Total Interest: {authUsers.length} Unique Logins</p>
-                            </div>
-                            <button onClick={() => setShowAuthList(false)} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all font-bold">×</button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                            <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700 leading-relaxed">
-                                <p><strong>Note:</strong> These are accounts currently in Firebase Authentication. This includes users who registered but haven't yet filled the registration form.</p>
-                            </div>
-
-                            {authUsers.map((au, idx) => (
-                                <div key={au.uid} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl group hover:bg-white hover:shadow-sm transition-all">
-                                    <div className="flex flex-col gap-0.5">
-                                        <p className="text-xs font-black text-gray-800">{au.email || 'No Email'}</p>
-                                        <div className="flex items-center gap-2 text-[9px] text-gray-400 font-bold uppercase tracking-tight">
-                                            <span>{au.phoneNumber || au.uid.substring(0, 12)}</span>
-                                            <span>•</span>
-                                            <span>Joined: {new Date(au.creationTime).toLocaleDateString()}</span>
-                                        </div>
-                                    </div>
-                                    <span className="text-[10px] font-black bg-white px-2 py-0.5 rounded border border-gray-200 text-gray-400 opacity-30 group-hover:opacity-100">#{idx + 1}</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="p-4 border-t border-gray-100 bg-gray-50 text-[10px] text-gray-400 font-bold text-center">
-                            Showing all system-registered identities
-                        </div>
-                    </div>
-                </div>
-            )}
             {/* Broadcast Modal */}
             {showBroadcastModal && (
                 <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">

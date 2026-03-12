@@ -44,6 +44,7 @@ interface DiscoveryCardProps {
     city?: string;
     state?: string;
     country?: string;
+    createdAt?: any;
 }
 
 export default function DiscoveryCard({
@@ -53,7 +54,7 @@ export default function DiscoveryCard({
     isOnline = false, viewerItsNumber = '', extraImageUrl,
     ejamaatId, itsNumber, maritalStatus, mobile, mobileCode, email,
     fatherName, motherName, professionType, educationDetails,
-    city, state, gender,
+    city, state, gender, createdAt,
 }: DiscoveryCardProps) {
     const { user } = useAuth();
     const router = useRouter();
@@ -401,6 +402,12 @@ export default function DiscoveryCard({
                             { label: 'Height', value: heightFeet ? `${heightFeet}'${heightInch || '0'}"` : null },
                             { label: 'City', value: city || hizratLocation },
                             { label: 'DOB', value: dob },
+                            {
+                                label: 'Created', value: createdAt ? (() => {
+                                    const d = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+                                    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                                })() : null
+                            },
                         ].filter(d => d.value).map(d => (
                             <div key={d.label} className="bg-gray-50 rounded-xl px-3 py-2 border border-gray-100">
                                 <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">{d.label}</p>

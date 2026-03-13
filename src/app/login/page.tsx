@@ -227,7 +227,10 @@ export default function LoginPage() {
         finally { setAuthLoading(false); }
     };
 
-    if (loading) return null;
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
+
+    if (!mounted || loading) return null;
 
     return (
         <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center p-4 text-[#881337]">
@@ -348,12 +351,39 @@ export default function LoginPage() {
 
                     {/* Dev-only test buttons */}
                     {process.env.NODE_ENV === 'development' && (
-                        <>
-                            <button onClick={async () => { await setDoc(doc(db, "users", "dummy_male"), { name: "Murtaza Test", gender: "male", itsNumber: "12345678", isItsVerified: true, isPremium: true, status: "verified", isCandidateFormComplete: true, jamaat: "Test Jamaat Male", dob: "1995-01-01", hizratLocation: "Mumbai, India", education: "B.Tech CS", libasImageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop" }); setDummyUser("dummy_male", "dummy_male@test.com"); router.push("/"); }}
-                                className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold mb-2 text-sm">Dev: Login as Dummy Male</button>
-                            <button onClick={async () => { await setDoc(doc(db, "users", "dummy_female"), { name: "Zahra Test", gender: "female", itsNumber: "87654321", isItsVerified: true, isPremium: true, status: "verified", isCandidateFormComplete: true, jamaat: "Test Jamaat Female", dob: "1996-01-01", hizratLocation: "Dubai, UAE", education: "B.Sc Interior Design", libasImageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop" }); setDummyUser("dummy_female", "dummy_female@test.com"); router.push("/"); }}
-                                className="w-full bg-pink-600 text-white py-3 rounded-xl font-bold text-sm">Dev: Login as Dummy Female</button>
-                        </>
+                        <div className="space-y-2 mt-4 pt-4 border-t border-gray-100">
+                            <p className="text-[10px] text-gray-400 text-center font-bold uppercase tracking-widest">Development Only</p>
+                            <button onClick={async () => {
+                                try {
+                                    // Try to pre-create doc, but don't block if it fails (likely due to rules)
+                                    setDoc(doc(db, "users", "dummy_male"), {
+                                        name: "Murtaza Test", gender: "male", itsNumber: "12345678", isItsVerified: true, isPremium: true, status: "verified", isCandidateFormComplete: true, jamaat: "Test Jamaat Male", dob: "1995-01-01", hizratLocation: "Mumbai, India", education: "B.Tech CS", libasImageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop"
+                                    }).catch(e => console.warn("Dev setDoc failed:", e));
+
+                                    setDummyUser("dummy_male", "dummy_male@test.com");
+                                    toast.success("Logged in as Dummy Male");
+                                    router.push("/");
+                                } catch (e) {
+                                    console.error(e);
+                                }
+                            }}
+                                className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 active:scale-95 transition-all">Dev: Login as Dummy Male</button>
+
+                            <button onClick={async () => {
+                                try {
+                                    setDoc(doc(db, "users", "dummy_female"), {
+                                        name: "Zahra Test", gender: "female", itsNumber: "87654321", isItsVerified: true, isPremium: true, status: "verified", isCandidateFormComplete: true, jamaat: "Test Jamaat Female", dob: "1996-01-01", hizratLocation: "Dubai, UAE", education: "B.Sc Interior Design", libasImageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop"
+                                    }).catch(e => console.warn("Dev setDoc failed:", e));
+
+                                    setDummyUser("dummy_female", "dummy_female@test.com");
+                                    toast.success("Logged in as Dummy Female");
+                                    router.push("/");
+                                } catch (e) {
+                                    console.error(e);
+                                }
+                            }}
+                                className="w-full bg-pink-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-pink-700 active:scale-95 transition-all">Dev: Login as Dummy Female</button>
+                        </div>
                     )}
 
                 </div>

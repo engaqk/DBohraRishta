@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
         // 1. Fetch all users
         const usersSnap = await adminDb.collection('users').get();
-        const users = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const users = usersSnap.docs.map(d => ({ uid: d.id, id: d.id, ...d.data() }));
 
         // 2. Fetch rishta_requests stats
         const requestsSnap = await adminDb.collection('rishta_requests').get();

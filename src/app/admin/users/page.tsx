@@ -385,6 +385,7 @@ export default function AdminUsersPage() {
                         ) : (
                             <div className="grid gap-3">
                                 {filteredAndSorted.map(u => {
+                                    if (!u) return null;
                                     const statusCfg = STATUS_CONFIG[u.status || ''] || STATUS_CONFIG['pending_verification'];
                                     const userAge = age(u.dob);
                                     const now = Date.now();
@@ -468,7 +469,7 @@ export default function AdminUsersPage() {
                                                     {u.jamaat && <p className="text-xs text-gray-400">{u.jamaat}</p>}
                                                     {u.gender && <p className="text-[10px] text-gray-400 capitalize">{u.gender}</p>}
                                                     <p className="text-[10px] text-gray-300 font-bold uppercase tracking-wide">
-                                                        {u.uid.substring(0, 8)}...
+                                                        {u.uid ? u.uid.substring(0, 8) : '...'}...
                                                     </p>
                                                 </div>
                                             </div>
@@ -574,6 +575,7 @@ export default function AdminUsersPage() {
                         ) : (
                             <div className="grid gap-2">
                                 {authUsers.map((au, idx) => {
+                                    if (!au) return null;
                                     const hasFirestore = users.some(u => u.uid === au.uid);
                                     const isGoogle = au.providers?.includes('google.com');
 
@@ -622,7 +624,7 @@ export default function AdminUsersPage() {
                                                         )}
                                                     </div>
                                                     <div className="flex items-center gap-3 text-[10px] text-gray-400 font-black uppercase tracking-tight">
-                                                        <span className="bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 font-mono">{au.uid.substring(0, 16)}...</span>
+                                                        <span className="bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 font-mono">{au.uid ? au.uid.substring(0, 16) : '...'}...</span>
                                                         <span className={`px-1.5 py-0.5 rounded border flex items-center gap-1 ${isGoogle ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-gray-50 border-gray-100 text-gray-500'}`}>
                                                             {isGoogle ? 'Google' : 'Password'}
                                                         </span>

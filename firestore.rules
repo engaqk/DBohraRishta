@@ -67,19 +67,19 @@ service cloud.firestore {
     // Official announcements: All read, Admin write
     match /broadcasts/{broadcastId} {
       allow read: if signedIn();
-      allow write: if signedIn(); // Temporary allow until admin claims are set up
+      allow write: if false; // Dispatched through API only
     }
 
     // Audit logs
     match /admin_audit_logs/{logId} {
       allow read: if signedIn();
-      allow write: if signedIn();
+      allow write: if false; // Logs written through server side APIs
     }
 
-    // SMS Broadcasts (admin only, via textbee)
+    // SMS Broadcasts
     match /sms_broadcasts/{broadcastId} {
       allow read: if signedIn();
-      allow write: if signedIn();
+      allow write: if false; // Managed via API
     }
 
     // SMS delivery logs — written server-side by webhook (adminDb bypasses rules)

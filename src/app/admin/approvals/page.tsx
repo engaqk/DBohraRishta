@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverTimestamp, orderBy, collectionGroup, writeBatch, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { auth } from "@/lib/firebase/config";
@@ -86,6 +86,31 @@ export default function AdminVerificationPage() {
         };
     }, [sortedUsers, requestStats]);
 
+    const fetchDashboardData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/dashboard-data', {
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            
+            if (data.users) {
+                setAllUsers(data.users);
+            }
+            if (data.msgCounts) {
+                setMsgCounts(data.msgCounts);
+            }
+            if (data.requestStats) {
+                setRequestStats(data.requestStats);
+            }
+        } catch (e) {
+            console.error('Failed to fetch dashboard data:', e);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
         const isAdmin = localStorage.getItem("admin_auth_token");
         if (!isAdmin) {
@@ -93,192 +118,111 @@ export default function AdminVerificationPage() {
             return;
         }
 
-        let usersUnsub: (() => void) | null = null;
-        let requestsUnsub: (() => void) | null = null;
-        let threadUnsub: (() => void) | null = null;
+        fetchDashboardData();
+        const interval = setInterval(fetchDashboardData, 30000);
+        return () => clearInterval(interval);
+    }, [router, fetchDashboardData]);
 
-        const startFirestoreListeners = () => {
-            // Live stats for users
-            usersUnsub = onSnapshot(collection(db, "users"), (snap) => {
-                setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as PendingUser)));
-                setLoading(false);
-            }, err => {
-                console.error('Users snapshot error:', err.message);
-                setLoading(false);
-            });
-
-            // Live stats for requests (Match Rate)
-            requestsUnsub = onSnapshot(collection(db, "rishta_requests"), (snap) => {
-                const total = snap.docs.length;
-                const accepted = snap.docs.filter(d => d.data().status === 'accepted').length;
-                setRequestStats({ total, accepted });
-            }, err => console.warn('Requests snapshot error:', err.message));
-
-            // Unread message counts
-            threadUnsub = onSnapshot(collectionGroup(db, "thread"), (snapshot) => {
-                const counts: Record<string, { total: number, userMsgs: number }> = {};
-                snapshot.docs.forEach(doc => {
-                    const parentId = doc.ref.parent.parent?.id;
-                    if (!parentId) return;
-                    const data = doc.data();
-                    if (!counts[parentId]) counts[parentId] = { total: 0, userMsgs: 0 };
-                    counts[parentId].total++;
-                    if (data.from === 'user') counts[parentId].userMsgs++;
-                });
-                setMsgCounts(counts);
-            }, err => console.warn('Thread snapshot error:', err.message));
-        };
-
-        // Ensure a Firebase auth session exists before subscribing to Firestore.
-        // If no session → sign in anonymously so Firestore rules (signedIn()) pass.
-        const unsubAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                // Session exists — start listeners
-                startFirestoreListeners();
-            } else {
-                // No session — try anonymous sign-in to satisfy Firestore rules
-                try {
-                    await signInAnonymously(auth);
-                    // onAuthStateChanged will re-fire with the anonymous user
-                } catch (err) {
-                    console.warn('Anonymous auth failed, starting listeners anyway:', err);
-                    startFirestoreListeners();
-                }
-            }
-        });
-
-        return () => {
-            unsubAuth();
-            usersUnsub?.();
-            requestsUnsub?.();
-            threadUnsub?.();
-        };
-    }, [router]);
-
-    // Subscribe to messages for selected user
-    useEffect(() => {
+    // Fetch messages for selected user
+    const fetchMessages = useCallback(async () => {
         if (!selectedUser) return;
-        const msgRef = collection(db, "admin_messages", selectedUser.id, "thread");
-        const q = query(msgRef, orderBy("createdAt", "asc"));
-        const unsub = onSnapshot(q, (snap) => {
-            setAdminMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminMessage)));
-        });
-        return () => unsub();
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch(`/api/admin/user-messages?userId=${selectedUser.id}`, {
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            if (data.messages) {
+                setAdminMessages(data.messages);
+            }
+        } catch (e) {
+            console.error('Failed to fetch messages:', e);
+        }
     }, [selectedUser?.id]);
+
+    useEffect(() => {
+        if (selectedUser) {
+            fetchMessages();
+            const interval = setInterval(fetchMessages, 10000); // More frequent refresh for messages
+            return () => clearInterval(interval);
+        }
+    }, [selectedUser, fetchMessages]);
 
 
     const handleStatusMove = async (userId: string, newStatus: string, message?: string) => {
         try {
-            const updateData: any = {
-                status: newStatus,
-                isItsVerified: newStatus === 'verified' || newStatus === 'approved',
-                adminMessage: message || (newStatus === 'rejected' ? "Please review and resubmit your details." : newStatus === 'hold' ? "Your profile is currently on hold. Please wait for further instructions." : ""),
-            };
-            await updateDoc(doc(db, "users", userId), updateData);
-            toast.success(`User moved to ${newStatus}`);
-            setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus, adminMessage: updateData.adminMessage } : u));
-            if (selectedUser?.id === userId) {
-                setSelectedUser(prev => prev ? { ...prev, status: newStatus, adminMessage: updateData.adminMessage } : null);
-            }
-
-            // Auto-post a system message in the thread so user sees the notification
-            if (message || newStatus === 'rejected' || newStatus === 'hold') {
-                await addDoc(collection(db, "admin_messages", userId, "thread"), {
-                    text: updateData.adminMessage,
-                    from: 'admin',
-                    createdAt: serverTimestamp(),
-                });
-            }
-
-            // --- 📩 Email Notification to Candidate ---
-            const targetUser = allUsers.find(u => u.id === userId);
-
-            // 📝 Log Action in Audit Log
-            await addDoc(collection(db, 'admin_audit_logs'), {
-                adminId: user?.uid,
-                action: 'status_change',
-                targetUserId: userId,
-                targetUserName: targetUser?.name || 'Unknown',
-                newStatus: newStatus,
-                message: updateData.adminMessage,
-                timestamp: serverTimestamp()
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/users/update-status', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': token || '',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    userId,
+                    newStatus,
+                    message,
+                    adminId: user?.uid
+                })
             });
+            
+            const data = await res.json();
+            if (data.success) {
+                toast.success(`User moved to ${newStatus}`);
+                fetchDashboardData(); // Refresh list via API
+                if (selectedUser?.id === userId) {
+                    setSelectedUser(prev => prev ? { ...prev, status: newStatus, adminMessage: message || prev.adminMessage } : null);
+                    fetchMessages(); // Refresh messages
+                }
 
-            // notificationEmail is set during onboarding for mobile-registered users
-            const userEmail = targetUser?.notificationEmail || targetUser?.email || targetUser?.mobileEmail;
-
-            if (userEmail && userEmail.includes('@')) {
-                const { notifyStatusUpdate } = await import('@/lib/emailService');
-                notifyStatusUpdate({
-                    candidateName: targetUser?.name || 'Candidate',
-                    candidateEmail: userEmail,
-                    newStatus: newStatus,
-                    adminMessage: updateData.adminMessage
-                }).catch(e => console.error("Status email failed", e));
+                // If they have an email, we still try to send it (already handled in UI previously, 
+                // but let's just keep the API result as source of truth for UI state)
+            } else {
+                toast.error("Failed: " + data.error);
             }
-
-            // --- 🔔 In-App Notification to Candidate ---
-            await addDoc(collection(db, 'users', userId, 'notifications'), {
-                type: 'status_update',
-                title: 'PROFILE STATUS UPDATED',
-                message: `Your profile status is now: ${newStatus.toUpperCase()}. ${updateData.adminMessage ? `Admin says: "${updateData.adminMessage}"` : 'Please check your dashboard for details.'}`,
-                isRead: false,
-                createdAt: serverTimestamp()
-            });
         } catch (error: any) {
             console.error("Error updating status:", error);
-            toast.error("Failed to update status: " + error.message);
+            toast.error("Network error updating status");
         }
     };
 
     const handleSendAdminMessage = async () => {
         if (!newAdminMsg.trim() || !selectedUser) return;
         try {
-            await addDoc(collection(db, "admin_messages", selectedUser.id, "thread"), {
-                text: newAdminMsg.trim(),
-                from: 'admin',
-                createdAt: serverTimestamp(),
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/user-messages', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': token || '',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    userId: selectedUser.id,
+                    text: newAdminMsg.trim(),
+                    from: 'admin'
+                })
             });
-            // Also update the adminMessage field on the user doc so the banner shows
-            await updateDoc(doc(db, "users", selectedUser.id), {
-                adminMessage: newAdminMsg.trim(),
-                hasUnreadAdminMessage: true,
-            });
+            const data = await res.json();
+            if (data.success) {
+                setNewAdminMsg("");
+                toast.success("Message sent to user.");
+                fetchMessages(); // Refresh thread
 
-            // 📝 Log Action in Audit Log
-            await addDoc(collection(db, 'admin_audit_logs'), {
-                adminId: user?.uid,
-                action: 'send_message',
-                targetUserId: selectedUser.id,
-                targetUserName: selectedUser.name,
-                message: newAdminMsg.trim(),
-                timestamp: serverTimestamp()
-            });
-
-            setNewAdminMsg("");
-            toast.success("Message sent to user.");
-
-            // Send email notification for important admin messages
-            const userEmail = selectedUser.notificationEmail || selectedUser.email || selectedUser.mobileEmail;
-            if (userEmail && userEmail.includes('@')) {
-                const { notifyNewAdminMessage } = await import('@/lib/emailService');
-                notifyNewAdminMessage({
-                    candidateName: selectedUser.name,
-                    candidateEmail: userEmail,
-                    messageSnippet: newAdminMsg.trim()
-                }).catch(e => console.error("Admin msg email failed", e));
+                // Send email notification
+                const userEmail = selectedUser.notificationEmail || selectedUser.email || selectedUser.mobileEmail;
+                if (userEmail && userEmail.includes('@')) {
+                    const { notifyNewAdminMessage } = await import('@/lib/emailService');
+                    notifyNewAdminMessage({
+                        candidateName: selectedUser.name,
+                        candidateEmail: userEmail,
+                        messageSnippet: newAdminMsg.trim()
+                    }).catch(e => console.error("Admin msg email failed", e));
+                }
+            } else {
+                toast.error(data.error);
             }
-
-            // --- 🔔 In-App Notification to Candidate ---
-            await addDoc(collection(db, 'users', selectedUser.id, 'notifications'), {
-                type: 'admin_message',
-                title: 'NEW ADMIN MESSAGE',
-                message: newAdminMsg.trim(),
-                isRead: false,
-                createdAt: serverTimestamp()
-            });
-        } catch (e: any) {
-            toast.error("Could not send message: " + e.message);
+        } catch (error: any) {
+             toast.error("Failed to send message");
         }
     };
  

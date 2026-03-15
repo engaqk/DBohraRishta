@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { collection, query, orderBy, addDoc, serverTimestamp, onSnapshot, collectionGroup } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send, MessageCircle, ShieldAlert } from "lucide-react";
+import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send, MessageCircle, ShieldAlert, Database } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface RegistrationUser {
@@ -54,9 +54,12 @@ export default function AdminUsersPage() {
     const [showBroadcastModal, setShowBroadcastModal] = useState(false);
     const [broadcastMsg, setBroadcastMsg] = useState('');
     const [sendingBroadcast, setSendingBroadcast] = useState(false);
-    const [sortConfig, setSortConfig] = useState<{ key: keyof RegistrationUser; direction: 'asc' | 'desc' }>({ key: 'createdAt', direction: 'desc' });
+    const [sortConfig, setSortConfig] = useState<{ key: keyof RegistrationUser; direction: 'asc' | 'desc' }>(
+        { key: 'createdAt', direction: 'desc' }
+    );
     const [msgCounts, setMsgCounts] = useState<Record<string, { total: number, userMsgs: number }>>({});
     const [activeMainTab, setActiveMainTab] = useState<'firestore' | 'auth'>('firestore');
+    const [isSyncing, setIsSyncing] = useState(false);
 
 
     // Admin auth guard
@@ -65,40 +68,50 @@ export default function AdminUsersPage() {
         if (!token) { router.push('/admin/login'); return; }
     }, [router]);
 
-    useEffect(() => {
-        const usersUnsub = onSnapshot(collection(db, 'users'), (snap) => {
-            const list: RegistrationUser[] = snap.docs.map(d => ({
-                uid: d.id,
-                ...d.data(),
-            }));
-            setUsers(list);
-            setLoading(false);
-        });
-
-        // Listen for all message threads to count new messages
-        const threadUnsub = onSnapshot(collectionGroup(db, "thread"), (snapshot) => {
-            const counts: Record<string, { total: number, userMsgs: number }> = {};
-            snapshot.docs.forEach(doc => {
-                const parentId = doc.ref.parent.parent?.id;
-                if (!parentId) return;
-                const data = doc.data();
-                if (!counts[parentId]) counts[parentId] = { total: 0, userMsgs: 0 };
-                counts[parentId].total++;
-                if (data.from === 'user') counts[parentId].userMsgs++;
+    const fetchDashboardData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/dashboard-data', {
+                headers: { 'Authorization': token || '' }
             });
-            setMsgCounts(counts);
-        });
+            const data = await res.json();
+            
+            if (data.users) {
+                setUsers(data.users);
+            }
+            if (data.msgCounts) {
+                setMsgCounts(data.msgCounts);
+            }
+            if (data.error) {
+                console.error('API Error:', data.error);
+                // If unauthorized, don't toast yet here to avoid double toasts
+            }
+        } catch (e) {
+            console.error('Failed to fetch dashboard data:', e);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-        return () => {
-            usersUnsub();
-            threadUnsub();
-        };
+    useEffect(() => {
+        fetchDashboardData();
+        
+        // Refresh every 30 seconds for "pseudo-realtime" since we removed onSnapshot
+        const interval = setInterval(fetchDashboardData, 30000);
+        return () => clearInterval(interval);
+    }, [fetchDashboardData]);
+
+    // Fetch auth users on load to show count in tab
+    useEffect(() => {
+        const token = localStorage.getItem('admin_auth_token');
+        if (token) {
+            fetchAuthUsers();
+        }
     }, []);
 
     const fetchUsers = async () => {
-        setLoading(true);
-        // This is now handled by onSnapshot, but we can keep it as a manual refresh if needed
-        setLoading(false);
+        await fetchDashboardData();
     };
 
     const handleSendBroadcast = async () => {
@@ -143,6 +156,31 @@ export default function AdminUsersPage() {
             toast.error('Failed to fetch auth users');
         } finally {
             setLoadingAuth(false);
+        }
+    };
+
+    const handleSyncAuth = async () => {
+        const confirmed = window.confirm("This will find users who exist in Firebase Auth but have no record in the Database, and create skeleton records for them so they can receive SMS broadcasts.\n\nProceed?");
+        if (!confirmed) return;
+
+        setIsSyncing(true);
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/users/sync-auth', {
+                method: 'POST',
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(`Successfully synced ${data.syncedCount} users!`);
+                fetchAuthUsers(); // Refresh counts
+            } else {
+                toast.error(data.error || "Sync failed");
+            }
+        } catch (e) {
+            toast.error("Network error during sync");
+        } finally {
+            setIsSyncing(false);
         }
     };
 
@@ -300,6 +338,16 @@ export default function AdminUsersPage() {
                         <option value="complete">Form Complete</option>
                         <option value="incomplete">Form Incomplete</option>
                     </select>
+                    {activeMainTab === 'auth' && (
+                        <button
+                            onClick={handleSyncAuth}
+                            disabled={isSyncing || loadingAuth}
+                            className="bg-[#881337] text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[#70102d] transition-all shadow-md disabled:opacity-50"
+                        >
+                            {isSyncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+                            Sync Auth to DB
+                        </button>
+                    )}
                 </div>
 
                 {/* Table Header for Desktop */}

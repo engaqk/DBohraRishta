@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb, adminMessaging, adminAuth } from '@/lib/firebase/admin-config';
 import nodemailer from 'nodemailer';
+import * as admin from 'firebase-admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,15 +14,35 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function POST(req: Request) {
-    if (!adminDb || !adminMessaging || !adminAuth) {
-        return NextResponse.json({ error: 'Firebase Admin not configured. Cannot send broadcasts.' }, { status: 503 });
-    }
-
     try {
+        const authHeader = req.headers.get('Authorization');
+        if (authHeader !== 'secure_admin_session_active') {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!adminDb || !adminMessaging || !adminAuth) {
+            return NextResponse.json({ error: 'Firebase Admin not configured. Cannot send broadcasts.' }, { status: 503 });
+        }
+
         const body = await req.json();
         const { title, message, sendPush, sendInApp, sendEmail, includeAllAuthUsers, adminId } = body;
 
-        console.log(`Starting broadcast: Title="${title}", Push=${sendPush}, Email=${sendEmail}, AllAuth=${includeAllAuthUsers}`);
+        // 0. Save to Broadcasts collection (for history and in-app display)
+        // We do this server-side so client needs no write permission
+        const broadcastData = {
+            title: title || "Platform Update",
+            message: message,
+            adminId: adminId || 'admin',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            delivery: {
+                push: !!sendPush,
+                inApp: !!sendInApp,
+                email: !!sendEmail
+            }
+        };
+        const broadcastRef = await adminDb.collection('broadcasts').add(broadcastData);
+
+        console.log(`Starting broadcast record=${broadcastRef.id}: Title="${title}", Push=${sendPush}, Email=${sendEmail}, AllAuth=${includeAllAuthUsers}`);
 
         let pushSuccessCount = 0;
         let pFailCount = 0;

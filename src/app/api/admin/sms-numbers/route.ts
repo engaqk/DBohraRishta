@@ -9,12 +9,16 @@ interface PhoneEntry {
     source: 'firestore' | 'auth' | 'both';
 }
 
-export async function GET() {
-    if (!adminDb) {
-        return NextResponse.json({ error: 'Firebase Admin not configured.' }, { status: 503 });
-    }
-
+export async function GET(request: Request) {
     try {
+        const authHeader = request.headers.get('Authorization');
+        if (authHeader !== 'secure_admin_session_active') {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!adminDb) {
+            return NextResponse.json({ error: 'Firebase Admin not configured.' }, { status: 503 });
+        }
         const phoneMap = new Map<string, PhoneEntry>();
 
         // ── 1. Fetch from Firestore users collection ──────────────────────────

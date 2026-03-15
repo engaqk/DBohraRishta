@@ -1,0 +1,38 @@
+import { NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase/admin-config';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(request: Request) {
+    try {
+        const authHeader = request.headers.get('Authorization');
+        if (authHeader !== 'secure_admin_session_active') {
+             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!adminDb) {
+            return NextResponse.json({ error: 'Admin DB not configured' }, { status: 503 });
+        }
+
+        const snap = await adminDb
+            .collection('admin_audit_logs')
+            .orderBy('timestamp', 'desc')
+            .limit(100)
+            .get();
+
+        const logs = snap.docs.map(d => {
+            const data = d.data();
+            return {
+                id: d.id,
+                ...data,
+                timestamp: data.timestamp?.toDate?.() || data.timestamp
+            };
+        });
+
+        return NextResponse.json({ logs });
+
+    } catch (error: any) {
+        console.error('[audit-logs] GET Error:', error.message);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}

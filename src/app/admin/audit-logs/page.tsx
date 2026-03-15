@@ -26,9 +26,14 @@ export default function AdminAuditLogsPage() {
     useEffect(() => {
         const fetchLogs = async () => {
             try {
-                const q = query(collection(db, "admin_audit_logs"), orderBy("timestamp", "desc"), limit(100));
-                const snap = await getDocs(q);
-                setLogs(snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLog)));
+                const token = localStorage.getItem('admin_auth_token');
+                const res = await fetch('/api/admin/audit-logs', {
+                    headers: { 'Authorization': token || '' }
+                });
+                const data = await res.json();
+                if (data.logs) {
+                    setLogs(data.logs);
+                }
             } catch (e) {
                 console.error(e);
             } finally {
@@ -112,7 +117,7 @@ export default function AdminAuditLogsPage() {
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="w-3.5 h-3.5 text-gray-300" />
                                                     <span className="text-[10px] font-bold text-gray-500 uppercase">
-                                                        {log.timestamp?.toDate().toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                        {log.timestamp ? new Date(log.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                                                     </span>
                                                 </div>
                                             </td>

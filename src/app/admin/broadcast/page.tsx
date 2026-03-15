@@ -38,11 +38,16 @@ export default function AdminBroadcastPage() {
 
     const fetchHistory = async () => {
         try {
-            const q = query(collection(db, "broadcasts"), orderBy("createdAt", "desc"), limit(5));
-            const snap = await getDocs(q);
-            setHistory(snap.docs.map(d => ({ id: d.id, ...d.data() } as BroadcastHistory)));
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/broadcast/history', {
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            if (data.history) {
+                setHistory(data.history);
+            }
         } catch (e) {
-            console.error(e);
+            console.error('Failed to fetch history:', e);
         }
     };
 
@@ -58,23 +63,13 @@ export default function AdminBroadcastPage() {
 
         setLoading(true);
         try {
-            // 1. Save to Broadcasts collection (for history and in-app display)
-            const broadcastDoc = await addDoc(collection(db, "broadcasts"), {
-                title: formData.title,
-                message: formData.message,
-                adminId: user?.uid,
-                createdAt: serverTimestamp(),
-                delivery: {
-                    push: formData.sendPush,
-                    inApp: formData.sendInApp,
-                    email: formData.sendEmail
-                }
-            });
-
-            // 2. Trigger Cloud Function or API route for mass delivery
+            const token = localStorage.getItem('admin_auth_token');
             const res = await fetch('/api/broadcast/send', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Authorization': token || '',
+                    'Content-Type': 'application/json' 
+                },
                 body: JSON.stringify({
                     title: formData.title,
                     message: formData.message,
@@ -82,7 +77,7 @@ export default function AdminBroadcastPage() {
                     sendInApp: formData.sendInApp,
                     sendEmail: formData.sendEmail,
                     includeAllAuthUsers: formData.includeAllAuthUsers,
-                    adminId: user?.uid
+                    adminId: user?.uid || 'admin'
                 }),
             });
 
@@ -92,8 +87,6 @@ export default function AdminBroadcastPage() {
             }
 
             const data = await res.json();
-            console.log("Broadcast success:", data);
-
             toast.success(`Broadcast sent! Push: ${data.pushSent}, Emails: ${data.emailsSent}`);
             setFormData({ title: "", message: "", sendPush: true, sendInApp: true, sendEmail: false, includeAllAuthUsers: false });
             fetchHistory();
@@ -239,7 +232,7 @@ export default function AdminBroadcastPage() {
                                                 {item.message || (item as any).text}
                                             </p>
                                             <p className="text-[9px] text-gray-400 font-medium">
-                                                {item.createdAt?.toDate().toLocaleDateString()} at {item.createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'} at {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                                             </p>
                                         </div>
                                     ))}

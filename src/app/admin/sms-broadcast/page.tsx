@@ -68,7 +68,10 @@ export default function AdminSmsBroadcastPage() {
     const fetchNumbers = useCallback(async () => {
         setNumbersLoading(true);
         try {
-            const res = await fetch('/api/admin/sms-numbers');
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/sms-numbers', {
+                headers: { 'Authorization': token || '' }
+            });
             const data = await res.json();
             if (data.success) {
                 setNumbers(data.numbers);
@@ -85,9 +88,14 @@ export default function AdminSmsBroadcastPage() {
     const fetchHistory = useCallback(async () => {
         setHistoryLoading(true);
         try {
-            const q = query(collection(db, "sms_broadcasts"), orderBy("createdAt", "desc"), limit(10));
-            const snap = await getDocs(q);
-            setHistory(snap.docs.map(d => ({ id: d.id, ...d.data() } as SmsBroadcastHistory)));
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/sms-broadcast/history', {
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            if (data.history) {
+                setHistory(data.history);
+            }
         } catch (e) {
             console.error("Failed to fetch SMS history:", e);
         } finally {
@@ -98,11 +106,16 @@ export default function AdminSmsBroadcastPage() {
     const fetchSmsLogs = useCallback(async () => {
         setLogsLoading(true);
         try {
-            const q = query(collection(db, "sms_logs"), orderBy("receivedAt", "desc"), limit(20));
-            const snap = await getDocs(q);
-            setSmsLogs(snap.docs.map(d => ({ id: d.id, ...d.data() } as SmsLog)));
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/sms-logs', {
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            if (data.logs) {
+                setSmsLogs(data.logs);
+            }
         } catch (e) {
-            console.warn("SMS logs not available (may need Firestore rules):", e);
+            console.warn("SMS logs not available:", e);
             setSmsLogs([]);
         } finally {
             setLogsLoading(false);
@@ -113,6 +126,14 @@ export default function AdminSmsBroadcastPage() {
         fetchNumbers();
         fetchHistory();
         fetchSmsLogs();
+
+        // Auto-refresh history and logs every 30 seconds
+        const interval = setInterval(() => {
+            fetchHistory();
+            fetchSmsLogs();
+        }, 30000);
+
+        return () => clearInterval(interval);
     }, [fetchNumbers, fetchHistory, fetchSmsLogs]);
 
     const handleSend = async (e: React.FormEvent) => {

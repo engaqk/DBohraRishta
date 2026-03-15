@@ -5,7 +5,8 @@ import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import {
     Send, Loader2, ArrowLeft, Smartphone, CheckCircle2, History,
-    MessageSquare, AlertCircle, RefreshCw, User, Database, ShieldCheck, Search
+    MessageSquare, AlertCircle, RefreshCw, User, Database, ShieldCheck, Search,
+    Zap, XCircle, Clock, Activity
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -18,6 +19,22 @@ interface SmsBroadcastHistory {
     failed: number;
     totalFound: number;
     createdAt: any;
+    sentAt?: string;
+    recipients?: string[];
+    deliveredNumbers?: string[];
+    failedNumbers?: string[];
+}
+
+interface SmsLog {
+    id: string;
+    receiver: string;
+    status: string;
+    event: string;
+    errorCode?: number;
+    errorMessage?: string;
+    receivedAt: string;
+    sentAt?: string;
+    deliveredAt?: string;
 }
 
 interface PhoneEntry {
@@ -34,6 +51,9 @@ export default function AdminSmsBroadcastPage() {
     const [message, setMessage] = useState("");
     const [history, setHistory] = useState<SmsBroadcastHistory[]>([]);
     const [historyLoading, setHistoryLoading] = useState(true);
+    const [smsLogs, setSmsLogs] = useState<SmsLog[]>([]);
+    const [logsLoading, setLogsLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'history' | 'logs'>('history');
 
     const [numbers, setNumbers] = useState<PhoneEntry[]>([]);
     const [numbersLoading, setNumbersLoading] = useState(true);
@@ -75,10 +95,25 @@ export default function AdminSmsBroadcastPage() {
         }
     }, []);
 
+    const fetchSmsLogs = useCallback(async () => {
+        setLogsLoading(true);
+        try {
+            const q = query(collection(db, "sms_logs"), orderBy("receivedAt", "desc"), limit(20));
+            const snap = await getDocs(q);
+            setSmsLogs(snap.docs.map(d => ({ id: d.id, ...d.data() } as SmsLog)));
+        } catch (e) {
+            console.warn("SMS logs not available (may need Firestore rules):", e);
+            setSmsLogs([]);
+        } finally {
+            setLogsLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
         fetchNumbers();
         fetchHistory();
-    }, [fetchNumbers, fetchHistory]);
+        fetchSmsLogs();
+    }, [fetchNumbers, fetchHistory, fetchSmsLogs]);
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -329,36 +364,135 @@ export default function AdminSmsBroadcastPage() {
                             </div>
                         </div>
 
-                        {/* History */}
-                        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
-                            <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
-                                <History className="w-4 h-4" /> Recent Broadcasts
-                            </h2>
-                            {historyLoading ? (
-                                <div className="text-center py-6"><Loader2 className="w-5 h-5 animate-spin mx-auto text-gray-300" /></div>
-                            ) : history.length === 0 ? (
-                                <p className="text-xs text-center text-gray-400 py-8 italic">No SMS broadcasts sent yet.</p>
-                            ) : (
-                                <div className="space-y-3">
-                                    {history.map(item => (
-                                        <div key={item.id} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                                            <div className="flex items-center justify-between mb-1.5">
-                                                <div className="flex items-center gap-1.5">
-                                                    <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                                                    <p className="text-[10px] font-bold text-emerald-700">
-                                                        {item.sent ?? '—'} sent
-                                                        {item.failed > 0 && <span className="text-orange-500 ml-1">· {item.failed} failed</span>}
-                                                    </p>
-                                                </div>
-                                                <p className="text-[9px] text-gray-400 tabular-nums">
-                                                    {item.createdAt?.toDate?.()?.toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                                </p>
-                                            </div>
-                                            <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{item.message}</p>
+                        {/* History / Logs Tabs */}
+                        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+                            {/* Tab bar */}
+                            <div className="flex border-b border-gray-100">
+                                <button
+                                    onClick={() => setActiveTab('history')}
+                                    className={`flex-1 py-3 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all ${
+                                        activeTab === 'history' ? 'text-[#881337] border-b-2 border-[#881337] bg-rose-50/50' : 'text-gray-400 hover:text-gray-600'
+                                    }`}
+                                >
+                                    <History className="w-3.5 h-3.5" /> Broadcasts
+                                </button>
+                                <button
+                                    onClick={() => { setActiveTab('logs'); fetchSmsLogs(); }}
+                                    className={`flex-1 py-3 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all ${
+                                        activeTab === 'logs' ? 'text-[#881337] border-b-2 border-[#881337] bg-rose-50/50' : 'text-gray-400 hover:text-gray-600'
+                                    }`}
+                                >
+                                    <Activity className="w-3.5 h-3.5" /> Live Delivery
+                                    {smsLogs.length > 0 && <span className="bg-emerald-500 text-white text-[9px] px-1.5 py-0.5 rounded-full">{smsLogs.length}</span>}
+                                </button>
+                            </div>
+
+                            <div className="p-5">
+                                {activeTab === 'history' ? (
+                                    historyLoading ? (
+                                        <div className="text-center py-6"><Loader2 className="w-5 h-5 animate-spin mx-auto text-gray-300" /></div>
+                                    ) : history.length === 0 ? (
+                                        <p className="text-xs text-center text-gray-400 py-8 italic">No SMS broadcasts sent yet.</p>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {history.map(item => {
+                                                const delivered = item.deliveredNumbers?.length ?? 0;
+                                                const failed = item.failedNumbers?.length ?? item.failed ?? 0;
+                                                const total = item.sent ?? item.totalFound ?? 0;
+                                                const deliveryRate = total > 0 ? Math.round((delivered / total) * 100) : null;
+                                                return (
+                                                    <div key={item.id} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                                                                <p className="text-[10px] font-bold text-emerald-700">
+                                                                    {total} sent
+                                                                    {failed > 0 && <span className="text-orange-500 ml-1">· {failed} failed</span>}
+                                                                </p>
+                                                            </div>
+                                                            <p className="text-[9px] text-gray-400 tabular-nums">
+                                                                {item.createdAt?.toDate?.()?.toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                            </p>
+                                                        </div>
+                                                        {/* Webhook delivery stats */}
+                                                        {delivered > 0 && (
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-emerald-500 rounded-full transition-all"
+                                                                        style={{ width: `${deliveryRate}%` }}
+                                                                    />
+                                                                </div>
+                                                                <span className="text-[9px] font-bold text-emerald-600 tabular-nums">{deliveryRate}% delivered</span>
+                                                            </div>
+                                                        )}
+                                                        {delivered > 0 && (
+                                                            <div className="flex gap-2 mb-2">
+                                                                <span className="flex items-center gap-1 text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded-full font-bold">
+                                                                    <CheckCircle2 className="w-2 h-2" /> {delivered} delivered
+                                                                </span>
+                                                                {failed > 0 && (
+                                                                    <span className="flex items-center gap-1 text-[9px] bg-red-50 text-red-600 border border-red-100 px-1.5 py-0.5 rounded-full font-bold">
+                                                                        <XCircle className="w-2 h-2" /> {failed} failed
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{item.message}</p>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+                                    )
+                                ) : (
+                                    /* Live Delivery Logs from webhook */
+                                    <div>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-1.5">
+                                                <Zap className="w-3.5 h-3.5 text-amber-500" />
+                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Real-time via Textbee Webhook</p>
+                                            </div>
+                                            <button onClick={fetchSmsLogs} className="text-[10px] text-gray-400 hover:text-[#881337] flex items-center gap-1 font-bold">
+                                                <RefreshCw className={`w-3 h-3 ${logsLoading ? 'animate-spin' : ''}`} /> Refresh
+                                            </button>
+                                        </div>
+                                        {logsLoading ? (
+                                            <div className="text-center py-6"><Loader2 className="w-5 h-5 animate-spin mx-auto text-gray-300" /></div>
+                                        ) : smsLogs.length === 0 ? (
+                                            <div className="text-center py-8">
+                                                <Activity className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                                                <p className="text-xs text-gray-400 italic">No delivery events yet.</p>
+                                                <p className="text-[10px] text-gray-300 mt-1">Events appear here after SMS is sent.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                                                {smsLogs.map(log => (
+                                                    <div key={log.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                                                        {log.status === 'DELIVERED' ? (
+                                                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                                                        ) : log.status === 'FAILED' ? (
+                                                            <XCircle className="w-4 h-4 text-red-500 shrink-0" />
+                                                        ) : (
+                                                            <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                                                        )}
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-xs font-bold text-gray-800 font-mono">{log.receiver || '—'}</p>
+                                                            <p className="text-[10px] text-gray-400">
+                                                                {log.status}
+                                                                {log.errorCode ? ` · Error ${log.errorCode}` : ''}
+                                                                {log.errorMessage ? `: ${log.errorMessage}` : ''}
+                                                            </p>
+                                                        </div>
+                                                        <p className="text-[9px] text-gray-300 tabular-nums shrink-0">
+                                                            {log.receivedAt ? new Date(log.receivedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Tips */}

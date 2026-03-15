@@ -82,6 +82,13 @@ service cloud.firestore {
       allow write: if signedIn();
     }
 
+    // SMS delivery logs — written server-side by webhook (adminDb bypasses rules)
+    // Client reads allowed for signed-in users (admin dashboard)
+    match /sms_logs/{logId} {
+      allow read: if signedIn();
+      allow write: if false; // Written only via adminDb (server-side webhook), never from client
+    }
+
     // Bookmarks: Private to user
     match /bookmarks/{bookmarkId} {
       allow read, write: if signedIn() && (

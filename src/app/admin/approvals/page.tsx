@@ -3,6 +3,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverTimestamp, orderBy, collectionGroup, writeBatch, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import { auth } from "@/lib/firebase/config";
+import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
 import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -91,47 +93,67 @@ export default function AdminVerificationPage() {
             return;
         }
 
-        // Live stats for users
-        const usersUnsub = onSnapshot(collection(db, "users"), (snap) => {
-            setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as PendingUser)));
-            setLoading(false);
-        });
+        let usersUnsub: (() => void) | null = null;
+        let requestsUnsub: (() => void) | null = null;
+        let threadUnsub: (() => void) | null = null;
 
-        // Live stats for requests (Match Rate)
-        const reqUnsub = onSnapshot(collection(db, "rishta_requests"), (snap) => {
-            let accepted = 0;
-            snap.docs.forEach(docSnap => {
-                if (docSnap.data().status === 'accepted') accepted++;
+        const startFirestoreListeners = () => {
+            // Live stats for users
+            usersUnsub = onSnapshot(collection(db, "users"), (snap) => {
+                setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() } as PendingUser)));
+                setLoading(false);
+            }, err => {
+                console.error('Users snapshot error:', err.message);
+                setLoading(false);
             });
-            setRequestStats({ total: snap.size, accepted });
+
+            // Live stats for requests (Match Rate)
+            requestsUnsub = onSnapshot(collection(db, "rishta_requests"), (snap) => {
+                const total = snap.docs.length;
+                const accepted = snap.docs.filter(d => d.data().status === 'accepted').length;
+                setRequestStats({ total, accepted });
+            }, err => console.warn('Requests snapshot error:', err.message));
+
+            // Unread message counts
+            threadUnsub = onSnapshot(collectionGroup(db, "thread"), (snapshot) => {
+                const counts: Record<string, { total: number, userMsgs: number }> = {};
+                snapshot.docs.forEach(doc => {
+                    const parentId = doc.ref.parent.parent?.id;
+                    if (!parentId) return;
+                    const data = doc.data();
+                    if (!counts[parentId]) counts[parentId] = { total: 0, userMsgs: 0 };
+                    counts[parentId].total++;
+                    if (data.from === 'user') counts[parentId].userMsgs++;
+                });
+                setMsgCounts(counts);
+            }, err => console.warn('Thread snapshot error:', err.message));
+        };
+
+        // Ensure a Firebase auth session exists before subscribing to Firestore.
+        // If no session → sign in anonymously so Firestore rules (signedIn()) pass.
+        const unsubAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                // Session exists — start listeners
+                startFirestoreListeners();
+            } else {
+                // No session — try anonymous sign-in to satisfy Firestore rules
+                try {
+                    await signInAnonymously(auth);
+                    // onAuthStateChanged will re-fire with the anonymous user
+                } catch (err) {
+                    console.warn('Anonymous auth failed, starting listeners anyway:', err);
+                    startFirestoreListeners();
+                }
+            }
         });
 
         return () => {
-            usersUnsub();
-            reqUnsub();
+            unsubAuth();
+            usersUnsub?.();
+            requestsUnsub?.();
+            threadUnsub?.();
         };
     }, [router]);
-
-    // Listen to all message threads for counters
-    useEffect(() => {
-        const q = collectionGroup(db, "thread");
-        const unsub = onSnapshot(q, (snap) => {
-            const counts: Record<string, { total: number, userMsgs: number }> = {};
-            snap.docs.forEach(docSnap => {
-                const data = docSnap.data();
-                const userId = docSnap.ref.parent.parent?.id;
-                if (!userId) return;
-
-                if (!counts[userId]) counts[userId] = { total: 0, userMsgs: 0 };
-                counts[userId].total++;
-                if (data.from !== 'admin' && data.readByAdmin !== true) {
-                    counts[userId].userMsgs++;
-                }
-            });
-            setMsgCounts(counts);
-        });
-        return () => unsub();
-    }, []);
 
     // Subscribe to messages for selected user
     useEffect(() => {

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert, LogIn, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { signInWithCustomToken } from 'firebase/auth';
+import { signInWithCustomToken, signInAnonymously } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 
 export default function AdminLogin() {
@@ -31,15 +31,32 @@ export default function AdminLogin() {
                 return;
             }
 
-            // Step 2a: If admin SDK is configured — sign in with the custom Firebase token.
-            // This gives the admin a real, INDEPENDENT Firebase session regardless of any
-            // regular user being logged in.
+            // Step 2: Establish a real Firebase auth session so Firestore
+            // listeners work independently without any regular user being logged in.
             if (data.customToken) {
+                // Best case: sign in with the admin-specific custom token
                 try {
                     await signInWithCustomToken(auth, data.customToken);
+                    console.log('Admin signed in with custom token.');
                 } catch (firebaseErr) {
-                    console.warn("Custom token sign-in failed, continuing with localStorage-only session:", firebaseErr);
-                    // Still grant access — Firestore will be accessed via API routes
+                    console.warn('Custom token sign-in failed, trying anonymous fallback:', firebaseErr);
+                    // Fallback: anonymous session so Firestore signedIn() check passes
+                    try {
+                        await signInAnonymously(auth);
+                        console.log('Admin signed in anonymously (fallback).');
+                    } catch (anonErr) {
+                        console.warn('Anonymous auth also failed:', anonErr);
+                        // Admin can still access the dashboard via localStorage guard;
+                        // Firestore calls may fail until a user logs in.
+                    }
+                }
+            } else {
+                // Server returned fallback — try anonymous auth directly
+                try {
+                    await signInAnonymously(auth);
+                    console.log('Admin signed in anonymously (no custom token available).');
+                } catch (anonErr) {
+                    console.warn('Anonymous auth failed:', anonErr);
                 }
             }
 

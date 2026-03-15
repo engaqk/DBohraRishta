@@ -22,10 +22,9 @@ export async function POST(req: Request) {
         }
 
         // Issue a custom Firebase token for the dedicated admin UID.
-        // This gives a real Firebase auth session completely independent
-        // of any regular logged-in user.
+        // Custom claim admin: true is what Firestore rules check.
         const customToken = await adminAuth.createCustomToken(ADMIN_PANEL_UID, {
-            role: 'admin',
+            admin: true,
         });
 
         return NextResponse.json({ success: true, customToken });

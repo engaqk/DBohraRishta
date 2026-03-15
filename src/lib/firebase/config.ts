@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getMessaging } from "firebase/messaging";
@@ -15,6 +15,16 @@ const firebaseConfig = {
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+
+// Set persistence to LOCAL so users stay logged in across page refreshes
+// and browser restarts (~1 day session without re-login).
+// Guard with typeof window to avoid SSR execution.
+if (typeof window !== 'undefined') {
+  setPersistence(auth, browserLocalPersistence).catch(err =>
+    console.warn('Firebase persistence setup error:', err)
+  );
+}
+
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;

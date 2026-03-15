@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverTimestamp, orderBy, collectionGroup, writeBatch, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -353,6 +353,12 @@ export default function AdminVerificationPage() {
                             className="bg-purple-50 hover:bg-purple-100 text-purple-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-purple-200"
                         >
                             <Send className="w-4 h-4" /> Broadcast Push
+                        </button>
+                        <button
+                            onClick={() => router.push('/admin/sms-broadcast')}
+                            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-emerald-200"
+                        >
+                            <Smartphone className="w-4 h-4" /> Broadcast SMS
                         </button>
                         <button
                             onClick={() => router.push('/admin/audit-logs')}

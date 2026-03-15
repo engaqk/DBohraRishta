@@ -52,16 +52,11 @@ service cloud.firestore {
 
     // Admin Messages & Support Threads
     match /admin_messages/{userId} {
-      allow read, write: if signedIn() && (isOwner(userId) || request.auth.token.admin == true);
+      allow read, write: if signedIn() && (isOwner(userId) || isAdmin());
       
       match /thread/{msgId} {
-        allow read, write: if signedIn();
+        allow read, write: if signedIn() && (isOwner(userId) || isAdmin());
       }
-    }
-
-    // Collection group support for support threads
-    match /{path=**}/thread/{msgId} {
-      allow read, write: if signedIn();
     }
 
     // Official announcements: All read, Admin write
@@ -72,21 +67,17 @@ service cloud.firestore {
 
     // Audit logs
     match /admin_audit_logs/{logId} {
-      allow read: if signedIn();
-      allow write: if false; // Logs written through server side APIs
+      allow read, write: if false; // Exclusively via Server API
     }
 
     // SMS Broadcasts
     match /sms_broadcasts/{broadcastId} {
-      allow read: if signedIn();
-      allow write: if false; // Managed via API
+      allow read, write: if false; // Exclusively via Server API
     }
 
-    // SMS delivery logs — written server-side by webhook (adminDb bypasses rules)
-    // Client reads allowed for signed-in users (admin dashboard)
+    // SMS delivery logs
     match /sms_logs/{logId} {
-      allow read: if signedIn();
-      allow write: if false; // Written only via adminDb (server-side webhook), never from client
+      allow read, write: if false; // Exclusively via Server API
     }
 
     // Bookmarks: Private to user

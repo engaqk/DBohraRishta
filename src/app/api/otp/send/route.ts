@@ -1,23 +1,29 @@
 import { NextResponse } from 'next/server';
-
-export const dynamic = 'force-dynamic';
 import * as OTPAuth from "otpauth";
 import { Redis } from '@upstash/redis';
+import { normalizePhone } from '@/lib/phoneUtils';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
-    // Initialize Redis at request time (not build time) so env vars are available
     const redis = new Redis({
         url: process.env.UPSTASH_REDIS_REST_URL!,
         token: process.env.UPSTASH_REDIS_REST_TOKEN!,
     });
     try {
-        const { phone } = await req.json();
+        const { phone: rawPhone } = await req.json();
 
-        if (!phone) {
+        if (!rawPhone) {
             return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
         }
 
-        const cleanPhone = phone.replace(/[\s\-\+()]/g, '');
+        // Normalize phone before any processing — fixes +9109... → +919... etc.
+        const phone = normalizePhone(rawPhone);
+        if (!phone) {
+            return NextResponse.json({ error: 'Invalid phone number format. Use international format e.g. +919876543210' }, { status: 400 });
+        }
+
+        const cleanPhone = phone.replace(/[\s\-+()]/g, '');
         if (cleanPhone.length < 10) {
             return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 });
         }
@@ -45,8 +51,8 @@ export async function POST(req: Request) {
 
         const smsText = `Your 53DBohraRishta verification code is: ${otp}. Do not share it with anyone.`;
 
-        // E.164 required for SMS API
-        const smsTo = phone; // Assuming frontend enforces +91 format
+        // E.164 format guaranteed by normalizePhone above
+        const smsTo = phone;
 
         const textbeeUrl = `https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`;
 

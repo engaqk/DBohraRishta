@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 import { ShieldCheck, Sparkles, Mail, Lock, Phone, Smartphone, Copy, CheckCircle, Loader2, MessageSquare, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { normalizePhone } from "@/lib/phoneUtils";
 import { db } from "@/lib/firebase/config";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -75,9 +76,16 @@ export default function LoginPage() {
 
     // ── OTP: Step 1 — Send OTP (or direct login for returning users) ─────────
     const handleSendOtp = async () => {
-        const clean = phone.trim();
-        if (!clean || !clean.startsWith('+')) {
+        const raw = phone.trim();
+        if (!raw || !raw.startsWith('+')) {
             setErrorMsg("Enter a valid number starting with +, e.g. +919876543210");
+            return;
+        }
+
+        // Normalize before validation — fixes +9109... → +919... etc.
+        const clean = normalizePhone(raw);
+        if (!clean) {
+            setErrorMsg("Invalid phone number. Use E.164 format e.g. +919876543210");
             return;
         }
         if (clean.length < 10 || clean.length > 16) {

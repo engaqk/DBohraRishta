@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { Send, Loader2, ArrowLeft, Smartphone, CheckCircle2, History, MessageSquare, AlertCircle } from "lucide-react";
+import {
+    Send, Loader2, ArrowLeft, Smartphone, CheckCircle2, History,
+    MessageSquare, AlertCircle, RefreshCw, User, Database, ShieldCheck, Search
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
@@ -17,22 +20,50 @@ interface SmsBroadcastHistory {
     createdAt: any;
 }
 
+interface PhoneEntry {
+    phone: string;
+    name?: string;
+    source: 'firestore' | 'auth' | 'both';
+}
+
 export default function AdminSmsBroadcastPage() {
     const router = useRouter();
     const { user } = useAuth();
+
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const [history, setHistory] = useState<SmsBroadcastHistory[]>([]);
     const [historyLoading, setHistoryLoading] = useState(true);
-    const [charCount, setCharCount] = useState(0);
+
+    const [numbers, setNumbers] = useState<PhoneEntry[]>([]);
+    const [numbersLoading, setNumbersLoading] = useState(true);
+    const [numberSearch, setNumberSearch] = useState("");
+    const [lastSentResult, setLastSentResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
 
     const MAX_SMS_LENGTH = 160;
+    const charCount = message.length;
+    const smsCount = Math.ceil(charCount / MAX_SMS_LENGTH) || 1;
 
-    useEffect(() => {
-        fetchHistory();
+    // Fetch registered mobile numbers from both Firestore + Firebase Auth
+    const fetchNumbers = useCallback(async () => {
+        setNumbersLoading(true);
+        try {
+            const res = await fetch('/api/admin/sms-numbers');
+            const data = await res.json();
+            if (data.success) {
+                setNumbers(data.numbers);
+            } else {
+                toast.error("Failed to load numbers: " + (data.error || "Unknown error"));
+            }
+        } catch (e) {
+            toast.error("Could not fetch mobile numbers.");
+        } finally {
+            setNumbersLoading(false);
+        }
     }, []);
 
-    const fetchHistory = async () => {
+    const fetchHistory = useCallback(async () => {
+        setHistoryLoading(true);
         try {
             const q = query(collection(db, "sms_broadcasts"), orderBy("createdAt", "desc"), limit(10));
             const snap = await getDocs(q);
@@ -42,7 +73,12 @@ export default function AdminSmsBroadcastPage() {
         } finally {
             setHistoryLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchNumbers();
+        fetchHistory();
+    }, [fetchNumbers, fetchHistory]);
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,7 +89,7 @@ export default function AdminSmsBroadcastPage() {
         }
 
         const confirmed = window.confirm(
-            `Are you sure you want to send this SMS to ALL registered mobile numbers?\n\nMessage:\n"${message.trim()}"\n\nThis action cannot be undone.`
+            `Send this SMS to ALL ${numbers.length} registered mobile numbers?\n\nMessage:\n"${message.trim()}"\n\nThis cannot be undone.`
         );
         if (!confirmed) return;
 
@@ -74,9 +110,9 @@ export default function AdminSmsBroadcastPage() {
                 throw new Error(data.error || 'Failed to send SMS broadcast');
             }
 
-            toast.success(`✅ SMS Broadcast sent to ${data.sent} numbers! (${data.failed} failed)`);
+            setLastSentResult({ sent: data.sent, failed: data.failed, total: data.totalFound });
+            toast.success(`✅ SMS sent to ${data.sent} numbers!${data.failed > 0 ? ` (${data.failed} failed)` : ''}`);
             setMessage("");
-            setCharCount(0);
             fetchHistory();
         } catch (error: any) {
             toast.error("SMS Broadcast failed: " + error.message);
@@ -85,17 +121,24 @@ export default function AdminSmsBroadcastPage() {
         }
     };
 
-    const handleMessageChange = (val: string) => {
-        setMessage(val);
-        setCharCount(val.length);
-    };
+    // Filtered numbers based on search
+    const filteredNumbers = numbers.filter(n =>
+        !numberSearch ||
+        n.phone.includes(numberSearch) ||
+        (n.name && n.name.toLowerCase().includes(numberSearch.toLowerCase()))
+    );
 
-    const smsCount = Math.ceil(charCount / MAX_SMS_LENGTH) || 1;
+    const sourceLabel = (source: PhoneEntry['source']) => {
+        if (source === 'both') return { label: 'Firestore + Auth', cls: 'bg-indigo-100 text-indigo-700 border-indigo-200' };
+        if (source === 'auth') return { label: 'Auth Only', cls: 'bg-amber-100 text-amber-700 border-amber-200' };
+        return { label: 'Firestore', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col p-6 text-[#881337] pt-12 md:px-12">
-            <div className="max-w-4xl w-full mx-auto">
-                {/* Back Button */}
+            <div className="max-w-5xl w-full mx-auto">
+
+                {/* Back */}
                 <button
                     onClick={() => router.back()}
                     className="flex items-center gap-2 text-gray-500 hover:text-[#881337] font-bold mb-6 transition-colors"
@@ -110,45 +153,53 @@ export default function AdminSmsBroadcastPage() {
                     </div>
                     <div>
                         <h1 className="text-3xl font-bold font-serif">SMS Broadcast</h1>
-                        <p className="text-gray-500 text-sm">Send an SMS message to all registered mobile numbers via Textbee.</p>
+                        <p className="text-gray-500 text-sm">Send an SMS to all registered mobile numbers via your Textbee device.</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Compose Section */}
-                    <div className="lg:col-span-2">
+
+                    {/* ── Left: Compose + Stats ── */}
+                    <div className="lg:col-span-2 space-y-6">
+
+                        {/* Success result banner */}
+                        {lastSentResult && (
+                            <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-4 animate-in slide-in-from-top-2 duration-300">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                                <div className="text-sm text-emerald-800">
+                                    <p className="font-bold">Broadcast sent successfully!</p>
+                                    <p>✅ {lastSentResult.sent} delivered · {lastSentResult.failed > 0 ? `⚠ ${lastSentResult.failed} failed · ` : ''}📱 {lastSentResult.total} total numbers</p>
+                                </div>
+                                <button onClick={() => setLastSentResult(null)} className="ml-auto text-emerald-500 hover:text-emerald-700 text-xs font-bold">✕</button>
+                            </div>
+                        )}
+
+                        {/* Compose Form */}
                         <form onSubmit={handleSend} className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 space-y-6">
 
-                            {/* Info Box */}
                             <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
                                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                                 <div className="text-xs text-amber-800 leading-relaxed">
-                                    <p className="font-bold mb-1">How it works</p>
-                                    <p>This will fetch all registered mobile numbers from the database and send each one an SMS via your Textbee device gateway. STandard SMS charges from your SIM apply.</p>
+                                    <p className="font-bold mb-0.5">How it works</p>
+                                    <p>Message is sent to all {numbersLoading ? '...' : numbers.length} registered numbers (Firestore + Firebase Auth) via your Textbee Android device. Standard SIM SMS charges apply.</p>
                                 </div>
                             </div>
 
-                            {/* Message Field */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">
-                                    Message Body
-                                </label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Message Body</label>
                                 <textarea
                                     rows={6}
                                     value={message}
-                                    onChange={e => handleMessageChange(e.target.value)}
-                                    placeholder="e.g. Eid Mubarak from 53DBohraRishta! 🌙 Wishing all members and their families a blessed Eid. Visit our platform at 53dbohrarishta.in"
+                                    onChange={e => setMessage(e.target.value)}
+                                    placeholder="e.g. Eid Mubarak from 53DBohraRishta! 🌙 Wishing all members a blessed Eid. Visit: 53dbohrarishta.in"
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none resize-none transition-all text-sm leading-relaxed"
                                     required
                                 />
-                                {/* Character counter */}
                                 <div className="flex justify-between items-center mt-2">
                                     <p className="text-xs text-gray-400">
-                                        {smsCount > 1 ? (
-                                            <span className="text-orange-500 font-bold">⚠ Will be sent as {smsCount} SMS parts</span>
-                                        ) : (
-                                            <span>Standard SMS (max 160 chars per part)</span>
-                                        )}
+                                        {smsCount > 1
+                                            ? <span className="text-orange-500 font-bold">⚠ Will send as {smsCount} SMS parts</span>
+                                            : <span>Keep under 160 chars to avoid splitting</span>}
                                     </p>
                                     <p className={`text-xs font-bold tabular-nums ${charCount > MAX_SMS_LENGTH ? 'text-orange-500' : 'text-gray-400'}`}>
                                         {charCount}/{MAX_SMS_LENGTH}
@@ -156,25 +207,114 @@ export default function AdminSmsBroadcastPage() {
                                 </div>
                             </div>
 
-                            {/* Send Button */}
                             <button
                                 type="submit"
                                 id="sms-broadcast-send-btn"
-                                disabled={loading || !message.trim()}
+                                disabled={loading || !message.trim() || numbersLoading}
                                 className="w-full bg-[#881337] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#70102d] transition-all shadow-lg shadow-rose-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {loading ? (
-                                    <><Loader2 className="w-5 h-5 animate-spin" /> Sending SMS Broadcast...</>
-                                ) : (
-                                    <><Send className="w-5 h-5" /> Send to All Registered Numbers</>
-                                )}
+                                {loading
+                                    ? <><Loader2 className="w-5 h-5 animate-spin" /> Sending SMS Broadcast...</>
+                                    : <><Send className="w-5 h-5" /> Send to All {numbers.length} Numbers</>}
                             </button>
                         </form>
+
+                        {/* ── Mobile Numbers List ── */}
+                        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+                            <div className="p-6 border-b border-gray-100">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h2 className="font-bold text-[#881337] flex items-center gap-2 text-lg">
+                                            <Smartphone className="w-5 h-5" />
+                                            Registered Mobile Numbers
+                                            {!numbersLoading && (
+                                                <span className="bg-[#881337] text-white text-xs font-bold px-2 py-0.5 rounded-full">{numbers.length}</span>
+                                            )}
+                                        </h2>
+                                        <p className="text-xs text-gray-400 mt-0.5">Combined from Firestore users + Firebase Auth accounts</p>
+                                    </div>
+                                    <button
+                                        onClick={fetchNumbers}
+                                        disabled={numbersLoading}
+                                        className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-[#881337] bg-gray-50 hover:bg-rose-50 border border-gray-200 hover:border-rose-200 px-3 py-2 rounded-xl transition-all"
+                                    >
+                                        <RefreshCw className={`w-3.5 h-3.5 ${numbersLoading ? 'animate-spin' : ''}`} />
+                                        Refresh
+                                    </button>
+                                </div>
+
+                                {/* Source Legend */}
+                                <div className="flex flex-wrap items-center gap-2 mb-4">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mr-1">Sources:</span>
+                                    <span className="flex items-center gap-1 bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                        <Database className="w-2.5 h-2.5" /> Firestore
+                                    </span>
+                                    <span className="flex items-center gap-1 bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                        <ShieldCheck className="w-2.5 h-2.5" /> Auth Only
+                                    </span>
+                                    <span className="flex items-center gap-1 bg-indigo-100 text-indigo-700 border border-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                        <CheckCircle2 className="w-2.5 h-2.5" /> Firestore + Auth
+                                    </span>
+                                </div>
+
+                                {/* Search */}
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search by name or number..."
+                                        value={numberSearch}
+                                        onChange={e => setNumberSearch(e.target.value)}
+                                        className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Numbers Table */}
+                            {numbersLoading ? (
+                                <div className="flex items-center justify-center py-16">
+                                    <Loader2 className="w-6 h-6 animate-spin text-[#881337]" />
+                                    <span className="ml-3 text-sm text-gray-500 font-medium">Fetching from Firestore & Auth...</span>
+                                </div>
+                            ) : filteredNumbers.length === 0 ? (
+                                <div className="py-12 text-center text-gray-400 text-sm italic">
+                                    {numberSearch ? `No results for "${numberSearch}"` : 'No registered mobile numbers found.'}
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-gray-50 max-h-[500px] overflow-y-auto">
+                                    {filteredNumbers.map((entry, idx) => {
+                                        const { label, cls } = sourceLabel(entry.source);
+                                        return (
+                                            <div key={entry.phone} className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50/60 transition-colors">
+                                                <span className="text-xs text-gray-300 font-mono w-6 shrink-0 text-right">{idx + 1}</span>
+                                                <div className="w-8 h-8 rounded-full bg-rose-50 text-[#881337] flex items-center justify-center shrink-0 border border-rose-100 text-xs font-bold">
+                                                    {entry.name ? entry.name.charAt(0).toUpperCase() : <User className="w-3.5 h-3.5" />}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    {entry.name && (
+                                                        <p className="text-sm font-bold text-gray-800 truncate">{entry.name}</p>
+                                                    )}
+                                                    <p className="text-xs font-mono text-gray-500 tabular-nums">{entry.phone}</p>
+                                                </div>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${cls}`}>{label}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {filteredNumbers.length > 0 && (
+                                <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/50 text-xs text-gray-400 font-medium">
+                                    Showing {filteredNumbers.length} of {numbers.length} numbers
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Sidebar / History */}
+                    {/* ── Right Sidebar ── */}
                     <div className="space-y-6">
-                        {/* Stats Card */}
+
+                        {/* Textbee Info */}
                         <div className="bg-gradient-to-br from-[#881337] to-rose-900 rounded-3xl p-6 text-white shadow-xl">
                             <div className="flex items-center gap-2 mb-2">
                                 <MessageSquare className="w-5 h-5 opacity-80" />
@@ -191,50 +331,43 @@ export default function AdminSmsBroadcastPage() {
 
                         {/* History */}
                         <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
-                            <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
-                                <History className="w-4 h-4" /> Recent SMS Broadcasts
+                            <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
+                                <History className="w-4 h-4" /> Recent Broadcasts
                             </h2>
-
                             {historyLoading ? (
-                                <div className="text-center py-6">
-                                    <Loader2 className="w-5 h-5 animate-spin mx-auto text-gray-300" />
-                                </div>
+                                <div className="text-center py-6"><Loader2 className="w-5 h-5 animate-spin mx-auto text-gray-300" /></div>
                             ) : history.length === 0 ? (
-                                <p className="text-xs text-center text-gray-400 py-8 italic">
-                                    No SMS broadcasts sent yet.
-                                </p>
+                                <p className="text-xs text-center text-gray-400 py-8 italic">No SMS broadcasts sent yet.</p>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     {history.map(item => (
                                         <div key={item.id} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                                            <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center justify-between mb-1.5">
                                                 <div className="flex items-center gap-1.5">
                                                     <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                                                    <p className="text-[10px] font-bold text-emerald-600">
+                                                    <p className="text-[10px] font-bold text-emerald-700">
                                                         {item.sent ?? '—'} sent
-                                                        {item.failed > 0 && <span className="text-orange-500 ml-1">• {item.failed} failed</span>}
+                                                        {item.failed > 0 && <span className="text-orange-500 ml-1">· {item.failed} failed</span>}
                                                     </p>
                                                 </div>
-                                                <p className="text-[9px] text-gray-400 font-medium tabular-nums">
-                                                    {item.createdAt?.toDate?.()?.toLocaleDateString()}
+                                                <p className="text-[9px] text-gray-400 tabular-nums">
+                                                    {item.createdAt?.toDate?.()?.toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                                 </p>
                                             </div>
-                                            <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed mt-1">
-                                                {item.message}
-                                            </p>
+                                            <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{item.message}</p>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
 
-                        {/* Pro Tip */}
+                        {/* Tips */}
                         <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-6 border border-amber-100">
                             <h3 className="text-xs font-black uppercase text-amber-800 mb-2">💡 Pro Tips</h3>
-                            <ul className="text-xs text-amber-700 leading-relaxed space-y-1 list-disc list-inside">
-                                <li>Keep messages under 160 characters to avoid splitting.</li>
-                                <li>Use SMS for urgent or festival announcements only.</li>
-                                <li>Standard SMS rates from your SIM apply per message.</li>
+                            <ul className="text-xs text-amber-700 leading-relaxed space-y-1.5 list-disc list-inside">
+                                <li>Keep under 160 chars per SMS to avoid splitting costs.</li>
+                                <li>Use SMS only for urgent or festival announcements.</li>
+                                <li>Standard SIM rates apply per message sent.</li>
                             </ul>
                         </div>
                     </div>

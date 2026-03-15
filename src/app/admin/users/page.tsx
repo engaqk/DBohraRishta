@@ -556,7 +556,17 @@ export default function AdminUsersPage() {
                                                 </div>
                                                 <div className="flex flex-col gap-0.5">
                                                     <div className="flex items-center gap-2">
-                                                        <p className="text-sm font-black text-gray-900">{au.email || 'Anonymous Account'}</p>
+                                                        {au.isMobileUser ? (
+                                                            <span className="flex items-center gap-1.5 text-sm font-black text-gray-900">
+                                                                <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                                                                {au.mobile}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="flex items-center gap-1.5 text-sm font-black text-gray-900">
+                                                                <Mail className="w-3.5 h-3.5 text-blue-500" />
+                                                                {au.email || 'Anonymous Account'}
+                                                            </span>
+                                                        )}
                                                         {au.emailVerified ? (
                                                             <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                                                         ) : (

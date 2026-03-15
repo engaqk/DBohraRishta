@@ -263,13 +263,19 @@ export default function AdminVerificationPage() {
     const markMessagesAsRead = async (userId: string) => {
         try {
             const threadRef = collection(db, "admin_messages", userId, "thread");
-            const q = query(threadRef, where("from", "==", "user"), where("readByAdmin", "!=", true));
+            // Use single where clause to avoid needing a composite index.
+            // Filter readByAdmin client-side.
+            const q = query(threadRef, where("from", "==", "user"));
             const snap = await getDocs(q);
  
             if (snap.empty) return;
  
+            // Filter client-side: only docs where readByAdmin is not already true
+            const unreadDocs = snap.docs.filter(d => d.data().readByAdmin !== true);
+            if (unreadDocs.length === 0) return;
+ 
             const batch = writeBatch(db);
-            snap.docs.forEach(d => {
+            unreadDocs.forEach(d => {
                 batch.update(d.ref, { readByAdmin: true });
             });
             await batch.commit();

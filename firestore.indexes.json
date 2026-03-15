@@ -1,4 +1,13 @@
 {
-    "indexes": [],
+    "indexes": [
+        {
+            "collectionGroup": "thread",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "from", "order": "ASCENDING" },
+                { "fieldPath": "readByAdmin", "order": "ASCENDING" }
+            ]
+        }
+    ],
     "fieldOverrides": []
 }

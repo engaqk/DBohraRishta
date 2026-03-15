@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert, LogIn, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { signInAnonymously } from 'firebase/auth';
+import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 
 export default function AdminLogin() {
@@ -14,27 +14,45 @@ export default function AdminLogin() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (username === "admin" && password === "admin53") {
-            setLoading(true);
-            try {
-                // Sign in to Firebase anonymously so Firestore rules have request.auth set
-                // The admin_auth_token is the real gate; Firebase auth just satisfies Firestore rules
-                await signInAnonymously(auth);
-                localStorage.setItem("admin_auth_token", "secure_admin_session_active");
-                toast.success("Admin access granted.");
-                router.push('/admin/approvals');
-            } catch (err) {
-                console.error("Admin Firebase sign-in error:", err);
-                // Even if anonymous sign-in fails, allow access — the Firestore rules still work
-                // as long as the user is already signed into Firebase via normal app login
-                localStorage.setItem("admin_auth_token", "secure_admin_session_active");
-                toast.success("Admin access granted.");
-                router.push('/admin/approvals');
-            } finally {
-                setLoading(false);
+        setLoading(true);
+
+        try {
+            // Step 1: Validate credentials server-side and get a Firebase custom token
+            const res = await fetch('/api/admin/get-auth-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                toast.error("Invalid admin credentials");
+                return;
             }
-        } else {
-            toast.error("Invalid admin credentials");
+
+            // Step 2a: If admin SDK is configured — sign in with the custom Firebase token.
+            // This gives the admin a real, INDEPENDENT Firebase session regardless of any
+            // regular user being logged in.
+            if (data.customToken) {
+                try {
+                    await signInWithCustomToken(auth, data.customToken);
+                } catch (firebaseErr) {
+                    console.warn("Custom token sign-in failed, continuing with localStorage-only session:", firebaseErr);
+                    // Still grant access — Firestore will be accessed via API routes
+                }
+            }
+
+            // Step 2b: Set the admin session token (always set regardless of Firebase sign-in)
+            localStorage.setItem("admin_auth_token", "secure_admin_session_active");
+            toast.success("Admin access granted.");
+            router.push('/admin/approvals');
+
+        } catch (err) {
+            console.error("Admin login error:", err);
+            toast.error("Login failed. Please try again.");
+        } finally {
+            setLoading(false);
         }
     };
 

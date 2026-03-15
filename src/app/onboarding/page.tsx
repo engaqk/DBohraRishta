@@ -8,6 +8,7 @@ import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/fires
 import { db } from "@/lib/firebase/config";
 import toast from "react-hot-toast";
 import { notifyDuplicateRegistration } from "@/lib/emailService";
+import { normalizePhone } from "@/lib/phoneUtils";
 
 export default function OnboardingPage() {
     const router = useRouter();
@@ -107,8 +108,14 @@ export default function OnboardingPage() {
             }
             if (!formData.mobile) {
                 newErrors.mobile = "Mobile Number is required.";
-            } else if (!/^\+?\d+$/.test(formData.mobile) || formData.mobile.length < 8 || formData.mobile.length > 15) {
-                newErrors.mobile = "Please enter a valid mobile number with optional + country code (max 15 characters).";
+            } else {
+                const normalized = normalizePhone(formData.mobile);
+                if (!normalized) {
+                    newErrors.mobile = "Invalid number. Use international format e.g. +919876543210";
+                } else {
+                    // Auto-correct and store normalized number
+                    setFormData(prev => ({ ...prev, mobile: normalized }));
+                }
             }
             if (!formData.gender) newErrors.gender = "Gender is required.";
             if (!formData.dob) {
@@ -217,7 +224,9 @@ export default function OnboardingPage() {
 
         // Fallback ID for testing UI without strict login required
         const userId = user?.uid || `guest_${Date.now()}`;
-        const verifiedPhone = sessionStorage.getItem('verifiedPhone') || formData.mobile;
+        const rawPhone = sessionStorage.getItem('verifiedPhone') || formData.mobile;
+        // Always normalize phone before saving to DB
+        const verifiedPhone = rawPhone ? (normalizePhone(rawPhone) || rawPhone) : null;
 
         try {
             // 1. Convert Image to Lightweight DataURL String

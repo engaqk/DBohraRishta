@@ -1,15 +1,8 @@
 import { NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/lib/firebase/admin';
+import { normalizePhone } from '@/lib/phoneUtils';
 
 export const dynamic = 'force-dynamic';
-
-function normalizePhone(raw: string): string | null {
-    if (!raw) return null;
-    let phone = raw.replace(/[\s\-()]/g, '');
-    if (phone.startsWith('00')) phone = '+' + phone.substring(2);
-    if (!phone.startsWith('+') && /^\d{10,15}$/.test(phone)) phone = '+' + phone;
-    return /^\+\d{10,15}$/.test(phone) ? phone : null;
-}
 
 export async function POST(req: Request) {
     if (!adminDb || typeof adminDb.collection !== 'function') {
@@ -48,18 +41,16 @@ export async function POST(req: Request) {
             if (phone) phoneSet.add(phone);
         });
 
-        // ── 2. Fetch from Firebase Auth (for users with no biodata yet) ────────
+        // ── 2. Fetch from Firebase Auth ───────────────────────────────────────
         if (adminAuth && typeof adminAuth.listUsers === 'function') {
             let pageToken: string | undefined;
             do {
                 const result = await adminAuth.listUsers(1000, pageToken);
                 result.users.forEach(u => {
-                    // Mobile-registered users convention (+919876543210@dbohrarishta.local)
                     if (u.email?.endsWith('@dbohrarishta.local')) {
                         const phone = normalizePhone(u.email.replace('@dbohrarishta.local', ''));
                         if (phone) phoneSet.add(phone);
                     }
-                    // Standard Firebase phone field
                     if (u.phoneNumber) {
                         const phone = normalizePhone(u.phoneNumber);
                         if (phone) phoneSet.add(phone);
@@ -82,36 +73,45 @@ export async function POST(req: Request) {
             });
         }
 
-        console.log(`SMS Broadcast: Sending to ${totalFound} unique mobile numbers.`);
+        console.log(`SMS Broadcast: Sending to ${totalFound} unique numbers using Bulk API.`);
 
-        const textbeeUrl = `https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`;
+        const textbeeUrl = `https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-bulk-sms`;
         const { default: axios } = await import('axios');
 
-        const chunkSize = 100;
+        const chunkSize = 200; 
         let successCount = 0;
         let failCount = 0;
+        let batchIds: string[] = [];
 
         for (let i = 0; i < phones.length; i += chunkSize) {
             const chunk = phones.slice(i, i + chunkSize);
             try {
-                await axios.post(
+                const response = await axios.post(
                     textbeeUrl,
                     {
-                        recipients: chunk,
-                        message: message.trim(),
+                        messages: [
+                            {
+                                message: message.trim(),
+                                recipients: chunk,
+                            }
+                        ]
                     },
                     {
                         headers: {
                             'x-api-key': apiKey,
                             'Content-Type': 'application/json',
                         },
-                        timeout: 35000,
+                        timeout: 45000,
                     }
                 );
+                
+                const bId = response.data?.data?._id || response.data?.data?.batchId;
+                if (bId) batchIds.push(bId);
+                
                 successCount += chunk.length;
             } catch (err: any) {
                 failCount += chunk.length;
-                console.error(`SMS chunk failed:`, err?.response?.data || err.message);
+                console.error(`SMS bulk chunk failed:`, err?.response?.data || err.message);
             }
         }
 
@@ -123,6 +123,8 @@ export async function POST(req: Request) {
                 totalFound,
                 sent: successCount,
                 failed: failCount,
+                batchId: batchIds[0] || null,
+                batchIds,
                 createdAt: new Date(),
             });
         } catch (logErr) {
@@ -134,7 +136,8 @@ export async function POST(req: Request) {
             totalFound,
             sent: successCount,
             failed: failCount,
-            message: `SMS broadcast dispatched to ${successCount} numbers.`,
+            batchId: batchIds[0] || null,
+            message: `SMS broadcast dispatched. Delivered: ${successCount}. Batch ID: ${batchIds[0] || 'N/A'}`,
         });
 
     } catch (error: any) {

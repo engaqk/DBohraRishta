@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import * as admin from 'firebase-admin';
+import { normalizePhone } from '@/lib/phoneUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,17 +34,9 @@ export async function POST(request: Request) {
                     : null;
                 
                 const mobile = mobileFromEmail || userRecord.phoneNumber;
+                const cleanedMobile = mobile ? normalizePhone(mobile) : null;
 
-                if (!mobile) {
-                    skippedCount++;
-                    continue;
-                }
-
-                // Clean/Normalize the number for Firestore storage
-                let cleanedMobile = mobile.replace(/[\s\-()+]/g, ''); // strip everything including + for check
-                if (/^\d{7,15}$/.test(cleanedMobile)) {
-                    cleanedMobile = '+' + cleanedMobile;
-                } else {
+                if (!cleanedMobile) {
                     skippedCount++;
                     continue;
                 }

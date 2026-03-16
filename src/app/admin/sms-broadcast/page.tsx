@@ -54,6 +54,12 @@ export default function AdminSmsBroadcastPage() {
     const [smsLogs, setSmsLogs] = useState<SmsLog[]>([]);
     const [logsLoading, setLogsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'history' | 'logs'>('history');
+    const [mainTab, setMainTab] = useState<'send' | 'getById' | 'getBatch'>('send');
+
+    const [smsIdInput, setSmsIdInput] = useState("");
+    const [batchIdInput, setBatchIdInput] = useState("");
+    const [lookupResult, setLookupResult] = useState<any>(null);
+    const [lookupLoading, setLookupLoading] = useState(false);
 
     const [numbers, setNumbers] = useState<PhoneEntry[]>([]);
     const [numbersLoading, setNumbersLoading] = useState(true);
@@ -176,6 +182,26 @@ export default function AdminSmsBroadcastPage() {
             setLoading(false);
         }
     };
+    const handleLookupSms = async (id: string, type: 'sms' | 'batch') => {
+        if (!id.trim()) return;
+        setLookupLoading(true);
+        setLookupResult(null);
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const url = type === 'sms' ? `/api/admin/sms-check/${id}` : `/api/admin/sms-batch/${id}`;
+            const res = await fetch(url, {
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setLookupResult(data.data || data);
+            toast.success("Status retrieved");
+        } catch (error: any) {
+            toast.error("Lookup failed: " + error.message);
+        } finally {
+            setLookupLoading(false);
+        }
+    };
 
     // Filtered numbers based on search
     const filteredNumbers = numbers.filter(n =>
@@ -203,14 +229,34 @@ export default function AdminSmsBroadcastPage() {
                 </button>
 
                 {/* Header */}
-                <div className="flex items-center gap-4 mb-8">
+                <div className="flex items-center gap-4 mb-6">
                     <div className="w-12 h-12 bg-gradient-to-br from-[#881337] to-rose-800 rounded-2xl flex items-center justify-center shadow-lg">
                         <Smartphone className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold font-serif">SMS Broadcast</h1>
-                        <p className="text-gray-500 text-sm">Send an SMS to all registered mobile numbers via your Textbee device.</p>
+                        <h1 className="text-3xl font-bold font-serif">SMS Gateway</h1>
+                        <p className="text-gray-500 text-sm">Manage SMS broadcasts and track delivery status via Textbee.</p>
                     </div>
+                </div>
+
+                {/* Main Tabs */}
+                <div className="flex border-b border-gray-200 mb-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                    {[
+                        { id: 'send', label: 'Send SMS', icon: <Send className="w-4 h-4" /> },
+                        { id: 'getById', label: 'Get SMS by ID', icon: <Search className="w-4 h-4" /> },
+                        { id: 'getBatch', label: 'Get SMS Batch', icon: <History className="w-4 h-4" /> },
+                    ].map(t => (
+                        <button
+                            key={t.id}
+                            onClick={() => { setMainTab(t.id as any); setLookupResult(null); }}
+                            className={`px-6 py-4 text-sm font-black uppercase tracking-widest flex items-center gap-2 transition-all relative ${
+                                mainTab === t.id ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'
+                            }`}
+                        >
+                            {t.icon} {t.label}
+                            {mainTab === t.id && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                        </button>
+                    ))}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -218,62 +264,171 @@ export default function AdminSmsBroadcastPage() {
                     {/* ── Left: Compose + Stats ── */}
                     <div className="lg:col-span-2 space-y-6">
 
-                        {/* Success result banner */}
-                        {lastSentResult && (
-                            <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-4 animate-in slide-in-from-top-2 duration-300">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                                <div className="text-sm text-emerald-800">
-                                    <p className="font-bold">Broadcast sent successfully!</p>
-                                    <p>✅ {lastSentResult.sent} delivered · {lastSentResult.failed > 0 ? `⚠ ${lastSentResult.failed} failed · ` : ''}📱 {lastSentResult.total} total numbers</p>
+                        {mainTab === 'send' && (
+                            <>
+                                {/* Success result banner */}
+                                {lastSentResult && (
+                                    <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-4 animate-in slide-in-from-top-2 duration-300">
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                                        <div className="text-sm text-emerald-800">
+                                            <p className="font-bold">Broadcast sent successfully!</p>
+                                            <p>✅ {lastSentResult.sent} delivered · {lastSentResult.failed > 0 ? `⚠ ${lastSentResult.failed} failed · ` : ''}📱 {lastSentResult.total} total numbers</p>
+                                        </div>
+                                        <button onClick={() => setLastSentResult(null)} className="ml-auto text-emerald-500 hover:text-emerald-700 text-xs font-bold">✕</button>
+                                    </div>
+                                )}
+
+                                {/* Compose Form */}
+                                <form onSubmit={handleSend} className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 space-y-6">
+
+                                    <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                                        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                                        <div className="text-xs text-amber-800 leading-relaxed">
+                                            <p className="font-bold mb-0.5">Bulk Broadcast</p>
+                                            <p>Send to all {numbersLoading ? '...' : numbers.length} recipients. Textbee handles batches automatically. Standard SIM rates apply.</p>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Message Body</label>
+                                        <textarea
+                                            rows={6}
+                                            value={message}
+                                            onChange={e => setMessage(e.target.value)}
+                                            placeholder="e.g. Eid Mubarak from 53DBohraRishta! 🌙 Wishing all members a blessed Eid."
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none resize-none transition-all text-sm leading-relaxed"
+                                            required
+                                        />
+                                        <div className="flex justify-between items-center mt-2">
+                                            <p className="text-xs text-gray-400">
+                                                {smsCount > 1
+                                                    ? <span className="text-orange-500 font-bold">⚠ Will send as {smsCount} SMS parts</span>
+                                                    : <span>Keep under 160 chars to avoid splitting</span>}
+                                            </p>
+                                            <p className={`text-xs font-bold tabular-nums ${charCount > MAX_SMS_LENGTH ? 'text-orange-500' : 'text-gray-400'}`}>
+                                                {charCount}/{MAX_SMS_LENGTH}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        id="sms-broadcast-send-btn"
+                                        disabled={loading || !message.trim() || numbersLoading}
+                                        className="w-full bg-[#881337] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#70102d] transition-all shadow-lg shadow-rose-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loading
+                                            ? <><Loader2 className="w-5 h-5 animate-spin" /> Sending SMS Broadcast...</>
+                                            : <><Send className="w-5 h-5" /> Send to All {numbers.length} Numbers</>}
+                                    </button>
+                                </form>
+                            </>
+                        )}
+
+                        {mainTab === 'getById' && (
+                            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 space-y-6">
+                                <h2 className="text-xl font-black flex items-center gap-2">
+                                    <Search className="w-5 h-5 text-indigo-500" /> Lookup SMS Status
+                                </h2>
+                                <p className="text-sm text-gray-500">Enter a specific Message ID to check its current delivery status on the device.</p>
+                                
+                                <div className="space-y-4">
+                                    <input
+                                        type="text"
+                                        placeholder="Enter SMS ID (e.g. sms_12345...)"
+                                        value={smsIdInput}
+                                        onChange={e => setSmsIdInput(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                                    />
+                                    <button
+                                        onClick={() => handleLookupSms(smsIdInput, 'sms')}
+                                        disabled={lookupLoading || !smsIdInput.trim()}
+                                        className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                                    >
+                                        {lookupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                                        Check SMS Status
+                                    </button>
                                 </div>
-                                <button onClick={() => setLastSentResult(null)} className="ml-auto text-emerald-500 hover:text-emerald-700 text-xs font-bold">✕</button>
+
+                                {lookupResult && (
+                                    <div className="mt-6 bg-gray-50 rounded-2xl p-5 border border-gray-200 animate-in fade-in duration-300">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-[10px] font-black uppercase text-gray-400">Status Details</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                                lookupResult.status === 'DELIVERED' ? 'bg-emerald-100 text-emerald-700' : 
+                                                lookupResult.status === 'FAILED' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+                                            }`}>
+                                                {lookupResult.status}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2 text-sm">
+                                            <p><span className="text-gray-400 font-bold">Recipient:</span> {lookupResult.recipient || lookupResult.recipients?.[0]}</p>
+                                            <p><span className="text-gray-400 font-bold">Message:</span> {lookupResult.message}</p>
+                                            <p><span className="text-gray-400 font-bold">Sent at:</span> {lookupResult.sentAt || lookupResult.createdAt}</p>
+                                            {lookupResult.deliveredAt && <p><span className="text-gray-400 font-bold">Delivered at:</span> {lookupResult.deliveredAt}</p>}
+                                            {lookupResult.errorMessage && <p className="text-rose-600"><span className="text-gray-400 font-bold">Error:</span> {lookupResult.errorMessage}</p>}
+                                        </div>
+                                        <pre className="mt-4 p-3 bg-gray-900 text-gray-300 rounded-lg text-[10px] overflow-x-auto">
+                                            {JSON.stringify(lookupResult, null, 2)}
+                                        </pre>
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        {/* Compose Form */}
-                        <form onSubmit={handleSend} className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 space-y-6">
-
-                            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-                                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                                <div className="text-xs text-amber-800 leading-relaxed">
-                                    <p className="font-bold mb-0.5">How it works</p>
-                                    <p>Message is sent to all {numbersLoading ? '...' : numbers.length} registered numbers (Firestore + Firebase Auth) via your Textbee Android device. Standard SIM SMS charges apply.</p>
+                        {mainTab === 'getBatch' && (
+                            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 space-y-6">
+                                <h2 className="text-xl font-black flex items-center gap-2">
+                                    <History className="w-5 h-5 text-emerald-500" /> Check Batch Status
+                                </h2>
+                                <p className="text-sm text-gray-500">Check the progress of a bulk broadcast batch.</p>
+                                
+                                <div className="space-y-4">
+                                    <input
+                                        type="text"
+                                        placeholder="Enter Batch ID (e.g. batch_98765...)"
+                                        value={batchIdInput}
+                                        onChange={e => setBatchIdInput(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
+                                    />
+                                    <button
+                                        onClick={() => handleLookupSms(batchIdInput, 'batch')}
+                                        disabled={lookupLoading || !batchIdInput.trim()}
+                                        className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all disabled:opacity-50"
+                                    >
+                                        {lookupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
+                                        Lookup Batch
+                                    </button>
                                 </div>
-                            </div>
 
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Message Body</label>
-                                <textarea
-                                    rows={6}
-                                    value={message}
-                                    onChange={e => setMessage(e.target.value)}
-                                    placeholder="e.g. Eid Mubarak from 53DBohraRishta! 🌙 Wishing all members a blessed Eid. Visit: 53dbohrarishta.in"
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none resize-none transition-all text-sm leading-relaxed"
-                                    required
-                                />
-                                <div className="flex justify-between items-center mt-2">
-                                    <p className="text-xs text-gray-400">
-                                        {smsCount > 1
-                                            ? <span className="text-orange-500 font-bold">⚠ Will send as {smsCount} SMS parts</span>
-                                            : <span>Keep under 160 chars to avoid splitting</span>}
-                                    </p>
-                                    <p className={`text-xs font-bold tabular-nums ${charCount > MAX_SMS_LENGTH ? 'text-orange-500' : 'text-gray-400'}`}>
-                                        {charCount}/{MAX_SMS_LENGTH}
-                                    </p>
-                                </div>
+                                {lookupResult && (
+                                    <div className="mt-6 bg-gray-50 rounded-2xl p-5 border border-gray-200 animate-in fade-in duration-300">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-[10px] font-black uppercase text-gray-400">Batch Progress</span>
+                                            <div className="flex gap-2">
+                                                <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-black">
+                                                    {lookupResult.messages?.filter((m: any) => m.status === 'DELIVERED').length || 0} Delivered
+                                                </span>
+                                                <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full text-[10px] font-black">
+                                                    {lookupResult.messages?.filter((m: any) => m.status === 'FAILED').length || 0} Failed
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2 text-xs max-h-60 overflow-y-auto">
+                                            {lookupResult.messages?.map((m: any, idx: number) => (
+                                                <div key={idx} className="flex justify-between border-b pb-1">
+                                                    <span className="font-mono">{m.recipient}</span>
+                                                    <span className={m.status === 'DELIVERED' ? 'text-emerald-600 font-bold' : 'text-amber-600'}>{m.status}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <pre className="mt-4 p-3 bg-gray-900 text-gray-300 rounded-lg text-[10px] overflow-x-auto">
+                                            {JSON.stringify(lookupResult, null, 2)}
+                                        </pre>
+                                    </div>
+                                )}
                             </div>
-
-                            <button
-                                type="submit"
-                                id="sms-broadcast-send-btn"
-                                disabled={loading || !message.trim() || numbersLoading}
-                                className="w-full bg-[#881337] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#70102d] transition-all shadow-lg shadow-rose-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {loading
-                                    ? <><Loader2 className="w-5 h-5 animate-spin" /> Sending SMS Broadcast...</>
-                                    : <><Send className="w-5 h-5" /> Send to All {numbers.length} Numbers</>}
-                            </button>
-                        </form>
+                        )}
 
                         {/* ── Mobile Numbers List ── */}
                         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">

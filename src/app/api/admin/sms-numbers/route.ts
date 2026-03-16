@@ -9,24 +9,7 @@ interface PhoneEntry {
     source: 'firestore' | 'auth' | 'both';
 }
 
-function normalizePhone(raw: string): string | null {
-    if (!raw) return null;
-    let phone = raw.replace(/[\s\-()]/g, '');
-    
-    // If it starts with 00, replace with +
-    if (phone.startsWith('00')) {
-        phone = '+' + phone.substring(2);
-    }
-    
-    // If it doesn't start with +, but looks like a valid number
-    if (!phone.startsWith('+')) {
-        if (/^\d{7,15}$/.test(phone)) {
-            phone = '+' + phone;
-        }
-    }
-    
-    return /^\+\d{7,15}$/.test(phone) ? phone : null;
-}
+import { normalizePhone } from '@/lib/phoneUtils';
 
 export async function GET(request: Request) {
     try {

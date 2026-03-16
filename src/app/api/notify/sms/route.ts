@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
+import { normalizePhone } from '@/lib/phoneUtils';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
     try {
-        const { phone, message } = await req.json();
+        const { phone: rawPhone, message } = await req.json();
+        const phone = normalizePhone(rawPhone);
 
         if (!phone || !message) {
-            return NextResponse.json({ error: 'Phone and message are required' }, { status: 400 });
+            return NextResponse.json({ error: 'Valid phone and message are required' }, { status: 400 });
         }
 
         const deviceId = process.env.TEXTBEE_DEVICE_ID;

@@ -14,6 +14,7 @@ service cloud.firestore {
     function isAdmin() {
       return signedIn() && (
         request.auth.token.admin == true || 
+        request.auth.uid == 'admin-panel-service-account' ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin'
       );
     }
@@ -35,8 +36,9 @@ service cloud.firestore {
       allow read: if signedIn(); // Optimization: Allow list for dashboard, but filtered by query
       allow create: if signedIn();
       allow update: if signedIn() && (
-        resource.data.from == request.auth.uid || 
-        resource.data.to == request.auth.uid
+        isOwner(resource.data.from) || 
+        isOwner(resource.data.to) ||
+        isAdmin()
       );
 
       // Chat messages subcollection
@@ -80,12 +82,12 @@ service cloud.firestore {
       allow read, write: if false; // Exclusively via Server API
     }
 
-    // Bookmarks: Private to user
+    // Bookmarks: Private to user OR Admin
     match /bookmarks/{bookmarkId} {
       allow read, write: if signedIn() && (
+        isAdmin() ||
         request.method == 'create' || 
-        (resource != null && resource.data.userId == request.auth.uid) ||
-        (request.query.limit <= 100) // Allow reading if it's the user's filtered query
+        (resource != null && resource.data.userId == request.auth.uid)
       );
     }
 
@@ -94,9 +96,13 @@ service cloud.firestore {
       allow read, create, update, delete: if signedIn();
     }
 
-    // Profile Views: Logged for profile owner
+    // Profile Views: Owner or Admin
     match /profile_views/{viewId} {
-      allow read, write: if signedIn();
+      allow read, write: if signedIn() && (
+        isAdmin() ||
+        request.auth.uid == resource.data.userId ||
+        request.method == 'create'
+      );
     }
   }
 }

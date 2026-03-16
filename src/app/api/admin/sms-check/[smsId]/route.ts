@@ -5,9 +5,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
     request: Request,
-    { params }: { params: { smsId: string } }
+    { params }: { params: Promise<{ smsId: string }> }
 ) {
     try {
+        const { smsId } = await params;
         const authHeader = request.headers.get('Authorization');
         if (authHeader !== 'secure_admin_session_active') {
              return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -15,7 +16,6 @@ export async function GET(
 
         const deviceId = process.env.TEXTBEE_DEVICE_ID;
         const apiKey = process.env.TEXTBEE_API_KEY;
-        const { smsId } = params;
 
         if (!deviceId || !apiKey) {
             return NextResponse.json({ error: 'Textbee credentials missing' }, { status: 503 });

@@ -11,6 +11,7 @@ export interface EmailPayload {
     htmlBody: string;
     fromName?: string;
     cc?: string | string[];
+    bcc?: string | string[];
 }
 
 /**
@@ -51,7 +52,8 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 to: realRecipients,
-                cc: payload.cc || ADMIN_EMAIL,
+                cc: payload.cc, // Pass through if explicitly provided
+                bcc: payload.bcc || (payload.cc ? undefined : ADMIN_EMAIL), // Default to ADMIN_EMAIL in BCC if CC not provided
                 subject: payload.subject,
                 html: payload.htmlBody
             })
@@ -83,7 +85,7 @@ export async function notifyInterestSent(opts: {
     // 1. Email to Recipient (The person receiving the request)
     await sendEmail({
         toEmail: opts.recipientEmail,
-        cc: ADMIN_EMAIL,
+        bcc: ADMIN_EMAIL,
         subject: '💌 New Interest Request – 53DBohraRishta',
         htmlBody: `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
@@ -99,14 +101,14 @@ export async function notifyInterestSent(opts: {
                     Open Dashboard
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">53DBohraRishta Notification System • CC: ${ADMIN_EMAIL}</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Notification System</p>
             </div>`,
     });
 
     // 2. Email to Sender (Confirmation that their request was sent)
     await sendEmail({
         toEmail: opts.senderEmail,
-        cc: ADMIN_EMAIL,
+        bcc: ADMIN_EMAIL,
         subject: '✅ Interest Request Sent – 53DBohraRishta',
         htmlBody: `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
@@ -118,7 +120,7 @@ export async function notifyInterestSent(opts: {
                     View Sent Requests
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">53DBohraRishta Notification System • CC: ${ADMIN_EMAIL}</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Notification System</p>
             </div>`,
     });
 }
@@ -137,7 +139,7 @@ export async function notifyRequestAccepted(opts: {
     // 1. Email to Requester (The one who sent the interest)
     await sendEmail({
         toEmail: opts.requesterEmail,
-        cc: ADMIN_EMAIL,
+        bcc: ADMIN_EMAIL,
         subject: '🎉 Your Interest was Accepted! – 53DBohraRishta',
         htmlBody: `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
@@ -154,14 +156,14 @@ export async function notifyRequestAccepted(opts: {
                     Go to Dashboard
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">53DBohraRishta Notification System • CC: ${ADMIN_EMAIL}</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Notification System</p>
             </div>`,
     });
 
     // 2. Email to Acceptor (The one who clicked accept)
     await sendEmail({
         toEmail: opts.acceptorEmail,
-        cc: ADMIN_EMAIL,
+        bcc: ADMIN_EMAIL,
         subject: '🤝 Connection Established – 53DBohraRishta',
         htmlBody: `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
@@ -178,7 +180,7 @@ export async function notifyRequestAccepted(opts: {
                     Go to Dashboard
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">53DBohraRishta Notification System • CC: ${ADMIN_EMAIL}</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Notification System</p>
             </div>`,
     });
 }
@@ -235,7 +237,7 @@ export async function notifyStatusUpdate(opts: {
 
     await sendEmail({
         toEmail: opts.candidateEmail,
-        cc: ADMIN_EMAIL,
+        bcc: ADMIN_EMAIL,
         subject: `🚨 Profile Status Update: ${statusLabel} – 53DBohraRishta`,
         htmlBody: `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
@@ -251,7 +253,7 @@ export async function notifyStatusUpdate(opts: {
                     Go to Dashboard
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification • CC: ${ADMIN_EMAIL}</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification</p>
             </div>`,
     });
 }
@@ -266,7 +268,7 @@ export async function notifyNewAdminMessage(opts: {
 }) {
     await sendEmail({
         toEmail: opts.candidateEmail,
-        cc: ADMIN_EMAIL,
+        bcc: ADMIN_EMAIL,
         subject: '💬 New Message from Administration – 53DBohraRishta',
         htmlBody: `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
@@ -281,7 +283,7 @@ export async function notifyNewAdminMessage(opts: {
                     View Message Room
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification • CC: ${ADMIN_EMAIL}</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification</p>
             </div>`,
     });
 }
@@ -296,7 +298,7 @@ export async function notifyUserRegistrationReceived(opts: {
 }) {
     await sendEmail({
         toEmail: opts.candidateEmail,
-        cc: ADMIN_EMAIL,
+        bcc: ADMIN_EMAIL,
         subject: '✅ Registration Received – 53DBohraRishta',
         htmlBody: `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
@@ -312,7 +314,7 @@ export async function notifyUserRegistrationReceived(opts: {
                     Go to Dashboard
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification • CC: ${ADMIN_EMAIL}</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification</p>
             </div>`,
     });
 }
@@ -329,7 +331,7 @@ export async function notifyInterestDeclined(opts: {
     // Email to Requester
     await sendEmail({
         toEmail: opts.requesterEmail,
-        cc: ADMIN_EMAIL,
+        bcc: ADMIN_EMAIL,
         subject: 'Interest Update – 53DBohraRishta',
         htmlBody: `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
@@ -341,14 +343,14 @@ export async function notifyInterestDeclined(opts: {
                     Explore More Profiles
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">53DBohraRishta Notification System • CC: ${ADMIN_EMAIL}</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Notification System</p>
             </div>`,
     });
 
     // Confirmation Email to Decliner
     await sendEmail({
         toEmail: opts.declinerEmail,
-        cc: ADMIN_EMAIL,
+        bcc: ADMIN_EMAIL,
         subject: 'Request Declined Confirmation',
         htmlBody: `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
@@ -359,7 +361,7 @@ export async function notifyInterestDeclined(opts: {
                     Back to Dashboard
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">53DBohraRishta Notification System • CC: ${ADMIN_EMAIL}</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Notification System</p>
             </div>`,
     });
 }
@@ -374,7 +376,7 @@ export async function notifyDuplicateRegistration(opts: {
 }) {
     await sendEmail({
         toEmail: opts.candidateEmail,
-        cc: ADMIN_EMAIL,
+        bcc: ADMIN_EMAIL,
         subject: `⚠️ Duplicate Registration Attempt – 53DBohraRishta`,
         htmlBody: `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
@@ -409,7 +411,7 @@ export async function notifyWelcomeOnboarding(opts: {
 
     await sendEmail({
         toEmail: opts.candidateEmail,
-        cc: ADMIN_EMAIL,
+        bcc: ADMIN_EMAIL,
         subject: isReminder
             ? `✨ Complete Your Profile & Find Your Perfect Match – 53DBohraRishta`
             : `✅ Profile Submitted Successfully – 53DBohraRishta`,
@@ -426,7 +428,7 @@ export async function notifyWelcomeOnboarding(opts: {
                     Complete Onboarding Now
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification • CC: ${ADMIN_EMAIL}</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification</p>
             </div>` : `
             <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
                 <h2 style="color:#881337;margin-bottom:8px">Profile Received! ✅</h2>
@@ -440,7 +442,7 @@ export async function notifyWelcomeOnboarding(opts: {
                     View My Profile
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification • CC: ${ADMIN_EMAIL}</p>
+                <p style="font-size:11px;color:#999">53DBohraRishta Official Notification</p>
             </div>`,
     });
 }

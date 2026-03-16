@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminDb, adminMessaging, adminAuth } from '@/lib/firebase/admin-config';
 import nodemailer from 'nodemailer';
 import * as admin from 'firebase-admin';
+import { isEmailBlocked } from '@/lib/emailStatusServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,9 +114,19 @@ export async function POST(req: Request) {
             }
         }
 
-        const emails = Array.from(emailSet);
-        const emailsFound = emails.length;
-        console.log(`Collected ${emailsFound} total unique emails for broadcast.`);
+        const allEmails = Array.from(emailSet);
+        const emailsFound = allEmails.length;
+        console.log(`Found ${emailsFound} total unique emails for broadcast. Filtering blocked...`);
+
+        // 🛡️ Filter blocked emails
+        const emails: string[] = [];
+        for (const email of allEmails) {
+            if (!(await isEmailBlocked(email))) {
+                emails.push(email);
+            }
+        }
+        
+        console.log(`Sending to ${emails.length} active (non-blocked) emails.`);
 
         // 3. Send Emails
         if (sendEmail) {

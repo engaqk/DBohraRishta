@@ -97,7 +97,7 @@ export async function POST(req: Request) {
                 await axios.post(
                     textbeeUrl,
                     {
-                        receivers: chunk,
+                        recipients: chunk,
                         smsBody: message.trim(),
                     },
                     {

@@ -18,17 +18,14 @@ function normalizePhone(raw: string): string | null {
         phone = '+' + phone.substring(2);
     }
     
-    // If it doesn't start with +, but looks like a valid long number
+    // If it doesn't start with +, but looks like a valid number
     if (!phone.startsWith('+')) {
-        // If it's 10 digits, assume India (+91) if not specified? 
-        // Or just prepend + if it's 11-13 digits?
-        // Let's be safe: if it's 10-15 digits, prepend +
-        if (/^\d{10,15}$/.test(phone)) {
+        if (/^\d{7,15}$/.test(phone)) {
             phone = '+' + phone;
         }
     }
     
-    return /^\+\d{10,15}$/.test(phone) ? phone : null;
+    return /^\+\d{7,15}$/.test(phone) ? phone : null;
 }
 
 export async function GET(request: Request) {

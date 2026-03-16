@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         const response = await axios.post(
             `https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`,
             {
-                receivers: [phone],
+                recipients: [phone],
                 smsBody: message,
             },
             {

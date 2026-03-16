@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         try {
             const { default: axios } = await import('axios');
             const response = await axios.post(textbeeUrl, {
-                receivers: [smsTo],
+                recipients: [smsTo],
                 smsBody: smsText
             }, {
                 headers: {

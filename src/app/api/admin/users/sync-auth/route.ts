@@ -40,8 +40,10 @@ export async function POST(request: Request) {
                 }
 
                 // Clean/Normalize the number for Firestore storage
-                const cleanedMobile = mobile.replace(/[\s\-()]/g, '');
-                if (!/^\+\d{10,15}$/.test(cleanedMobile)) {
+                let cleanedMobile = mobile.replace(/[\s\-()+]/g, ''); // strip everything including + for check
+                if (/^\d{7,15}$/.test(cleanedMobile)) {
+                    cleanedMobile = '+' + cleanedMobile;
+                } else {
                     skippedCount++;
                     continue;
                 }

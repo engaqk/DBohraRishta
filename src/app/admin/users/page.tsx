@@ -159,6 +159,36 @@ export default function AdminUsersPage() {
         }
     };
 
+    const markMessagesAsRead = async (userId: string) => {
+        try {
+            const { collection, getDocs, query, where, writeBatch } = await import('firebase/firestore');
+            const threadRef = collection(db, "admin_messages", userId, "thread");
+            // Fetch all user messages in this thread
+            const q = query(threadRef, where("from", "==", "user"));
+            const snap = await getDocs(q);
+
+            if (snap.empty) return;
+
+            // Filter docs not already marked as read
+            const unreadDocs = snap.docs.filter(d => d.data().readByAdmin !== true);
+            if (unreadDocs.length === 0) return;
+
+            const batch = writeBatch(db);
+            unreadDocs.forEach(d => {
+                batch.update(d.ref, { readByAdmin: true });
+            });
+            await batch.commit();
+
+            // Proactively update local state to clear the badge
+            setMsgCounts(prev => {
+                if (!prev[userId]) return prev;
+                return { ...prev, [userId]: { ...prev[userId], userMsgs: 0 } };
+            });
+        } catch (e) {
+            console.error("Failed to mark messages as read", e);
+        }
+    };
+
     const handleSyncAuth = async () => {
         const confirmed = window.confirm("This will find users who exist in Firebase Auth but have no record in the Database, and create skeleton records for them so they can receive SMS broadcasts.\n\nProceed?");
         if (!confirmed) return;
@@ -189,6 +219,16 @@ export default function AdminUsersPage() {
             fetchAuthUsers();
         }
     }, [activeMainTab]);
+
+    // Auto-mark as read when a user is selected/expanded
+    useEffect(() => {
+        if (selectedUser?.uid) {
+            const hasNewMsg = msgCounts[selectedUser.uid]?.userMsgs > 0;
+            if (hasNewMsg) {
+                markMessagesAsRead(selectedUser.uid);
+            }
+        }
+    }, [selectedUser?.uid]);
 
 
 

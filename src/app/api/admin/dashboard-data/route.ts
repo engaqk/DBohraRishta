@@ -39,7 +39,7 @@ export async function GET(request: Request) {
                 const data = doc.data();
                 if (!msgCounts[parentId]) msgCounts[parentId] = { total: 0, userMsgs: 0 };
                 msgCounts[parentId].total++;
-                if (data.from === 'user') msgCounts[parentId].userMsgs++;
+                if (data.from === 'user' && data.readByAdmin !== true) msgCounts[parentId].userMsgs++;
             });
         } catch (threadErr: any) {
             console.warn('[dashboard-data] Thread query failed:', threadErr.message);

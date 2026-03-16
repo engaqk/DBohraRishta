@@ -304,16 +304,7 @@ export default function AdminVerificationPage() {
                                 className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#881337] transition-all"
                             />
                         </div>
-                        {user && (
-                            <button onClick={async () => {
-                                try {
-                                    await updateDoc(doc(db, "users", user.uid), { role: 'admin' });
-                                    toast.success("Admin role granted!");
-                                } catch (e) { toast.error("Could not grant admin."); }
-                            }} className="bg-rose-100 hover:bg-rose-200 text-[#881337] px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-rose-200">
-                                <Key className="w-4 h-4" /> Grant Me Admin
-                            </button>
-                        )}
+
                         <button
                             onClick={() => router.push('/admin/users')}
                             className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-blue-200"

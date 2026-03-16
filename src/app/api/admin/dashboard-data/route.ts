@@ -19,31 +19,33 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Admin DB not configured' }, { status: 503 });
         }
 
-        // 1. Fetch all users
-        const usersSnap = await adminDb.collection('users').get();
+        // 1. Execute all queries in parallel for maximum speed
+        const [usersSnap, totalRequestsSnap, acceptedRequestsSnap, threadSnap] = await Promise.all([
+            // Fetch all users for the pipeline grid
+            adminDb.collection('users').get(),
+            
+            // Efficient counts for stats (doesn't download any documents)
+            adminDb.collection('rishta_requests').count().get(),
+            adminDb.collection('rishta_requests').where('status', '==', 'accepted').count().get(),
+            
+            // Scans all thread messages (heavy, but parallelized)
+            adminDb.collectionGroup('thread').get()
+        ]);
+
         const users = usersSnap.docs.map(d => ({ uid: d.id, id: d.id, ...d.data() }));
+        const totalRequests = totalRequestsSnap.data().count;
+        const acceptedRequests = acceptedRequestsSnap.data().count;
 
-        // 2. Fetch rishta_requests stats
-        const requestsSnap = await adminDb.collection('rishta_requests').get();
-        const totalRequests = requestsSnap.size;
-        const acceptedRequests = requestsSnap.docs.filter(d => d.data().status === 'accepted').length;
-
-        // 3. Fetch all thread messages for unread counts
-        // collectionGroup equivalent via admin SDK
+        // Process message counts from the parallel snapshot
         let msgCounts: Record<string, { total: number; userMsgs: number }> = {};
-        try {
-            const threadSnap = await adminDb.collectionGroup('thread').get();
-            threadSnap.docs.forEach(doc => {
-                const parentId = doc.ref.parent.parent?.id;
-                if (!parentId) return;
-                const data = doc.data();
-                if (!msgCounts[parentId]) msgCounts[parentId] = { total: 0, userMsgs: 0 };
-                msgCounts[parentId].total++;
-                if (data.from === 'user' && data.readByAdmin !== true) msgCounts[parentId].userMsgs++;
-            });
-        } catch (threadErr: any) {
-            console.warn('[dashboard-data] Thread query failed:', threadErr.message);
-        }
+        threadSnap.docs.forEach(doc => {
+            const parentId = doc.ref.parent.parent?.id;
+            if (!parentId) return;
+            const data = doc.data();
+            if (!msgCounts[parentId]) msgCounts[parentId] = { total: 0, userMsgs: 0 };
+            msgCounts[parentId].total++;
+            if (data.from === 'user' && data.readByAdmin !== true) msgCounts[parentId].userMsgs++;
+        });
 
         return NextResponse.json({
             users,

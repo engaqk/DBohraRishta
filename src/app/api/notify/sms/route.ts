@@ -23,7 +23,7 @@ export async function POST(req: Request) {
             `https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`,
             {
                 recipients: [phone],
-                smsBody: message,
+                message: message,
             },
             {
                 headers: {

@@ -60,7 +60,7 @@ export async function POST(req: Request) {
             const { default: axios } = await import('axios');
             const response = await axios.post(textbeeUrl, {
                 recipients: [smsTo],
-                smsBody: smsText
+                message: smsText
             }, {
                 headers: {
                     'x-api-key': apiKey,

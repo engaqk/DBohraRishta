@@ -98,7 +98,7 @@ export async function POST(req: Request) {
                     textbeeUrl,
                     {
                         recipients: chunk,
-                        smsBody: message.trim(),
+                        message: message.trim(),
                     },
                     {
                         headers: {

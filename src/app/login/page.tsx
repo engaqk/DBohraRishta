@@ -58,7 +58,7 @@ function LiveUserCounter() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function LoginPage() {
-    const { user, loading, signInWithGoogle, setDummyUser } = useAuth();
+    const { user, loading, signInWithGoogle, setDummyUser, isImpersonating } = useAuth();
     const router = useRouter();
 
     // OTP state
@@ -102,7 +102,11 @@ export default function LoginPage() {
                             }).catch(err => console.error("Complete profile email failed:", err));
                         }
 
-                        router.push("/onboarding");
+                        if (!isImpersonating) {
+                            router.push("/onboarding");
+                        } else {
+                            router.push("/");
+                        }
                     }
                 } catch { router.push("/onboarding"); }
             }

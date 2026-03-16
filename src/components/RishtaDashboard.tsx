@@ -78,7 +78,7 @@ interface RishtaRequest {
 }
 
 export default function RishtaDashboard() {
-    const { user, loading, logout, verifyEmail, refreshUser } = useAuth();
+    const { user, loading, logout, verifyEmail, refreshUser, isImpersonating } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
     const tabParam = searchParams.get('tab');
@@ -556,11 +556,11 @@ export default function RishtaDashboard() {
         let unsubDiscovery: (() => void) | null = null;
 
         const unsubMe = onSnapshot(doc(db, "users", user.uid), (meRef) => {
-            if (!meRef.exists()) {
+            if (!meRef.exists() && !isImpersonating) {
                 router.push('/onboarding');
                 return;
             }
-            const profileData = meRef.data();
+            const profileData = meRef.data() || { status: 'incomplete', isItsVerified: false };
             setMyProfile(profileData);
 
             const isVerified = profileData.isItsVerified === true || profileData.status === 'verified' || profileData.status === 'approved';
@@ -577,14 +577,14 @@ export default function RishtaDashboard() {
 
             // Once my profile is loaded, subscribe to discovery profiles
             if (!unsubDiscovery) {
-                const oppositeGender = profileData.gender === 'male' ? 'female' : 'male';
+                const oppositeGender = profileData.gender === 'male' ? 'female' : (profileData.gender === 'female' ? 'male' : 'all');
                 const q = query(collection(db, "users"), where("isItsVerified", "==", true));
 
                 unsubDiscovery = onSnapshot(q, (snap) => {
                     let profiles: UserProfile[] = [];
                     snap.forEach(d => {
                         const data = d.data();
-                        if (d.id !== user.uid && data.gender === oppositeGender) {
+                        if (d.id !== user.uid && (oppositeGender === 'all' || data.gender === oppositeGender)) {
                             profiles.push({ id: d.id, ...data } as UserProfile);
                         }
                     });

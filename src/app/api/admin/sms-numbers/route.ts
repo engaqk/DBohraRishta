@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminDb, adminAuth } from '@/lib/firebase/admin-config';
+import { adminDb, adminAuth } from '@/lib/firebase/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +9,28 @@ interface PhoneEntry {
     source: 'firestore' | 'auth' | 'both';
 }
 
+function normalizePhone(raw: string): string | null {
+    if (!raw) return null;
+    let phone = raw.replace(/[\s\-()]/g, '');
+    
+    // If it starts with 00, replace with +
+    if (phone.startsWith('00')) {
+        phone = '+' + phone.substring(2);
+    }
+    
+    // If it doesn't start with +, but looks like a valid long number
+    if (!phone.startsWith('+')) {
+        // If it's 10 digits, assume India (+91) if not specified? 
+        // Or just prepend + if it's 11-13 digits?
+        // Let's be safe: if it's 10-15 digits, prepend +
+        if (/^\d{10,15}$/.test(phone)) {
+            phone = '+' + phone;
+        }
+    }
+    
+    return /^\+\d{10,15}$/.test(phone) ? phone : null;
+}
+
 export async function GET(request: Request) {
     try {
         const authHeader = request.headers.get('Authorization');
@@ -16,9 +38,10 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        if (!adminDb) {
-            return NextResponse.json({ error: 'Firebase Admin not configured.' }, { status: 503 });
+        if (!adminDb || typeof adminDb.collection !== 'function') {
+            return NextResponse.json({ error: 'Firebase Admin DB not configured.' }, { status: 503 });
         }
+        
         const phoneMap = new Map<string, PhoneEntry>();
 
         // ── 1. Fetch from Firestore users collection ──────────────────────────
@@ -26,9 +49,8 @@ export async function GET(request: Request) {
         usersSnap.docs.forEach(d => {
             const data = d.data() as Record<string, any>;
             const raw: string = data['mobile'] || data['mobileNumber'] || '';
-            if (!raw) return;
-            const phone = raw.replace(/[\s\-()]/g, '');
-            if (!/^\+\d{10,15}$/.test(phone)) return;
+            const phone = normalizePhone(raw);
+            if (!phone) return;
 
             phoneMap.set(phone, {
                 phone,
@@ -38,28 +60,24 @@ export async function GET(request: Request) {
         });
 
         // ── 2. Fetch from Firebase Auth ───────────────────────────────────────
-        // Mobile-registered users have internal emails like: +919876543210@dbohrarishta.local
-        // Also check if any users have a real phoneNumber field in Auth
-        if (adminAuth) {
+        if (adminAuth && typeof adminAuth.listUsers === 'function') {
             let pageToken: string | undefined;
             do {
                 const result = await adminAuth.listUsers(1000, pageToken);
                 result.users.forEach(u => {
-                    // From internal mobile email convention
+                    let phone: string | null = null;
+
+                    // From internal mobile email convention (+919876543210@dbohrarishta.local)
                     if (u.email?.endsWith('@dbohrarishta.local')) {
-                        const phone = u.email.replace('@dbohrarishta.local', '');
-                        if (/^\+\d{10,15}$/.test(phone)) {
-                            const existing = phoneMap.get(phone);
-                            phoneMap.set(phone, {
-                                phone,
-                                name: existing?.name || u.displayName || undefined,
-                                source: existing ? 'both' : 'auth',
-                            });
-                        }
+                        phone = normalizePhone(u.email.replace('@dbohrarishta.local', ''));
                     }
-                    // From Firebase phone number field (if phone auth was ever used)
-                    if (u.phoneNumber) {
-                        const phone = u.phoneNumber;
+                    
+                    // From Firebase phone number field
+                    if (!phone && u.phoneNumber) {
+                        phone = normalizePhone(u.phoneNumber);
+                    }
+
+                    if (phone) {
                         const existing = phoneMap.get(phone);
                         phoneMap.set(phone, {
                             phone,

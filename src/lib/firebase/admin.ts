@@ -38,3 +38,4 @@ const app = initAdmin();
 export const adminAuth = app ? app.auth() : ({} as admin.auth.Auth);
 export const adminDb = app ? app.firestore() : ({} as admin.firestore.Firestore);
 export const adminStorage = app ? app.storage() : ({} as admin.storage.Storage);
+export const adminMessaging = app ? app.messaging() : ({} as admin.messaging.Messaging);

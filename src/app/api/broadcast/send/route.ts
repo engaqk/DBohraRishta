@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminDb, adminMessaging, adminAuth } from '@/lib/firebase/admin-config';
+import { adminDb, adminMessaging, adminAuth } from '@/lib/firebase/admin';
 import nodemailer from 'nodemailer';
 import * as admin from 'firebase-admin';
 import { isEmailBlocked } from '@/lib/emailStatusServer';

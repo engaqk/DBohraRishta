@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin-config';
+import { adminDb, adminAuth } from '@/lib/firebase/admin';
 
 export const dynamic = 'force-dynamic';
 
+function normalizePhone(raw: string): string | null {
+    if (!raw) return null;
+    let phone = raw.replace(/[\s\-()]/g, '');
+    if (phone.startsWith('00')) phone = '+' + phone.substring(2);
+    if (!phone.startsWith('+') && /^\d{10,15}$/.test(phone)) phone = '+' + phone;
+    return /^\+\d{10,15}$/.test(phone) ? phone : null;
+}
+
 export async function POST(req: Request) {
-    if (!adminDb) {
+    if (!adminDb || typeof adminDb.collection !== 'function') {
         return NextResponse.json(
-            { error: 'Firebase Admin not configured. Cannot send SMS broadcasts.' },
+            { error: 'Firebase Admin DB not configured. Cannot send SMS broadcasts.' },
             { status: 503 }
         );
     }
@@ -29,25 +37,37 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Message body is required.' }, { status: 400 });
         }
 
-        // Fetch all users from Firestore
-        const usersSnapshot = await adminDb.collection('users').get();
-        const allUsers: Record<string, any>[] = usersSnapshot.docs.map(d => ({
-            id: d.id,
-            ...(d.data() as Record<string, any>),
-        }));
-
-        // Collect unique, valid mobile numbers
         const phoneSet = new Set<string>();
-        allUsers.forEach((u: Record<string, any>) => {
-            const mobile: string | undefined = u['mobile'] || u['mobileNumber'];
-            if (mobile && typeof mobile === 'string') {
-                const cleaned = mobile.replace(/[\s\-()]/g, '');
-                // Basic validation: must start with + and have 10-15 digits
-                if (/^\+\d{10,15}$/.test(cleaned)) {
-                    phoneSet.add(cleaned);
-                }
-            }
+
+        // ── 1. Fetch from Firestore users collection ──────────────────────────
+        const usersSnapshot = await adminDb.collection('users').get();
+        usersSnapshot.docs.forEach(d => {
+            const data = d.data();
+            const raw = data['mobile'] || data['mobileNumber'];
+            const phone = normalizePhone(raw);
+            if (phone) phoneSet.add(phone);
         });
+
+        // ── 2. Fetch from Firebase Auth (for users with no biodata yet) ────────
+        if (adminAuth && typeof adminAuth.listUsers === 'function') {
+            let pageToken: string | undefined;
+            do {
+                const result = await adminAuth.listUsers(1000, pageToken);
+                result.users.forEach(u => {
+                    // Mobile-registered users convention (+919876543210@dbohrarishta.local)
+                    if (u.email?.endsWith('@dbohrarishta.local')) {
+                        const phone = normalizePhone(u.email.replace('@dbohrarishta.local', ''));
+                        if (phone) phoneSet.add(phone);
+                    }
+                    // Standard Firebase phone field
+                    if (u.phoneNumber) {
+                        const phone = normalizePhone(u.phoneNumber);
+                        if (phone) phoneSet.add(phone);
+                    }
+                });
+                pageToken = result.pageToken;
+            } while (pageToken);
+        }
 
         const phones = Array.from(phoneSet);
         const totalFound = phones.length;
@@ -55,27 +75,24 @@ export async function POST(req: Request) {
         if (totalFound === 0) {
             return NextResponse.json({
                 success: false,
-                error: 'No valid mobile numbers found in the database.',
+                error: 'No valid mobile numbers found in Database or Auth.',
                 totalFound: 0,
                 sent: 0,
                 failed: 0
             });
         }
 
-        console.log(`SMS Broadcast: Sending to ${totalFound} mobile numbers.`);
+        console.log(`SMS Broadcast: Sending to ${totalFound} unique mobile numbers.`);
 
         const textbeeUrl = `https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`;
         const { default: axios } = await import('axios');
 
-        // Textbee supports batch sending — send all at once (up to provider limits)
-        // For safety we chunk into groups of 100
         const chunkSize = 100;
         let successCount = 0;
         let failCount = 0;
 
         for (let i = 0; i < phones.length; i += chunkSize) {
             const chunk = phones.slice(i, i + chunkSize);
-
             try {
                 await axios.post(
                     textbeeUrl,
@@ -88,18 +105,17 @@ export async function POST(req: Request) {
                             'x-api-key': apiKey,
                             'Content-Type': 'application/json',
                         },
-                        timeout: 30000,
+                        timeout: 35000,
                     }
                 );
                 successCount += chunk.length;
-                console.log(`SMS chunk ${Math.ceil(i / chunkSize) + 1} sent to ${chunk.length} numbers.`);
             } catch (err: any) {
                 failCount += chunk.length;
                 console.error(`SMS chunk failed:`, err?.response?.data || err.message);
             }
         }
 
-        // Log in Firestore for audit trail
+        // Log action in audit trail
         try {
             await adminDb.collection('sms_broadcasts').add({
                 message: message.trim(),
@@ -110,7 +126,7 @@ export async function POST(req: Request) {
                 createdAt: new Date(),
             });
         } catch (logErr) {
-            console.warn('Failed to log SMS broadcast to Firestore:', logErr);
+            console.warn('Failed to log SMS broadcast:', logErr);
         }
 
         return NextResponse.json({
@@ -118,7 +134,7 @@ export async function POST(req: Request) {
             totalFound,
             sent: successCount,
             failed: failCount,
-            message: `SMS broadcast dispatched to ${successCount} of ${totalFound} numbers.`,
+            message: `SMS broadcast dispatched to ${successCount} numbers.`,
         });
 
     } catch (error: any) {

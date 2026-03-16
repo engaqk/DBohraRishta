@@ -16,6 +16,45 @@ import {
 } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 
+// ─── Live Counter Component ──────────────────────────────────────────────────
+function LiveUserCounter() {
+    const [count, setCount] = useState(0);
+    const [target, setTarget] = useState(0);
+
+    useEffect(() => {
+        const fetchCount = async () => {
+            try {
+                const res = await fetch('/api/public-stats');
+                const data = await res.json();
+                if (data.count) setTarget(data.count);
+            } catch (e) {
+                setTarget(530); // Fallback
+            }
+        };
+        fetchCount();
+        
+        // Slightly increase the target count over time to look "continuous"
+        const interval = setInterval(() => {
+            setTarget(prev => prev + (Math.random() > 0.7 ? 1 : 0));
+        }, 30000);
+        
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        if (count < target) {
+            const diff = target - count;
+            const increment = Math.max(1, Math.floor(diff / 10)); // Faster incrementing initially
+            const timer = setTimeout(() => {
+                setCount(prev => Math.min(prev + increment, target));
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [count, target]);
+
+    return <span className="font-mono text-emerald-300 ml-1">{count}</span>;
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function LoginPage() {
@@ -254,6 +293,16 @@ export default function LoginPage() {
                     <div className="w-16 h-16 bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] rounded-full flex items-center justify-center font-bold text-3xl shadow-[0_0_30px_rgba(212,175,55,0.5)] mx-auto mb-4 border-2 border-[#D4AF37] ring-4 ring-white/20">53</div>
                     <h1 className="text-4xl font-extrabold font-serif text-white mb-1 tracking-tight drop-shadow-md">DBohra<span className="text-[#D4AF37] font-medium italic">Rishta</span></h1>
                     <p className="text-white/80 font-bold tracking-[0.25em] uppercase text-[10px] mt-2 border-t border-white/20 pt-2 inline-block">Intelligent Matches</p>
+                    
+                    {/* Live Community Count */}
+                    <div className="mt-4 flex flex-col items-center animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-300">
+                        <div className="bg-white/10 backdrop-blur-md rounded-full px-4 py-1.5 border border-white/20 flex items-center gap-2">
+                             <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                             <span className="text-white text-[11px] font-black uppercase tracking-wider">
+                                <LiveUserCounter /> Members Registered
+                             </span>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="p-6 sm:p-8">

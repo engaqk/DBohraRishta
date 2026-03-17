@@ -83,12 +83,12 @@ export default function AdminVerificationPage() {
 
     const analytics = useMemo(() => {
         return {
-            totalUsers: sortedUsers.length,
-            pendingCount: sortedUsers.filter(u => !u.status || u.status === 'pending' || u.status === 'pending_verification').length,
-            holdCount: sortedUsers.filter(u => u.status === 'hold').length,
+            totalUsers: allUsers.length,
+            pendingCount: allUsers.filter(u => !u.status || u.status === 'pending' || u.status === 'pending_verification').length,
+            holdCount: allUsers.filter(u => u.status === 'hold').length,
             acceptedRatio: requestStats.total > 0 ? Math.round((requestStats.accepted / requestStats.total) * 100) : 0,
         };
-    }, [sortedUsers, requestStats]);
+    }, [allUsers, requestStats]);
 
     const fetchDashboardData = useCallback(async () => {
         setLoading(true);
@@ -600,7 +600,12 @@ export default function AdminVerificationPage() {
                             ))}
                         </div>
 
-                        <div className="mb-4"><h2 className="text-xl font-bold font-serif uppercase tracking-widest text-[#881337]">Profile Approval Pipeline</h2></div>
+                {/* Results count */}
+                <p className="text-[10px] text-gray-400 font-bold mb-3 tracking-wide uppercase">
+                    Showing {sortedUsers.length} {filterGender} profiles (Total: {analytics.totalUsers})
+                </p>
+
+                <div className="mb-4"><h2 className="text-xl font-bold font-serif uppercase tracking-widest text-[#881337]">Profile Approval Pipeline</h2></div>
 
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 hidden md:grid grid-cols-12 gap-4 text-xs font-bold text-gray-500 uppercase tracking-wider">

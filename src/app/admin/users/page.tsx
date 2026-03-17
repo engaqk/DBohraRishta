@@ -456,8 +456,8 @@ export default function AdminUsersPage() {
                 </div>
 
                 {/* Results count */}
-                <p className="text-xs text-gray-400 font-bold mb-3 tracking-wide uppercase">
-                    Showing {activeMainTab === 'firestore' ? filteredAndSorted.length : authUsers.length} users
+                <p className="text-[10px] text-gray-400 font-bold mb-3 tracking-wide uppercase">
+                    Showing {activeMainTab === 'firestore' ? filteredAndSorted.length : authUsers.length} {activeMainTab === 'firestore' ? filterGender : ''} results (Total: {activeMainTab === 'firestore' ? stats.total : authUsers.length})
                 </p>
 
                 {loading ? (

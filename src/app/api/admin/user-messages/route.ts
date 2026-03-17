@@ -41,6 +41,11 @@ export async function GET(request: Request) {
             };
         });
 
+        // 2. Reset unread count for admin since they just fetched the thread
+        await adminDb.collection('users').doc(userId).update({
+            unreadMsgCountForAdmin: 0
+        }).catch(err => console.error('Failed to reset unread count:', err));
+
         return NextResponse.json({ messages });
 
     } catch (error: any) {
@@ -83,6 +88,7 @@ export async function POST(request: Request) {
             await adminDb.collection('users').doc(userId).update({
                 adminMessage: text,
                 hasUnreadAdminMessage: true,
+                totalMsgCount: admin.firestore.FieldValue.increment(1),
                 updatedAt: admin.firestore.FieldValue.serverTimestamp()
             });
         }

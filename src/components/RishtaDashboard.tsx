@@ -7,7 +7,7 @@ import ChatWindow from './ChatWindow';
 import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment } from 'firebase/firestore';
 import { db, messaging } from '@/lib/firebase/config';
 import { requestNotificationPermission } from '@/lib/firebase/messaging';
 import toast from 'react-hot-toast';
@@ -325,11 +325,20 @@ export default function RishtaDashboard() {
     const handleSendMessageToAdmin = async () => {
         if (!userMsgInput.trim() || !user) return;
         try {
-            await addDoc(collection(db, 'admin_messages', user.uid, 'thread'), {
+            const msgRef = collection(db, 'admin_messages', user.uid, 'thread');
+            await addDoc(msgRef, {
                 text: userMsgInput.trim(),
                 from: 'user',
                 createdAt: serverTimestamp(),
             });
+
+            // Update user document for faster admin dashboard loading
+            await updateDoc(doc(db, 'users', user.uid), {
+                unreadMsgCountForAdmin: increment(1),
+                totalMsgCount: increment(1),
+                lastMsgFromUserAt: serverTimestamp()
+            });
+
             setUserMsgInput('');
         } catch (e: any) {
             toast.error('Could not send message.');

@@ -20,31 +20,40 @@ export async function GET(request: Request) {
         }
 
         // 1. Execute all queries in parallel for maximum speed
-        const [usersSnap, totalRequestsSnap, acceptedRequestsSnap, threadSnap] = await Promise.all([
-            // Fetch all users for the pipeline grid
-            adminDb.collection('users').get(),
+        // Removed collectionGroup('thread') scan which was causing major slowdowns
+        const [usersSnap, totalRequestsSnap, acceptedRequestsSnap] = await Promise.all([
+            // Fetch users with only essential fields for the dashboard
+            adminDb.collection('users')
+                .select(
+                    'name', 'itsNumber', 'ejamaatId', 'gender', 'maritalStatus', 'status', 
+                    'hizratLocation', 'city', 'country', 'education', 'educationDetails',
+                    'profession', 'professionType', 'mobile', 'mobileCode', 'email',
+                    'adminMessage', 'isItsVerified', 'isCandidateFormComplete', 'createdAt',
+                    'unreadMsgCountForAdmin', 'totalMsgCount', 'dob', 'fatherName', 'motherName',
+                    'libasImageUrl', 'itsImageUrl'
+                ).get(),
             
             // Efficient counts for stats (doesn't download any documents)
             adminDb.collection('rishta_requests').count().get(),
             adminDb.collection('rishta_requests').where('status', '==', 'accepted').count().get(),
-            
-            // Scans all thread messages (heavy, but parallelized)
-            adminDb.collectionGroup('thread').get()
         ]);
 
-        const users = usersSnap.docs.map(d => ({ uid: d.id, id: d.id, ...d.data() }));
         const totalRequests = totalRequestsSnap.data().count;
         const acceptedRequests = acceptedRequestsSnap.data().count;
 
-        // Process message counts from the parallel snapshot
         let msgCounts: Record<string, { total: number; userMsgs: number }> = {};
-        threadSnap.docs.forEach(doc => {
-            const parentId = doc.ref.parent.parent?.id;
-            if (!parentId) return;
-            const data = doc.data();
-            if (!msgCounts[parentId]) msgCounts[parentId] = { total: 0, userMsgs: 0 };
-            msgCounts[parentId].total++;
-            if (data.from === 'user' && data.readByAdmin !== true) msgCounts[parentId].userMsgs++;
+        
+        const users = usersSnap.docs.map(d => {
+            const data = d.data();
+            const uid = d.id;
+            
+            // Use the pre-calculated counts from the user document
+            msgCounts[uid] = { 
+                total: data.totalMsgCount || 0, 
+                userMsgs: data.unreadMsgCountForAdmin || 0 
+            };
+
+            return { uid, id: uid, ...data };
         });
 
         return NextResponse.json({

@@ -356,7 +356,7 @@ export default function OnboardingPage() {
                         >
                             {num}
                             <span className={`absolute -bottom-6 text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${step === num ? 'text-[#881337]' : 'text-gray-400'}`}>
-                                {num === 1 ? 'Basic Info' : 'Verification & Details'}
+                                {num === 1 ? 'Basic Info' : 'Details'}
                             </span>
                         </div>
                     ))}
@@ -415,7 +415,7 @@ export default function OnboardingPage() {
                                             value={formData.mobile}
                                             readOnly={loginMethod === 'mobile'}
                                             className={`w-full ${loginMethod === 'mobile' ? 'bg-gray-100 cursor-not-allowed' : 'bg-gray-50'} border ${errors.mobile ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`}
-                                            placeholder="e.g. 919876543210"
+                                            placeholder="e.g. +919876543210"
                                         />
                                         {loginMethod === 'mobile' && (
                                             <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -424,7 +424,11 @@ export default function OnboardingPage() {
                                         )}
                                     </div>
                                     {errors.mobile && <p className="text-red-500 text-xs font-bold mt-1">{errors.mobile}</p>}
-                                    {loginMethod === 'mobile' && <p className="text-[10px] text-gray-400 mt-1 font-bold italic">✓ Verified via OTP</p>}
+                                    {loginMethod === 'mobile' ? (
+                                        <p className="text-[10px] text-gray-400 mt-1 font-bold italic">✓ Verified via OTP</p>
+                                    ) : (
+                                        <p className="text-[10px] text-gray-500 mt-1 font-medium italic">Please include +91 or your country code</p>
+                                    )}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -494,10 +498,10 @@ export default function OnboardingPage() {
                                     Strictly Confidential & Mandatory
                                 </div>
                                 <label className="text-center w-full block mt-4 mb-2 font-bold text-sm text-[#881337]">
-                                    Upload Original ITS Card
+                                    Upload Your Original ITS Card Photo
                                 </label>
                                 <p className="text-xs text-yellow-800 text-center mb-5 max-w-sm font-medium leading-relaxed">
-                                    Your profile <strong className="text-red-600">will be rejected</strong> if the ITS card is entirely missing or fake. This is strictly required to verify your identity before allowing access to the platform. <strong>Only Verified ITS card candidates can send requests. Request option will be locked until verification.</strong>
+                                    Your profile <strong className="text-red-600">will be rejected</strong> if the ITS card photo is entirely missing or fake. This is strictly required to verify your identity before allowing access to the platform. <strong>Only Verified ITS card candidates can send requests. Request option will be locked until verification.</strong>
                                 </p>
 
                                 {imagePreview ? (

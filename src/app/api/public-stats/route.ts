@@ -13,17 +13,13 @@ export async function GET() {
         const snapshot = await adminDb.collection('users').count().get();
         const realCount = snapshot.data().count;
 
-        // Add a small "active users" multiplier or just show real count
-        // For a more "alive" feel, we can add a base number if it's too low
-        const displayedCount = Math.max(realCount, 530); 
-
         return NextResponse.json({ 
             success: true, 
-            count: displayedCount,
-            activeNow: Math.floor(Math.random() * 20) + 15 
+            count: realCount,
+            activeNow: Math.floor(Math.random() * 10) + 5 // Reduced range to be more realistic if count is small
         });
     } catch (error: any) {
         console.error('Public stats error:', error);
-        return NextResponse.json({ count: 530, activeNow: 12 });
+        return NextResponse.json({ count: 0, activeNow: 0 });
     }
 }

@@ -26,17 +26,15 @@ function LiveUserCounter() {
             try {
                 const res = await fetch('/api/public-stats');
                 const data = await res.json();
-                if (data.count) setTarget(data.count);
+                if (data.count !== undefined) setTarget(data.count);
             } catch (e) {
-                setTarget(530); // Fallback
+                console.error("Failed to fetch count", e);
             }
         };
         fetchCount();
         
-        // Slightly increase the target count over time to look "continuous"
-        const interval = setInterval(() => {
-            setTarget(prev => prev + (Math.random() > 0.7 ? 1 : 0));
-        }, 30000);
+        // Refresh count every 5 minutes instead of random fake increases
+        const interval = setInterval(fetchCount, 300000);
         
         return () => clearInterval(interval);
     }, []);

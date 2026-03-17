@@ -5,7 +5,7 @@ import { collection, query, orderBy, addDoc, serverTimestamp, onSnapshot, collec
 import { db } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send, MessageCircle, ShieldAlert, Database } from "lucide-react";
+import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send, MessageCircle, ShieldAlert, Database, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface RegistrationUser {
@@ -211,6 +211,35 @@ export default function AdminUsersPage() {
             toast.error("Network error during sync");
         } finally {
             setIsSyncing(false);
+        }
+    };
+
+    const handleDeleteUser = async (userId: string, name: string) => {
+        const confirmed = window.confirm(`DANGER: Are you absolutely sure you want to PERMANENTLY delete the account and biodata for ${name || 'this user'}? \n\nThis will delete their profile from the Database AND their login account from Firebase Auth. This action CANNOT be undone.`);
+        if (!confirmed) return;
+
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/users/delete', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': token || '',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, adminId: user?.uid })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                toast.success('User account and profile deleted completely');
+                setUsers(prev => prev.filter(u => u.uid !== userId));
+                setAuthUsers(prev => prev.filter(u => u.uid !== userId));
+                if (selectedUser?.uid === userId) setSelectedUser(null);
+            } else {
+                toast.error(data.error || 'Failed to delete user');
+            }
+        } catch (e: any) {
+            toast.error('Network error during deletion');
         }
     };
 
@@ -504,8 +533,17 @@ export default function AdminUsersPage() {
                                                 </div>
 
                                                 {/* Right info */}
-                                                <div className="hidden md:flex flex-col items-end gap-1 shrink-0 text-right">
-                                                    {u.ejamaatId && <p className="text-xs font-black text-[#881337]">ITS: {u.ejamaatId}</p>}
+                                                <div className="hidden md:flex flex-col items-end gap-1 shrink-0 text-right group/row">
+                                                    <div className="flex items-center gap-2">
+                                                        {u.ejamaatId && <p className="text-xs font-black text-[#881337]">ITS: {u.ejamaatId}</p>}
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); handleDeleteUser(u.uid, u.name || ''); }}
+                                                            className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover/row:opacity-100"
+                                                            title="Delete Profile Completely"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
                                                     {u.jamaat && <p className="text-xs text-gray-400">{u.jamaat}</p>}
                                                     {u.gender && <p className="text-[10px] text-gray-400 capitalize">{u.gender}</p>}
                                                     <p className="text-[10px] text-gray-300 font-bold uppercase tracking-wide">
@@ -572,6 +610,11 @@ export default function AdminUsersPage() {
                                                                 <Mail className="w-3 h-3" /> Email
                                                             </a>
                                                         )}
+                                                        <button
+                                                            onClick={e => { e.stopPropagation(); handleDeleteUser(u.uid, u.name || ''); }}
+                                                            className="bg-red-50 border border-red-100 text-red-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors flex items-center gap-2">
+                                                            <Trash2 className="w-3.5 h-3.5" /> Delete Account Completely
+                                                        </button>
                                                     </div>
                                                 </div>
                                             )}

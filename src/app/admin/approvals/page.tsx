@@ -44,7 +44,7 @@ export default function AdminVerificationPage() {
     const [requestStats, setRequestStats] = useState({ total: 0, accepted: 0 });
     const [searchQuery, setSearchQuery] = useState("");
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
-    const [filterGender, setFilterGender] = useState<string>('all');
+    const [filterGender, setFilterGender] = useState<string>('male');
     const { user, impersonateUser } = useAuth();
     const router = useRouter();
 
@@ -58,7 +58,7 @@ export default function AdminVerificationPage() {
                 u.hizratLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 u.jamaat?.toLowerCase().includes(searchQuery.toLowerCase());
             
-            const matchesGender = filterGender === 'all' || u.gender?.toLowerCase() === filterGender;
+            const matchesGender = u.gender?.toLowerCase() === filterGender;
             return matchesSearch && matchesGender;
         });
 
@@ -588,13 +588,13 @@ export default function AdminVerificationPage() {
 
                         {/* Gender Tabs */}
                         <div className="bg-white border-b border-gray-100 mb-6 rounded-2xl overflow-hidden shadow-sm flex items-center px-4">
-                            {(['all', 'male', 'female'] as const).map(g => (
+                            {(['male', 'female'] as const).map(g => (
                                 <button
                                     key={g}
                                     onClick={() => setFilterGender(g)}
                                     className={`py-4 px-6 text-[10px] font-black uppercase tracking-widest transition-all relative ${filterGender === g ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
-                                    {g === 'all' ? 'All Genders' : g}s ({allUsers.filter(u => g === 'all' || u.gender?.toLowerCase() === g).length})
+                                    {g}s ({allUsers.filter(u => u.gender?.toLowerCase() === g).length})
                                     {filterGender === g && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
                                 </button>
                             ))}

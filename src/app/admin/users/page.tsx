@@ -59,7 +59,7 @@ export default function AdminUsersPage() {
     );
     const [msgCounts, setMsgCounts] = useState<Record<string, { total: number, userMsgs: number }>>({});
     const [activeMainTab, setActiveMainTab] = useState<'firestore' | 'auth'>('firestore');
-    const [filterGender, setFilterGender] = useState<string>('all');
+    const [filterGender, setFilterGender] = useState<string>('male');
     const [isSyncing, setIsSyncing] = useState(false);
 
 
@@ -273,7 +273,7 @@ export default function AdminUsersPage() {
                 u.city?.toLowerCase().includes(search.toLowerCase()) ||
                 u.jamaat?.toLowerCase().includes(search.toLowerCase());
 
-            const matchGender = filterGender === 'all' || u.gender?.toLowerCase() === filterGender;
+            const matchGender = u.gender?.toLowerCase() === filterGender;
             const matchStatus = filterStatus === 'all' || u.status === filterStatus;
             const matchComplete = filterComplete === 'all' ||
                 (filterComplete === 'complete' && u.isCandidateFormComplete) ||
@@ -368,13 +368,13 @@ export default function AdminUsersPage() {
             {activeMainTab === 'firestore' && (
                 <div className="bg-white border-b border-gray-100">
                     <div className="max-w-7xl mx-auto px-6 flex items-center gap-6">
-                        {(['all', 'male', 'female'] as const).map(g => (
+                        {(['male', 'female'] as const).map(g => (
                             <button
                                 key={g}
                                 onClick={() => setFilterGender(g)}
                                 className={`py-3 text-[10px] font-black uppercase tracking-widest transition-all relative ${filterGender === g ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
                             >
-                                {g === 'all' ? 'All Genders' : g}s ({users.filter(u => g === 'all' || u.gender?.toLowerCase() === g).length})
+                                {g}s ({users.filter(u => u.gender?.toLowerCase() === g).length})
                                 {filterGender === g && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#881337] rounded-full" />}
                             </button>
                         ))}

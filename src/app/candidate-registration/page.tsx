@@ -340,7 +340,12 @@ export default function CandidateRegistrationPage() {
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             setSubmitError("Please fix the highlighted fields to continue.");
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            
+            // Scroll to the first error
+            const firstErrorKey = Object.keys(newErrors)[0];
+            const el = document.getElementsByName(firstErrorKey)[0] || document.getElementById(firstErrorKey);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            else window.scrollTo({ top: 0, behavior: "smooth" });
             return;
         }
 
@@ -497,12 +502,25 @@ export default function CandidateRegistrationPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">eJamaat Id (ITS) *</label>
-                                    <input disabled title="Verified ITS Number cannot be changed" name="ejamaatId" onChange={handleChange} value={formData.ejamaatId} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.ejamaatId ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} />
+                                    <input 
+                                        disabled 
+                                        name="ejamaatId" 
+                                        onChange={handleChange} 
+                                        value={formData.ejamaatId} 
+                                        className="w-full bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none" 
+                                    />
                                     <ErrorMsg msg={errors.ejamaatId} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Email address</label>
-                                    <input disabled type="email" name="email" onChange={handleChange} value={formData.email} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.email ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} />
+                                    <input 
+                                        disabled={(formData as any).loginMethod === 'google' || (!!user?.email && !user.email.endsWith('@dbohrarishta.local'))} 
+                                        type="email" 
+                                        name="email" 
+                                        onChange={handleChange} 
+                                        value={formData.email} 
+                                        className={`w-full ${(formData as any).loginMethod === 'google' || (!!user?.email && !user.email.endsWith('@dbohrarishta.local')) ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50 focus:ring-[#881337]'} border ${errors.email ? 'border-red-400 focus:ring-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none focus:ring-2`} 
+                                    />
                                     <ErrorMsg msg={errors.email} />
                                 </div>
                                 <div className="grid grid-cols-[1fr_2fr] gap-4">
@@ -514,29 +532,52 @@ export default function CandidateRegistrationPage() {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-2">First Name *</label>
-                                        <input disabled name="firstName" onChange={handleChange} value={formData.firstName} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.firstName ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} />
+                                        <input 
+                                            disabled 
+                                            name="firstName" 
+                                            onChange={handleChange} 
+                                            value={formData.firstName} 
+                                            className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.firstName ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} 
+                                        />
                                         <ErrorMsg msg={errors.firstName} />
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Last Name</label>
-                                    <input disabled name="lastName" onChange={handleChange} value={formData.lastName} className="w-full bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none" />
+                                    <input 
+                                        disabled 
+                                        name="lastName" 
+                                        onChange={handleChange} 
+                                        value={formData.lastName} 
+                                        className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none`} 
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Gender</label>
-                                    <input disabled value={formData.gender === 'male' ? 'Male' : 'Female'} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.gender ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} />
+                                    <input 
+                                        disabled 
+                                        value={formData.gender === 'male' ? 'Male' : 'Female'} 
+                                        className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.gender ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} 
+                                    />
                                     <ErrorMsg msg={errors.gender} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Date of Birth</label>
-                                    <input type="date" name="dob" onChange={handleChange} value={formData.dob} className={`w-full bg-gray-50 border ${errors.dob ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:ring-2 outline-none`} />
+                                    <input 
+                                        disabled 
+                                        type="date" 
+                                        name="dob" 
+                                        onChange={handleChange} 
+                                        value={formData.dob} 
+                                        className="w-full bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 rounded-xl px-4 py-3 outline-none" 
+                                    />
                                     <ErrorMsg msg={errors.dob} />
                                 </div>
                             </div>
 
                             {/* PHOTO MANAGEMENT (Add/Change) */}
                             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="p-5 border-2 border-dashed border-[#D4AF37]/30 bg-[#D4AF37]/5 rounded-2xl">
+                                <div id="photo" className={`p-5 border-2 border-dashed ${errors.photo ? 'border-red-400 bg-red-50/10' : 'border-[#D4AF37]/30 bg-[#D4AF37]/5'} rounded-2xl`}>
                                     <label className="block text-sm font-bold text-[#881337] mb-3">Main Biodata Photo (Kaumi Libas) *</label>
                                     <div className="flex items-center gap-4">
                                         {libasImageUrl ? (
@@ -661,9 +702,16 @@ export default function CandidateRegistrationPage() {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number {formData.mobile ? "(Verified)" : "*"}</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number {(formData as any).loginMethod === 'mobile' ? "(Verified)" : "*"}</label>
                                     <div className="mb-3">
-                                        <input disabled name="mobile" onChange={handleChange} value={formData.mobile} className={`w-full bg-gray-100 text-gray-500 cursor-not-allowed border ${errors.mobile ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} placeholder="e.g. +919876543210" />
+                                        <input 
+                                            disabled={(formData as any).loginMethod === 'mobile'} 
+                                            name="mobile" 
+                                            onChange={handleChange} 
+                                            value={formData.mobile} 
+                                            className={`w-full ${(formData as any).loginMethod === 'mobile' ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50 focus:ring-[#881337]'} border ${errors.mobile ? 'border-red-400' : 'border-gray-200'} rounded-xl px-4 py-3 outline-none`} 
+                                            placeholder="e.g. +919876543210" 
+                                        />
                                     </div>
                                     <ErrorMsg msg={errors.mobile} />
 
@@ -759,6 +807,7 @@ export default function CandidateRegistrationPage() {
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Education Details</label>
                                     <textarea name="educationDetails" onChange={handleChange} value={formData.educationDetails} rows={2} className={`w-full bg-gray-50 border ${errors.general ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:ring-2 outline-none resize-none`} placeholder="Elaborate on your degrees..." />
+                                    {errors.general && <div id="general" />}
                                     <ErrorMsg msg={errors.general} />
                                 </div>
                             </div>

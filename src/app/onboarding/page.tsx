@@ -127,52 +127,15 @@ export default function OnboardingPage() {
                 if (age < 18) newErrors.dob = "You must be at least 18 years old.";
                 if (age > 80) newErrors.dob = "Please enter a valid date of birth.";
             }
-        }
-        if (step === 2) {
-            if (!formData.itsNumber) {
-                newErrors.itsNumber = "ITS Number is required.";
-            } else if (!/^\d{8}$/.test(formData.itsNumber)) {
-                newErrors.itsNumber = "ITS Number must be exactly 8 digits.";
-            } else {
-                // Check for duplicate ITS Number
-                try {
-                    const { collection, query, where, getDocs } = await import('firebase/firestore');
-                    const q = query(collection(db, "users"), where("itsNumber", "==", formData.itsNumber));
-                    const snap = await getDocs(q);
-                    let isDuplicate = false;
-                    snap.forEach(d => {
-                        if (d.id !== user?.uid) isDuplicate = true;
-                    });
 
-                    if (isDuplicate) {
-                        toast.error("This ITS Number is already registered on another profile.");
-                        newErrors.itsNumber = "This ITS Number is already in use.";
-
-                        // Notify via email as requested
-                        if (formData.email) {
-                            notifyDuplicateRegistration({
-                                candidateName: formData.name || "User",
-                                candidateEmail: formData.email,
-                                itsNumber: formData.itsNumber
-                            }).catch(err => console.error("Failed to send duplicate notification email:", err));
-                        }
-                    }
-                } catch (e) {
-                    console.error("Duplicate ITS check error:", e);
-                }
+            if (Object.keys(newErrors).length > 0) {
+                setErrors(newErrors);
+                return;
             }
-            if (!formData.jamaat) newErrors.jamaat = "Primary Jamaat is required.";
-            if (!itsImage) newErrors.itsImage = "Please upload or capture your ITS card.";
-            if (!libasImage) newErrors.libasImage = `Please upload a photo in ${formData.gender === 'female' ? 'Rida' : 'Kurta Saya'}.`;
-        }
 
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
-            return;
+            setStep(2);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setStep(step + 1);
     };
 
     const compressImage = (file: File): Promise<string> => {
@@ -209,12 +172,54 @@ export default function OnboardingPage() {
     const handleSubmit = async () => {
         let newErrors: { [key: string]: string } = {};
 
+        // Validation for combined Step 2 fields
+        if (!formData.itsNumber) {
+            newErrors.itsNumber = "ITS Number is required.";
+        } else if (!/^\d{8}$/.test(formData.itsNumber)) {
+            newErrors.itsNumber = "ITS Number must be exactly 8 digits.";
+        } else {
+            // Check for duplicate ITS Number
+            try {
+                const { collection, query, where, getDocs } = await import('firebase/firestore');
+                const q = query(collection(db, "users"), where("itsNumber", "==", formData.itsNumber));
+                const snap = await getDocs(q);
+                let isDuplicate = false;
+                snap.forEach(d => {
+                    if (d.id !== user?.uid) isDuplicate = true;
+                });
+
+                if (isDuplicate) {
+                    toast.error("This ITS Number is already registered on another profile.");
+                    newErrors.itsNumber = "This ITS Number is already in use.";
+
+                    if (formData.email) {
+                        notifyDuplicateRegistration({
+                            candidateName: formData.name || "User",
+                            candidateEmail: formData.email,
+                            itsNumber: formData.itsNumber
+                        }).catch(err => console.error("Failed to send duplicate notification email:", err));
+                    }
+                }
+            } catch (e) {
+                console.error("Duplicate ITS check error:", e);
+            }
+        }
+        if (!formData.jamaat) newErrors.jamaat = "Primary Jamaat is required.";
+        if (!itsImage) newErrors.itsImage = "Please upload or capture your ITS card.";
+        if (!libasImage) newErrors.libasImage = `Please upload a photo in ${formData.gender === 'female' ? 'Rida' : 'Kurta Saya'}.`;
+
         if (!formData.education) newErrors.education = "Education details are required.";
         if (!formData.hizratLocation) newErrors.hizratLocation = "Location is required.";
         if (!formData.bio) newErrors.bio = "About me is required.";
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
+            // Scroll to the first error
+            const firstErrorKey = Object.keys(newErrors)[0];
+            // Try to find the element by name or ID
+            const el = document.getElementsByName(firstErrorKey)[0] || document.getElementById(firstErrorKey);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            else window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
 
@@ -338,18 +343,21 @@ export default function OnboardingPage() {
                 </div>
 
                 {/* Progress Bar */}
-                <div className="flex justify-between items-center mb-8 relative">
+                <div className="flex justify-between items-center mb-10 relative px-4">
                     <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-200 -z-10 -translate-y-1/2 rounded-full"></div>
                     <div
                         className="absolute top-1/2 left-0 h-1 bg-[#D4AF37] -z-10 -translate-y-1/2 rounded-full transition-all duration-300"
-                        style={{ width: `${((step - 1) / 2) * 100}%` }}
+                        style={{ width: `${(step - 1) * 100}%` }}
                     ></div>
-                    {[1, 2, 3].map((num) => (
+                    {[1, 2].map((num) => (
                         <div
                             key={num}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm border-4 transition-colors ${step >= num ? 'bg-[#881337] text-white border-white shadow-md' : 'bg-white text-gray-400 border-gray-100'}`}
+                            className={`w-12 h-12 rounded-full flex flex-col items-center justify-center font-bold text-xs border-4 transition-all duration-500 relative ${step >= num ? 'bg-[#881337] text-white border-white shadow-[0_0_15px_rgba(136,19,55,0.3)]' : 'bg-white text-gray-400 border-gray-100'}`}
                         >
                             {num}
+                            <span className={`absolute -bottom-6 text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${step === num ? 'text-[#881337]' : 'text-gray-400'}`}>
+                                {num === 1 ? 'Basic Info' : 'Verification & Details'}
+                            </span>
                         </div>
                     ))}
                 </div>
@@ -391,7 +399,8 @@ export default function OnboardingPage() {
                                         data-form-type="other"
                                         onChange={handleChange}
                                         value={formData.email}
-                                        className={`w-full bg-gray-50 border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`}
+                                        readOnly={!!user?.email && !user.email.endsWith('@dbohrarishta.local')}
+                                        className={`w-full ${!!user?.email && !user.email.endsWith('@dbohrarishta.local') ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-gray-50'} border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`}
                                         placeholder="Your personal email address"
                                     />
                                     {errors.email && <p className="text-red-500 text-xs font-bold mt-1">{errors.email}</p>}
@@ -480,7 +489,7 @@ export default function OnboardingPage() {
                             </div>
 
                             {/* Mobile Real-time Camera Capture for ITS */}
-                            <div className={`mt-6 border-2 border-yellow-400 rounded-xl p-5 bg-yellow-50/30 shadow-sm flex flex-col items-center relative overflow-hidden`}>
+                            <div id="itsImage" className={`mt-6 border-2 border-yellow-400 rounded-xl p-5 bg-yellow-50/30 shadow-sm flex flex-col items-center relative overflow-hidden`}>
                                 <div className="absolute top-0 left-0 right-0 bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-widest text-center py-1">
                                     Strictly Confidential & Mandatory
                                 </div>
@@ -545,10 +554,13 @@ export default function OnboardingPage() {
                             </div>
 
                             {/* Qaumi Libas Photo Upload */}
-                            <div className={`mt-6 border ${errors.libasImage ? 'border-red-500' : 'border-gray-200'} rounded-xl p-5 bg-white shadow-sm flex flex-col items-center`}>
-                                <label className="text-center w-full block mb-4 font-bold text-sm text-[#881337]">
-                                    Upload Profile Photo (in {formData.gender === 'female' ? 'Rida' : 'Kurta Saya'})
+                            <div id="libasImage" className={`mt-6 border ${errors.libasImage ? 'border-red-500' : 'border-gray-200'} rounded-xl p-5 bg-white shadow-sm flex flex-col items-center`}>
+                                <label className="text-center w-full block mb-2 font-bold text-sm text-[#881337]">
+                                    Upload Profile Photo (Prefer {formData.gender === 'female' ? 'Rida' : 'Saya Kurta'})
                                 </label>
+                                <p className="text-[10px] text-gray-400 text-center mb-4 italic font-medium">
+                                    Note: You can upload additional normal photos from your profile section after completing onboarding.
+                                </p>
 
                                 {libasImagePreview ? (
                                     <div className="relative w-full max-w-[250px] aspect-[1] rounded-xl overflow-hidden shadow-lg border-2 border-[#D4AF37]">
@@ -601,75 +613,68 @@ export default function OnboardingPage() {
                                 {errors.libasImage && <p className="text-red-500 text-xs font-bold mt-2 w-full text-center">{errors.libasImage}</p>}
                             </div>
 
-                            <div className="flex justify-between pt-6">
-                                <button onClick={() => setStep(1)} className="text-gray-500 px-6 py-3 font-bold hover:text-gray-700">Back</button>
-                                <button onClick={handleNext} className="bg-[#881337] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#9F1239] transition-colors shadow-md flex items-center gap-2">
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* STEP 3: Dunyawi Profile Details */}
-                    {step === 3 && (
-                        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="flex items-start flex-col mb-4">
-                                <h2 className="text-2xl font-bold font-serif mb-1">Dunyawi Details</h2>
-                                <p className="text-sm text-gray-500">Education and current Hizrat (Location) preferences.</p>
-                            </div>
-
-                            {/* Guardian Mode - Highlight 2 moved from Registration */}
-                            <div className="bg-rose-50 p-5 rounded-2xl border-2 border-rose-100 shadow-sm">
-                                <label className="block text-sm font-black text-[#881337] mb-2 uppercase tracking-tight">Rishta Guardian Mode</label>
-                                <p className="text-xs text-gray-500 mb-4 leading-relaxed font-medium">Is this profile managed by the candidate themselves or a Parent/Guardian?</p>
-                                <select
-                                    name="informationProvidedBy"
-                                    onChange={handleChange}
-                                    value={formData.informationProvidedBy}
-                                    className="w-full bg-white border border-rose-200 rounded-xl px-4 py-3.5 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-[#881337] outline-none shadow-inner"
-                                >
-                                    <option value="Myself (Candidate)">Managed by Candidate (Self)</option>
-                                    <option value="Parent/Guardian (Wali)">Managed by Parent/Guardian (Wali Mode)</option>
-                                    <option value="Sibling">Managed by Sibling</option>
-                                    <option value="Friend/Relative">Managed by Friend/Relative</option>
-                                </select>
-                            </div>
-
-                            {/* Privacy Toggle / Highlight 3 */}
-                            <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
-                                <div className="flex-1">
-                                    <p className="text-sm font-black text-gray-800 mb-1 uppercase tracking-tight">Photo Privacy Control</p>
-                                    <p className="text-[10px] text-gray-500 font-medium leading-relaxed">
-                                        Enable <strong>Blur Mode</strong> for extra security. Photos only unblur for accepted requests.
-                                    </p>
+                            {/* STEP 3 CONTENT MERGED HERE */}
+                            <div className="space-y-5 pt-4 border-t border-gray-100">
+                                <div className="flex items-start flex-col mb-2">
+                                    <h2 className="text-xl font-bold font-serif mb-1">Dunyawi Details</h2>
+                                    <p className="text-xs text-gray-500">Education and current Hizrat (Location) preferences.</p>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData(p => ({ ...p, isBlurSecurityEnabled: !p.isBlurSecurityEnabled }))}
-                                    className={`w-12 h-6 rounded-full relative transition-all duration-300 ${formData.isBlurSecurityEnabled ? 'bg-[#881337]' : 'bg-gray-300'}`}
-                                >
-                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${formData.isBlurSecurityEnabled ? 'right-1' : 'left-1'}`} />
-                                </button>
+
+                                {/* Guardian Mode */}
+                                <div className="bg-rose-50 p-5 rounded-2xl border-2 border-rose-100 shadow-sm">
+                                    <label className="block text-sm font-black text-[#881337] mb-2 uppercase tracking-tight">Rishta Guardian Mode</label>
+                                    <p className="text-xs text-gray-500 mb-4 leading-relaxed font-medium">Is this profile managed by the candidate themselves or a Parent/Guardian?</p>
+                                    <select
+                                        name="informationProvidedBy"
+                                        onChange={handleChange}
+                                        value={formData.informationProvidedBy}
+                                        className="w-full bg-white border border-rose-200 rounded-xl px-4 py-3.5 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-[#881337] outline-none shadow-inner"
+                                    >
+                                        <option value="Myself (Candidate)">Managed by Candidate (Self)</option>
+                                        <option value="Parent/Guardian (Wali)">Managed by Parent/Guardian (Wali Mode)</option>
+                                        <option value="Sibling">Managed by Sibling</option>
+                                        <option value="Friend/Relative">Managed by Friend/Relative</option>
+                                    </select>
+                                </div>
+
+                                {/* Privacy Toggle */}
+                                <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
+                                    <div className="flex-1">
+                                        <p className="text-sm font-black text-gray-800 mb-1 uppercase tracking-tight">Photo Privacy Control</p>
+                                        <p className="text-[10px] text-gray-500 font-medium leading-relaxed">
+                                            Enable <strong>Blur Mode</strong> for extra security. Photos only unblur for accepted requests.
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData(p => ({ ...p, isBlurSecurityEnabled: !p.isBlurSecurityEnabled }))}
+                                        className={`w-12 h-6 rounded-full relative transition-all duration-300 ${formData.isBlurSecurityEnabled ? 'bg-[#881337]' : 'bg-gray-300'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${formData.isBlurSecurityEnabled ? 'right-1' : 'left-1'}`} />
+                                    </button>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Highest Education</label>
+                                    <input name="education" onChange={handleChange} value={formData.education} className={`w-full bg-gray-50 border ${errors.education ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. MBA in Finance" />
+                                    {errors.education && <p className="text-red-500 text-xs font-bold mt-1">{errors.education}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Current Location</label>
+                                    <input name="hizratLocation" onChange={handleChange} value={formData.hizratLocation} className={`w-full bg-gray-50 border ${errors.hizratLocation ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. Dubai, UAE" />
+                                    {errors.hizratLocation && <p className="text-red-500 text-xs font-bold mt-1">{errors.hizratLocation}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Bio (Be Intentional)</label>
+                                    <textarea name="bio" onChange={handleChange} value={formData.bio} rows={4} className={`w-full bg-gray-50 border ${errors.bio ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 resize-none`} placeholder="Share your expectations for an alliance..." />
+                                    {errors.bio && <p className="text-red-500 text-xs font-bold mt-1">{errors.bio}</p>}
+                                </div> 
                             </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Highest Education</label>
-                                <input name="education" onChange={handleChange} value={formData.education} className={`w-full bg-gray-50 border ${errors.education ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. MBA in Finance" />
-                                {errors.education && <p className="text-red-500 text-xs font-bold mt-1">{errors.education}</p>}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Current Location</label>
-                                <input name="hizratLocation" onChange={handleChange} value={formData.hizratLocation} className={`w-full bg-gray-50 border ${errors.hizratLocation ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. Dubai, UAE" />
-                                {errors.hizratLocation && <p className="text-red-500 text-xs font-bold mt-1">{errors.hizratLocation}</p>}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Bio (Be Intentional)</label>
-                                <textarea name="bio" onChange={handleChange} value={formData.bio} rows={4} className={`w-full bg-gray-50 border ${errors.bio ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 resize-none`} placeholder="Share your expectations for an alliance..." />
-                                {errors.bio && <p className="text-red-500 text-xs font-bold mt-1">{errors.bio}</p>}
-                            </div>
-                            <div className="flex justify-between pt-4">
-                                <button onClick={() => setStep(2)} className="text-gray-500 px-6 py-3 font-bold hover:text-gray-700" disabled={loading}>Back</button>
-                                <button
-                                    onClick={handleSubmit}
+
+                            <div className="flex justify-between pt-6">
+                                <button onClick={() => setStep(1)} className="text-gray-500 px-6 py-3 font-bold hover:text-gray-700" disabled={loading}>Back</button>
+                                <button 
+                                    onClick={handleSubmit} 
                                     disabled={loading}
                                     className="bg-[#D4AF37] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#c29e2f] transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center gap-2"
                                 >

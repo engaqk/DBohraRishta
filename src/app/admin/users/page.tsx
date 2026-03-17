@@ -59,6 +59,7 @@ export default function AdminUsersPage() {
     );
     const [msgCounts, setMsgCounts] = useState<Record<string, { total: number, userMsgs: number }>>({});
     const [activeMainTab, setActiveMainTab] = useState<'firestore' | 'auth'>('firestore');
+    const [filterGender, setFilterGender] = useState<string>('all');
     const [isSyncing, setIsSyncing] = useState(false);
 
 
@@ -272,12 +273,13 @@ export default function AdminUsersPage() {
                 u.city?.toLowerCase().includes(search.toLowerCase()) ||
                 u.jamaat?.toLowerCase().includes(search.toLowerCase());
 
+            const matchGender = filterGender === 'all' || u.gender?.toLowerCase() === filterGender;
             const matchStatus = filterStatus === 'all' || u.status === filterStatus;
             const matchComplete = filterComplete === 'all' ||
                 (filterComplete === 'complete' && u.isCandidateFormComplete) ||
                 (filterComplete === 'incomplete' && !u.isCandidateFormComplete);
 
-            return matchSearch && matchStatus && matchComplete;
+            return matchSearch && matchGender && matchStatus && matchComplete;
         });
 
         return [...filtered].sort((a, b) => {
@@ -361,6 +363,24 @@ export default function AdminUsersPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Gender Sub-tabs for Registered Candidates */}
+            {activeMainTab === 'firestore' && (
+                <div className="bg-white border-b border-gray-100">
+                    <div className="max-w-7xl mx-auto px-6 flex items-center gap-6">
+                        {(['all', 'male', 'female'] as const).map(g => (
+                            <button
+                                key={g}
+                                onClick={() => setFilterGender(g)}
+                                className={`py-3 text-[10px] font-black uppercase tracking-widest transition-all relative ${filterGender === g ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                            >
+                                {g === 'all' ? 'All Genders' : g}s ({users.filter(u => g === 'all' || u.gender?.toLowerCase() === g).length})
+                                {filterGender === g && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#881337] rounded-full" />}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="max-w-7xl mx-auto px-4 py-6">
                 {/* Stats row */}
@@ -538,7 +558,7 @@ export default function AdminUsersPage() {
                                                         {u.ejamaatId && <p className="text-xs font-black text-[#881337]">ITS: {u.ejamaatId}</p>}
                                                         <button 
                                                             onClick={(e) => { e.stopPropagation(); handleDeleteUser(u.uid, u.name || ''); }}
-                                                            className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover/row:opacity-100"
+                                                            className="p-1.5 text-red-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                                             title="Delete Profile Completely"
                                                         >
                                                             <Trash2 className="w-3.5 h-3.5" />
@@ -612,8 +632,8 @@ export default function AdminUsersPage() {
                                                         )}
                                                         <button
                                                             onClick={e => { e.stopPropagation(); handleDeleteUser(u.uid, u.name || ''); }}
-                                                            className="bg-red-50 border border-red-100 text-red-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors flex items-center gap-2">
-                                                            <Trash2 className="w-3.5 h-3.5" /> Delete Account Completely
+                                                            className="bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-700 transition-colors shadow-md flex items-center gap-2">
+                                                            <Trash2 className="w-3.5 h-3.5" /> Delete Profile Completely
                                                         </button>
                                                     </div>
                                                 </div>

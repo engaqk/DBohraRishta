@@ -14,15 +14,18 @@ service cloud.firestore {
     function isAdmin() {
       return signedIn() && (
         request.auth.token.admin == true || 
-        request.auth.uid == 'admin-panel-service-account' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin'
+        request.auth.uid == 'admin-panel-service-account' ||       
+        request.auth.token.email == '53dbohrarishta@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin')
       );
     }
     
     // Users collection: authenticated users can read all, write own OR admin
     match /users/{userId} {
       allow read: if signedIn();
-      allow write: if signedIn() && (isOwner(userId) || isAdmin());
+      allow create, update: if signedIn() && (isOwner(userId) || isAdmin());
+      allow delete: if false; // Deletions must go through secure Admin API for Auth cleanup & Audit Logging
 
       // Notifications: Only owner/admin reads
       match /notifications/{notifId} {
@@ -100,7 +103,7 @@ service cloud.firestore {
     match /profile_views/{viewId} {
       allow read, write: if signedIn() && (
         isAdmin() ||
-        request.auth.uid == resource.data.userId ||
+        (resource != null && resource.data.get('profileId', '') == request.auth.uid) ||
         request.method == 'create'
       );
     }

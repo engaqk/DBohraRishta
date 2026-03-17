@@ -5,7 +5,7 @@ import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverT
 import { db } from "@/lib/firebase/config";
 import { auth } from "@/lib/firebase/config";
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
-import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -44,19 +44,23 @@ export default function AdminVerificationPage() {
     const [requestStats, setRequestStats] = useState({ total: 0, accepted: 0 });
     const [searchQuery, setSearchQuery] = useState("");
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
-    const { user } = useAuth();
+    const [filterGender, setFilterGender] = useState<string>('all');
+    const { user, impersonateUser } = useAuth();
     const router = useRouter();
 
     const [sortConfig, setSortConfig] = useState<{ key: keyof PendingUser; direction: 'asc' | 'desc' }>({ key: 'createdAt', direction: 'desc' });
 
     const sortedUsers = useMemo(() => {
-        const filtered = allUsers.filter(u =>
-            !searchQuery ||
-            u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            u.itsNumber?.includes(searchQuery) ||
-            u.hizratLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            u.jamaat?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        const filtered = allUsers.filter(u => {
+            const matchesSearch = !searchQuery ||
+                u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                u.itsNumber?.includes(searchQuery) ||
+                u.hizratLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                u.jamaat?.toLowerCase().includes(searchQuery.toLowerCase());
+            
+            const matchesGender = filterGender === 'all' || u.gender?.toLowerCase() === filterGender;
+            return matchesSearch && matchesGender;
+        });
 
         return [...filtered].sort((a, b) => {
             let valA = a[sortConfig.key];
@@ -110,6 +114,34 @@ export default function AdminVerificationPage() {
             setLoading(false);
         }
     }, []);
+
+    const handleDeleteUser = async (userId: string, name: string) => {
+        const confirmed = window.confirm(`DANGER: Are you absolutely sure you want to PERMANENTLY delete the account and biodata for ${name || 'this user'}? \n\nThis will delete their profile from the Database AND their login account from Firebase Auth. This action CANNOT be undone.`);
+        if (!confirmed) return;
+
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/users/delete', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': token || '',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, adminId: user?.uid })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                toast.success('User account and profile deleted completely');
+                setAllUsers(prev => prev.filter(u => u.id !== userId));
+                if (selectedUser?.id === userId) closeDetails();
+            } else {
+                toast.error(data.error || 'Failed to delete user');
+            }
+        } catch (e: any) {
+            toast.error('Network error during deletion');
+        }
+    };
 
     useEffect(() => {
         const isAdmin = localStorage.getItem("admin_auth_token");
@@ -476,6 +508,17 @@ export default function AdminVerificationPage() {
                                                 </button>
                                             )}
                                             <button onClick={closeDetails} className="px-5 py-2.5 bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 rounded-xl transition-colors">Close</button>
+                                            
+                                            <div className="w-full h-px bg-gray-100 my-2" />
+                                            
+                                            <div className="flex gap-3 justify-end w-full">
+                                                <button
+                                                    onClick={() => handleDeleteUser(selectedUser.id, selectedUser.name)}
+                                                    className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-colors shadow-md flex items-center gap-2"
+                                                >
+                                                    <Smartphone className="w-4 h-4" /> Delete Profile Completely
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </>
@@ -541,6 +584,20 @@ export default function AdminVerificationPage() {
                                 <div className="p-3 bg-emerald-50 text-emerald-500 rounded-full"><CheckCircle className="w-6 h-6" /></div>
                                 <div><p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Match Rate</p><h2 className="text-2xl font-bold font-serif">{analytics.acceptedRatio}%</h2></div>
                             </div>
+                        </div>
+
+                        {/* Gender Tabs */}
+                        <div className="bg-white border-b border-gray-100 mb-6 rounded-2xl overflow-hidden shadow-sm flex items-center px-4">
+                            {(['all', 'male', 'female'] as const).map(g => (
+                                <button
+                                    key={g}
+                                    onClick={() => setFilterGender(g)}
+                                    className={`py-4 px-6 text-[10px] font-black uppercase tracking-widest transition-all relative ${filterGender === g ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    {g === 'all' ? 'All Genders' : g}s ({allUsers.filter(u => g === 'all' || u.gender?.toLowerCase() === g).length})
+                                    {filterGender === g && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                                </button>
+                            ))}
                         </div>
 
                         <div className="mb-4"><h2 className="text-xl font-bold font-serif uppercase tracking-widest text-[#881337]">Profile Approval Pipeline</h2></div>
@@ -619,6 +676,13 @@ export default function AdminVerificationPage() {
                                                     {(!u.status || u.status === 'pending_verification' || u.status === 'pending') && (
                                                         <button onClick={() => handleStatusMove(u.id, 'verified')} className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg hover:bg-emerald-100 shadow-sm" title="Quick Verify"><CheckCircle className="w-4 h-4" /></button>
                                                     )}
+                                                    <button 
+                                                        onClick={() => handleDeleteUser(u.id, u.name)}
+                                                        className="p-2 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100 shadow-sm transition-colors" 
+                                                        title="Delete Profile Permanently"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </div>
                                             </div>
                                         );

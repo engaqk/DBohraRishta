@@ -226,6 +226,8 @@ export default function RishtaDashboard() {
                 }
             });
             setRecentViews(Array.from(unique.values()));
+        }, (err) => {
+            console.error("Profile Views Listener Error:", err);
         });
         return () => unsub();
     }, [user]);
@@ -251,6 +253,8 @@ export default function RishtaDashboard() {
             // Calculate unread
             const unread = notifs.filter(n => !n.isRead).length;
             setUnreadNotifCount(unread);
+        }, (err) => {
+            console.error("Notifications Listener Error:", err);
         });
         return () => unsub();
     }, [user]);
@@ -546,11 +550,11 @@ export default function RishtaDashboard() {
             unsubOutgoing = onSnapshot(outgoingQ, (snap) => {
                 currentOutSnap = snap;
                 if (currentInSnap) resolveAndSetRequests(currentOutSnap, currentInSnap);
-            });
+            }, (err) => console.error("Outgoing Requests Error:", err));
             unsubIncoming = onSnapshot(incomingQ, (snap) => {
                 currentInSnap = snap;
                 if (currentOutSnap) resolveAndSetRequests(currentOutSnap, currentInSnap);
-            });
+            }, (err) => console.error("Incoming Requests Error:", err));
         };
 
         let unsubDiscovery: (() => void) | null = null;
@@ -570,7 +574,7 @@ export default function RishtaDashboard() {
                 localStorage.setItem(celebKey, 'true');
             }
 
-            if (profileData.status === 'rejected' || profileData.status === 'hold') {
+            if ((profileData.status === 'rejected' || profileData.status === 'hold') && !isImpersonating) {
                 setDataLoading(false);
                 return;
             }
@@ -617,8 +621,14 @@ export default function RishtaDashboard() {
 
                     setDiscoveryProfiles(profiles);
                     setDataLoading(false);
+                }, (err) => {
+                    console.error("Discovery Listener Error:", err);
+                    setDataLoading(false); // At least stop loading
                 });
             }
+        }, (err) => {
+            console.error("Self Profile Listener Error:", err);
+            setDataLoading(false);
         });
 
 
@@ -793,14 +803,27 @@ export default function RishtaDashboard() {
                 </section>
             );
         }
-
-        if (myProfile?.status === 'rejected') {
+        if (myProfile?.status === 'rejected' && !isImpersonating) {
             return (
                 <section className={`${activeTab === 'discovery' ? 'lg:col-span-3' : 'lg:col-span-4'} flex items-center justify-center p-12`}>
                     <div className="bg-red-50 p-12 rounded-3xl shadow-sm text-center border border-red-100 flex flex-col items-center">
                         <X className="w-16 h-16 text-red-500 mb-4" />
                         <h2 className="text-2xl font-bold text-red-700 mb-2">Biodata Verification Rejected</h2>
-                        <p className="text-red-600 max-w-md">Your ITS verification was rejected by an administrator. Please contact support or retry the verification process if you believe this is an error.</p>
+                        <p className="text-red-600 mb-6 max-w-md">Your biodata has been reviewed and unfortunately was not approved at this time. Please check your messages from admin for details.</p>
+                        <button onClick={() => router.push('/candidate-registration')} className="bg-red-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-red-700 transition-all">Update My Biodata</button>
+                    </div>
+                </section>
+            );
+        }
+
+        if (myProfile?.status === 'hold' && !isImpersonating) {
+            return (
+                <section className={`${activeTab === 'discovery' ? 'lg:col-span-3' : 'lg:col-span-4'} flex items-center justify-center p-12`}>
+                    <div className="bg-yellow-50 p-12 rounded-3xl shadow-sm text-center border border-yellow-100 flex flex-col items-center">
+                        <Clock className="w-16 h-16 text-yellow-500 mb-4" />
+                        <h2 className="text-2xl font-bold text-yellow-700 mb-2">Biodata Verification On Hold</h2>
+                        <p className="text-yellow-600 mb-6 max-w-md">Your biodata is currently on hold by an administrator. Please check your messages from admin for details.</p>
+                        <button onClick={() => router.push('/candidate-registration')} className="bg-yellow-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-yellow-700 transition-all">Review My Biodata</button>
                     </div>
                 </section>
             );

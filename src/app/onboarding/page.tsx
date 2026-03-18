@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User, ShieldCheck, Camera, UploadCloud, CheckCircle2, Loader2, Clock, AlertCircle } from "lucide-react";
+import { User, ShieldCheck, Camera, UploadCloud, CheckCircle2, Loader2, Clock, AlertCircle, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -323,7 +323,7 @@ export default function OnboardingPage() {
         <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center p-6 text-[#881337] pt-12 pb-24">
             <div className="max-w-xl w-full">
 
-                {/* Close Button */}
+                {/* Logout Button */}
                 <div className="flex justify-end mb-4">
                     <button
                         onClick={async () => {
@@ -334,11 +334,11 @@ export default function OnboardingPage() {
                             await signOut(auth);
                             router.push('/login');
                         }}
-                        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#881337] transition-colors bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-sm"
-                        title="Exit and go back to login"
+                        className="flex items-center gap-2 text-sm text-gray-500 hover:text-red-500 transition-colors bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm font-semibold"
+                        title="Logout and go back to login"
                     >
-                        <span className="text-lg leading-none">×</span>
-                        <span>Exit</span>
+                        <LogOut className="w-4 h-4" />
+                        <span>Logout</span>
                     </button>
                 </div>
 

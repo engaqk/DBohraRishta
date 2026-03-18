@@ -880,18 +880,7 @@ export default function CandidateRegistrationPage() {
                                         <option value="Friend/Relative">Managed by Friend/Relative</option>
                                     </select>
                                 </div>
-                                <div className="mt-4 p-5 border border-dashed border-rose-200 bg-rose-50/50 rounded-xl">
-                                    <label className="block text-sm font-bold text-[#881337] mb-3">Additional Biodata Photo (Optional)</label>
-                                    <div className="flex items-center gap-4 flex-wrap">
-                                        {extraImageUrl && (
-                                            <div className="w-20 h-20 rounded-xl auto overflow-hidden shadow-sm border border-[#D4AF37]">
-                                                <img src={extraImageUrl} alt="Extra Secondary" className="w-full h-full object-cover" />
-                                            </div>
-                                        )}
-                                        <input type="file" accept="image/*" onChange={handleExtraImageUpload} className="text-sm text-gray-600 file:cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#881337] file:text-white hover:file:bg-[#9F1239] transition-colors focus:outline-none focus:ring-2 focus:ring-[#881337]/50" />
-                                    </div>
-                                    <p className="text-xs text-gray-400 mt-2">Upload a casual or professional portrait to strengthen your biodata.</p>
-                                </div>
+
                             </div>
                         </section>
 

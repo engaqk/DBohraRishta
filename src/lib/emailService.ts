@@ -424,7 +424,7 @@ export async function notifyWelcomeOnboarding(opts: {
                     <p style="margin:0;font-size:15px;color:#333">Complete your profile today to start discovering matches within our community <strong>free of cost</strong>. Get benefited from all our premium features including photo privacy and direct interest requests.</p>
                 </div>
                 <p>It only takes 2 minutes to get started!</p>
-                <a href="https://53dbohrarishta.in/onboarding" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
+                <a href="https://53dbohrarishta.in/login" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
                     Complete Onboarding Now
                 </a>
                 <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>

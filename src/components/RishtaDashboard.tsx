@@ -1572,40 +1572,44 @@ export default function RishtaDashboard() {
                         <div className="fixed left-[-9999px] top-0">
                             <div 
                                 ref={biodataRef}
-                                className="w-[600px] bg-white p-12 relative overflow-hidden text-gray-800"
-                                style={{ fontFamily: 'serif' }}
+                                className="w-[600px] p-12 relative overflow-hidden"
+                                style={{ 
+                                    fontFamily: 'serif', 
+                                    backgroundColor: '#ffffff',
+                                    color: '#1f2937'
+                                }}
                             >
                                 {/* Background Decorative Elements */}
-                                <div className="absolute top-0 left-0 w-full h-4 bg-[#881337]" />
-                                <div className="absolute bottom-0 left-0 w-full h-2 bg-[#D4AF37]" />
+                                <div className="absolute top-0 left-0 w-full h-4" style={{ backgroundColor: '#881337' }} />
+                                <div className="absolute bottom-0 left-0 w-full h-2" style={{ backgroundColor: '#D4AF37' }} />
                                 
                                 <div className="text-center mb-10">
-                                    <h1 className="text-3xl font-black text-[#881337] uppercase tracking-[0.2em] mb-1">Biodata</h1>
-                                    <div className="w-24 h-1 bg-[#D4AF37] mx-auto mb-2" />
-                                    <p className="text-[10px] text-gray-400 font-sans font-bold tracking-widest uppercase italic">53D Bohra Rishta Platform</p>
+                                    <h1 className="text-3xl font-black uppercase tracking-[0.2em] mb-1" style={{ color: '#881337' }}>Biodata</h1>
+                                    <div className="w-24 h-1 mx-auto mb-2" style={{ backgroundColor: '#D4AF37' }} />
+                                    <p className="text-[10px] font-sans font-bold tracking-widest uppercase italic" style={{ color: '#9ca3af' }}>53D Bohra Rishta Platform</p>
                                 </div>
 
-                                <div className="flex gap-8 mb-10 border-b border-gray-100 pb-10">
-                                    <div className="w-40 h-52 rounded-2xl overflow-hidden border-4 border-gray-50 shadow-xl shrink-0">
+                                <div className="flex gap-8 mb-10 pb-10" style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                    <div className="w-40 h-52 rounded-2xl overflow-hidden shadow-xl shrink-0" style={{ border: '4px solid #f9fafb' }}>
                                         {myProfile.libasImageUrl ? (
                                             <img src={myProfile.libasImageUrl} alt="Profile" className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-300">
+                                            <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#f3f4f6', color: '#d1d5db' }}>
                                                 <User size={48} />
                                             </div>
                                         )}
                                     </div>
                                     <div className="flex-1 pt-2">
-                                        <h2 className="text-4xl font-black text-gray-900 mb-2">{myProfile.name}</h2>
+                                        <h2 className="text-4xl font-black mb-2" style={{ color: '#111827' }}>{myProfile.name}</h2>
                                         <div className="flex flex-wrap gap-2 mb-4">
-                                            <span className="bg-rose-50 text-[#881337] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">{myProfile.gender}</span>
-                                            <span className="bg-amber-50 text-amber-800 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">{myProfile.maritalStatus || 'Single'}</span>
-                                            <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Verified</span>
+                                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#fff1f2', color: '#881337' }}>{myProfile.gender}</span>
+                                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#fffbeb', color: '#92400e' }}>{myProfile.maritalStatus || 'Single'}</span>
+                                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#f9fafb', color: '#4b5563' }}>Verified</span>
                                         </div>
-                                        <div className="grid grid-cols-1 gap-2 text-sm text-gray-600 font-sans">
-                                            <div className="flex items-center gap-2"><MapPin size={14} className="text-[#D4AF37]" /> {myProfile.hizratLocation || myProfile.city}</div>
-                                            <div className="flex items-center gap-2"><GraduationCap size={14} className="text-[#D4AF37]" /> {myProfile.education}</div>
-                                            <div className="flex items-center gap-2"><Briefcase size={14} className="text-[#D4AF37]" /> {myProfile.professionType || 'Professional'}</div>
+                                        <div className="grid grid-cols-1 gap-2 text-sm font-sans" style={{ color: '#4b5563' }}>
+                                            <div className="flex items-center gap-2"><MapPin size={14} style={{ color: '#D4AF37' }} /> {myProfile.hizratLocation || myProfile.city}</div>
+                                            <div className="flex items-center gap-2"><GraduationCap size={14} style={{ color: '#D4AF37' }} /> {myProfile.education}</div>
+                                            <div className="flex items-center gap-2"><Briefcase size={14} style={{ color: '#D4AF37' }} /> {myProfile.professionType || 'Professional'}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1613,44 +1617,44 @@ export default function RishtaDashboard() {
                                 <div className="grid grid-cols-2 gap-x-12 gap-y-8 text-sm mb-12 font-sans relative">
                                     <div className="space-y-4">
                                         <div>
-                                            <p className="text-[10px] font-black text-[#881337] uppercase tracking-widest mb-1">Personal Details</p>
-                                            <div className="space-y-1 text-gray-700">
-                                                <div className="flex justify-between border-b border-gray-50 pb-1"><span>Age / DOB</span><span className="font-bold">{myProfile.dob ? new Date().getFullYear() - new Date(myProfile.dob).getFullYear() : 'N/A'} Yrs</span></div>
-                                                <div className="flex justify-between border-b border-gray-50 pb-1"><span>Height</span><span className="font-bold">{myProfile.heightFeet}'{myProfile.heightInch}"</span></div>
-                                                <div className="flex justify-between border-b border-gray-50 pb-1"><span>Jamaat</span><span className="font-bold truncate max-w-[120px]">{myProfile.jamaat}</span></div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: '#881337' }}>Personal Details</p>
+                                            <div className="space-y-1" style={{ color: '#374151' }}>
+                                                <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f9fafb' }}><span>Age / DOB</span><span className="font-bold">{myProfile.dob ? new Date().getFullYear() - new Date(myProfile.dob).getFullYear() : 'N/A'} Yrs</span></div>
+                                                <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f9fafb' }}><span>Height</span><span className="font-bold">{myProfile.heightFeet}'{myProfile.heightInch}"</span></div>
+                                                <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f9fafb' }}><span>Jamaat</span><span className="font-bold truncate max-w-[120px]">{myProfile.jamaat}</span></div>
                                             </div>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-[#881337] uppercase tracking-widest mb-1">Family Info</p>
-                                            <div className="space-y-1 text-gray-700">
-                                                <div className="flex justify-between border-b border-gray-50 pb-1"><span>Father</span><span className="font-bold">{myProfile.fatherName || 'N/A'}</span></div>
-                                                <div className="flex justify-between border-b border-gray-50 pb-1"><span>Mother</span><span className="font-bold">{myProfile.motherName || 'N/A'}</span></div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: '#881337' }}>Family Info</p>
+                                            <div className="space-y-1" style={{ color: '#374151' }}>
+                                                <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f9fafb' }}><span>Father</span><span className="font-bold">{myProfile.fatherName || 'N/A'}</span></div>
+                                                <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f9fafb' }}><span>Mother</span><span className="font-bold">{myProfile.motherName || 'N/A'}</span></div>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div className="space-y-6">
                                         <div>
-                                            <p className="text-[10px] font-black text-[#881337] uppercase tracking-widest mb-1">About Me</p>
-                                            <p className="text-xs text-gray-600 leading-relaxed italic line-clamp-4">
+                                            <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: '#881337' }}>About Me</p>
+                                            <p className="text-xs leading-relaxed italic line-clamp-4" style={{ color: '#4b5563' }}>
                                                 {myProfile.bio || "Seeking a companion who values deen and family traditions."}
                                             </p>
                                         </div>
                                         
-                                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                        <div className="p-4 rounded-2xl flex items-center justify-between" style={{ backgroundColor: '#f9fafb', border: '1px solid #f3f4f6' }}>
                                             <div>
-                                                <p className="text-[9px] font-black text-gray-400 uppercase mb-1">View Full Profile</p>
-                                                <p className="text-[10px] font-bold text-[#881337]">Scan to verify on web</p>
+                                                <p className="text-[9px] font-black uppercase mb-1" style={{ color: '#9ca3af' }}>View Full Profile</p>
+                                                <p className="text-[10px] font-bold" style={{ color: '#881337' }}>Scan to verify on web</p>
                                             </div>
-                                            <div className="bg-white p-1 rounded-lg">
+                                            <div className="p-1 rounded-lg" style={{ backgroundColor: '#ffffff' }}>
                                                 <QRCodeCanvas value={`https://53dbohrarishta.in/profile?id=${myProfile.id}`} size={40} />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="text-center pt-8 border-t border-gray-100">
-                                    <p className="text-[10px] text-gray-400 leading-relaxed">
+                                <div className="text-center pt-8" style={{ borderTop: '1px solid #f3f4f6' }}>
+                                    <p className="text-[10px] leading-relaxed" style={{ color: '#9ca3af' }}>
                                         This biodata is generated via <strong>53DBohraRishta Online Community</strong>. <br/>
                                         Verification ID: {myProfile.itsNumber?.substring(0, 4)}XXXXX
                                     </p>

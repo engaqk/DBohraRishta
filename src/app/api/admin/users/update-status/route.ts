@@ -70,6 +70,23 @@ export async function POST(request: Request) {
 
         await batch.commit();
 
+        // 5. Send Email Notification to Candidate
+        try {
+            const userEmail = userData?.notificationEmail || userData?.email || userData?.mobileEmail;
+            if (userEmail && userEmail.includes('@') && !userEmail.endsWith('@dbohrarishta.local')) {
+                const { notifyStatusUpdate } = await import('@/lib/emailService');
+                await notifyStatusUpdate({
+                    candidateName: userData?.name || 'Candidate',
+                    candidateEmail: userEmail,
+                    newStatus: newStatus,
+                    adminMessage: message || ""
+                });
+            }
+        } catch (emailError) {
+            console.error('[update-status] Email notification failed:', emailError);
+            // Non-blocking: We still return success since DB was updated
+        }
+
         return NextResponse.json({ success: true, updatedUser: { ...userData, ...updateData } });
 
     } catch (error: any) {

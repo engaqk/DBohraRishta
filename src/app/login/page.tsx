@@ -27,6 +27,7 @@ export default function LoginPage() {
     const [otpCode, setOtpCode] = useState("");
     const [otpSent, setOtpSent] = useState(false);
     const [isMobileDevice, setIsMobileDevice] = useState(false);
+    const [showMobileLogin, setShowMobileLogin] = useState(false);
 
 
 
@@ -289,19 +290,31 @@ export default function LoginPage() {
                         Continue with Google
                     </button>
 
-                    {/* OR divider */}
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="h-px bg-gray-200 flex-1" />
-                        <span className="text-sm text-gray-400 font-medium">OR</span>
-                        <div className="h-px bg-gray-200 flex-1" />
-                    </div>
-
                     {errorMsg && (
                         <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100 mb-4">{errorMsg}</div>
                     )}
 
-                    {/* ══════════════ SMS OTP LOGIN ══════════════ */}
-                    <div className="space-y-4 mb-5">
+                    {!showMobileLogin ? (
+                        <div className="space-y-4">
+                            <button
+                                onClick={() => setShowMobileLogin(true)}
+                                className="w-full text-xs font-bold text-[#881337] hover:text-[#70102d] flex items-center justify-center gap-2 py-4 border border-dashed border-[#881337]/30 rounded-2xl transition-all hover:bg-rose-50"
+                            >
+                                <Smartphone className="w-4 h-4" /> Login with Mobile (SMS OTP)
+                            </button>
+                        </div>
+                    ) : (
+                        /* ══════════════ SMS OTP LOGIN ══════════════ */
+                        <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-sm font-black text-[#881337] uppercase tracking-wider">Mobile Login</h3>
+                                <button 
+                                    onClick={() => setShowMobileLogin(false)}
+                                    className="text-[10px] font-bold text-gray-400 hover:text-gray-600 uppercase"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
                         {!otpSent ? (
                             /* ── Step 1: Enter phone number ── */
                             <>
@@ -361,6 +374,7 @@ export default function LoginPage() {
                             </>
                         )}
                     </div>
+                )}
 
 
                     {/* Dev-only test buttons */}

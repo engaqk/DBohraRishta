@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, ShieldCheck, Camera, UploadCloud, CheckCircle2, Loader2, Clock, AlertCircle, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, addDoc, collection, serverTimestamp, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import toast from "react-hot-toast";
 import { notifyDuplicateRegistration } from "@/lib/emailService";
@@ -35,20 +35,55 @@ export default function OnboardingPage() {
         isBlurSecurityEnabled: true,
     });
 
-    // Pre-fill mobile from sessionStorage if user logged in via phone OTP
+    // Pre-fill from Firestore if user has partial data, or from sessionStorage
     useEffect(() => {
-        const verifiedPhone = sessionStorage.getItem('verifiedPhone');
-        const method = sessionStorage.getItem('loginMethod');
-        if (verifiedPhone) {
-            setFormData(prev => ({ ...prev, mobile: verifiedPhone }));
-        }
-        if (method) {
-            setLoginMethod(method);
-        }
-        // If user logged in via Google, pre-fill their email
-        if (user?.email && !user.email.endsWith('@dbohrarishta.local')) {
-            setFormData(prev => ({ ...prev, email: prev.email || user.email || '' }));
-        }
+        const loadInitialData = async () => {
+            if (!user) return;
+
+            setLoading(true);
+            try {
+                // 1. Try fetching from Firestore first (for users returning from follow-up email)
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    if (!data.isCandidateFormComplete) {
+                        setFormData(prev => ({
+                            ...prev,
+                            ...data,
+                            // Ensure internal email doesn't overwrite if they just logged in with Google
+                            email: (data.email && !data.email.endsWith('@dbohrarishta.local')) ? data.email : prev.email
+                        }));
+                        if (data.loginMethod) setLoginMethod(data.loginMethod);
+                    }
+                }
+
+                // 2. Fallback/Supplement with sessionStorage (for fresh OTP logins)
+                const verifiedPhone = sessionStorage.getItem('verifiedPhone');
+                const method = sessionStorage.getItem('loginMethod');
+                
+                if (verifiedPhone) {
+                    setFormData(prev => ({ ...prev, mobile: prev.mobile || verifiedPhone }));
+                }
+                if (method) {
+                    setLoginMethod(prev => prev || method);
+                }
+
+                // 3. Google Auth pre-fill
+                if (user?.email && !user.email.endsWith('@dbohrarishta.local')) {
+                    setFormData(prev => ({ ...prev, email: prev.email || user.email || '' }));
+                }
+                if (!formData.name && user?.displayName) {
+                    setFormData(prev => ({ ...prev, name: prev.name || user.displayName || '' }));
+                }
+
+            } catch (err) {
+                console.error("Error loading existing onboarding data:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadInitialData();
     }, [user]);
 
     // Image State
@@ -131,6 +166,20 @@ export default function OnboardingPage() {
             if (Object.keys(newErrors).length > 0) {
                 setErrors(newErrors);
                 return;
+            }
+
+            // Persist progress to Firestore so follow-up email links can resume where they left off
+            if (user) {
+                try {
+                    await setDoc(doc(db, "users", user.uid), {
+                        ...formData,
+                        userId: user.uid,
+                        isCandidateFormComplete: false,
+                        updatedAt: serverTimestamp(),
+                    }, { merge: true });
+                } catch (saveErr) {
+                    console.warn("Failed to save onboarding progress:", saveErr);
+                }
             }
 
             setStep(2);
@@ -307,6 +356,20 @@ export default function OnboardingPage() {
                 } catch (emailErr) {
                     console.warn('Welcome email failed (non-critical):', emailErr);
                 }
+            }
+
+            // 6. Notify ADMIN of New Registration
+            try {
+                const { notifyAdminNewRegistration } = await import('@/lib/emailService');
+                await notifyAdminNewRegistration({
+                    candidateName: formData.name,
+                    candidateEmail: formData.email,
+                    itsNumber: formData.itsNumber,
+                    gender: formData.gender,
+                    city: formData.hizratLocation,
+                });
+            } catch (adminEmailErr) {
+                console.warn('Admin notification email failed (non-critical):', adminEmailErr);
             }
 
             toast.success("Profile Setup Complete! Verification Pending.");

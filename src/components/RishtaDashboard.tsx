@@ -874,7 +874,7 @@ export default function RishtaDashboard() {
                             <h2 className="text-2xl font-bold font-serif">Interest Requests</h2>
                         </div>
                         {pendingRequests.length === 0 ? (
-                            <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100 flex flex-col items-center">
+                            <div style={{ backgroundColor: '#ffffff', borderColor: '#f3f4f6' }} className="p-12 rounded-3xl shadow-sm text-center border flex flex-col items-center">
                                 <ShieldCheck className="w-12 h-12 text-gray-300 mb-4" />
                                 <p className="text-gray-500 font-bold">No active pending requests.</p>
                             </div>
@@ -1681,7 +1681,10 @@ export default function RishtaDashboard() {
                                         </p>
                                     </div>
                                     
-                                    <div className="flex flex-col items-center gap-2 p-3 rounded-2xl shadow-sm border" style={{ backgroundColor: '#f9fafb', borderColor: '#f3f4f6' }}>
+                                    <div 
+                                        className="flex flex-col items-center gap-2 p-3 rounded-2xl border" 
+                                        style={{ backgroundColor: '#f9fafb', borderColor: '#f3f4f6', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}
+                                    >
                                         <div className="p-1 rounded bg-white shadow-sm">
                                             <QRCodeCanvas value={`https://53dbohrarishta.in/profile?id=${myProfile.id || user?.uid}`} size={100} />
                                         </div>

@@ -81,7 +81,13 @@ export default function PWAInstallBanner() {
             role="dialog"
             aria-label="Install App"
         >
-            <div className="bg-white border border-[#881337]/20 rounded-2xl shadow-2xl shadow-rose-900/20 p-4 flex items-center gap-4">
+            <div 
+                className="bg-white rounded-2xl p-4 flex items-center gap-4"
+                style={{ 
+                    border: '1px solid #ffe4e6', 
+                    boxShadow: '0 20px 25px -5px rgba(136, 19, 55, 0.1), 0 8px 10px -6px rgba(136, 19, 55, 0.1)' 
+                }}
+            >
                 {/* App Icon */}
                 <div className="w-12 h-12 bg-[#881337] rounded-xl flex items-center justify-center shrink-0 shadow-md">
                     <span className="text-white font-bold text-lg font-serif">53</span>
@@ -112,7 +118,10 @@ export default function PWAInstallBanner() {
                         </button>
                     )}
                     {isIOS && (
-                        <div className="flex items-center gap-1 bg-rose-50 text-[#881337] px-2 py-1.5 rounded-lg border border-rose-100">
+                        <div 
+                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg"
+                            style={{ backgroundColor: '#fff1f2', color: '#881337', border: '1px solid #ffe4e6' }}
+                        >
                             <Smartphone className="w-4 h-4" />
                         </div>
                     )}
@@ -121,6 +130,7 @@ export default function PWAInstallBanner() {
                         id="pwa-dismiss-btn"
                         className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
                         aria-label="Dismiss"
+                        style={{ backgroundColor: '#f9fafb' }}
                     >
                         <X className="w-4 h-4" />
                     </button>

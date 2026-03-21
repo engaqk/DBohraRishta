@@ -295,12 +295,12 @@ export default function LoginPage() {
                     )}
 
                     {!showMobileLogin ? (
-                        <div className="space-y-4">
+                        <div className="mt-8 flex justify-center">
                             <button
                                 onClick={() => setShowMobileLogin(true)}
-                                className="w-full text-xs font-bold text-[#881337] hover:text-[#70102d] flex items-center justify-center gap-2 py-4 border border-dashed border-[#881337]/30 rounded-2xl transition-all hover:bg-rose-50"
+                                className="text-[10px] font-bold text-gray-400 hover:text-[#881337] transition-colors uppercase tracking-widest"
                             >
-                                <Smartphone className="w-4 h-4" /> Login with Mobile (SMS OTP)
+                                Login with Mobile Number
                             </button>
                         </div>
                     ) : (

@@ -1,10 +1,10 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment, setDoc } from 'firebase/firestore';
@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 import html2canvas from 'html2canvas';
-import QRCode from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 interface UserProfile {
     id: string;
     name: string;
@@ -141,7 +141,7 @@ export default function RishtaDashboard() {
     const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
     const [latestBroadcast, setLatestBroadcast] = useState<{ id: string; title?: string; message: string; type?: string } | null>(null);
     const [generatingBiodata, setGeneratingBiodata] = useState(false);
-    const biodataRef = React.useRef<HTMLDivElement>(null);
+    const biodataRef = useRef<HTMLDivElement>(null);
 
     // Filter State for Discovery
     const [filters, setFilters] = useState({
@@ -1643,7 +1643,7 @@ export default function RishtaDashboard() {
                                                 <p className="text-[10px] font-bold text-[#881337]">Scan to verify on web</p>
                                             </div>
                                             <div className="bg-white p-1 rounded-lg">
-                                                <QRCode value={`https://53dbohrarishta.in/profile?id=${myProfile.id}`} size={40} />
+                                                <QRCodeCanvas value={`https://53dbohrarishta.in/profile?id=${myProfile.id}`} size={40} />
                                             </div>
                                         </div>
                                     </div>

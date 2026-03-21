@@ -1589,8 +1589,8 @@ export default function RishtaDashboard() {
 
                                 {/* Header section (Matching Login Branding) */}
                                 <div className="text-center mb-8 mt-6 relative z-10">
-                                    <div className="w-14 h-14 mx-auto mb-3 flex items-center justify-center rounded-full font-bold text-2xl shadow-lg" 
-                                         style={{ backgroundColor: '#ffffff', color: '#D4AF37', border: '2px solid #D4AF37' }}>
+                                    <div className="w-14 h-14 mx-auto mb-3 flex items-center justify-center rounded-full font-bold text-2xl" 
+                                         style={{ backgroundColor: '#ffffff', color: '#D4AF37', border: '2px solid #D4AF37', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
                                         53
                                     </div>
                                     <h1 className="text-4xl font-extrabold uppercase tracking-tight mb-0" style={{ color: '#881337', fontFamily: 'serif' }}>
@@ -1603,7 +1603,7 @@ export default function RishtaDashboard() {
                                 <div className="flex gap-10 mb-8 relative z-10 px-4">
                                     {/* Left: Photo & Verification */}
                                     <div className="w-56 shrink-0">
-                                        <div className="w-56 h-72 rounded-2xl overflow-hidden shadow-2xl mb-4" style={{ border: '4px solid #ffffff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                                        <div className="w-56 h-72 rounded-2xl overflow-hidden mb-4" style={{ border: '4px solid #ffffff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
                                             {myProfile.libasImageUrl ? (
                                                 <img src={myProfile.libasImageUrl} alt="Profile" className="w-full h-full object-cover" />
                                             ) : (
@@ -1613,8 +1613,8 @@ export default function RishtaDashboard() {
                                             )}
                                         </div>
                                         <div className="flex flex-col gap-2">
-                                            <div className="px-3 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-wider shadow-sm" style={{ backgroundColor: '#fff1f2', color: '#881337', border: '1px solid #ffe4e6' }}>{myProfile.gender} Member</div>
-                                            <div className="px-3 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-wider shadow-sm" style={{ backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #dcfce7' }}>ITS Verified Member</div>
+                                            <div className="px-3 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#fff1f2', color: '#881337', border: '1px solid #ffe4e6', boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>{myProfile.gender} Member</div>
+                                            <div className="px-3 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #dcfce7', boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>ITS Verified Member</div>
                                         </div>
                                     </div>
 
@@ -1624,7 +1624,7 @@ export default function RishtaDashboard() {
                                         
                                         <div className="space-y-6 font-sans">
                                             {/* Contact Card */}
-                                            <div className="p-5 rounded-2xl shadow-sm border" style={{ backgroundColor: '#fcf8f9', borderColor: '#f5e6e9' }}>
+                                            <div className="p-5 rounded-2xl border" style={{ backgroundColor: '#fcf8f9', borderColor: '#f5e6e9', boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>
                                                 <div className="grid grid-cols-1 gap-y-3">
                                                     <div className="flex items-center gap-3">
                                                         <div style={{ color: '#881337' }}><Phone size={16} /></div> 
@@ -1639,15 +1639,15 @@ export default function RishtaDashboard() {
 
                                             {/* Primary Stats */}
                                             <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Age / DOB</span><span className="font-bold text-gray-800">{myProfile.dob ? `${new Date().getFullYear() - new Date(myProfile.dob).getFullYear()} Years` : 'N/A'}</span></div>
-                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Height</span><span className="font-bold text-gray-800">{myProfile.heightFeet}'{myProfile.heightInch}"</span></div>
-                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Education</span><span className="font-bold text-gray-800 truncate">{myProfile.education}</span></div>
-                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Marital Status</span><span className="font-bold text-gray-800">{myProfile.maritalStatus || 'Single'}</span></div>
+                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Age / DOB</span><span className="font-bold" style={{ color: '#1f2937' }}>{myProfile.dob ? `${new Date().getFullYear() - new Date(myProfile.dob).getFullYear()} Years` : 'N/A'}</span></div>
+                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Height</span><span className="font-bold" style={{ color: '#1f2937' }}>{myProfile.heightFeet}'{myProfile.heightInch}"</span></div>
+                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Education</span><span className="font-bold truncate" style={{ color: '#1f2937' }}>{myProfile.education}</span></div>
+                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Marital Status</span><span className="font-bold" style={{ color: '#1f2937' }}>{myProfile.maritalStatus || 'Single'}</span></div>
                                             </div>
 
                                             <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}>
                                                 <span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Location</span>
-                                                <span className="text-sm font-bold text-gray-800">{myProfile.hizratLocation || myProfile.city}</span>
+                                                <span className="text-sm font-bold" style={{ color: '#1f2937' }}>{myProfile.hizratLocation || myProfile.city}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1689,7 +1689,7 @@ export default function RishtaDashboard() {
                                         className="flex flex-col items-center gap-2 p-3 rounded-2xl border" 
                                         style={{ backgroundColor: '#f9fafb', borderColor: '#f3f4f6', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}
                                     >
-                                        <div className="p-1 rounded bg-white shadow-sm">
+                                        <div className="p-1 rounded bg-white" style={{ boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>
                                             <QRCodeCanvas value={`https://53dbohrarishta.in/profile?id=${myProfile.id || user?.uid}`} size={100} />
                                         </div>
                                         <p className="text-[8px] font-black uppercase mt-1" style={{ color: '#881337' }}>Scan to Verify</p>

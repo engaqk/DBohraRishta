@@ -13,7 +13,7 @@ import { requestNotificationPermission } from '@/lib/firebase/messaging';
 import toast from 'react-hot-toast';
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
-import html2canvas from 'html2canvas';
+// Deep imports are moved to dynamic imports inside the specific handler function
 import { QRCodeCanvas } from 'qrcode.react';
 interface UserProfile {
     id: string;
@@ -353,10 +353,14 @@ export default function RishtaDashboard() {
         if (!biodataRef.current) return;
         setGeneratingBiodata(true);
         try {
+            // Lazy load html2canvas to avoid parsing errors on initialization or other pages
+            const html2canvas = (await import('html2canvas')).default;
+            
             const canvas = await html2canvas(biodataRef.current, {
                 useCORS: true,
                 scale: 2,
-                backgroundColor: '#ffffff'
+                backgroundColor: '#ffffff',
+                logging: false, // Turn off logging to minimize console noise
             });
             const image = canvas.toDataURL("image/png");
             const link = document.createElement('a');

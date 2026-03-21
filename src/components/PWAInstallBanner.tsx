@@ -28,21 +28,25 @@ export default function PWAInstallBanner() {
         }
 
         const triggerHandler = () => {
-            console.log('[PWA Banner] Manual trigger received.');
+            console.log('[PWA Banner] Manual trigger received. Clearing dismissal and showing banner.');
             setDismissed(false);
             setShowBanner(true);
             sessionStorage.removeItem("pwa_banner_dismissed");
         };
 
         const handler = (e: any) => {
-            console.log('[PWA Banner] beforeinstallprompt event fired.');
+            const dismissedStatus = sessionStorage.getItem("pwa_banner_dismissed");
+            console.log('[PWA Banner] beforeinstallprompt event fired. Dismissed status:', dismissedStatus);
             e.preventDefault();
             setDeferredPrompt(e);
-            if (!sessionStorage.getItem("pwa_banner_dismissed")) {
+            if (!dismissedStatus) {
                 console.log('[PWA Banner] Showing banner automatically.');
                 setShowBanner(true);
             }
         };
+
+        // For debugging: expose force show to window
+        (window as any).__FORCE_SHOW_PWA_BANNER = triggerHandler;
 
         window.addEventListener("beforeinstallprompt", handler as EventListener);
         window.addEventListener("trigger-pwa-install", triggerHandler);

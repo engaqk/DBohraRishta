@@ -27,18 +27,21 @@ export default function PWAInstallBanner() {
             setTimeout(() => setShowBanner(true), 3000);
         }
 
-        const handler = (e: any) => {
-            e.preventDefault();
-            setDeferredPrompt(e);
-            if (!sessionStorage.getItem("pwa_banner_dismissed")) {
-                setShowBanner(true);
-            }
-        };
-
         const triggerHandler = () => {
+            console.log('[PWA Banner] Manual trigger received.');
             setDismissed(false);
             setShowBanner(true);
             sessionStorage.removeItem("pwa_banner_dismissed");
+        };
+
+        const handler = (e: any) => {
+            console.log('[PWA Banner] beforeinstallprompt event fired.');
+            e.preventDefault();
+            setDeferredPrompt(e);
+            if (!sessionStorage.getItem("pwa_banner_dismissed")) {
+                console.log('[PWA Banner] Showing banner automatically.');
+                setShowBanner(true);
+            }
         };
 
         window.addEventListener("beforeinstallprompt", handler as EventListener);

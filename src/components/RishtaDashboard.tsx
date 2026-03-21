@@ -7,12 +7,14 @@ import ChatWindow from './ChatWindow';
 import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment, setDoc } from 'firebase/firestore';
 import { db, messaging } from '@/lib/firebase/config';
 import { requestNotificationPermission } from '@/lib/firebase/messaging';
 import toast from 'react-hot-toast';
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
+import html2canvas from 'html2canvas';
+import QRCode from 'qrcode.react';
 interface UserProfile {
     id: string;
     name: string;
@@ -138,6 +140,8 @@ export default function RishtaDashboard() {
     const [bookmarkedProfileIds, setBookmarkedProfileIds] = useState<Set<string>>(new Set());
     const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
     const [latestBroadcast, setLatestBroadcast] = useState<{ id: string; title?: string; message: string; type?: string } | null>(null);
+    const [generatingBiodata, setGeneratingBiodata] = useState(false);
+    const biodataRef = React.useRef<HTMLDivElement>(null);
 
     // Filter State for Discovery
     const [filters, setFilters] = useState({
@@ -342,6 +346,29 @@ export default function RishtaDashboard() {
             setUserMsgInput('');
         } catch (e: any) {
             toast.error('Could not send message.');
+        }
+    };
+
+    const handleDownloadBiodata = async () => {
+        if (!biodataRef.current) return;
+        setGeneratingBiodata(true);
+        try {
+            const canvas = await html2canvas(biodataRef.current, {
+                useCORS: true,
+                scale: 2,
+                backgroundColor: '#ffffff'
+            });
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.href = image;
+            link.download = `Biodata_${myProfile?.name?.replace(/\s+/g, '_') || 'Profile'}.png`;
+            link.click();
+            toast.success("Biodata downloaded successfully!");
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to generate biodata image.");
+        } finally {
+            setGeneratingBiodata(false);
         }
     };
 
@@ -1519,15 +1546,116 @@ export default function RishtaDashboard() {
                                         >
                                             <Sparkles className="w-3.5 h-3.5" /> Preview My Public Biodata
                                         </button>
-                                        <button
+                                         <button
                                             onClick={() => router.push('/candidate-registration')}
                                             className="w-full bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all mt-2 flex items-center justify-center gap-1"
                                         >
                                             ✏️ Edit My Biodata
                                         </button>
+
+                                        {myProfile.status === 'verified' && (
+                                            <button
+                                                onClick={handleDownloadBiodata}
+                                                disabled={generatingBiodata}
+                                                className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all mt-6 flex items-center justify-center gap-2 group"
+                                            >
+                                                {generatingBiodata ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 group-hover:scale-110 transition-transform" />}
+                                                Download Digital Biodata
+                                            </button>
+                                        )}
                                     </div>
                                 );
                             })()}
+                        </div>
+
+                        {/* 🖼️ HIDDEN BIODATA TEMPLATE FOR EXPORT */}
+                        <div className="fixed left-[-9999px] top-0">
+                            <div 
+                                ref={biodataRef}
+                                className="w-[600px] bg-white p-12 relative overflow-hidden text-gray-800"
+                                style={{ fontFamily: 'serif' }}
+                            >
+                                {/* Background Decorative Elements */}
+                                <div className="absolute top-0 left-0 w-full h-4 bg-[#881337]" />
+                                <div className="absolute bottom-0 left-0 w-full h-2 bg-[#D4AF37]" />
+                                
+                                <div className="text-center mb-10">
+                                    <h1 className="text-3xl font-black text-[#881337] uppercase tracking-[0.2em] mb-1">Biodata</h1>
+                                    <div className="w-24 h-1 bg-[#D4AF37] mx-auto mb-2" />
+                                    <p className="text-[10px] text-gray-400 font-sans font-bold tracking-widest uppercase italic">53D Bohra Rishta Platform</p>
+                                </div>
+
+                                <div className="flex gap-8 mb-10 border-b border-gray-100 pb-10">
+                                    <div className="w-40 h-52 rounded-2xl overflow-hidden border-4 border-gray-50 shadow-xl shrink-0">
+                                        {myProfile.libasImageUrl ? (
+                                            <img src={myProfile.libasImageUrl} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-300">
+                                                <User size={48} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 pt-2">
+                                        <h2 className="text-4xl font-black text-gray-900 mb-2">{myProfile.name}</h2>
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            <span className="bg-rose-50 text-[#881337] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">{myProfile.gender}</span>
+                                            <span className="bg-amber-50 text-amber-800 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">{myProfile.maritalStatus || 'Single'}</span>
+                                            <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Verified</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-2 text-sm text-gray-600 font-sans">
+                                            <div className="flex items-center gap-2"><MapPin size={14} className="text-[#D4AF37]" /> {myProfile.hizratLocation || myProfile.city}</div>
+                                            <div className="flex items-center gap-2"><GraduationCap size={14} className="text-[#D4AF37]" /> {myProfile.education}</div>
+                                            <div className="flex items-center gap-2"><Briefcase size={14} className="text-[#D4AF37]" /> {myProfile.professionType || 'Professional'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-x-12 gap-y-8 text-sm mb-12 font-sans relative">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <p className="text-[10px] font-black text-[#881337] uppercase tracking-widest mb-1">Personal Details</p>
+                                            <div className="space-y-1 text-gray-700">
+                                                <div className="flex justify-between border-b border-gray-50 pb-1"><span>Age / DOB</span><span className="font-bold">{myProfile.dob ? new Date().getFullYear() - new Date(myProfile.dob).getFullYear() : 'N/A'} Yrs</span></div>
+                                                <div className="flex justify-between border-b border-gray-50 pb-1"><span>Height</span><span className="font-bold">{myProfile.heightFeet}'{myProfile.heightInch}"</span></div>
+                                                <div className="flex justify-between border-b border-gray-50 pb-1"><span>Jamaat</span><span className="font-bold truncate max-w-[120px]">{myProfile.jamaat}</span></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-[#881337] uppercase tracking-widest mb-1">Family Info</p>
+                                            <div className="space-y-1 text-gray-700">
+                                                <div className="flex justify-between border-b border-gray-50 pb-1"><span>Father</span><span className="font-bold">{myProfile.fatherName || 'N/A'}</span></div>
+                                                <div className="flex justify-between border-b border-gray-50 pb-1"><span>Mother</span><span className="font-bold">{myProfile.motherName || 'N/A'}</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div>
+                                            <p className="text-[10px] font-black text-[#881337] uppercase tracking-widest mb-1">About Me</p>
+                                            <p className="text-xs text-gray-600 leading-relaxed italic line-clamp-4">
+                                                {myProfile.bio || "Seeking a companion who values deen and family traditions."}
+                                            </p>
+                                        </div>
+                                        
+                                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                            <div>
+                                                <p className="text-[9px] font-black text-gray-400 uppercase mb-1">View Full Profile</p>
+                                                <p className="text-[10px] font-bold text-[#881337]">Scan to verify on web</p>
+                                            </div>
+                                            <div className="bg-white p-1 rounded-lg">
+                                                <QRCode value={`https://53dbohrarishta.in/profile?id=${myProfile.id}`} size={40} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="text-center pt-8 border-t border-gray-100">
+                                    <p className="text-[10px] text-gray-400 leading-relaxed">
+                                        This biodata is generated via <strong>53DBohraRishta Online Community</strong>. <br/>
+                                        Verification ID: {myProfile.itsNumber?.substring(0, 4)}XXXXX
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
                         {/* ── Who Viewed My Profile ── */}

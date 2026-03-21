@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment, setDoc } from 'firebase/firestore';
@@ -601,7 +601,7 @@ export default function RishtaDashboard() {
                 return;
             }
             const profileData = meRef.data() || { status: 'incomplete', isItsVerified: false };
-            setMyProfile(profileData);
+            setMyProfile({ id: meRef.id, ...profileData });
 
             const isVerified = profileData.isItsVerified === true || profileData.status === 'verified' || profileData.status === 'approved';
             const celebKey = `verified_celebrated_${user.uid}`;
@@ -1572,92 +1572,121 @@ export default function RishtaDashboard() {
                         <div className="fixed left-[-9999px] top-0">
                             <div 
                                 ref={biodataRef}
-                                className="w-[600px] p-12 relative overflow-hidden"
+                                className="w-[750px] p-10 relative overflow-hidden"
                                 style={{ 
                                     fontFamily: 'serif', 
                                     backgroundColor: '#ffffff',
-                                    color: '#1f2937'
+                                    color: '#1a1a1a'
                                 }}
                             >
-                                {/* Background Decorative Elements */}
-                                <div className="absolute top-0 left-0 w-full h-4" style={{ backgroundColor: '#881337' }} />
-                                <div className="absolute bottom-0 left-0 w-full h-2" style={{ backgroundColor: '#D4AF37' }} />
-                                
-                                <div className="text-center mb-10">
-                                    <h1 className="text-3xl font-black uppercase tracking-[0.2em] mb-1" style={{ color: '#881337' }}>Biodata</h1>
-                                    <div className="w-24 h-1 mx-auto mb-2" style={{ backgroundColor: '#D4AF37' }} />
-                                    <p className="text-[10px] font-sans font-bold tracking-widest uppercase italic" style={{ color: '#9ca3af' }}>53D Bohra Rishta Platform</p>
+                                {/* Premium Border Overlay */}
+                                <div className="absolute inset-0 border-[15px]" style={{ borderColor: '#881337' }} />
+                                <div className="absolute inset-[20px] border-2" style={{ borderColor: '#D4AF37' }} />
+
+                                {/* Header section (Matching Login Branding) */}
+                                <div className="text-center mb-8 mt-6 relative z-10">
+                                    <div className="w-14 h-14 mx-auto mb-3 flex items-center justify-center rounded-full font-bold text-2xl shadow-lg" 
+                                         style={{ backgroundColor: '#ffffff', color: '#D4AF37', border: '2px solid #D4AF37' }}>
+                                        53
+                                    </div>
+                                    <h1 className="text-4xl font-extrabold uppercase tracking-tight mb-0" style={{ color: '#881337', fontFamily: 'serif' }}>
+                                        DBohra<span style={{ color: '#D4AF37', fontWeight: 'normal', fontStyle: 'italic' }}>Rishta</span>
+                                    </h1>
+                                    <div className="w-48 h-[1px] mx-auto mt-2 mb-1" style={{ backgroundColor: '#881337', opacity: 0.2 }} />
+                                    <p className="text-[10px] font-sans font-black tracking-[0.3em] uppercase" style={{ color: '#881337' }}>Intelligent Matches</p>
                                 </div>
 
-                                <div className="flex gap-8 mb-10 pb-10" style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                    <div className="w-40 h-52 rounded-2xl overflow-hidden shadow-xl shrink-0" style={{ border: '4px solid #f9fafb' }}>
-                                        {myProfile.libasImageUrl ? (
-                                            <img src={myProfile.libasImageUrl} alt="Profile" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#f3f4f6', color: '#d1d5db' }}>
-                                                <User size={48} />
-                                            </div>
-                                        )}
+                                <div className="flex gap-10 mb-8 relative z-10 px-4">
+                                    {/* Left: Photo & Verification */}
+                                    <div className="w-56 shrink-0">
+                                        <div className="w-56 h-72 rounded-2xl overflow-hidden shadow-2xl mb-4" style={{ border: '4px solid #ffffff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                                            {myProfile.libasImageUrl ? (
+                                                <img src={myProfile.libasImageUrl} alt="Profile" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: '#f3f4f6', color: '#d1d5db' }}>
+                                                    <User size={80} />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <div className="px-3 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-wider shadow-sm" style={{ backgroundColor: '#fff1f2', color: '#881337', border: '1px solid #ffe4e6' }}>{myProfile.gender} Member</div>
+                                            <div className="px-3 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-wider shadow-sm" style={{ backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #dcfce7' }}>ITS Verified Member</div>
+                                        </div>
                                     </div>
+
+                                    {/* Right: Essential Profile Details */}
                                     <div className="flex-1 pt-2">
-                                        <h2 className="text-4xl font-black mb-2" style={{ color: '#111827' }}>{myProfile.name}</h2>
-                                        <div className="flex flex-wrap gap-2 mb-4">
-                                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#fff1f2', color: '#881337' }}>{myProfile.gender}</span>
-                                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#fffbeb', color: '#92400e' }}>{myProfile.maritalStatus || 'Single'}</span>
-                                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#f9fafb', color: '#4b5563' }}>Verified</span>
-                                        </div>
-                                        <div className="grid grid-cols-1 gap-2 text-sm font-sans" style={{ color: '#4b5563' }}>
-                                            <div className="flex items-center gap-2"><MapPin size={14} style={{ color: '#D4AF37' }} /> {myProfile.hizratLocation || myProfile.city}</div>
-                                            <div className="flex items-center gap-2"><GraduationCap size={14} style={{ color: '#D4AF37' }} /> {myProfile.education}</div>
-                                            <div className="flex items-center gap-2"><Briefcase size={14} style={{ color: '#D4AF37' }} /> {myProfile.professionType || 'Professional'}</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-x-12 gap-y-8 text-sm mb-12 font-sans relative">
-                                    <div className="space-y-4">
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: '#881337' }}>Personal Details</p>
-                                            <div className="space-y-1" style={{ color: '#374151' }}>
-                                                <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f9fafb' }}><span>Age / DOB</span><span className="font-bold">{myProfile.dob ? new Date().getFullYear() - new Date(myProfile.dob).getFullYear() : 'N/A'} Yrs</span></div>
-                                                <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f9fafb' }}><span>Height</span><span className="font-bold">{myProfile.heightFeet}'{myProfile.heightInch}"</span></div>
-                                                <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f9fafb' }}><span>Jamaat</span><span className="font-bold truncate max-w-[120px]">{myProfile.jamaat}</span></div>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: '#881337' }}>Family Info</p>
-                                            <div className="space-y-1" style={{ color: '#374151' }}>
-                                                <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f9fafb' }}><span>Father</span><span className="font-bold">{myProfile.fatherName || 'N/A'}</span></div>
-                                                <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f9fafb' }}><span>Mother</span><span className="font-bold">{myProfile.motherName || 'N/A'}</span></div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: '#881337' }}>About Me</p>
-                                            <p className="text-xs leading-relaxed italic line-clamp-4" style={{ color: '#4b5563' }}>
-                                                {myProfile.bio || "Seeking a companion who values deen and family traditions."}
-                                            </p>
-                                        </div>
+                                        <h2 className="text-4xl font-black mb-6" style={{ color: '#111827', lineHeight: 1 }}>{myProfile.name}</h2>
                                         
-                                        <div className="p-4 rounded-2xl flex items-center justify-between" style={{ backgroundColor: '#f9fafb', border: '1px solid #f3f4f6' }}>
-                                            <div>
-                                                <p className="text-[9px] font-black uppercase mb-1" style={{ color: '#9ca3af' }}>View Full Profile</p>
-                                                <p className="text-[10px] font-bold" style={{ color: '#881337' }}>Scan to verify on web</p>
+                                        <div className="space-y-6 font-sans">
+                                            {/* Contact Card */}
+                                            <div className="p-5 rounded-2xl shadow-sm border" style={{ backgroundColor: '#fcf8f9', borderColor: '#f5e6e9' }}>
+                                                <div className="grid grid-cols-1 gap-y-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <div style={{ color: '#881337' }}><Phone size={16} /></div> 
+                                                        <span className="text-sm font-bold">{myProfile.mobileCode} {myProfile.mobile}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div style={{ color: '#881337' }}><Mail size={16} /></div> 
+                                                        <span className="text-sm font-bold">{myProfile.email}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="p-1 rounded-lg" style={{ backgroundColor: '#ffffff' }}>
-                                                <QRCodeCanvas value={`https://53dbohrarishta.in/profile?id=${myProfile.id}`} size={40} />
+
+                                            {/* Primary Stats */}
+                                            <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Age / DOB</span><span className="font-bold text-gray-800">{myProfile.dob ? `${new Date().getFullYear() - new Date(myProfile.dob).getFullYear()} Years` : 'N/A'}</span></div>
+                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Height</span><span className="font-bold text-gray-800">{myProfile.heightFeet}'{myProfile.heightInch}"</span></div>
+                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Education</span><span className="font-bold text-gray-800 truncate">{myProfile.education}</span></div>
+                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Marital Status</span><span className="font-bold text-gray-800">{myProfile.maritalStatus || 'Single'}</span></div>
+                                            </div>
+
+                                            <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}>
+                                                <span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Location</span>
+                                                <span className="text-sm font-bold text-gray-800">{myProfile.hizratLocation || myProfile.city}</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="text-center pt-8" style={{ borderTop: '1px solid #f3f4f6' }}>
-                                    <p className="text-[10px] leading-relaxed" style={{ color: '#9ca3af' }}>
-                                        This biodata is generated via <strong>53DBohraRishta Online Community</strong>. <br/>
-                                        Verification ID: {myProfile.itsNumber?.substring(0, 4)}XXXXX
-                                    </p>
+                                {/* Information Sections */}
+                                <div className="grid grid-cols-2 gap-10 relative z-10 mb-8 px-4">
+                                    <div>
+                                        <h3 className="text-[11px] font-black uppercase tracking-widest mb-3 pb-1" style={{ color: '#881337', borderBottom: '2px solid #D4AF37' }}>Family Background</h3>
+                                        <div className="space-y-2 text-sm" style={{ color: '#374151' }}>
+                                            <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f3f4f6' }}><span>Father</span><span className="font-bold">{myProfile.fatherName || 'Not Shared'}</span></div>
+                                            <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f3f4f6' }}><span>Mother</span><span className="font-bold">{myProfile.motherName || 'Not Shared'}</span></div>
+                                            <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f3f4f6' }}><span>Jamaat</span><span className="font-bold">{myProfile.jamaat || 'N/A'}</span></div>
+                                            <div className="flex justify-between pb-1" style={{ borderBottom: '1px solid #f3f4f6' }}><span>Watan</span><span className="font-bold">{myProfile.ancestralWatan || 'N/A'}</span></div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-[11px] font-black uppercase tracking-widest mb-3 pb-1" style={{ color: '#881337', borderBottom: '2px solid #D4AF37' }}>About Me</h3>
+                                        <p className="text-xs leading-relaxed italic line-clamp-6" style={{ color: '#4b5563', maxHeight: '110px', overflow: 'hidden' }}>
+                                            {myProfile.bio || "Seeking a companion based on deen and traditional values. Looking forward to connecting with a compatible match. Ameen."}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* QR & Footer Section */}
+                                <div className="pt-8 border-t relative z-10 flex items-start justify-between px-4" style={{ borderTop: '1px solid #f3f4f6' }}>
+                                    <div className="flex-1 pr-10">
+                                        <p className="text-[10px] font-bold mb-2" style={{ color: '#881337' }}>Verified via 53DBohraRishta Online Community</p>
+                                        <p className="text-[8px] leading-relaxed mb-4" style={{ color: '#9ca3af' }}>
+                                            <strong>Note:</strong> 53dbohrarishta.in is a community platform and is <strong>NOT RESPONSIBLE</strong> for the accuracy of information shared in this profile or <strong>ANY MISUSE</strong> of this biodata by any third party. Users are advised to perform their own independent verification before proceeding.
+                                        </p>
+                                        <p className="text-[9px] font-bold" style={{ color: '#374151' }}>
+                                            Verification ID: {myProfile.itsNumber?.substring(0, 4)}XXXXX
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="flex flex-col items-center gap-2 p-3 rounded-2xl shadow-sm border" style={{ backgroundColor: '#f9fafb', borderColor: '#f3f4f6' }}>
+                                        <div className="p-1 rounded bg-white shadow-sm">
+                                            <QRCodeCanvas value={`https://53dbohrarishta.in/profile?id=${myProfile.id || user?.uid}`} size={100} />
+                                        </div>
+                                        <p className="text-[8px] font-black uppercase mt-1" style={{ color: '#881337' }}>Scan to Verify</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

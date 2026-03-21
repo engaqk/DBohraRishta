@@ -12,34 +12,45 @@ export default function PWAInstallBanner() {
     useEffect(() => {
         // Check if already dismissed in this session
         const wasDismissed = sessionStorage.getItem("pwa_banner_dismissed");
-        if (wasDismissed) return;
+        if (wasDismissed) {
+            // But we still want to listen for manual triggers
+        } else {
+            // Initial check for show
+            const isStandalone =
+                window.matchMedia("(display-mode: standalone)").matches ||
+                (window.navigator as any).standalone === true;
+            if (!isStandalone) {
+                // Initial delay for auto-show banner
+                setTimeout(() => {
+                    if (!sessionStorage.getItem("pwa_banner_dismissed")) setShowBanner(true);
+                }, 8000);
+            }
+        }
 
         // Detect iOS separately since it doesn't support beforeinstallprompt
         const ua = navigator.userAgent;
         const isIOSDevice = /iPhone|iPad|iPod/i.test(ua) && !(window.navigator as any).standalone;
         setIsIOS(isIOSDevice);
 
-        // Check if already installed as PWA
-        const isStandalone =
-            window.matchMedia("(display-mode: standalone)").matches ||
-            (window.navigator as any).standalone === true;
-
-        if (isStandalone) return; // Already installed, don't show
-
-        if (isIOSDevice) {
-            // Show iOS-specific instructions after a short delay
-            const timer = setTimeout(() => setShowBanner(true), 3000);
-            return () => clearTimeout(timer);
-        }
-
         const handler = (e: Event) => {
             e.preventDefault();
             setDeferredPrompt(e);
+            // Don't auto-show here if dismissed, wait for trigger or initial timer
+        };
+
+        const triggerHandler = () => {
+            setDismissed(false);
             setShowBanner(true);
+            sessionStorage.removeItem("pwa_banner_dismissed");
         };
 
         window.addEventListener("beforeinstallprompt", handler as EventListener);
-        return () => window.removeEventListener("beforeinstallprompt", handler as EventListener);
+        window.addEventListener("trigger-pwa-install", triggerHandler);
+        
+        return () => {
+            window.removeEventListener("beforeinstallprompt", handler as EventListener);
+            window.removeEventListener("trigger-pwa-install", triggerHandler);
+        };
     }, []);
 
     const handleInstall = async () => {

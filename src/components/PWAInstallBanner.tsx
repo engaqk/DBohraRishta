@@ -10,32 +10,29 @@ export default function PWAInstallBanner() {
     const [isIOS, setIsIOS] = useState(false);
 
     useEffect(() => {
-        // Check if already dismissed in this session
         const wasDismissed = sessionStorage.getItem("pwa_banner_dismissed");
-        if (wasDismissed) {
-            // But we still want to listen for manual triggers
-        } else {
-            // Initial check for show
-            const isStandalone =
-                window.matchMedia("(display-mode: standalone)").matches ||
-                (window.navigator as any).standalone === true;
-            if (!isStandalone) {
-                // Initial delay for auto-show banner
-                setTimeout(() => {
-                    if (!sessionStorage.getItem("pwa_banner_dismissed")) setShowBanner(true);
-                }, 8000);
-            }
-        }
+        const isStandalone =
+            window.matchMedia("(display-mode: standalone)").matches ||
+            (window.navigator as any).standalone === true;
 
-        // Detect iOS separately since it doesn't support beforeinstallprompt
+        if (isStandalone) return;
+
+        // Detect iOS separately
         const ua = navigator.userAgent;
         const isIOSDevice = /iPhone|iPad|iPod/i.test(ua) && !(window.navigator as any).standalone;
         setIsIOS(isIOSDevice);
 
-        const handler = (e: Event) => {
+        if (isIOSDevice && !sessionStorage.getItem("pwa_banner_dismissed")) {
+            // iOS doesn't have beforeinstallprompt, so we use a short delay
+            setTimeout(() => setShowBanner(true), 3000);
+        }
+
+        const handler = (e: any) => {
             e.preventDefault();
             setDeferredPrompt(e);
-            // Don't auto-show here if dismissed, wait for trigger or initial timer
+            if (!sessionStorage.getItem("pwa_banner_dismissed")) {
+                setShowBanner(true);
+            }
         };
 
         const triggerHandler = () => {

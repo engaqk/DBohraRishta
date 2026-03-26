@@ -15,32 +15,18 @@ export async function POST(req: Request) {
         const deviceId = process.env.TEXTBEE_DEVICE_ID;
         const apiKey = process.env.TEXTBEE_API_KEY;
 
-        if (!deviceId || !apiKey) {
-            console.error("Textbee credentials missing for SMS notification");
-            return NextResponse.json({ error: 'SMS service not configured' }, { status: 500 });
+        const { sendSMS } = await import('@/lib/smsService');
+        const result = await sendSMS(rawPhone, message);
+
+        if (result.success) {
+            console.log('[SMS Notify] SUCCESS:', result.data);
+            return NextResponse.json({ success: true, data: result.data });
+        } else {
+            console.error('[SMS Notify] FAILED:', result.error);
+            return NextResponse.json({ error: result.error }, { status: 500 });
         }
-
-        const { default: axios } = await import('axios');
-        const response = await axios.post(
-            `https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`,
-            {
-                recipients: [phone],
-                message: message,
-            },
-            {
-                headers: {
-                    'x-api-key': apiKey,
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
-
-        console.log('[SMS Notify] Sent to', phone, ':', response.data);
-        return NextResponse.json({ success: true, data: response.data });
-
     } catch (error: any) {
-        const errMsg = error.response?.data?.message || error.message || 'Unknown error';
-        console.error('[SMS Notify] Error:', errMsg);
-        return NextResponse.json({ error: errMsg }, { status: 500 });
+        console.error('[SMS Notify] POST Error:', error.message);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

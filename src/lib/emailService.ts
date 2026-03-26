@@ -1,9 +1,8 @@
-/**
- * Hybrid Email Notification Service.
- * Uses Gmail SMTP via NodeMailer (/api/notify API route).
- */
+import { transporter, GMAIL_USER as NODEMAILER_USER } from './nodemailer';
+import { isEmailBlocked, recordEmailFailure } from './emailStatusServer';
 
 export const ADMIN_EMAIL = '53dbohrarishta@gmail.com';
+
 
 export interface EmailPayload {
     toEmail: string | string[];
@@ -37,13 +36,51 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
         return;
     }
 
-    // If some recipients were filtered out, log it
-    if (realRecipients.length < recipients.length) {
-        console.warn(
-            `[EmailService] Filtered ${recipients.length - realRecipients.length} mobile-only recipient(s) from email "${payload.subject}"`
-        );
+    // Server-side check
+    const isServer = typeof window === 'undefined';
+
+    if (isServer) {
+        // DIRECT SEND ON SERVER: Bypasses /api/notify and directly uses transporter
+        // This is MUCH more reliable on Vercel/Production than using localhost fetch
+        try {
+            console.log(`[EmailService] Direct sending server-side: "${payload.subject}"`);
+            
+            // Filter recipients against blocklist
+            const activeRecipients: string[] = [];
+            for (const email of realRecipients) {
+                const blocked = await isEmailBlocked(email);
+                if (!blocked) activeRecipients.push(email);
+                else console.warn(`[EmailService] Skipping blocked email: ${email}`);
+            }
+
+            if (activeRecipients.length === 0) return;
+
+            const fromUser = NODEMAILER_USER || ADMIN_EMAIL;
+            const mailOptions = {
+                from: `"53DBohraRishta" <${fromUser}>`,
+                to: activeRecipients.join(', '),
+                cc: payload.cc ? (Array.isArray(payload.cc) ? payload.cc.join(', ') : payload.cc) : undefined,
+                bcc: payload.bcc ? (Array.isArray(payload.bcc) ? payload.bcc.join(', ') : payload.bcc) : ADMIN_EMAIL, 
+                subject: payload.subject,
+                html: payload.htmlBody,
+            };
+
+            const info = await transporter.sendMail(mailOptions);
+            console.log('[EmailService] Direct mail sent response:', info.response);
+            return;
+        } catch (serverError: any) {
+            const msg = serverError.message || 'Unknown Server Error';
+            console.error("[EmailService] Direct SMTP failed:", msg);
+            // Record failure
+            for(const email of realRecipients) {
+               await recordEmailFailure(email, msg);
+            }
+            // Optional: fallback to fetch if direct failed? 
+            // Usually if direct failed, fetch from same server will also fail, but maybe...
+        }
     }
 
+    // Client-side fallback or Fetch fallback
     try {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
         const fetchUrl = typeof window !== 'undefined' ? '/api/notify' : `${baseUrl}/api/notify`;
@@ -52,18 +89,18 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 to: realRecipients,
-                cc: payload.cc, // Pass through if explicitly provided
-                bcc: payload.bcc || (payload.cc ? undefined : ADMIN_EMAIL), // Default to ADMIN_EMAIL in BCC if CC not provided
+                cc: payload.cc,
+                bcc: payload.bcc || (payload.cc ? undefined : ADMIN_EMAIL),
                 subject: payload.subject,
                 html: payload.htmlBody
             })
         });
 
         if (response.ok) {
-            console.log("[EmailService] Sent via Gmail SMTP API");
+            console.log("[EmailService] Sent via Gmail SMTP API (fetch)");
             return;
         } else {
-            console.error("[EmailService] Gmail SMTP API failed with status", response.status);
+            console.error("[EmailService] API Route failed status", response.status);
         }
     } catch (apiError) {
         console.error("[EmailService] API Route unreachable or error:", apiError);

@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+import { transporter, GMAIL_USER } from '@/lib/nodemailer';
 import { isEmailBlocked, recordEmailFailure } from '@/lib/emailStatusServer';
 
 export const dynamic = 'force-dynamic';
 
-// Gmail SMTP Configuration
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.GMAIL_USER?.trim(),
-        pass: process.env.GMAIL_APP_PASSWORD?.trim(),
-    },
-});
 
 export async function POST(req: Request) {
     try {
@@ -32,7 +24,7 @@ export async function POST(req: Request) {
         
         for (const email of recipients) {
             const blocked = await isEmailBlocked(email);
-            if (!blocked) {
+            if (!blocked || email.toLowerCase().trim() === '53dbohrarishta@gmail.com') {
                 activeRecipients.push(email);
             } else {
                 console.warn(`[NotifyAPI] Skipping blocked email: ${email}`);

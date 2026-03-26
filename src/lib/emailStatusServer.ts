@@ -4,6 +4,9 @@ export async function isEmailBlocked(email: string): Promise<boolean> {
     if (!adminDb) return false;
     try {
         const emailLower = email.toLowerCase().trim();
+        // Never block the admin email
+        if (emailLower === '53dbohrarishta@gmail.com') return false;
+
         const doc = await adminDb.collection('email_delivery_failures').doc(emailLower).get();
         if (doc.exists) {
             const data = doc.data();

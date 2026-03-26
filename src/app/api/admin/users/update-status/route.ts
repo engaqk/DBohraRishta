@@ -70,21 +70,42 @@ export async function POST(request: Request) {
 
         await batch.commit();
 
-        // 5. Send Email Notification to Candidate
+        // 5. Send Email Notification
         try {
             const userEmail = userData?.notificationEmail || userData?.email || userData?.mobileEmail;
-            if (userEmail && userEmail.includes('@') && !userEmail.endsWith('@dbohrarishta.local')) {
-                const { notifyStatusUpdate } = await import('@/lib/emailService');
+            const hasRealUserEmail = userEmail && userEmail.includes('@') && !userEmail.endsWith('@dbohrarishta.local');
+            
+            const { notifyStatusUpdate, ADMIN_EMAIL, sendEmail } = await import('@/lib/emailService');
+
+            if (hasRealUserEmail) {
+                console.log(`[update-status] Sending status update email to ${userEmail} (BCC: ${ADMIN_EMAIL})`);
                 await notifyStatusUpdate({
                     candidateName: userData?.name || 'Candidate',
                     candidateEmail: userEmail,
                     newStatus: newStatus,
                     adminMessage: message || ""
                 });
+            } else {
+                console.log(`[update-status] User ${userId} has no real email. Sending status update notification to ADMIN ONLY.`);
+                // Notify Admin only if user has no email
+                await sendEmail({
+                    toEmail: ADMIN_EMAIL,
+                    subject: `🚨 User Status Updated (No Email): ${userData?.name || 'Unknown'}`,
+                    htmlBody: `
+                        <div style="font-family:sans-serif;padding:20px;">
+                            <h2>User Status Updated (No Email User)</h2>
+                            <p>Admin just updated status for <strong>${userData?.name || 'Unknown Candidate'}</strong>.</p>
+                            <p><strong>New Status:</strong> ${newStatus.toUpperCase()}</p>
+                            <p><strong>Message:</strong> ${message || 'No message provided.'}</p>
+                            <p><em>Note: This user does not have a real email address configured, so they did not receive an email.</em></p>
+                            <hr/>
+                            <a href="https://53dbohrarishta.in/admin/users">View User in Admin</a>
+                        </div>
+                    `
+                });
             }
-        } catch (emailError) {
-            console.error('[update-status] Email notification failed:', emailError);
-            // Non-blocking: We still return success since DB was updated
+        } catch (emailError: any) {
+            console.error('[update-status] Email notification process failed:', emailError.message);
         }
 
         return NextResponse.json({ success: true, updatedUser: { ...userData, ...updateData } });

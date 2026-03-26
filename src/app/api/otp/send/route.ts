@@ -40,59 +40,22 @@ export async function POST(req: Request) {
         // 2. Save the secret to Redis (linked to phone number) for 5 minutes
         await redis.set(`otp:${cleanPhone}`, secret, { ex: 300 });
 
-        // 3. Send SMS via Textbee Android App Gateway
-        const deviceId = process.env.TEXTBEE_DEVICE_ID;
-        const apiKey = process.env.TEXTBEE_API_KEY;
-
-        if (!deviceId || !apiKey) {
-            console.error("Textbee credentials missing from environment variables");
-            return NextResponse.json({ error: 'SMS service not configured on server' }, { status: 500 });
-        }
-
         const smsText = `Your 53DBohraRishta verification code is: ${otp}. Do not share it with anyone.`;
+        const { sendSMS } = await import('@/lib/smsService');
+        const result = await sendSMS(phone, smsText);
 
-        // E.164 format guaranteed by normalizePhone above
-        const smsTo = phone;
-
-        const textbeeUrl = `https://api.textbee.dev/api/v1/gateway/devices/${deviceId}/send-sms`;
-
-        try {
-            const { default: axios } = await import('axios');
-            const response = await axios.post(textbeeUrl, {
-                recipients: [smsTo],
-                message: smsText
-            }, {
-                headers: {
-                    'x-api-key': apiKey,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            console.log("Textbee SMS API Success:", response.data);
-
+        if (result.success) {
+            console.log("OTP Send SMS Success:", result.data);
             return NextResponse.json({
                 success: true,
                 message: 'OTP sent successfully'
             });
-
-        } catch (apiError: any) {
-            let errorMsg = 'Failed to send SMS message';
-            if (apiError.response) {
-                console.error("Textbee API Error Data:", apiError.response.data);
-                errorMsg = apiError.response.data?.message || `Textbee API Error: ${apiError.response.statusText}`;
-            } else if (apiError.request) {
-                console.error("Textbee API No Response:", apiError.request);
-                errorMsg = "No response from SMS service provider.";
-            } else {
-                console.error("Textbee Request Error:", apiError.message);
-                errorMsg = `SMS Error: ${apiError.message}`;
-            }
-
+        } else {
+            console.error("OTP Send SMS Error:", result.error);
             return NextResponse.json({
-                error: errorMsg,
+                error: result.error || 'Failed to send SMS message',
             }, { status: 500 });
         }
-
     } catch (error: any) {
         console.error('OTP send error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

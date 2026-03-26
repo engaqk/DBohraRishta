@@ -19,13 +19,27 @@ export default function RefreshManager() {
                     currentVersionRef.current = currentServerVersion;
                 } else if (currentVersionRef.current !== currentServerVersion && currentServerVersion !== 'development') {
                     // Version changed! A new deployment occurred while the user had the app open
-                    console.log("New deployment detected. Reloading to get latest code...");
+                    console.log("New deployment detected. Prompting user to reload...");
                     
-                    // Mark cache to show toast on next load
-                    sessionStorage.setItem('app_just_updated', 'true');
-                    
-                    // A true parameter would force cache clear on older browsers, but location.reload() does the trick
-                    window.location.reload();
+                    // Don't forcefully reload, it breaks UX during file uploads or form filling. Show a sticky, clickable toast:
+                    if (!sessionStorage.getItem('update_toast_shown')) {
+                        sessionStorage.setItem('update_toast_shown', 'true');
+                        toast(
+                            (t) => (
+                                <div className="flex flex-col items-start gap-2">
+                                    <div className="font-bold text-sm text-gray-900">✨ New Update Available!</div>
+                                    <p className="text-xs text-gray-600">We've just released a new feature or fix. Please refresh to continue.</p>
+                                    <button 
+                                        onClick={() => window.location.reload()} 
+                                        className="mt-1 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider"
+                                    >
+                                        Refresh Now
+                                    </button>
+                                </div>
+                            ),
+                            { duration: Infinity, style: { border: '2px solid #2563EB', padding: '16px', borderRadius: '24px' } }
+                        );
+                    }
                 }
             } catch (e) {
                 // Silently handle errors (e.g. offline) so we don't spam the UI

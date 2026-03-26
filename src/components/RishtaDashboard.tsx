@@ -283,12 +283,20 @@ export default function RishtaDashboard() {
         };
     }, [user]);
 
+    // Request Notification permission ONLY ONCE on mount
+    useEffect(() => {
+        if (!user) return;
+        const hasRequested = sessionStorage.getItem('notif_requested');
+        if (!hasRequested) {
+            sessionStorage.setItem('notif_requested', 'true');
+            const timer = setTimeout(() => requestNotificationPermission(user.uid), 2500);
+            return () => clearTimeout(timer);
+        }
+    }, [user]);
+
     // Subscribe to bookmarks
     useEffect(() => {
         if (!user) return;
-
-        // Delay permission prompt slightly for UX and ensure auth has settled
-        setTimeout(() => requestNotificationPermission(user.uid), 2500);
 
         const q = query(collection(db, 'bookmarks'), where('userId', '==', user.uid));
         const unsub = onSnapshot(q, (snap) => {
@@ -2346,7 +2354,6 @@ export default function RishtaDashboard() {
                                 ref={selfieInputRef}
                                 className="hidden" 
                                 accept="image/*"
-                                capture="user"
                                 onChange={(e) => setSelfieFile(e.target.files?.[0] || null)}
                             />
 

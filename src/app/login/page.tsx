@@ -278,6 +278,18 @@ export default function LoginPage() {
                         </div>
                     </div>
 
+                    {/* Returning User Note */}
+                    <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 mb-5 flex items-start gap-2.5 shadow-sm">
+                        <Mail className="w-5 h-5 text-[#881337] mt-0.5 shrink-0" />
+                        <div>
+                            <p className="text-[12px] font-bold text-[#881337] uppercase tracking-wide mb-0.5">Returning User?</p>
+                            <p className="text-[11px] leading-relaxed text-[#881337]">
+                                Please use your <strong className="underline">same registered email</strong> to login again correctly and access your profile.
+                            </p>
+                        </div>
+                    </div>
+
+
                     {/* Google Sign-In */}
                     <button type="button" onClick={handleGoogleLogin} disabled={authLoading}
                         className="w-full bg-white border border-gray-300 text-gray-700 py-3.5 rounded-xl font-bold shadow-sm hover:bg-gray-50 active:scale-95 flex items-center justify-center gap-3 mb-4 disabled:opacity-50">

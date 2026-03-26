@@ -306,7 +306,7 @@ export default function LoginPage() {
                         <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100 mb-4">{errorMsg}</div>
                     )}
 
-                    {!showMobileLogin ? (
+                    {false && !showMobileLogin ? (
                         <div className="mt-8 flex justify-center">
                             <button
                                 onClick={() => setShowMobileLogin(true)}
@@ -315,7 +315,9 @@ export default function LoginPage() {
                                 Login with Mobile Number
                             </button>
                         </div>
-                    ) : (
+                    ) : ( 
+                        null &&
+
                         /* ══════════════ SMS OTP LOGIN ══════════════ */
                         <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
                             <div className="flex items-center justify-between mb-2">

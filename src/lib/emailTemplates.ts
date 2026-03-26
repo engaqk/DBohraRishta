@@ -186,3 +186,21 @@ export function getVerificationEmailTemplate(opts: { otpCode: string }) {
             <p style="font-size:11px;color:#999;margin-top:30px;">If you did not request this code, please ignore this email.</p>
         </div>`;
 }
+
+export function getAdminMessageTemplate(opts: { candidateName: string; messageSnippet: string }) {
+    return `
+        <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
+            <h2 style="color:#881337;margin-bottom:8px">New Message from Admin ✉️</h2>
+            <p>As-salaamu alaykum <strong>${opts.candidateName}</strong>,</p>
+            <p>You have received a new message from the 53DBohraRishta administration regarding your profile.</p>
+            <div style="background:#f9f9f9;border-left:5px solid #881337;padding:20px;border-radius:8px;margin:20px 0;font-style:italic;color:#444;">
+                "${opts.messageSnippet}"
+            </div>
+            <p>Please login to your dashboard to view the full thread and reply if necessary.</p>
+            <a href="https://53dbohrarishta.in/login" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
+                Login to Reply
+            </a>
+            <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
+            <p style="font-size:11px;color:#999">53DBohraRishta Admin Support</p>
+        </div>`;
+}

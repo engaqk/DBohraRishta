@@ -137,5 +137,17 @@ export async function notifyUserRegistrationReceived(opts: {
 
 
 
+export async function notifyNewAdminMessage(opts: {
+    candidateName: string;
+    candidateEmail: string;
+    messageSnippet: string;
+}) {
+    await sendEmail({
+        toEmail: opts.candidateEmail,
+        subject: `✉️ New Message from Admin – 53DBohraRishta`,
+        htmlBody: templates.getAdminMessageTemplate(opts),
+    });
+}
+
 export { ADMIN_EMAIL };
 export type { EmailPayload };

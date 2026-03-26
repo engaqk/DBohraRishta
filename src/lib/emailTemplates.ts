@@ -158,7 +158,7 @@ export function getWelcomeOnboardingTemplate(opts: { candidateName: string; isRe
         </div>`;
 }
 
-export function getInterestDeclinedTemplate(opts: { requesterName: string; declinerName: string }) {
+export function getInterestDeclinedTemplate(opts: { requesterName: string; declinerName: string; declinerEmail?: string }) {
     return `
         <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
             <h2 style="color:#555">Interest Request Update</h2>

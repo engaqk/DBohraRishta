@@ -102,6 +102,7 @@ export async function notifyInterestDeclined(opts: {
     requesterName: string;
     requesterEmail: string;
     declinerName: string;
+    declinerEmail?: string;
 }) {
     await sendEmail({
         toEmail: opts.requesterEmail,

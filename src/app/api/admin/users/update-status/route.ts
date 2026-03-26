@@ -76,7 +76,7 @@ export async function POST(request: Request) {
             const hasRealUserEmail = userEmail && userEmail.includes('@') && !userEmail.endsWith('@dbohrarishta.local');
             
             const { notifyStatusUpdate, sendEmailDirect } = await import('@/lib/emailServiceServer');
-            const { ADMIN_EMAIL } = await import('@/lib/emailTemplates');
+            const { ADMIN_EMAIL, getNewCandidateVerifiedTemplate } = await import('@/lib/emailTemplates');
 
             if (hasRealUserEmail) {
                 console.log(`[update-status] Sending status update email to ${userEmail} (BCC: ${ADMIN_EMAIL})`);
@@ -106,8 +106,39 @@ export async function POST(request: Request) {
                 });
             }
 
+            // 6. Broadcast to all verified candidates if NEWLY VERIFIED
+            const isNewlyVerified = newStatus === 'verified' || newStatus === 'approved';
+            if (isNewlyVerified) {
+                console.log(`[update-status] Broadcasting new verified candidate to all existing verified members...`);
+                const verifiedUsersSnap = await adminDb.collection('users')
+                    .where('status', '==', 'verified')
+                    .get();
+
+                const verifiedEmails: string[] = [];
+                verifiedUsersSnap.forEach(doc => {
+                    const d = doc.data();
+                    const email = d.notificationEmail || d.email || d.mobileEmail;
+                    if (email && email.includes('@') && !email.endsWith('@dbohrarishta.local') && email !== userEmail) {
+                        verifiedEmails.push(email);
+                    }
+                });
+
+                if (verifiedEmails.length > 0) {
+                    console.log(`[update-status] Sending BCC broadcast to ${verifiedEmails.length} verified members.`);
+                    await sendEmailDirect({
+                        toEmail: ADMIN_EMAIL, // Send to admin, BCC to everyone else
+                        bcc: verifiedEmails,
+                        subject: `✨ New Profile Verified from ${userData?.city || 'the community'} – 53DBohraRishta`,
+                        htmlBody: getNewCandidateVerifiedTemplate({
+                            newCandidateGender: userData?.gender || 'unknown',
+                            newCandidateCity: userData?.city || userData?.hizratLocation || 'our community'
+                        })
+                    });
+                }
+            }
+
         } catch (emailError: any) {
-            console.error('[update-status] Email notification process failed:', emailError.message);
+            console.error('[update-status] Email notification/broadcast process failed:', emailError.message);
         }
 
         return NextResponse.json({ success: true, updatedUser: { ...userData, ...updateData } });

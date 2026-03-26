@@ -204,3 +204,24 @@ export function getAdminMessageTemplate(opts: { candidateName: string; messageSn
             <p style="font-size:11px;color:#999">53DBohraRishta Admin Support</p>
         </div>`;
 }
+
+export function getNewCandidateVerifiedTemplate(opts: { newCandidateGender: string; newCandidateCity?: string }) {
+    return `
+        <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px;background:#fffafb">
+            <h2 style="color:#881337;margin-bottom:8px">✨ New Profile Verified!</h2>
+            <p>As-salaamu alaykum,</p>
+            <p>Khushamadeed! We are pleased to inform you that a new profile from <strong>${opts.newCandidateCity || 'our community'}</strong> has just been verified on <strong>53DBohraRishta</strong>.</p>
+            <div style="background:#fff;border:1px dashed #D4AF37;padding:22px;border-radius:16px;margin:24px 0;text-align:center;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05)">
+                <p style="margin:0 0 10px;font-weight:bold;color:#881337;font-size:18px">Matches are waiting for you!</p>
+                <p style="margin:0;color:#666;font-size:14px italic">"May Allah grant success to all seekers. Ameen."</p>
+            </div>
+            <p>Login now to discover this new profile and others compatible with your preferences.</p>
+            <div style="text-align:center;margin-top:30px">
+                <a href="https://53dbohrarishta.in" style="display:inline-block;background:#881337;color:#fff;padding:14px 32px;text-decoration:none;border-radius:12px;font-weight:bold;box-shadow:0 10px 15px -3px rgba(136,19,55,0.3)">
+                    🌟 Search New Profiles
+                </a>
+            </div>
+            <hr style="border:0;border-top:1px solid #eee;margin:32px 0"/>
+            <p style="font-size:10px;color:#bbb;text-align:center;line-height:1.5">You are receiving this because your profile is verified on 53DBohraRishta.<br/>&copy; 2026 DBohraRishta Team</p>
+        </div>`;
+}

@@ -45,6 +45,8 @@ interface DiscoveryCardProps {
     state?: string;
     country?: string;
     createdAt?: any;
+    selfieImageUrl?: string;
+    selfieStatus?: string;
 }
 
 export default function DiscoveryCard({
@@ -54,7 +56,7 @@ export default function DiscoveryCard({
     isOnline = false, viewerItsNumber = '', extraImageUrl,
     ejamaatId, itsNumber, maritalStatus, mobile, mobileCode, email,
     fatherName, motherName, professionType, educationDetails,
-    city, state, gender, createdAt,
+    city, state, gender, createdAt, selfieImageUrl, selfieStatus,
 }: DiscoveryCardProps) {
     const { user } = useAuth();
     const router = useRouter();
@@ -70,7 +72,11 @@ export default function DiscoveryCard({
 
     const [profileData, setProfileData] = useState<any>(null);
 
-    const photos = [profileData?.libasImageUrl || libasImageUrl, profileData?.extraImageUrl || extraImageUrl].filter(Boolean) as string[];
+    const photos = [
+        profileData?.libasImageUrl || libasImageUrl,
+        profileData?.extraImageUrl || extraImageUrl,
+        (profileData?.isPhotoVerified || profileData?.selfieStatus === 'verified' ? profileData?.selfieImageUrl : null)
+    ].filter(Boolean) as string[];
     const currentPhoto = photos[activePhotoIdx] || libasImageUrl;
     const age = dob ? Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000) : 25;
     const isFemale = gender === 'female';

@@ -1715,6 +1715,12 @@ export default function RishtaDashboard() {
                                             )}
                                         </div>
                                         <div className="flex flex-col gap-2">
+                                            {myProfile.isPhotoVerified && myProfile.selfieImageUrl && (
+                                                <div className="w-56 h-56 rounded-2xl overflow-hidden mb-2 relative group" style={{ border: '4px solid #ffffff', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
+                                                    <p className="absolute top-2 left-2 z-10 bg-[#881337] text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter">Verified Selfie</p>
+                                                    <img src={myProfile.selfieImageUrl} alt="Verified" className="w-full h-full object-cover" />
+                                                </div>
+                                            )}
                                             <div className="px-3 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#fff1f2', color: '#881337', border: '1px solid #ffe4e6', boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>{myProfile.gender} Member</div>
                                             <div className="px-3 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #dcfce7', boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>ITS Verified Member</div>
                                         </div>
@@ -1990,7 +1996,7 @@ export default function RishtaDashboard() {
             {/* My Profile Preview Modal */}
             {
                 showMyProfileModal && myProfile && (() => {
-                    const photos = [myProfile.libasImageUrl, myProfile.extraImageUrl].filter(Boolean) as string[];
+                    const photos = [myProfile.libasImageUrl, myProfile.extraImageUrl, (myProfile.isPhotoVerified ? myProfile.selfieImageUrl : null)].filter(Boolean) as string[];
                     const age = myProfile.dob ? Math.floor((Date.now() - new Date(myProfile.dob).getTime()) / 31557600000) : null;
                     const isFemale = myProfile.gender === 'female';
                     // Show how others see it: Blurred surname for females
@@ -2253,7 +2259,7 @@ export default function RishtaDashboard() {
             {/* Preview Lightbox (Full View) */}
             {
                 showPreviewLightbox && myProfile && (() => {
-                    const photos = [myProfile.libasImageUrl, myProfile.extraImageUrl].filter(Boolean) as string[];
+                    const photos = [myProfile.libasImageUrl, myProfile.extraImageUrl, (myProfile.isPhotoVerified ? myProfile.selfieImageUrl : null)].filter(Boolean) as string[];
                     return (
                         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4" onClick={() => setShowPreviewLightbox(false)}>
                             <button

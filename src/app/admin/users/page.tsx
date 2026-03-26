@@ -276,9 +276,9 @@ export default function AdminUsersPage() {
             const matchGender = u.gender?.toLowerCase() === filterGender;
             const matchStatus = filterStatus === 'all' || u.status === filterStatus;
             const matchComplete = filterComplete === 'all' ||
-                (filterComplete === 'complete' && u.isCandidateFormComplete) ||
+                (filterComplete === 'complete' && (u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved')) ||
                 (filterComplete === 'submitted' && u.isCandidateFormComplete && u.status === 'pending_verification') ||
-                (filterComplete === 'incomplete' && !u.isCandidateFormComplete);
+                (filterComplete === 'incomplete' && !u.isCandidateFormComplete && u.status !== 'verified' && u.status !== 'approved');
 
             return matchSearch && matchGender && matchStatus && matchComplete;
         });
@@ -303,9 +303,9 @@ export default function AdminUsersPage() {
 
     const stats = useMemo(() => ({
         total: users.length,
-        complete: users.filter(u => u.isCandidateFormComplete).length,
+        complete: users.filter(u => u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved').length,
         onboardingSubmitted: users.filter(u => u.isCandidateFormComplete && u.status === 'pending_verification').length,
-        onboardingPending: users.filter(u => !u.isCandidateFormComplete).length,
+        onboardingPending: users.filter(u => !u.isCandidateFormComplete && u.status !== 'verified' && u.status !== 'approved').length,
         verified: users.filter(u => u.status === 'verified' || u.status === 'approved').length,
         archived: users.filter(u => u.status === 'archived').length,
         filtered: filteredAndSorted.length
@@ -533,7 +533,7 @@ export default function AdminUsersPage() {
                                                                 <MessageCircle className="w-2.5 h-2.5" /> NEW MSG
                                                             </span>
                                                         )}
-                                                        {u.isCandidateFormComplete ? (
+                                                        {(u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved') ? (
                                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-100">
                                                                 <CheckCircle className="w-2.5 h-2.5" /> Form Done
                                                             </span>

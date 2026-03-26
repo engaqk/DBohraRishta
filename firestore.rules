@@ -21,9 +21,10 @@ service cloud.firestore {
       );
     }
     
-    // Users collection: authenticated users can read all, write own OR admin
+    // Users collection: get is public, list/write restricted
     match /users/{userId} {
-      allow read: if signedIn();
+      allow get: if true;
+      allow list: if signedIn();
       allow create, update: if signedIn() && (isOwner(userId) || isAdmin());
       allow delete: if false; // Deletions must go through secure Admin API for Auth cleanup & Audit Logging
 

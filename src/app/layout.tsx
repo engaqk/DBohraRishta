@@ -26,6 +26,10 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "DBohraRishta",
   },
+  icons: {
+    icon: "/icon-512.png",
+    apple: "/icon-512.png",
+  },
   openGraph: {
     title: "DBohraRishta — Intelligent Bohra Matchmaking",
     description: "ITS-verified profiles. Privacy-first. Bohra community matchmaking platform.",
@@ -33,11 +37,13 @@ export const metadata: Metadata = {
     siteName: "DBohraRishta",
     locale: "en_US",
     type: "website",
+    images: ["/icon-512.png"],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "DBohraRishta",
     description: "Intelligent matchmaking for the Dawoodi Bohra community.",
+    images: ["/icon-512.png"],
   },
   other: {
     "theme-color": "#881337",

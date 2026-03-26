@@ -61,6 +61,7 @@ export default function AdminUsersPage() {
     const [activeMainTab, setActiveMainTab] = useState<'firestore' | 'auth'>('firestore');
     const [filterGender, setFilterGender] = useState<string>('male');
     const [isSyncing, setIsSyncing] = useState(false);
+    const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
 
     // Admin auth guard
@@ -651,7 +652,7 @@ export default function AdminUsersPage() {
                                                         <div className="flex-1">
                                                             <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Libas Image</p>
                                                             {u.libasImageUrl ? (
-                                                                <div className="w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-white">
+                                                                <div className="w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-white cursor-zoom-in" onClick={e => { e.stopPropagation(); setFullscreenImage(u.libasImageUrl || null); }}>
                                                                     <img src={u.libasImageUrl} className="w-full h-full object-cover" />
                                                                 </div>
                                                             ) : <div className="text-gray-300 text-[10px] italic">Not uploaded</div>}
@@ -660,7 +661,7 @@ export default function AdminUsersPage() {
                                                             <p className="text-[10px] font-black text-blue-400 uppercase mb-2">Verification Selfie</p>
                                                             {(u.selfieImageUrl || u.selfieUrl) ? (
                                                                 <div className="w-full h-40 rounded-xl overflow-hidden border-2 border-blue-100 bg-white group relative">
-                                                                    <img src={u.selfieImageUrl || u.selfieUrl} className="w-full h-full object-cover" />
+                                                                    <img src={u.selfieImageUrl || u.selfieUrl} className="w-full h-full object-cover cursor-zoom-in" onClick={e => { e.stopPropagation(); setFullscreenImage(u.selfieImageUrl || u.selfieUrl); }} />
                                                                     {!u.isPhotoVerified && (
                                                                         <div className="absolute inset-0 bg-blue-600/10 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                                             <button 
@@ -683,7 +684,7 @@ export default function AdminUsersPage() {
                                                         <div className="flex-1 col-span-2">
                                                             <p className="text-[10px] font-black text-gray-400 uppercase mb-2">ITS Card</p>
                                                             {u.itsImageUrl ? (
-                                                                <div className="w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-white">
+                                                                <div className="w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-white cursor-zoom-in" onClick={e => { e.stopPropagation(); setFullscreenImage(u.itsImageUrl); }}>
                                                                     <img src={u.itsImageUrl} className="w-full h-full object-contain" />
                                                                 </div>
                                                             ) : <div className="text-gray-300 text-[10px] italic">Not uploaded</div>}
@@ -898,6 +899,20 @@ export default function AdminUsersPage() {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Fullscreen Image Viewer */}
+            {fullscreenImage && (
+                <div
+                    className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center cursor-zoom-out"
+                    onClick={() => setFullscreenImage(null)}
+                >
+                    <img src={fullscreenImage} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" />
+                    <button
+                        className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold transition-all"
+                        onClick={() => setFullscreenImage(null)}
+                    >✕</button>
                 </div>
             )}
         </div>

@@ -480,7 +480,7 @@ export default function AdminVerificationPage() {
                                                 </div>
                                             </div>
                                         )}
-                                        {selectedUser.selfieUrl && (
+                                        {(selectedUser.selfieImageUrl || selectedUser.selfieUrl) && (
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <p className="text-xs font-bold text-blue-600 uppercase tracking-tight">Selfie Verification</p>
@@ -489,16 +489,16 @@ export default function AdminVerificationPage() {
                                                 </div>
                                                 <div
                                                     className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden border-2 border-blue-200 shadow cursor-pointer hover:opacity-90 transition-opacity"
-                                                    onClick={() => setFullscreenImage(selectedUser.selfieUrl)}
+                                                    onClick={() => setFullscreenImage(selectedUser.selfieImageUrl || selectedUser.selfieUrl)}
                                                 >
-                                                    <img src={selectedUser.selfieUrl} alt="Selfie" className="w-full h-full object-cover" />
+                                                    <img src={selectedUser.selfieImageUrl || selectedUser.selfieUrl} alt="Selfie" className="w-full h-full object-cover" />
                                                 </div>
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Selfie Action Button */}
-                                    {selectedUser.selfieUrl && !selectedUser.isPhotoVerified && (
+                                    {(selectedUser.selfieImageUrl || selectedUser.selfieUrl) && !selectedUser.isPhotoVerified && (
                                         <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
@@ -679,7 +679,85 @@ export default function AdminVerificationPage() {
                             </div>
                         </div>
 
-                        {/* Gender Tabs */}
+                        {/* ── SELFIE VERIFICATION PIPELINE ── */}
+                        {(() => {
+                            const selfieQueue = allUsers.filter(u =>
+                                (u.selfieImageUrl || u.selfieUrl) && u.selfieStatus === 'pending' && !u.isPhotoVerified
+                            );
+                            if (selfieQueue.length === 0) return null;
+                            return (
+                                <div className="mb-10">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center">
+                                            <Camera className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Selfie Verification Queue</h3>
+                                            <p className="text-[10px] text-blue-600 font-bold">{selfieQueue.length} selfie{selfieQueue.length > 1 ? 's' : ''} awaiting review</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                        {selfieQueue.map(u => (
+                                            <div key={u.id} className="bg-white rounded-3xl border-2 border-blue-100 shadow-sm overflow-hidden">
+                                                <div className="flex gap-0">
+                                                    {/* Selfie */}
+                                                    <div className="flex-1 relative">
+                                                        <p className="absolute top-2 left-2 z-10 bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Selfie</p>
+                                                        <img
+                                                            src={u.selfieImageUrl || u.selfieUrl}
+                                                            alt="selfie"
+                                                            className="w-full h-40 object-cover cursor-zoom-in"
+                                                            onClick={() => setFullscreenImage(u.selfieImageUrl || u.selfieUrl)}
+                                                        />
+                                                    </div>
+                                                    {/* Libas */}
+                                                    {u.libasImageUrl && (
+                                                        <div className="flex-1 relative">
+                                                            <p className="absolute top-2 left-2 z-10 bg-gray-700 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Libas</p>
+                                                            <img
+                                                                src={u.libasImageUrl}
+                                                                alt="libas"
+                                                                className="w-full h-40 object-cover cursor-zoom-in"
+                                                                onClick={() => setFullscreenImage(u.libasImageUrl)}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="p-4">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div>
+                                                            <p className="font-black text-sm text-gray-900">{u.name}</p>
+                                                            <p className="text-[10px] text-gray-400 font-bold">{u.hizratLocation} · {u.itsNumber}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => openDetails(u, 'biodata')}
+                                                            className="text-[10px] text-blue-600 font-black uppercase hover:underline"
+                                                        >
+                                                            Full Profile →
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleVerifySelfie(u.id, false)}
+                                                            className="flex-1 py-2 bg-rose-50 text-rose-600 border border-rose-100 font-black text-[10px] rounded-xl uppercase hover:bg-rose-100"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleVerifySelfie(u.id, true)}
+                                                            className="flex-1 py-2 bg-blue-600 text-white font-black text-[10px] rounded-xl uppercase hover:bg-blue-700 shadow-md shadow-blue-200 flex items-center justify-center gap-1"
+                                                        >
+                                                            <ShieldCheck className="w-3 h-3" /> Approve
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         <div className="bg-white border-b border-gray-100 mb-6 rounded-2xl overflow-hidden shadow-sm flex items-center px-4">
                             {(['male', 'female'] as const).map(g => (
                                 <button

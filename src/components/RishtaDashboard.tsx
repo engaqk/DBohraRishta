@@ -175,7 +175,7 @@ export default function RishtaDashboard() {
             reader.onload = (event) => {
                 console.log("[Selfie] FileReader loaded!");
                 const img = new Image();
-                img.src = event.target?.result as string;
+                
                 img.onload = async () => {
                     console.log("[Selfie] Image loaded! Compressing...");
                     try {
@@ -224,6 +224,9 @@ export default function RishtaDashboard() {
                     toast.error("Failed to process the requested image.");
                     setUploadingSelfie(false);
                 };
+                
+                // CRITICAL: MUST set src AFTER attaching onload, or Base64 loading will skip onload
+                img.src = event.target?.result as string;
             };
             
             reader.onerror = () => {

@@ -19,6 +19,7 @@ export default function Icon() {
                     color: '#D4AF37',
                     borderRadius: '50%',
                     fontWeight: '900',
+                    border: '1.5px solid #D4AF37',
                 }}
             >
                 53

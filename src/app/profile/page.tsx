@@ -187,8 +187,9 @@ function ProfileContent() {
             <div className="min-h-screen bg-[#fcf8f9] flex flex-col items-center py-12 px-4 select-none">
                 {/* Premium Branding Header */}
                 <div className="text-center mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full font-bold text-3xl bg-gradient-to-br from-white to-rose-100 ring-4 ring-rose-50 shadow-[0_10px_25px_rgba(212,175,55,0.3)]" 
-                         style={{ color: '#D4AF37', border: '2px solid #D4AF37' }}>
+                     <p className="text-[8px] font-black tracking-[0.6em] text-[#881337]/30 uppercase mb-8">https://53dbohrarishta.in</p>
+                    <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full font-bold text-3xl bg-gradient-to-br from-white to-rose-100 ring-4 ring-white/20 shadow-[0_0_30px_rgba(212,175,55,0.5)] border-2 border-[#D4AF37]" 
+                         style={{ color: '#D4AF37' }}>
                         53
                     </div>
                     <h1 className="text-4xl font-extrabold tracking-tighter mb-1" style={{ color: '#881337', fontFamily: 'serif' }}>
@@ -196,7 +197,7 @@ function ProfileContent() {
                     </h1>
                     <div className="flex items-center justify-center gap-2 mt-2">
                         <div className="h-[1px] w-8 bg-[#881337]/20" />
-                        <p className="text-[9px] font-sans font-black tracking-[0.2em] uppercase text-[#881337]/60">Intelligent Matches</p>
+                        <p className="text-[10px] font-sans font-black tracking-[0.3em] uppercase text-[#881337]/60">Intelligent Matches</p>
                         <div className="h-[1px] w-8 bg-[#881337]/20" />
                     </div>
                 </div>
@@ -257,10 +258,13 @@ function ProfileContent() {
                         </div>
 
                         {/* Lock Overlay for restricted data */}
-                        <div className="bg-gradient-to-b from-transparent via-white/80 to-white pt-10 -mt-10 relative z-20 text-center">
+                        <div 
+                            className="pt-10 -mt-10 relative z-20 text-center"
+                            style={{ background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.9) 30%, #ffffff 60%)' }}
+                        >
                             <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-full text-amber-700 border border-amber-200 mb-6 mx-auto">
                                 <Lock size={14} className="fill-amber-700/10" />
-                                <span className="text-[10px] font-black uppercase tracking-widest leading-none">Complete Biodata Locked</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest leading-none">Biodata Details Locked</span>
                             </div>
                             
                             <h3 className="text-xl font-black text-[#881337] font-serif mb-2">Interested in this profile?</h3>

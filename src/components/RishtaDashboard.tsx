@@ -1587,19 +1587,29 @@ export default function RishtaDashboard() {
                                 <div className="absolute inset-0 border-[15px]" style={{ borderColor: '#881337' }} />
                                 <div className="absolute inset-[20px] border-2" style={{ borderColor: '#D4AF37' }} />
 
-                                {/* Header section (Matching Login Branding) */}
-                                <div className="text-center mb-10 mt-6 relative z-10">
-                                    <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full font-bold text-3xl bg-gradient-to-br from-white to-rose-100 ring-4 ring-rose-50 shadow-[0_10px_25px_rgba(212,175,55,0.3)]" 
-                                         style={{ color: '#D4AF37', border: '2px solid #D4AF37' }}>
+                                 {/* URL Branding at Top */}
+                                 <div className="absolute top-4 left-0 right-0 text-center text-[8px] font-black uppercase tracking-[0.5em]" style={{ color: 'rgba(136, 19, 55, 0.3)' }}>
+                                     https://53dbohrarishta.in
+                                 </div>
+
+                                 {/* Header section (Matching Login Branding) */}
+                                 <div className="text-center mb-10 mt-10 relative z-10">
+                                    <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full font-bold text-3xl" 
+                                         style={{ 
+                                            color: '#D4AF37', 
+                                            border: '2px solid #D4AF37',
+                                            backgroundColor: '#ffffff',
+                                            boxShadow: '0 0 0 4px rgba(255,255,255,0.2), 0 0 30px rgba(212,175,55,0.5)'
+                                         }}>
                                         53
                                     </div>
                                     <h1 className="text-4xl font-extrabold tracking-tight mb-1" style={{ color: '#881337', fontFamily: 'serif' }}>
                                         DBohra<span style={{ color: '#D4AF37', fontWeight: 'normal', fontStyle: 'italic' }}>Rishta</span>
                                     </h1>
                                     <div className="flex items-center justify-center gap-2 mt-2">
-                                        <div className="h-[1px] w-8 bg-[#881337]/20" />
-                                        <p className="text-[9px] font-sans font-black tracking-[0.2em] uppercase text-[#881337]/60">Intelligent Matches</p>
-                                        <div className="h-[1px] w-8 bg-[#881337]/20" />
+                                        <div className="h-[1px] w-8" style={{ backgroundColor: 'rgba(136, 19, 55, 0.2)' }} />
+                                        <p className="text-[10px] font-sans font-black tracking-[0.3em] uppercase" style={{ color: 'rgba(136, 19, 55, 0.6)' }}>Intelligent Matches</p>
+                                        <div className="h-[1px] w-8" style={{ backgroundColor: 'rgba(136, 19, 55, 0.2)' }} />
                                     </div>
                                 </div>
 
@@ -1644,8 +1654,8 @@ export default function RishtaDashboard() {
                                             <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
                                                 <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Age / DOB</span><span className="font-bold" style={{ color: '#1f2937' }}>{myProfile.dob ? `${new Date().getFullYear() - new Date(myProfile.dob).getFullYear()} Years` : 'N/A'}</span></div>
                                                 <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Height</span><span className="font-bold" style={{ color: '#1f2937' }}>{myProfile.heightFeet}'{myProfile.heightInch}"</span></div>
-                                                 <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Education</span><span className="font-bold leading-tight" style={{ color: '#1f2937' }}>{myProfile.education}</span></div>
-                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Marital Status</span><span className="font-bold" style={{ color: '#1f2937' }}>{myProfile.maritalStatus || 'Single'}</span></div>
+                                                 <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Education</span><span className="font-bold leading-normal text-xs" style={{ color: '#1f2937' }}>{myProfile.education}</span></div>
+                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Marital Status</span><span className="font-bold text-xs" style={{ color: '#1f2937' }}>{myProfile.maritalStatus || 'Single'}</span></div>
                                             </div>
 
                                             <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}>
@@ -1668,9 +1678,9 @@ export default function RishtaDashboard() {
                                         </div>
                                     </div>
 
-                                    <div>
+                                     <div>
                                         <h3 className="text-[11px] font-black uppercase tracking-widest mb-3 pb-1" style={{ color: '#881337', borderBottom: '2px solid #D4AF37' }}>About Me</h3>
-                                        <p className="text-xs leading-relaxed italic line-clamp-6" style={{ color: '#4b5563', maxHeight: '110px', overflow: 'hidden' }}>
+                                        <p className="text-xs leading-relaxed italic" style={{ color: '#4b5563' }}>
                                             {myProfile.bio || "Seeking a companion based on deen and traditional values. Looking forward to connecting with a compatible match. Ameen."}
                                         </p>
                                     </div>

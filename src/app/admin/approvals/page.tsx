@@ -321,9 +321,12 @@ export default function AdminVerificationPage() {
         <div className="min-h-screen bg-gray-50 flex flex-col p-6 text-[#881337] pt-12 md:px-12">
             <div className="max-w-[1400px] w-full mx-auto">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-                    <div className="flex items-center gap-3">
-                        <ShieldAlert className="w-8 h-8 text-[#881337]" />
-                        <h1 className="text-3xl font-bold font-serif">Admin Dashboard</h1>
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] rounded-full flex items-center justify-center font-bold text-xl shadow-[0_0_20px_rgba(212,175,55,0.4)] border-2 border-[#D4AF37] ring-4 ring-white/20">53</div>
+                        <div>
+                            <h1 className="text-2xl font-extrabold font-serif text-[#881337] tracking-tight leading-tight">DBohra<span className="text-[#D4AF37] font-medium italic">Rishta</span></h1>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] leading-none mt-1">Admin Control Panel</p>
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -333,33 +336,33 @@ export default function AdminVerificationPage() {
                                 placeholder="Search candidates..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#881337] transition-all"
+                                className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#881337] transition-all shadow-sm"
                             />
                         </div>
 
                         <button
                             onClick={() => router.push('/admin/users')}
-                            className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-blue-200"
+                            className="bg-blue-50 hover:bg-white text-blue-700 px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all border border-blue-100 hover:border-blue-400"
                         >
-                            <Users className="w-4 h-4" /> Registered Users
+                            <Users className="w-3.5 h-3.5" /> Registered Users
                         </button>
                         <button
                             onClick={() => router.push('/admin/broadcast')}
-                            className="bg-purple-50 hover:bg-purple-100 text-purple-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-purple-200"
+                            className="bg-purple-50 hover:bg-white text-purple-700 px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all border border-purple-100 hover:border-purple-400"
                         >
-                            <Send className="w-4 h-4" /> Broadcast Push
+                            <Send className="w-3.5 h-3.5" /> Broadcast Push
                         </button>
                         <button
                             onClick={() => router.push('/admin/sms-broadcast')}
-                            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-emerald-200"
+                            className="bg-emerald-50 hover:bg-white text-emerald-700 px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all border border-emerald-100 hover:border-emerald-400"
                         >
-                            <Smartphone className="w-4 h-4" /> Broadcast SMS
+                            <Smartphone className="w-3.5 h-3.5" /> Broadcast SMS
                         </button>
                         <button
                             onClick={() => router.push('/admin/audit-logs')}
-                            className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-gray-700"
+                            className="bg-gray-800 hover:bg-gray-950 text-white px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all border border-gray-700"
                         >
-                            <ShieldAlert className="w-4 h-4" /> Audit Logs
+                            <ShieldAlert className="w-3.5 h-3.5 text-rose-400" /> Audit Logs
                         </button>
                         <button
                             onClick={() => {
@@ -367,9 +370,9 @@ export default function AdminVerificationPage() {
                                 toast.success("Admin session terminated.");
                                 router.push('/admin/login');
                             }}
-                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-colors border border-gray-200"
+                            className="bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all border border-gray-200"
                         >
-                            <LogOut className="w-4 h-4" /> Secure Logout
+                            <LogOut className="w-3.5 h-3.5" /> Secure Logout
                         </button>
                     </div>
                 </div>
@@ -566,23 +569,43 @@ export default function AdminVerificationPage() {
                     <div className="text-center p-12 text-gray-500 font-bold animate-pulse">Scanning database...</div>
                 ) : (
                     <>
-                        {/* Analytics Cards */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                                <div className="p-3 bg-rose-50 text-[#881337] rounded-full"><BarChart3 className="w-6 h-6" /></div>
-                                <div><p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Total Users</p><h2 className="text-2xl font-bold font-serif">{analytics.totalUsers}</h2></div>
+                        {/* Premium Analytics Cards */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                            <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex items-center gap-5 hover:scale-[1.02] transition-all group cursor-default">
+                                <div className="w-14 h-14 bg-rose-50 text-[#881337] rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-rose-100 transition-colors shadow-inner">
+                                    <BarChart3 className="w-7 h-7" />
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400/80 mb-1">Total Users</p>
+                                    <h2 className="text-3xl font-black font-serif text-[#881337]">{analytics.totalUsers}</h2>
+                                </div>
                             </div>
-                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                                <div className="p-3 bg-orange-50 text-orange-500 rounded-full"><Clock className="w-6 h-6" /></div>
-                                <div><p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Pending</p><h2 className="text-2xl font-bold font-serif">{analytics.pendingCount}</h2></div>
+                            <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex items-center gap-5 hover:scale-[1.02] transition-all group cursor-default">
+                                <div className="w-14 h-14 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-orange-100 transition-colors shadow-inner">
+                                    <Clock className="w-7 h-7" />
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400/80 mb-1">Pending</p>
+                                    <h2 className="text-3xl font-black font-serif text-orange-600">{analytics.pendingCount}</h2>
+                                </div>
                             </div>
-                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                                <div className="p-3 bg-yellow-50 text-yellow-500 rounded-full"><PauseCircle className="w-6 h-6" /></div>
-                                <div><p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">On Hold</p><h2 className="text-2xl font-bold font-serif">{analytics.holdCount}</h2></div>
+                            <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex items-center gap-5 hover:scale-[1.02] transition-all group cursor-default">
+                                <div className="w-14 h-14 bg-yellow-50 text-yellow-500 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-yellow-100 transition-colors shadow-inner">
+                                    <PauseCircle className="w-7 h-7" />
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400/80 mb-1">On Hold</p>
+                                    <h2 className="text-3xl font-black font-serif text-yellow-600">{analytics.holdCount}</h2>
+                                </div>
                             </div>
-                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                                <div className="p-3 bg-emerald-50 text-emerald-500 rounded-full"><CheckCircle className="w-6 h-6" /></div>
-                                <div><p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Match Rate</p><h2 className="text-2xl font-bold font-serif">{analytics.acceptedRatio}%</h2></div>
+                            <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex items-center gap-5 hover:scale-[1.02] transition-all group cursor-default">
+                                <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors shadow-inner">
+                                    <CheckCircle className="w-7 h-7" />
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400/80 mb-1">Match Rate</p>
+                                    <h2 className="text-3xl font-black font-serif text-emerald-600">{analytics.acceptedRatio}%</h2>
+                                </div>
                             </div>
                         </div>
 

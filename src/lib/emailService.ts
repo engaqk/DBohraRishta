@@ -19,13 +19,23 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
         const fetchUrl = typeof window !== 'undefined' ? '/api/notify' : (baseUrl ? `${baseUrl}/api/notify` : '/api/notify');
         
+        // Ensure Admin is BCCed on everything unless they are the direct recipient
+        const isAdminRecipient = realRecipients.some(r => r.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+        const currentBcc = Array.isArray(payload.bcc) ? payload.bcc : (payload.bcc ? [payload.bcc] : []);
+        const isAdminBcc = currentBcc.some(r => r.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+        
+        let bccFinal = payload.bcc;
+        if (!isAdminRecipient && !isAdminBcc) {
+            bccFinal = [...currentBcc, ADMIN_EMAIL];
+        }
+
         const response = await fetch(fetchUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 to: realRecipients,
                 cc: payload.cc,
-                bcc: payload.bcc || (payload.cc ? undefined : ADMIN_EMAIL),
+                bcc: bccFinal,
                 subject: payload.subject,
                 html: payload.htmlBody
             })
@@ -64,6 +74,7 @@ export async function notifyInterestSent(opts: {
     recipientName: string;
     recipientEmail: string;
     senderName: string;
+    senderEmail?: string;
     icebreaker?: string;
 }) {
     await sendEmail({

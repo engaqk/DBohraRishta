@@ -15,7 +15,7 @@ export interface EmailPayload {
     bcc?: string | string[];
 }
 
-export function getInterestSentTemplate(opts: { recipientName: string; senderName: string; icebreaker?: string }) {
+export function getInterestSentTemplate(opts: { recipientName: string; senderName: string; senderEmail?: string; icebreaker?: string }) {
     return `
         <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
             <h2 style="color:#881337;margin-bottom:8px">New Interest Request Received</h2>

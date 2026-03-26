@@ -41,21 +41,36 @@ export async function POST(request: Request) {
              return NextResponse.json({ error: 'Storage service not available' }, { status: 503 });
         }
 
-        const bucket = adminStorage.bucket();
-        const filename = `profiles/${userId}/selfie_${Date.now()}.jpg`;
-        const fileRef = bucket.file(filename);
+        let bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'dbohranisbat.firebasestorage.app';
+        let bucket = adminStorage.bucket(bucketName);
+        let filename = `profiles/${userId}/selfie_${Date.now()}.jpg`;
+        let fileRef = bucket.file(filename);
 
         console.log('[upload-selfie] Saving file to bucket:', bucket.name, 'as', filename);
 
         const bytes = await file.arrayBuffer();
-        await fileRef.save(Buffer.from(bytes), {
-            metadata: {
-                contentType: 'image/jpeg',
-            },
-        });
+        try {
+            await fileRef.save(Buffer.from(bytes), {
+                metadata: { contentType: 'image/jpeg' },
+            });
+        } catch (saveErr: any) {
+            // Firebase Admin SDK often fails with 404 on '.firebasestorage.app' bucket aliases 
+            // because it expects the underlying GCP bucket name.
+            if (saveErr.code === 404 && bucketName.includes('.firebasestorage.app')) {
+                console.log('[upload-selfie] Bucket alias not found natively, falling back to .appspot.com...');
+                bucketName = bucketName.replace('.firebasestorage.app', '.appspot.com');
+                bucket = adminStorage.bucket(bucketName);
+                fileRef = bucket.file(filename);
+                await fileRef.save(Buffer.from(bytes), {
+                    metadata: { contentType: 'image/jpeg' },
+                });
+            } else {
+                throw saveErr; // Rethrow if it's not a 404 or can't be fixed by fallback
+            }
+        }
 
         // Use permanent public URL format for simplicity in display
-        const downloadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(filename)}?alt=media`;
+        const downloadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodeURIComponent(filename)}?alt=media`;
 
         // 3. Update Firestore
         if (!adminDb) {

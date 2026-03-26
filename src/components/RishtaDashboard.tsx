@@ -157,6 +157,7 @@ export default function RishtaDashboard() {
     const selfieInputRef = useRef<HTMLInputElement>(null);
 
     const handleSelfieUpload = async () => {
+        console.log("[Selfie] handleSelfieUpload triggered!");
         if (!user || !selfieFile) {
             toast.error("Please select a photo first");
             return;
@@ -167,18 +168,19 @@ export default function RishtaDashboard() {
         }
 
         setUploadingSelfie(true);
-        console.log("[Selfie] Starting Base64 database upload...");
+        console.log("[Selfie] Starting Base64 database upload for user:", user.uid);
         try {
             const reader = new FileReader();
             reader.readAsDataURL(selfieFile);
             reader.onload = (event) => {
+                console.log("[Selfie] FileReader loaded!");
                 const img = new Image();
                 img.src = event.target?.result as string;
                 img.onload = async () => {
+                    console.log("[Selfie] Image loaded! Compressing...");
                     try {
-                        // Compress image to ensure it fits safely inside Firestore's 1MB limit
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 400; // Smaller resolution for selfie verification
+                        const MAX_WIDTH = 400; 
                         const scaleSize = MAX_WIDTH / img.width;
                         if (scaleSize < 1) {
                             canvas.width = MAX_WIDTH;
@@ -189,23 +191,24 @@ export default function RishtaDashboard() {
                         }
                         
                         const ctx = canvas.getContext('2d');
-                        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        if (!ctx) throw new Error("Could not get canvas context");
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         
-                        // Compress aggressively as it's just for admin verification
+                        console.log("[Selfie] Calling toDataURL...");
                         const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
 
-                        console.log("[Selfie] Compressed, saving to DB...");
+                        console.log("[Selfie] Updating Firestore directly (length:", compressedDataUrl.length, ")...");
                         await updateDoc(doc(db, 'users', user.uid), {
                             selfieUrl: compressedDataUrl,
                             selfieStatus: 'pending',
                             isPhotoVerified: false
                         });
 
+                        console.log("[Selfie] Database update completed!");
                         toast.success("Selfie submitted for verification!");
                         setShowSelfieModal(false);
                         setSelfieFile(null);
                         
-                        // Force brief delay before reload so DB settles
                         setTimeout(() => {
                             if (typeof window !== 'undefined') window.location.reload();
                         }, 1000);
@@ -213,7 +216,6 @@ export default function RishtaDashboard() {
                     } catch (err: any) {
                         console.error("[Selfie] Error saving to DB:", err);
                         toast.error("Upload failed: " + err.message);
-                    } finally {
                         setUploadingSelfie(false);
                     }
                 };

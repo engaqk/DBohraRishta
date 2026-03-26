@@ -1588,16 +1588,19 @@ export default function RishtaDashboard() {
                                 <div className="absolute inset-[20px] border-2" style={{ borderColor: '#D4AF37' }} />
 
                                 {/* Header section (Matching Login Branding) */}
-                                <div className="text-center mb-8 mt-6 relative z-10">
-                                    <div className="w-14 h-14 mx-auto mb-3 flex items-center justify-center rounded-full font-bold text-2xl" 
-                                         style={{ backgroundColor: '#ffffff', color: '#D4AF37', border: '2px solid #D4AF37', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
+                                <div className="text-center mb-10 mt-6 relative z-10">
+                                    <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full font-bold text-3xl bg-gradient-to-br from-white to-rose-100 ring-4 ring-rose-50 shadow-[0_10px_25px_rgba(212,175,55,0.3)]" 
+                                         style={{ color: '#D4AF37', border: '2px solid #D4AF37' }}>
                                         53
                                     </div>
-                                    <h1 className="text-4xl font-extrabold uppercase tracking-tight mb-0" style={{ color: '#881337', fontFamily: 'serif' }}>
+                                    <h1 className="text-4xl font-extrabold tracking-tight mb-1" style={{ color: '#881337', fontFamily: 'serif' }}>
                                         DBohra<span style={{ color: '#D4AF37', fontWeight: 'normal', fontStyle: 'italic' }}>Rishta</span>
                                     </h1>
-                                    <div className="w-48 h-[1px] mx-auto mt-2 mb-1" style={{ backgroundColor: '#881337', opacity: 0.2 }} />
-                                    <p className="text-[10px] font-sans font-black tracking-[0.3em] uppercase" style={{ color: '#881337' }}>Intelligent Matches</p>
+                                    <div className="flex items-center justify-center gap-2 mt-2">
+                                        <div className="h-[1px] w-8 bg-[#881337]/20" />
+                                        <p className="text-[9px] font-sans font-black tracking-[0.2em] uppercase text-[#881337]/60">Intelligent Matches</p>
+                                        <div className="h-[1px] w-8 bg-[#881337]/20" />
+                                    </div>
                                 </div>
 
                                 <div className="flex gap-10 mb-8 relative z-10 px-4">
@@ -1641,7 +1644,7 @@ export default function RishtaDashboard() {
                                             <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
                                                 <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Age / DOB</span><span className="font-bold" style={{ color: '#1f2937' }}>{myProfile.dob ? `${new Date().getFullYear() - new Date(myProfile.dob).getFullYear()} Years` : 'N/A'}</span></div>
                                                 <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Height</span><span className="font-bold" style={{ color: '#1f2937' }}>{myProfile.heightFeet}'{myProfile.heightInch}"</span></div>
-                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Education</span><span className="font-bold truncate" style={{ color: '#1f2937' }}>{myProfile.education}</span></div>
+                                                 <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Education</span><span className="font-bold leading-tight" style={{ color: '#1f2937' }}>{myProfile.education}</span></div>
                                                 <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Marital Status</span><span className="font-bold" style={{ color: '#1f2937' }}>{myProfile.maritalStatus || 'Single'}</span></div>
                                             </div>
 

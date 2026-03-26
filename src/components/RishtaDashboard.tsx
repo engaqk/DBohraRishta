@@ -161,21 +161,29 @@ export default function RishtaDashboard() {
         if (selfieFile.size > 5 * 1024 * 1024) { toast.error("File size must be under 5MB"); return; }
         
         setUploadingSelfie(true);
+        console.log("[Selfie] Starting upload for user:", user.uid);
         try {
-            const storageRef = ref(storage, `selfies/${user.uid}_${Date.now()}.jpg`);
+            // Use the 'profiles/' path which already has working rules
+            const storageRef = ref(storage, `profiles/${user.uid}/selfie_${Date.now()}.jpg`);
+            console.log("[Selfie] Storage ref created:", storageRef.fullPath);
+            
             const snapshot = await uploadBytes(storageRef, selfieFile);
+            console.log("[Selfie] Upload success, getting URL...");
             const downloadUrl = await getDownloadURL(snapshot.ref);
 
+            console.log("[Selfie] Updating Firestore...");
             await updateDoc(doc(db, 'users', user.uid), {
                 selfieUrl: downloadUrl,
                 selfieStatus: 'pending',
                 isPhotoVerified: false
             });
 
+            console.log("[Selfie] Done.");
             toast.success("Selfie submitted for verification!");
             setShowSelfieModal(false);
             setSelfieFile(null);
         } catch (e: any) {
+            console.error("[Selfie] Error:", e);
             toast.error("Upload failed: " + e.message);
         } finally {
             setUploadingSelfie(false);
@@ -1575,7 +1583,7 @@ export default function RishtaDashboard() {
                                                     <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.isPhotoVerified ? 'bg-blue-500 text-white' : myProfile.selfieStatus === 'pending' ? 'bg-amber-500 text-white' : 'border-2 border-gray-200'}`}>
                                                         {myProfile.isPhotoVerified ? <ShieldCheck className="w-3 h-3" /> : myProfile.selfieStatus === 'pending' ? <Clock className="w-3 h-3" /> : null}
                                                     </div>
-                                                    <span className="text-xs font-bold">Photo Verification {myProfile.selfieStatus === 'pending' && <span className="text-[9px] font-black uppercase text-amber-600 block leading-none mt-0.5">Under Review</span>}</span>
+                                                    <span className="text-xs font-bold">Selfie Verification {myProfile.selfieStatus === 'pending' && <span className="text-[9px] font-black uppercase text-amber-600 block leading-none mt-0.5">Under Review</span>}</span>
                                                 </div>
                                                 {!myProfile.isPhotoVerified && myProfile.selfieStatus !== 'pending' && (
                                                     <button onClick={() => setShowSelfieModal(true)} className="text-[10px] font-black bg-[#881337] text-white px-2 py-1 rounded-lg">Get Verified</button>
@@ -2276,7 +2284,7 @@ export default function RishtaDashboard() {
                                 <X className="w-5 h-5 text-gray-400" />
                             </button>
                         </div>
-                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-6">Identity Verification</p>
+                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-6">Selfie Verification</p>
                         
                         <div className="bg-blue-50/50 p-5 rounded-3xl border border-blue-100 flex flex-col items-center text-center mb-8">
                             <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-4 text-blue-600">

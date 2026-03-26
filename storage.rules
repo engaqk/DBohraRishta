@@ -5,6 +5,12 @@ service firebase.storage {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
+    match /selfies/{fileName} {
+      // Allow user to upload if filename starts with their UID
+      allow write: if request.auth != null && fileName.startsWith(request.auth.uid);
+      // Allow read for authenticated users (admins see them, and potentially the user themselves)
+      allow read: if request.auth != null;
+    }
     match /{allPaths=**} {
       allow read, write: if false; // Deny by default
     }

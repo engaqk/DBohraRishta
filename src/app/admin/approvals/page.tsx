@@ -520,7 +520,7 @@ export default function AdminVerificationPage() {
                                                     onClick={() => handleVerifySelfie(selectedUser.id, true)}
                                                     className="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-900/20 flex items-center gap-2"
                                                 >
-                                                    <ShieldCheck size={14} /> Verify Photo ID
+                                                    <ShieldCheck size={14} /> Verify Selfie
                                                 </button>
                                             </div>
                                         </div>

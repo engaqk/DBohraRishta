@@ -450,7 +450,7 @@ function ProfileContent() {
                                             <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-lg">
                                                 <ShieldCheck className="w-2.5 h-2.5 text-blue-300 fill-blue-300" />
                                                 <p className="text-blue-50 text-[10px] font-black uppercase tracking-widest leading-none">
-                                                    Verified Profile
+                                                    Selfie Verified
                                                 </p>
                                             </div>
                                         )}

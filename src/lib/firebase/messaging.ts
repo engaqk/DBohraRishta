@@ -1,6 +1,6 @@
 import { getToken, onMessage } from 'firebase/messaging';
 import { messaging, db } from './config';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, arrayUnion } from 'firebase/firestore';
 
 /**
  * Request permission for push notifications and save the device token to Firestore.
@@ -33,9 +33,10 @@ export async function requestNotificationPermission(userId: string) {
 
             if (token) {
                 console.log('[Messaging] Token generated:', token);
-                await updateDoc(doc(db, "users", userId), {
+                // Use setDoc with merge: true instead of updateDoc to avoid "No document to update" errors for admins
+                await setDoc(doc(db, "users", userId), {
                     fcmTokens: arrayUnion(token)
-                });
+                }, { merge: true });
                 console.log('[Messaging] Token saved to user profile in Firestore.');
             } else {
                 console.warn('[Messaging] No registration token available. Request permission to generate one.');

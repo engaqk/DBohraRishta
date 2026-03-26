@@ -658,9 +658,9 @@ export default function AdminUsersPage() {
                                                         </div>
                                                         <div className="flex-1">
                                                             <p className="text-[10px] font-black text-blue-400 uppercase mb-2">Verification Selfie</p>
-                                                            {u.selfieUrl ? (
+                                                            {(u.selfieImageUrl || u.selfieUrl) ? (
                                                                 <div className="w-full h-40 rounded-xl overflow-hidden border-2 border-blue-100 bg-white group relative">
-                                                                    <img src={u.selfieUrl} className="w-full h-full object-cover" />
+                                                                    <img src={u.selfieImageUrl || u.selfieUrl} className="w-full h-full object-cover" />
                                                                     {!u.isPhotoVerified && (
                                                                         <div className="absolute inset-0 bg-blue-600/10 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                                             <button 

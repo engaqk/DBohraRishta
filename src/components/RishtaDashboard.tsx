@@ -152,88 +152,56 @@ export default function RishtaDashboard() {
     });
 
     const [showSelfieModal, setShowSelfieModal] = useState(false);
-    const [selfieFile, setSelfieFile] = useState<File | null>(null);
+    const [selfieImageUrl, setSelfieImageUrl] = useState<string | null>(null);
     const [uploadingSelfie, setUploadingSelfie] = useState(false);
     const selfieInputRef = useRef<HTMLInputElement>(null);
 
+    // Compress the selfie on selection (same pattern as libasImageUrl)
+    const handleSelfieFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 600;
+                const scaleSize = MAX_WIDTH / img.width;
+                if (scaleSize < 1) {
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                } else {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                }
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                setSelfieImageUrl(canvas.toDataURL('image/jpeg', 0.5));
+            };
+        };
+    };
+
     const handleSelfieUpload = async () => {
-        console.log("[Selfie] handleSelfieUpload triggered!");
-        if (!user || !selfieFile) {
-            toast.error("Please select a photo first");
+        if (!user || !selfieImageUrl) {
+            toast.error('Please take a selfie first');
             return;
         }
-
         setUploadingSelfie(true);
-        console.log("[Selfie] Starting Base64 database upload for user:", user.uid);
         try {
-            const reader = new FileReader();
-            reader.readAsDataURL(selfieFile);
-            reader.onload = (event) => {
-                console.log("[Selfie] FileReader loaded!");
-                const img = new Image();
-                
-                img.onload = async () => {
-                    console.log("[Selfie] Image loaded! Compressing...");
-                    try {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 400; 
-                        const scaleSize = MAX_WIDTH / img.width;
-                        if (scaleSize < 1) {
-                            canvas.width = MAX_WIDTH;
-                            canvas.height = img.height * scaleSize;
-                        } else {
-                            canvas.width = img.width;
-                            canvas.height = img.height;
-                        }
-                        
-                        const ctx = canvas.getContext('2d');
-                        if (!ctx) throw new Error("Could not get canvas context");
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        
-                        console.log("[Selfie] Calling toDataURL...");
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
-
-                        console.log("[Selfie] Updating Firestore directly (length:", compressedDataUrl.length, ")...");
-                        await updateDoc(doc(db, 'users', user.uid), {
-                            selfieUrl: compressedDataUrl,
-                            selfieStatus: 'pending',
-                            isPhotoVerified: false
-                        });
-
-                        console.log("[Selfie] Database update completed!");
-                        toast.success("Selfie submitted for verification!");
-                        setShowSelfieModal(false);
-                        setSelfieFile(null);
-                        
-                        setTimeout(() => {
-                            if (typeof window !== 'undefined') window.location.reload();
-                        }, 1000);
-                        
-                    } catch (err: any) {
-                        console.error("[Selfie] Error saving to DB:", err);
-                        toast.error("Upload failed: " + err.message);
-                        setUploadingSelfie(false);
-                    }
-                };
-                
-                img.onerror = () => {
-                    toast.error("Failed to process the requested image.");
-                    setUploadingSelfie(false);
-                };
-                
-                // CRITICAL: MUST set src AFTER attaching onload, or Base64 loading will skip onload
-                img.src = event.target?.result as string;
-            };
-            
-            reader.onerror = () => {
-                 toast.error("Failed to read the file.");
-                 setUploadingSelfie(false);
-            };
-            
-        } catch (e: any) {
-             console.error("[Selfie] Error processing upload:", e);
-             toast.error("Upload error: " + e.message);
-             setUploadingSelfie(false);
+            await updateDoc(doc(db, 'users', user.uid), {
+                selfieImageUrl: selfieImageUrl,
+                selfieStatus: 'pending',
+                isPhotoVerified: false
+            });
+            toast.success('Selfie submitted for verification!');
+            setShowSelfieModal(false);
+            setSelfieImageUrl(null);
+        } catch (err: any) {
+            toast.error('Upload failed: ' + err.message);
+        } finally {
+            setUploadingSelfie(false);
         }
     };
 
@@ -2354,14 +2322,12 @@ export default function RishtaDashboard() {
                                 className="hidden" 
                                 accept="image/*"
                                 capture="user"
-                                onChange={(e) => setSelfieFile(e.target.files?.[0] || null)}
+                                onChange={handleSelfieFileChange}
                             />
 
-                            {selfieFile ? (
+                            {selfieImageUrl ? (
                                 <div className="space-y-4 w-full">
-                                    <div className="text-xs font-black text-gray-700 bg-white py-2 px-4 rounded-xl border border-gray-100">
-                                        Selected: {selfieFile.name}
-                                    </div>
+                                    <img src={selfieImageUrl} alt="Selfie preview" className="w-full h-40 object-cover rounded-2xl border border-blue-100" />
                                     <button 
                                         onClick={handleSelfieUpload}
                                         disabled={uploadingSelfie}
@@ -2369,13 +2335,16 @@ export default function RishtaDashboard() {
                                     >
                                         {uploadingSelfie ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Submit for Approval"}
                                     </button>
+                                    <button onClick={() => { setSelfieImageUrl(null); selfieInputRef.current?.click(); }} className="w-full py-2 text-gray-400 font-black text-[10px] uppercase tracking-widest">
+                                        Retake
+                                    </button>
                                 </div>
                             ) : (
                                 <button 
                                     onClick={() => selfieInputRef.current?.click()}
                                     className="w-full py-4 bg-white text-blue-600 rounded-2xl border-2 border-blue-200 border-dashed font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-all active:scale-95"
                                 >
-                                    Choose Photo / Open Camera
+                                    Open Camera
                                 </button>
                             )}
                         </div>

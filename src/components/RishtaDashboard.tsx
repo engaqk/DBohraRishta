@@ -167,41 +167,72 @@ export default function RishtaDashboard() {
         }
 
         setUploadingSelfie(true);
-        console.log("[Selfie] Starting server-side upload for user:", user.uid);
+        console.log("[Selfie] Starting Base64 database upload...");
         try {
-            // Get ID Token for server-side authentication
-            const idToken = await user.getIdToken();
-            const formData = new FormData();
-            formData.append('file', selfieFile);
-            formData.append('userId', user.uid);
-            formData.append('idToken', idToken);
+            const reader = new FileReader();
+            reader.readAsDataURL(selfieFile);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = async () => {
+                    try {
+                        // Compress image to ensure it fits safely inside Firestore's 1MB limit
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 400; // Smaller resolution for selfie verification
+                        const scaleSize = MAX_WIDTH / img.width;
+                        if (scaleSize < 1) {
+                            canvas.width = MAX_WIDTH;
+                            canvas.height = img.height * scaleSize;
+                        } else {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                        }
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        // Compress aggressively as it's just for admin verification
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
 
-            const res = await fetch('/api/user/upload-selfie', {
-                method: 'POST',
-                body: formData,
-            });
+                        console.log("[Selfie] Compressed, saving to DB...");
+                        await updateDoc(doc(db, 'users', user.uid), {
+                            selfieUrl: compressedDataUrl,
+                            selfieStatus: 'pending',
+                            isPhotoVerified: false
+                        });
 
-            const data = await res.json();
-            
-            if (res.ok && data.success) {
-                console.log("[Selfie] Server-side upload success!");
-                toast.success("Selfie submitted for verification!");
-                setShowSelfieModal(false);
-                setSelfieFile(null);
+                        toast.success("Selfie submitted for verification!");
+                        setShowSelfieModal(false);
+                        setSelfieFile(null);
+                        
+                        // Force brief delay before reload so DB settles
+                        setTimeout(() => {
+                            if (typeof window !== 'undefined') window.location.reload();
+                        }, 1000);
+                        
+                    } catch (err: any) {
+                        console.error("[Selfie] Error saving to DB:", err);
+                        toast.error("Upload failed: " + err.message);
+                    } finally {
+                        setUploadingSelfie(false);
+                    }
+                };
                 
-                // Allow some time for Firestore update to propagate before potentially refreshing
-                setTimeout(() => {
-                    if (typeof window !== 'undefined') window.location.reload();
-                }, 1000);
-            } else {
-                console.error("[Selfie] API error:", data.error);
-                toast.error("Upload failed: " + (data.error || "Internal error"));
-            }
+                img.onerror = () => {
+                    toast.error("Failed to process the requested image.");
+                    setUploadingSelfie(false);
+                };
+            };
+            
+            reader.onerror = () => {
+                 toast.error("Failed to read the file.");
+                 setUploadingSelfie(false);
+            };
+            
         } catch (e: any) {
-            console.error("[Selfie] Error during upload:", e);
-            toast.error("Upload error: " + e.message);
-        } finally {
-            setUploadingSelfie(false);
+             console.error("[Selfie] Error processing upload:", e);
+             toast.error("Upload error: " + e.message);
+             setUploadingSelfie(false);
         }
     };
 

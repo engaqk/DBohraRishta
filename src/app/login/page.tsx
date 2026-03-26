@@ -306,89 +306,9 @@ export default function LoginPage() {
                         <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100 mb-4">{errorMsg}</div>
                     )}
 
-                    {false && !showMobileLogin ? (
-                        <div className="mt-8 flex justify-center">
-                            <button
-                                onClick={() => setShowMobileLogin(true)}
-                                className="text-[10px] font-bold text-gray-400 hover:text-[#881337] transition-colors uppercase tracking-widest"
-                            >
-                                Login with Mobile Number
-                            </button>
-                        </div>
-                    ) : ( 
-                        null &&
+                    {/* Mobile Login Removed */}
+                    {null}
 
-                        /* ══════════════ SMS OTP LOGIN ══════════════ */
-                        <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
-                            <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-black text-[#881337] uppercase tracking-wider">Mobile Login</h3>
-                                <button 
-                                    onClick={() => setShowMobileLogin(false)}
-                                    className="text-[10px] font-bold text-gray-400 hover:text-gray-600 uppercase"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        {!otpSent ? (
-                            /* ── Step 1: Enter phone number ── */
-                            <>
-                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 leading-relaxed">
-                                    <p className="font-bold mb-1">📱 SMS Mobile Login</p>
-                                    <p>Enter your mobile number to receive a 6-digit verification code via SMS.</p>
-                                </div>
-                                <div className="relative">
-                                    <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                    <input type="tel" inputMode="tel" placeholder="+919876543210"
-                                        maxLength={16}
-                                        value={phone}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            const sanitized = val.replace(/[^0-9+]/g, '').replace(/(?!^)\+/g, '');
-                                            setPhone(sanitized);
-                                        }}
-                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none" />
-                                </div>
-                                <button onClick={handleSendOtp} disabled={authLoading}
-                                    className="w-full bg-[#D4AF37] text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-[#c29e2f] active:scale-95 flex items-center justify-center gap-2">
-                                    {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
-                                    Send Verification Code
-                                </button>
-                            </>
-                        ) : (
-                            /* ── Step 2: Enter OTP code ── */
-                            <>
-                                <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-xs text-green-800">
-                                    <p><strong>Code Sent!</strong> Please check your messages on <strong>{phone}</strong> and enter the 6-digit code below.</p>
-                                </div>
-
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        maxLength={6}
-                                        placeholder="Enter 6-digit OTP"
-                                        value={otpCode}
-                                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#881337] outline-none text-center tracking-[0.5em] font-mono text-xl"
-                                        autoFocus
-                                    />
-                                </div>
-                                <button onClick={handleVerifyOtp} disabled={authLoading}
-                                    className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-bold shadow-sm hover:bg-[#9F1239] active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2">
-                                    {authLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                    Verify &amp; Login
-                                </button>
-                                <button
-                                    onClick={() => { setOtpSent(false); setOtpCode(""); setErrorMsg(""); }}
-                                    className="w-full text-xs text-gray-500 hover:text-gray-800 transition-colors"
-                                >
-                                    ← Change Mobile Number
-                                </button>
-                            </>
-                        )}
-                    </div>
-                )}
 
 
                     {/* Dev-only test buttons */}

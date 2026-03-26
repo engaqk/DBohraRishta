@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 import { doc, setDoc, addDoc, collection, serverTimestamp, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import toast from "react-hot-toast";
-import { notifyDuplicateRegistration } from "@/lib/emailService";
+import { notifyDuplicateRegistration, notifyAdminNewRegistration, notifyWelcomeOnboarding } from "@/lib/emailService";
 import { normalizePhone } from "@/lib/phoneUtils";
 
 export default function OnboardingPage() {
@@ -177,6 +177,16 @@ export default function OnboardingPage() {
                         isCandidateFormComplete: false,
                         updatedAt: serverTimestamp(),
                     }, { merge: true });
+
+                    // Notify Admin that onboarding has started (Pending state)
+                    if (formData.email) {
+                        notifyAdminNewRegistration({
+                            candidateName: formData.name,
+                            candidateEmail: formData.email,
+                            gender: formData.gender,
+                            onboardingStatus: 'pending'
+                        }).catch(() => {});
+                    }
                 } catch (saveErr) {
                     console.warn("Failed to save onboarding progress:", saveErr);
                 }
@@ -345,10 +355,8 @@ export default function OnboardingPage() {
             }
 
             // 5. Send ONE welcome email using the real email they just submitted
-            // This is the ONLY email a mobile-registered user ever receives before this point
             if (formData.email && !formData.email.endsWith('@dbohrarishta.local')) {
                 try {
-                    const { notifyWelcomeOnboarding } = await import('@/lib/emailService');
                     await notifyWelcomeOnboarding({
                         candidateName: formData.name,
                         candidateEmail: formData.email,
@@ -358,15 +366,15 @@ export default function OnboardingPage() {
                 }
             }
 
-            // 6. Notify ADMIN of New Registration
+            // 6. Notify ADMIN of New Registration (Submitted state)
             try {
-                const { notifyAdminNewRegistration } = await import('@/lib/emailService');
                 await notifyAdminNewRegistration({
                     candidateName: formData.name,
                     candidateEmail: formData.email,
                     itsNumber: formData.itsNumber,
                     gender: formData.gender,
                     city: formData.hizratLocation,
+                    onboardingStatus: 'submitted'
                 });
             } catch (adminEmailErr) {
                 console.warn('Admin notification email failed (non-critical):', adminEmailErr);

@@ -277,6 +277,7 @@ export default function AdminUsersPage() {
             const matchStatus = filterStatus === 'all' || u.status === filterStatus;
             const matchComplete = filterComplete === 'all' ||
                 (filterComplete === 'complete' && u.isCandidateFormComplete) ||
+                (filterComplete === 'submitted' && u.isCandidateFormComplete && u.status === 'pending_verification') ||
                 (filterComplete === 'incomplete' && !u.isCandidateFormComplete);
 
             return matchSearch && matchGender && matchStatus && matchComplete;
@@ -303,7 +304,8 @@ export default function AdminUsersPage() {
     const stats = useMemo(() => ({
         total: users.length,
         complete: users.filter(u => u.isCandidateFormComplete).length,
-        pending: users.filter(u => u.status === 'pending_verification').length,
+        onboardingSubmitted: users.filter(u => u.isCandidateFormComplete && u.status === 'pending_verification').length,
+        onboardingPending: users.filter(u => !u.isCandidateFormComplete).length,
         verified: users.filter(u => u.status === 'verified' || u.status === 'approved').length,
         archived: users.filter(u => u.status === 'archived').length,
         filtered: filteredAndSorted.length
@@ -384,20 +386,32 @@ export default function AdminUsersPage() {
 
             <div className="max-w-7xl mx-auto px-4 py-6">
                 {/* Stats row */}
-                <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+                <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
                     {[
-                        { label: 'Registered Candidates', value: stats.total, color: 'text-[#881337]', bg: 'bg-rose-50 border-rose-100' },
-                        { label: 'Form Complete', value: stats.complete, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-100' },
-                        { label: 'Pending Review', value: stats.pending, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-100' },
-                        { label: 'Verified', value: stats.verified, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100' },
-                        { label: 'Archived', value: stats.archived, color: 'text-gray-500', bg: 'bg-gray-50 border-gray-100' },
+                        { label: 'Total Registrations', value: stats.total, color: 'text-gray-900', bg: 'bg-white border-gray-200', filter: 'all' },
+                        { label: 'Wait Approval', value: stats.onboardingSubmitted, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', filter: 'submitted' },
+                        { label: 'Pending Onboarding', value: stats.onboardingPending, color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-100', filter: 'incomplete' },
+                        { label: 'Form Complete', value: stats.complete, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-100', filter: 'complete' },
+                        { label: 'Verified/Approved', value: stats.verified, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100', status: 'verified' },
+                        { label: 'Archived', value: stats.archived, color: 'text-gray-500', bg: 'bg-gray-50 border-gray-100', status: 'archived' },
                     ].map(s => (
-                        <div key={s.label} className={`${s.bg} border rounded-2xl p-4 text-center shadow-sm`}>
+                        <div key={s.label} 
+                            onClick={() => {
+                                if (s.filter) {
+                                    setFilterComplete(s.filter);
+                                    setFilterStatus('all');
+                                } else if (s.status) {
+                                    setFilterStatus(s.status);
+                                    setFilterComplete('all');
+                                }
+                            }}
+                            className={`${s.bg} border rounded-2xl p-4 text-center shadow-sm cursor-pointer hover:ring-2 hover:ring-[#881337]/10 transition-all ${(filterComplete === s.filter && s.filter !== 'all') || (filterStatus === s.status && s.status !== 'all') ? 'ring-2 ring-[#881337]/30 border-[#881337]/30 shadow-md scale-105' : ''}`}>
                             <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
-                            <p className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-tight">{s.label}</p>
+                            <p className="text-[9px] font-black text-gray-500 mt-1 uppercase tracking-tight">{s.label}</p>
                         </div>
                     ))}
                 </div>
+
 
                 {/* Filters */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5 flex flex-col md:flex-row gap-3">
@@ -423,9 +437,10 @@ export default function AdminUsersPage() {
                     </select>
                     <select value={filterComplete} onChange={e => setFilterComplete(e.target.value)}
                         className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#881337]/20 font-bold text-gray-700 cursor-pointer">
-                        <option value="all">All Profiles</option>
-                        <option value="complete">Form Complete</option>
-                        <option value="incomplete">Form Incomplete</option>
+                        <option value="all">Form: All</option>
+                        <option value="complete">Onboarding Done</option>
+                        <option value="incomplete">Onboarding Pending</option>
+                        <option value="submitted">Waiting Approval</option>
                     </select>
                     {activeMainTab === 'auth' && (
                         <button

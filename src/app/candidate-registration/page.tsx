@@ -410,6 +410,7 @@ export default function CandidateRegistrationPage() {
                     gender: formData.gender,
                     city: formData.city,
                     isResubmission: formData.status === 'rejected',
+                    onboardingStatus: 'submitted'
                 }).catch(() => { });
 
                 // ✅ Email Candidate via Gmail SMTP API

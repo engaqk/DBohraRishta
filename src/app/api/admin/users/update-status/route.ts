@@ -75,7 +75,8 @@ export async function POST(request: Request) {
             const userEmail = userData?.notificationEmail || userData?.email || userData?.mobileEmail;
             const hasRealUserEmail = userEmail && userEmail.includes('@') && !userEmail.endsWith('@dbohrarishta.local');
             
-            const { notifyStatusUpdate, ADMIN_EMAIL, sendEmail } = await import('@/lib/emailService');
+            const { notifyStatusUpdate, sendEmailDirect } = await import('@/lib/emailServiceServer');
+            const { ADMIN_EMAIL } = await import('@/lib/emailTemplates');
 
             if (hasRealUserEmail) {
                 console.log(`[update-status] Sending status update email to ${userEmail} (BCC: ${ADMIN_EMAIL})`);
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
             } else {
                 console.log(`[update-status] User ${userId} has no real email. Sending status update notification to ADMIN ONLY.`);
                 // Notify Admin only if user has no email
-                await sendEmail({
+                await sendEmailDirect({
                     toEmail: ADMIN_EMAIL,
                     subject: `🚨 User Status Updated (No Email): ${userData?.name || 'Unknown'}`,
                     htmlBody: `
@@ -104,6 +105,7 @@ export async function POST(request: Request) {
                     `
                 });
             }
+
         } catch (emailError: any) {
             console.error('[update-status] Email notification process failed:', emailError.message);
         }

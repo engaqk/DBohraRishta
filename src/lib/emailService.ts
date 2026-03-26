@@ -60,6 +60,45 @@ export async function notifyAdminNewRegistration(opts: {
     });
 }
 
+export async function notifyInterestSent(opts: {
+    recipientName: string;
+    recipientEmail: string;
+    senderName: string;
+    icebreaker?: string;
+}) {
+    await sendEmail({
+        toEmail: opts.recipientEmail,
+        subject: `💖 New Interest Request from ${opts.senderName} – 53DBohraRishta`,
+        htmlBody: templates.getInterestSentTemplate(opts),
+    });
+}
+
+export async function notifyRequestAccepted(opts: {
+    recipientName: string;
+    recipientEmail: string;
+    partnerName: string;
+    mobile: string;
+    email: string;
+}) {
+    await sendEmail({
+        toEmail: opts.recipientEmail,
+        subject: `🎊 Mubarak! ${opts.partnerName} accepted your request – 53DBohraRishta`,
+        htmlBody: templates.getInterestAcceptedTemplate(opts),
+    });
+}
+
+export async function notifyInterestDeclined(opts: {
+    requesterName: string;
+    requesterEmail: string;
+    declinerName: string;
+}) {
+    await sendEmail({
+        toEmail: opts.requesterEmail,
+        subject: 'Update on your Interest Request – 53DBohraRishta',
+        htmlBody: templates.getInterestDeclinedTemplate(opts),
+    });
+}
+
 export async function notifyWelcomeOnboarding(opts: {
     candidateName?: string;
     candidateEmail: string;

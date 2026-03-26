@@ -157,3 +157,32 @@ export function getWelcomeOnboardingTemplate(opts: { candidateName: string; isRe
             <p style="font-size:11px;color:#999">53DBohraRishta Official Notification</p>
         </div>`;
 }
+
+export function getInterestDeclinedTemplate(opts: { requesterName: string; declinerName: string }) {
+    return `
+        <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
+            <h2 style="color:#555">Interest Request Update</h2>
+            <p>As-salaamu alaykum <strong>${opts.requesterName}</strong>,</p>
+            <p>Regarding your Interest Request sent to <strong>${opts.declinerName}</strong>, they are unable to proceed at this time and have declined the request.</p>
+            <p>Don't worry, there are many other suitable profiles waiting for you! Keep exploring.</p>
+            <a href="https://53dbohrarishta.in" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
+                Explore More Profiles
+            </a>
+            <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
+            <p style="font-size:11px;color:#999">53DBohraRishta Notification System</p>
+        </div>`;
+}
+
+export function getVerificationEmailTemplate(opts: { otpCode: string }) {
+    return `
+        <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
+            <h2 style="color:#881337;margin-bottom:8px">Verification Code</h2>
+            <p>As-salaamu alaykum,</p>
+            <p>Your verification code for <strong>53DBohraRishta</strong> is:</p>
+            <div style="background:#f9f9f9;border-left:5px solid #D4AF37;padding:20px;border-radius:8px;margin:20px 0;text-align:center;">
+                <span style="font-size:32px;font-weight:bold;letter-spacing:10px;color:#333;">${opts.otpCode}</span>
+            </div>
+            <p>This code will expire in 5 minutes. Do not share this code with anyone.</p>
+            <p style="font-size:11px;color:#999;margin-top:30px;">If you did not request this code, please ignore this email.</p>
+        </div>`;
+}

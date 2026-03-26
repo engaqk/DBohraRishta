@@ -85,16 +85,22 @@ export async function notifyInterestSent(opts: {
 }
 
 export async function notifyRequestAccepted(opts: {
-    recipientName: string;
-    recipientEmail: string;
-    partnerName: string;
-    mobile: string;
-    email: string;
+    acceptorName: string;
+    acceptorEmail: string;
+    acceptorMobile: string;
+    requesterName: string;
+    requesterEmail: string;
+    requesterMobile?: string;
 }) {
     await sendEmail({
-        toEmail: opts.recipientEmail,
-        subject: `🎊 Mubarak! ${opts.partnerName} accepted your request – 53DBohraRishta`,
-        htmlBody: templates.getInterestAcceptedTemplate(opts),
+        toEmail: opts.requesterEmail,
+        subject: `🎊 Mubarak! ${opts.acceptorName} accepted your request – 53DBohraRishta`,
+        htmlBody: templates.getInterestAcceptedTemplate({
+            recipientName: opts.requesterName,
+            partnerName: opts.acceptorName,
+            mobile: opts.acceptorMobile,
+            email: opts.acceptorEmail
+        }),
     });
 }
 

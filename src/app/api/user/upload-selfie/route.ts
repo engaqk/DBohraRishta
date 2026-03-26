@@ -6,13 +6,22 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
     try {
         const formData = await request.formData();
-        const file = formData.get('file') as File;
-        const userId = formData.get('userId') as string;
-        const idToken = request.headers.get('idToken') as string;
+        const file = formData.get('file') as File | null;
+        const userId = formData.get('userId') as string | null;
+        const idToken = formData.get('idToken') as string | null;
+
+        console.log('[upload-selfie] Received:', { 
+            hasFile: !!file, 
+            fileName: file ? file.name : 'not-a-file',
+            userId: userId || 'missing', 
+            hasToken: !!idToken 
+        });
 
         if (!file || !userId || !idToken) {
-            console.error('[upload-selfie] Missing fields:', { file: !!file, userId, idToken: !!idToken });
-            return NextResponse.json({ error: 'File, userId, and ID Token are required' }, { status: 400 });
+            return NextResponse.json({ 
+                error: 'File, userId, and ID Token are required',
+                debug: { file: !!file, userId: !!userId, idToken: !!idToken }
+            }, { status: 400 });
         }
 
         // 1. Verify Authentication

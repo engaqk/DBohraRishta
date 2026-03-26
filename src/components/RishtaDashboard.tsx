@@ -157,34 +157,49 @@ export default function RishtaDashboard() {
     const selfieInputRef = useRef<HTMLInputElement>(null);
 
     const handleSelfieUpload = async () => {
-        if (!user || !selfieFile) { toast.error("Please select a photo first"); return; }
-        if (selfieFile.size > 5 * 1024 * 1024) { toast.error("File size must be under 5MB"); return; }
-        
-        setUploadingSelfie(true);
-        console.log("[Selfie] Starting upload for user:", user.uid);
-        try {
-            // Use the 'profiles/' path which already has working rules
-            const storageRef = ref(storage, `profiles/${user.uid}/selfie_${Date.now()}.jpg`);
-            console.log("[Selfie] Storage ref created:", storageRef.fullPath);
-            
-            const snapshot = await uploadBytes(storageRef, selfieFile);
-            console.log("[Selfie] Upload success, getting URL...");
-            const downloadUrl = await getDownloadURL(snapshot.ref);
+        if (!user || !selfieFile) {
+            toast.error("Please select a photo first");
+            return;
+        }
+        if (selfieFile.size > 5 * 1024 * 1024) {
+            toast.error("File size must be under 5MB");
+            return;
+        }
 
-            console.log("[Selfie] Updating Firestore...");
-            await updateDoc(doc(db, 'users', user.uid), {
-                selfieUrl: downloadUrl,
-                selfieStatus: 'pending',
-                isPhotoVerified: false
+        setUploadingSelfie(true);
+        console.log("[Selfie] Starting server-side upload for user:", user.uid);
+        try {
+            // Get ID Token for server-side authentication
+            const idToken = await user.getIdToken();
+            const formData = new FormData();
+            formData.append('file', selfieFile);
+            formData.append('userId', user.uid);
+            formData.append('idToken', idToken);
+
+            const res = await fetch('/api/user/upload-selfie', {
+                method: 'POST',
+                body: formData,
             });
 
-            console.log("[Selfie] Done.");
-            toast.success("Selfie submitted for verification!");
-            setShowSelfieModal(false);
-            setSelfieFile(null);
+            const data = await res.json();
+            
+            if (res.ok && data.success) {
+                console.log("[Selfie] Server-side upload success!");
+                toast.success("Selfie submitted for verification!");
+                setShowSelfieModal(false);
+                setSelfieFile(null);
+                
+                // Allow some time for Firestore update to propagate before potentially refreshing
+                setTimeout(() => {
+                    if (typeof window !== 'undefined') window.location.reload();
+                }, 1000);
+            } else {
+                console.error("[Selfie] API error:", data.error);
+                toast.error("Upload failed: " + (data.error || "Internal error"));
+            }
         } catch (e: any) {
-            console.error("[Selfie] Error:", e);
-            toast.error("Upload failed: " + e.message);
+            console.error("[Selfie] Error during upload:", e);
+            toast.error("Upload error: " + e.message);
         } finally {
             setUploadingSelfie(false);
         }

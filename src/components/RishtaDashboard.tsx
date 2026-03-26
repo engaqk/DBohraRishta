@@ -162,10 +162,6 @@ export default function RishtaDashboard() {
             toast.error("Please select a photo first");
             return;
         }
-        if (selfieFile.size > 5 * 1024 * 1024) {
-            toast.error("File size must be under 5MB");
-            return;
-        }
 
         setUploadingSelfie(true);
         console.log("[Selfie] Starting Base64 database upload for user:", user.uid);
@@ -2357,6 +2353,7 @@ export default function RishtaDashboard() {
                                 ref={selfieInputRef}
                                 className="hidden" 
                                 accept="image/*"
+                                capture="user"
                                 onChange={(e) => setSelfieFile(e.target.files?.[0] || null)}
                             />
 

@@ -156,7 +156,16 @@ export default function RishtaDashboard() {
     const [uploadingSelfie, setUploadingSelfie] = useState(false);
     const selfieInputRef = useRef<HTMLInputElement>(null);
 
-    // Compress the selfie on selection (same pattern as libasImageUrl)
+    // Restore pending selfie from sessionStorage after Android kills+restores the tab
+    useEffect(() => {
+        const pending = sessionStorage.getItem('pending_selfie');
+        if (pending) {
+            setSelfieImageUrl(pending);
+            setShowSelfieModal(true); // Re-open modal automatically so user can submit
+        }
+    }, []);
+
+    // Compress the selfie on selection and persist to sessionStorage
     const handleSelfieFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -178,7 +187,10 @@ export default function RishtaDashboard() {
                 }
                 const ctx = canvas.getContext('2d');
                 ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-                setSelfieImageUrl(canvas.toDataURL('image/jpeg', 0.5));
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+                setSelfieImageUrl(dataUrl);
+                // Save to sessionStorage so Android tab-kill doesn't lose the photo
+                sessionStorage.setItem('pending_selfie', dataUrl);
             };
         };
     };
@@ -196,6 +208,7 @@ export default function RishtaDashboard() {
                 isPhotoVerified: false
             });
             toast.success('Selfie submitted for verification!');
+            sessionStorage.removeItem('pending_selfie'); // Clear once saved
             setShowSelfieModal(false);
             setSelfieImageUrl(null);
         } catch (err: any) {
@@ -2335,7 +2348,7 @@ export default function RishtaDashboard() {
                                     >
                                         {uploadingSelfie ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Submit for Approval"}
                                     </button>
-                                    <button onClick={() => { setSelfieImageUrl(null); selfieInputRef.current?.click(); }} className="w-full py-2 text-gray-400 font-black text-[10px] uppercase tracking-widest">
+                                    <button onClick={() => { setSelfieImageUrl(null); sessionStorage.removeItem('pending_selfie'); selfieInputRef.current?.click(); }} className="w-full py-2 text-gray-400 font-black text-[10px] uppercase tracking-widest">
                                         Retake
                                     </button>
                                 </div>
@@ -2350,7 +2363,7 @@ export default function RishtaDashboard() {
                         </div>
 
                         <button 
-                            onClick={() => setShowSelfieModal(false)}
+                            onClick={() => { sessionStorage.removeItem('pending_selfie'); setSelfieImageUrl(null); setShowSelfieModal(false); }}
                             className="w-full py-3 text-gray-400 font-black text-[10px] uppercase tracking-widest"
                         >
                             I'll do this later

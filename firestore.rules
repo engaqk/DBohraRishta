@@ -25,7 +25,18 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if true;
       allow list: if signedIn();
-      allow create, update: if signedIn() && (isOwner(userId) || isAdmin());
+      allow create: if signedIn() && (isOwner(userId) || isAdmin());
+      allow update: if signedIn() && (
+        isAdmin() || 
+        (isOwner(userId) && (
+          // Protect sensitive fields from self-update
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isPhotoVerified', 'isItsVerified', 'status', 'selfieStatus']) ||
+          // Except users CAN set selfieStatus to 'pending' when submitting or isPhotoVerified to false
+          (request.resource.data.get('selfieStatus', '') == 'pending' && 
+           request.resource.data.get('isPhotoVerified', false) == false &&
+           !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isItsVerified', 'status']))
+        ))
+      );
       allow delete: if false; // Deletions must go through secure Admin API for Auth cleanup & Audit Logging
 
       // Notifications: Only owner/admin reads

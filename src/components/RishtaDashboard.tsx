@@ -4,11 +4,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail } from 'lucide-react';
+import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment, setDoc } from 'firebase/firestore';
-import { db, messaging } from '@/lib/firebase/config';
+import { db, messaging, storage } from '@/lib/firebase/config';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { requestNotificationPermission } from '@/lib/firebase/messaging';
 import toast from 'react-hot-toast';
 import { driver } from "driver.js";
@@ -149,6 +150,37 @@ export default function RishtaDashboard() {
         location: '',
         maritalStatus: '',
     });
+
+    const [showSelfieModal, setShowSelfieModal] = useState(false);
+    const [selfieFile, setSelfieFile] = useState<File | null>(null);
+    const [uploadingSelfie, setUploadingSelfie] = useState(false);
+    const selfieInputRef = useRef<HTMLInputElement>(null);
+
+    const handleSelfieUpload = async () => {
+        if (!user || !selfieFile) { toast.error("Please select a photo first"); return; }
+        if (selfieFile.size > 5 * 1024 * 1024) { toast.error("File size must be under 5MB"); return; }
+        
+        setUploadingSelfie(true);
+        try {
+            const storageRef = ref(storage, `selfies/${user.uid}_${Date.now()}.jpg`);
+            const snapshot = await uploadBytes(storageRef, selfieFile);
+            const downloadUrl = await getDownloadURL(snapshot.ref);
+
+            await updateDoc(doc(db, 'users', user.uid), {
+                selfieUrl: downloadUrl,
+                selfieStatus: 'pending',
+                isPhotoVerified: false
+            });
+
+            toast.success("Selfie submitted for verification!");
+            setShowSelfieModal(false);
+            setSelfieFile(null);
+        } catch (e: any) {
+            toast.error("Upload failed: " + e.message);
+        } finally {
+            setUploadingSelfie(false);
+        }
+    };
 
     // Unblur Request State
 
@@ -1536,6 +1568,19 @@ export default function RishtaDashboard() {
                                                 </div>
                                                 {!myProfile.libasImageUrl && <ArrowRight className="w-3.5 h-3.5 text-gray-300" />}
                                             </div>
+
+                                            {/* Selfie Verification Item */}
+                                            <div className={`p-3 rounded-xl border flex items-center justify-between transition-all ${myProfile.isPhotoVerified ? 'bg-blue-50 border-blue-100 text-blue-700' : 'bg-white border-gray-100 text-gray-700'}`}>
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.isPhotoVerified ? 'bg-blue-500 text-white' : myProfile.selfieStatus === 'pending' ? 'bg-amber-500 text-white' : 'border-2 border-gray-200'}`}>
+                                                        {myProfile.isPhotoVerified ? <ShieldCheck className="w-3 h-3" /> : myProfile.selfieStatus === 'pending' ? <Clock className="w-3 h-3" /> : null}
+                                                    </div>
+                                                    <span className="text-xs font-bold">Photo Verification {myProfile.selfieStatus === 'pending' && <span className="text-[9px] font-black uppercase text-amber-600 block leading-none mt-0.5">Under Review</span>}</span>
+                                                </div>
+                                                {!myProfile.isPhotoVerified && myProfile.selfieStatus !== 'pending' && (
+                                                    <button onClick={() => setShowSelfieModal(true)} className="text-[10px] font-black bg-[#881337] text-white px-2 py-1 rounded-lg">Get Verified</button>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {pct < 100 && (
@@ -2221,6 +2266,66 @@ export default function RishtaDashboard() {
                 )
             }
 
-        </div >
+            {/* 🛡️ Selfie Verification Modal */}
+            {showSelfieModal && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2.5rem] max-w-sm w-full p-8 shadow-2xl animate-in zoom-in-95 duration-300 border-t-8 border-blue-600">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-2xl font-black text-gray-900 font-serif">Trust Badge</h3>
+                            <button onClick={() => setShowSelfieModal(false)} className="p-2 hover:bg-gray-50 rounded-full">
+                                <X className="w-5 h-5 text-gray-400" />
+                            </button>
+                        </div>
+                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-6">Identity Verification</p>
+                        
+                        <div className="bg-blue-50/50 p-5 rounded-3xl border border-blue-100 flex flex-col items-center text-center mb-8">
+                            <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-4 text-blue-600">
+                                <Camera size={32} />
+                            </div>
+                            <h4 className="font-black text-sm text-gray-900 mb-2">Upload a Live Selfie</h4>
+                            <p className="text-xs text-gray-500 mb-6 italic">Ensure your face is clearly visible. This will be compared with your Libas profile photo for verification. Private & secure.</p>
+                            
+                            <input 
+                                type="file" 
+                                ref={selfieInputRef}
+                                className="hidden" 
+                                accept="image/*"
+                                capture="user"
+                                onChange={(e) => setSelfieFile(e.target.files?.[0] || null)}
+                            />
+
+                            {selfieFile ? (
+                                <div className="space-y-4 w-full">
+                                    <div className="text-xs font-black text-gray-700 bg-white py-2 px-4 rounded-xl border border-gray-100">
+                                        Selected: {selfieFile.name}
+                                    </div>
+                                    <button 
+                                        onClick={handleSelfieUpload}
+                                        disabled={uploadingSelfie}
+                                        className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-200 active:scale-95 transition-all disabled:opacity-50"
+                                    >
+                                        {uploadingSelfie ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Submit for Approval"}
+                                    </button>
+                                </div>
+                            ) : (
+                                <button 
+                                    onClick={() => selfieInputRef.current?.click()}
+                                    className="w-full py-4 bg-white text-blue-600 rounded-2xl border-2 border-blue-200 border-dashed font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-all active:scale-95"
+                                >
+                                    Choose Photo / Open Camera
+                                </button>
+                            )}
+                        </div>
+
+                        <button 
+                            onClick={() => setShowSelfieModal(false)}
+                            className="w-full py-3 text-gray-400 font-black text-[10px] uppercase tracking-widest"
+                        >
+                            I'll do this later
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }

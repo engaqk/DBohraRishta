@@ -5,7 +5,7 @@ import { collection, query, orderBy, addDoc, serverTimestamp, onSnapshot, collec
 import { db } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send, MessageCircle, ShieldAlert, Database, Trash2 } from "lucide-react";
+import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send, MessageCircle, ShieldAlert, Database, Trash2, Camera } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface RegistrationUser {
@@ -212,6 +212,29 @@ export default function AdminUsersPage() {
             toast.error("Network error during sync");
         } finally {
             setIsSyncing(false);
+        }
+    };
+
+    const handleVerifySelfie = async (userId: string, isApproved: boolean) => {
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/users/verify-selfie', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': token || '',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, adminId: user?.uid, isApproved })
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(isApproved ? 'Photo Identity Verified!' : 'Selfie Rejected');
+                fetchDashboardData();
+            } else {
+                toast.error(data.error);
+            }
+        } catch (e: any) {
+            toast.error('Failed to update selfie status');
         }
     };
 
@@ -542,6 +565,15 @@ export default function AdminUsersPage() {
                                                                 <Clock className="w-2.5 h-2.5" /> Incomplete
                                                             </span>
                                                         )}
+                                                        {u.isPhotoVerified ? (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-blue-800 border border-blue-100 shadow-sm" title="Photo ID Verified">
+                                                                <ShieldCheck className="w-2.5 h-2.5" fill="currentColor" /> Verified ID
+                                                            </span>
+                                                        ) : u.selfieStatus === 'pending' ? (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
+                                                                <Camera className="w-2.5 h-2.5" /> Selfie Review
+                                                            </span>
+                                                        ) : null}
                                                         {u.isItsVerified && (
                                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100">
                                                                 <ShieldCheck className="w-2.5 h-2.5" /> ITS ✓
@@ -614,6 +646,48 @@ export default function AdminUsersPage() {
                                                                 <p className="font-bold text-gray-700 truncate">{f.value}</p>
                                                             </div>
                                                         ))}
+                                                    </div>
+                                                    <div className="mt-4 flex flex-col md:flex-row gap-4">
+                                                        <div className="flex-1">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Libas Image</p>
+                                                            {u.libasImageUrl ? (
+                                                                <div className="w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-white">
+                                                                    <img src={u.libasImageUrl} className="w-full h-full object-cover" />
+                                                                </div>
+                                                            ) : <div className="text-gray-300 text-[10px] italic">Not uploaded</div>}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-[10px] font-black text-blue-400 uppercase mb-2">Verification Selfie</p>
+                                                            {u.selfieUrl ? (
+                                                                <div className="w-full h-40 rounded-xl overflow-hidden border-2 border-blue-100 bg-white group relative">
+                                                                    <img src={u.selfieUrl} className="w-full h-full object-cover" />
+                                                                    {!u.isPhotoVerified && (
+                                                                        <div className="absolute inset-0 bg-blue-600/10 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                            <button 
+                                                                                onClick={(e) => { e.stopPropagation(); handleVerifySelfie(u.uid, true); }}
+                                                                                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg font-black text-[10px] uppercase shadow-xl hover:bg-blue-700 mb-2"
+                                                                            >
+                                                                                Approve ID
+                                                                            </button>
+                                                                            <button 
+                                                                                onClick={(e) => { e.stopPropagation(); handleVerifySelfie(u.uid, false); }}
+                                                                                className="bg-white text-rose-600 px-3 py-1.5 rounded-lg font-black text-[10px] uppercase shadow-sm border border-rose-100"
+                                                                            >
+                                                                                Reject
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ) : <div className="text-gray-300 text-[10px] italic">Not requested</div>}
+                                                        </div>
+                                                        <div className="flex-1 col-span-2">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase mb-2">ITS Card</p>
+                                                            {u.itsImageUrl ? (
+                                                                <div className="w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-white">
+                                                                    <img src={u.itsImageUrl} className="w-full h-full object-contain" />
+                                                                </div>
+                                                            ) : <div className="text-gray-300 text-[10px] italic">Not uploaded</div>}
+                                                        </div>
                                                     </div>
                                                     {u.bio && (
                                                         <div className="mt-3 bg-white rounded-xl p-3 border border-gray-100">

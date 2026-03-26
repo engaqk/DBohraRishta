@@ -1,10 +1,10 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { ArrowLeft, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles, User, Mail, Phone } from 'lucide-react';
+import { ArrowLeft, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles, User, Mail, Phone, Heart, Send, X, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { notifyInterestSent } from '@/lib/emailService';
 
@@ -29,6 +29,9 @@ function ProfileContent() {
     const [isMyProfileVerified, setIsMyProfileVerified] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
     const [viewerItsNumber, setViewerItsNumber] = useState('');
+    const [viewerProfile, setViewerProfile] = useState<any>(null);
+    const [showInterestModal, setShowInterestModal] = useState(false);
+    const [icebreaker, setIcebreaker] = useState('');
     const [activePhotoIdx, setActivePhotoIdx] = useState(0);
     const [showLightbox, setShowLightbox] = useState(false);
 
@@ -40,6 +43,7 @@ function ProfileContent() {
                     const meDoc = await getDoc(doc(db, 'users', user.uid));
                     if (meDoc.exists()) {
                         meData = meDoc.data();
+                        setViewerProfile(meData);
                         setIsMyProfileVerified(meData.status === 'verified' || meData.status === 'approved' || meData.isItsVerified === true);
                         setViewerItsNumber(meData.itsNumber || '');
                     }
@@ -114,12 +118,69 @@ function ProfileContent() {
     const currentPhoto = photos[activePhotoIdx] || null;
     const age = profile?.dob ? Math.floor((Date.now() - new Date(profile.dob).getTime()) / 31557600000) : null;
 
-    const handleSendRequest = async () => {
+    // 🤖 AI Compatibility Engine
+    const matchScore = useMemo(() => {
+        if (!viewerProfile || !profile || user?.uid === id) return null;
+        let score = 65; // Base community match score
+        
+        // 🔹 Ancestral Watan Match (+20)
+        if (viewerProfile.ancestralWatan && profile.ancestralWatan && 
+            viewerProfile.ancestralWatan.toLowerCase().trim() === profile.ancestralWatan.toLowerCase().trim()) {
+            score += 20;
+        }
+
+        // 🔹 Education Compatibility (+10)
+        const getEdLevel = (ed: string) => {
+            if (!ed) return 0;
+            const e = ed.toLowerCase();
+            if (e.includes('doctor') || e.includes('phd')) return 3;
+            if (e.includes('master') || e.includes('mba') || e.includes('ms')) return 2;
+            if (e.includes('graduate') || e.includes('bachelor')) return 1;
+            return 0;
+        };
+        if (getEdLevel(viewerProfile.education) === getEdLevel(profile.education) && getEdLevel(profile.education) > 0) {
+            score += 10;
+        }
+
+        // 🔹 Deeni Alignment (+5)
+        if (viewerProfile.hifzStatus && profile.hifzStatus && 
+            viewerProfile.hifzStatus === profile.hifzStatus) {
+            score += 5;
+        }
+
+        return Math.min(98, score);
+    }, [viewerProfile, profile, id, user?.uid]);
+
+    // 💌 Icebreaker Content Validation
+    const icebreakerError = useMemo(() => {
+        if (!icebreaker) return null;
+        if (icebreaker.length > 160) return "Message too long (max 160)";
+        if (icebreaker.includes('@')) return "Email addresses are not allowed for security";
+        const digits = icebreaker.replace(/\D/g, '');
+        if (digits.length >= 8) return "Phone numbers/Contact info not allowed";
+        const linkPattern = /(?:www\.|https?:\/\/|[a-z0-9]+\.[a-z]{2,})/i;
+        if (linkPattern.test(icebreaker)) return "Website links are not allowed";
+        return null;
+    }, [icebreaker]);
+
+    const handleSendRequest = () => {
         if (!user || !id) return;
         if (!isMyProfileVerified) { toast.error('Your ITS must be verified before sending requests'); return; }
+        setShowInterestModal(true);
+    };
+
+    const executeRequestSubmission = async () => {
+        if (!user || !id) return;
+        if (icebreakerError) { toast.error(icebreakerError); return; }
+
         if (id.startsWith('dummy')) {
             setActionLoading(true);
-            setTimeout(() => { setRequestSent(true); toast.success('Demo request sent!'); setActionLoading(false); }, 800);
+            setTimeout(() => { 
+                setRequestSent(true); 
+                toast.success('Demo request sent!'); 
+                setActionLoading(false); 
+                setShowInterestModal(false);
+            }, 800);
             return;
         }
         try {
@@ -135,12 +196,13 @@ function ProfileContent() {
 
             await addDoc(collection(db, 'rishta_requests'), {
                 from: user.uid, to: id, status: 'pending_response',
-                icebreaker: '', timestamp: serverTimestamp(),
+                icebreaker: icebreaker || '', 
+                timestamp: serverTimestamp(),
             });
 
             if (profile?.email) {
                 notifyInterestSent({
-                    senderName: user.displayName || user.email || 'A Candidate',
+                    senderName: user.displayName || user.email || 'A Participant',
                     senderEmail: user.email || '',
                     recipientEmail: profile.email,
                     recipientName: displayName,
@@ -158,6 +220,7 @@ function ProfileContent() {
 
             setRequestSent(true);
             toast.success('Interest request sent!');
+            setShowInterestModal(false);
         } catch (e: any) {
             toast.error('Failed: ' + e.message);
         } finally {
@@ -180,7 +243,7 @@ function ProfileContent() {
         maritalStatus, educationDetails, education, professionType, fatherName,
         motherName, city, state, country, mobile, mobileCode, email, dob,
         siblings, noOfChildren, citizenOf, ancestralWatan, address,
-        hifzStatus, completedUpto, serviceType, employmentDetails } = profile || {};
+        hifzStatus, completedUpto, serviceType, employmentDetails, isPhotoVerified } = profile || {};
 
     if (!user) {
         return (
@@ -369,10 +432,28 @@ function ProfileContent() {
                                             {displayName}{age ? `, ${age}` : ''}
                                         </h1>
                                     </div>
-                                    <div className="bg-[#D4AF37]/20 backdrop-blur-sm border border-white/20 px-2.5 py-1 rounded-lg inline-block mt-2">
-                                        <p className="text-white text-[11px] font-black uppercase tracking-widest leading-none">
-                                            {jamaat || city || 'Bohra Community'} • {hizratLocation || 'Global'}
-                                        </p>
+                                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                                        <div className="bg-[#D4AF37]/20 backdrop-blur-sm border border-white/20 px-2.5 py-1 rounded-lg">
+                                            <p className="text-white text-[11px] font-black uppercase tracking-widest leading-none">
+                                                {jamaat || city || 'Bohra Community'} • {hizratLocation || 'Global'}
+                                            </p>
+                                        </div>
+                                        {matchScore !== null && (
+                                            <div className="bg-emerald-500/20 backdrop-blur-sm border border-emerald-400/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-lg group relative">
+                                                <Heart className="w-2.5 h-2.5 text-emerald-300 fill-emerald-300" />
+                                                <p className="text-emerald-50 text-[10px] font-black uppercase tracking-widest leading-none">
+                                                    {matchScore}% Match
+                                                </p>
+                                            </div>
+                                        )}
+                                        {isPhotoVerified && (
+                                            <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-lg">
+                                                <ShieldCheck className="w-2.5 h-2.5 text-blue-300 fill-blue-300" />
+                                                <p className="text-blue-50 text-[10px] font-black uppercase tracking-widest leading-none">
+                                                    Verified Profile
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -613,6 +694,63 @@ function ProfileContent() {
                                 </button>
                             </>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* 💌 Custom Interest Request Modal (Icebreaker) */}
+            {showInterestModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2.5rem] max-w-md w-full p-8 shadow-2xl animate-in slide-in-from-bottom-8 duration-500 border-t-8 border-[#881337]">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-2xl font-black text-[#881337] font-serif leading-tight">Send Interest</h3>
+                            <button onClick={() => setShowInterestModal(false)} className="p-2 hover:bg-rose-50 rounded-full transition-colors">
+                                <X className="w-6 h-6 text-[#881337]" />
+                            </button>
+                        </div>
+                        <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-6 block">Target Profile: {displayName}</p>
+                        
+                        <div className="space-y-4 mb-8">
+                            <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100/50">
+                                <p className="text-[11px] font-bold text-rose-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                    <Sparkles size={12} /> Why send a personal message?
+                                </p>
+                                <p className="text-xs text-gray-500 italic">Adding a short icebreaker message helps you stand out and increases the chance of acceptance by 40%. Keep it professional and deeni-centric!</p>
+                            </div>
+
+                            <div className="relative">
+                                <textarea
+                                    value={icebreaker}
+                                    onChange={(e) => setIcebreaker(e.target.value)}
+                                    placeholder="Introduce yourself briefly (no contact info)... e.g. Assalamu alaykum, I found your education and background alignment very appealing..."
+                                    className={`w-full h-40 bg-gray-50/50 border ${icebreakerError ? 'border-rose-300' : 'border-gray-100'} rounded-[1.5rem] p-6 text-sm outline-none focus:ring-4 focus:ring-rose-100 transition-all resize-none font-medium text-gray-700`}
+                                    maxLength={160}
+                                />
+                                <div className={`absolute bottom-4 right-6 text-[10px] font-black ${icebreaker.length > 150 ? 'text-rose-500' : 'text-gray-400'}`}>
+                                    {icebreaker.length} / 160
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-4">
+                            <button 
+                                onClick={executeRequestSubmission}
+                                disabled={actionLoading || !!icebreakerError}
+                                className="w-full py-5 bg-[#881337] text-white rounded-[1.2rem] font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-rose-900/30 active:scale-95 hover:bg-[#6b0f2c] transition-all disabled:opacity-40 disabled:grayscale flex items-center justify-center gap-3"
+                            >
+                                {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                                    <>
+                                        Confirm & Send Interest <Send size={16} />
+                                    </>
+                                )}
+                            </button>
+                            
+                            {icebreakerError && (
+                                <p className="text-center text-[10px] font-black text-rose-600 bg-rose-50 py-2 rounded-lg border border-rose-100 px-4 animate-bounce">
+                                    ⚠️ {icebreakerError}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

@@ -5,7 +5,7 @@ import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverT
 import { db } from "@/lib/firebase/config";
 import { auth } from "@/lib/firebase/config";
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
-import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2 } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2, ShieldCheck, Camera } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -140,6 +140,32 @@ export default function AdminVerificationPage() {
             }
         } catch (e: any) {
             toast.error('Network error during deletion');
+        }
+    };
+
+    const handleVerifySelfie = async (userId: string, isApproved: boolean) => {
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/users/verify-selfie', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': token || '',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, adminId: user?.uid, isApproved })
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(isApproved ? 'Photo Identity Verified!' : 'Selfie Rejected');
+                fetchDashboardData();
+                if (selectedUser?.id === userId) {
+                    setSelectedUser(prev => prev ? { ...prev, isPhotoVerified: isApproved, selfieStatus: isApproved ? 'verified' : 'rejected' } : null);
+                }
+            } else {
+                toast.error(data.error);
+            }
+        } catch (e: any) {
+            toast.error('Failed to update selfie status');
         }
     };
 
@@ -454,7 +480,51 @@ export default function AdminVerificationPage() {
                                                 </div>
                                             </div>
                                         )}
+                                        {selectedUser.selfieUrl && (
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <p className="text-xs font-bold text-blue-600 uppercase tracking-tight">Selfie Verification</p>
+                                                    {selectedUser.selfieStatus === 'pending' && <span className="bg-blue-100 text-blue-700 text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse uppercase">PENDING REVIEW</span>}
+                                                    {selectedUser.isPhotoVerified && <ShieldCheck className="w-3 h-3 text-emerald-500" />}
+                                                </div>
+                                                <div
+                                                    className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden border-2 border-blue-200 shadow cursor-pointer hover:opacity-90 transition-opacity"
+                                                    onClick={() => setFullscreenImage(selectedUser.selfieUrl)}
+                                                >
+                                                    <img src={selectedUser.selfieUrl} alt="Selfie" className="w-full h-full object-cover" />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
+
+                                    {/* Selfie Action Button */}
+                                    {selectedUser.selfieUrl && !selectedUser.isPhotoVerified && (
+                                        <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
+                                                    <Camera size={20} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-black text-blue-900 uppercase">Selfie Comparison Ready</p>
+                                                    <p className="text-[10px] text-blue-600">Compare the selfie with the Libas photo to verify identity.</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={() => handleVerifySelfie(selectedUser.id, false)}
+                                                    className="px-4 py-2 bg-white text-rose-600 border border-rose-100 font-bold text-xs rounded-xl hover:bg-rose-50"
+                                                >
+                                                    Reject Selfie
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleVerifySelfie(selectedUser.id, true)}
+                                                    className="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-900/20 flex items-center gap-2"
+                                                >
+                                                    <ShieldCheck size={14} /> Verify Photo ID
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Admin Action Panel */}
                                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 flex flex-col gap-3">

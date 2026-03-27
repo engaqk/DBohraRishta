@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, Zap, Smartphone, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera } from 'lucide-react';
+import { Sparkles, Zap, Smartphone, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment, setDoc } from 'firebase/firestore';
@@ -1426,10 +1426,10 @@ export default function RishtaDashboard() {
     if (loading) return null;
 
     return (
-        <div className="min-h-screen bg-[#F9FAFB] text-[#881337] p-6 pb-24 md:p-12 md:pb-12">
-            <header className="max-w-7xl mx-auto mb-6 flex items-center gap-4">
+        <div className="min-h-screen bg-[#F9FAFB] text-[#881337] p-3 pb-24 md:p-12 md:pb-12">
+            <header className="max-w-7xl mx-auto mb-4 hidden md:flex items-center">
                 <div className="flex-1">
-                    <nav className="hidden md:flex bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden divide-x divide-gray-100">
+                    <nav className="flex bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden divide-x divide-gray-100">
                         {(['mybiodata', 'discovery', 'requests', 'messages'] as const).map((tab) => (
                             <button
                                 key={tab}
@@ -1447,23 +1447,6 @@ export default function RishtaDashboard() {
                             </button>
                         ))}
                     </nav>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setShowAdminHelpChat(true)}
-                        className="w-10 h-10 bg-white rounded-2xl shadow-sm border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#881337] transition-colors"
-                        title="Help & Support"
-                    >
-                        <HelpCircle className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={logout}
-                        className="w-10 h-10 bg-white rounded-2xl shadow-sm border border-gray-200 flex items-center justify-center text-gray-500 hover:text-red-600 transition-colors"
-                        title="Logout"
-                    >
-                        <LogOut className="w-5 h-5" />
-                    </button>
                 </div>
                 {/* ── Floating Admin Help Chat Panel ── */}
                 {showAdminHelpChat && (
@@ -1671,6 +1654,25 @@ export default function RishtaDashboard() {
             )}
 
             {/* 🚀 ENGAGEMENT HUB — HORIZONTAL CAROUSEL ON MOBILE / GRID ON DESKTOP */}
+            {/* 🚀 ENGAGEMENT HUB — COMPACT STATUS & CARDS */}
+            <div className="max-w-7xl mx-auto mb-4 flex items-center justify-between overflow-x-auto no-scrollbar gap-3 pb-1">
+                <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-600 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider backdrop-blur-sm">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        <Eye className="w-3.5 h-3.5 text-emerald-500" /> {performanceData.views} Views
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-600 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider backdrop-blur-sm">
+                        <Heart className="w-3.5 h-3.5 text-[#881337]" /> {performanceData.requests} Interests
+                    </div>
+                </div>
+                <button 
+                    onClick={() => requestNotificationPermission(user?.uid)}
+                    className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-600 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-all shrink-0 active:scale-95"
+                >
+                    <Bell className="w-3.5 h-3.5 animate-bounce" /> Notify Me
+                </button>
+            </div>
+
             <div id="engagement-hub" className="max-w-7xl mx-auto mb-6 md:mb-10 flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 snap-x scroll-smooth no-scrollbar pb-4 md:pb-0 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
                 {/* Visibility Boost Card */}
                 <div id="daily-streak-card" className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
@@ -1709,52 +1711,13 @@ export default function RishtaDashboard() {
                     </div>
                 </div>
 
-                {/* Stay Updated Card / PWA Boost */}
-                <div id="notification-boost-card" className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out cursor-pointer" onClick={() => requestNotificationPermission(user?.uid)}>
-                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-indigo-100/30 to-indigo-600/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="flex items-center gap-4 md:gap-6 relative z-10">
-                        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl md:rounded-3xl flex items-center justify-center text-indigo-600 shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
-                            <Bell className="w-6 h-6 md:w-8 md:h-8" />
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] leading-none mb-1 block">Instant Alerts</span>
-                            <p className="text-base md:text-lg font-black text-gray-900 leading-none">Enable Notify</p>
-                            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed italic">Get match updates instantly.</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 🚀 NEW: Profile Insights (Heatmap) */}
-                <div id="profile-performance-card" className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
-                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-emerald-100/30 to-emerald-600/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="flex items-center gap-4 md:gap-6 relative z-10">
-                        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl md:rounded-3xl flex items-center justify-center text-emerald-600 shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
-                            <Eye className="w-6 h-6 md:w-8 md:h-8" />
-                        </div>
-                        <div className="flex-1">
-                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] leading-none mb-1 block">Profile Insights</span>
-                            <div className="flex items-end gap-3">
-                                <div>
-                                    <p className="text-base md:text-lg font-black text-gray-900 leading-none">{performanceData.views}</p>
-                                    <p className="text-[8px] font-bold text-gray-500 uppercase mt-1 text-center">Views</p>
-                                </div>
-                                <div className="w-[1px] h-6 bg-gray-100" />
-                                <div>
-                                    <p className="text-base md:text-lg font-black text-[#881337] leading-none">{performanceData.requests}</p>
-                                    <p className="text-[8px] font-bold text-gray-500 uppercase mt-1 text-center">Interests</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 🤝 NEW: Referral Program (Refer-a-Relative) */}
+                {/* 🤝 Referral Program (Refer-a-Relative) */}
                 <div
                     id="referral-reward-card"
                     className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-gradient-to-br from-[#881337] to-[#4c0519] rounded-[2.5rem] p-6 md:p-7 border border-[#881337]/20 shadow-[0_20px_50px_rgba(136,19,55,0.2)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.3)] hover:-translate-y-2 transition-all duration-500 ease-out cursor-pointer"
                     onClick={() => {
                         const link = `https://www.53dbohrarishta.in/login?ref=${user?.uid}`;
-                        const text = `Assalamu Alaikum!\nLooking for genuine, serious matches in our Bohra community? 53DBohraRishta is a trusted platform built on respect, privacy, and meaningful connections.\nالسلام علیکم!\nઅમારા બોહરા સમાજમાં સાચા અને ગંભીર સંબંધો શોધી રહ્યા છો? 53DBohraRishta એ વિશ્વસનીય પ્લેટફોર્મ છે જે ગોપનીયતા, આદર અને અર્થપૂર્ણ જોડાણો પર આધારિત છે.\n👉 Start your journey today: ${link}\n✨ Join now and connect with sincerity!`;
+                        const text = `Assalamu Alaikum!\nI’m using 53DBohraRishta to find genuine, serious matches within our Bohra community. It’s a trusted space built on respect, privacy, and meaningful connections.\n\nالسلام علیکم!\nહું 53DBohraRishta નો ઉપયોગ કરી રહ્યો છું અમારા બોહરા સમાજમાં ગંભીર અને સાચા સંબંધો શોધવા માટે. આ એક વિશ્વસનીય પ્લેટફોર્મ છે જે ગોપનીયતા, આદર અને અર્થપૂર્ણ જોડાણો પર આધારિત છે.\n\n👉 Join here now: ${link}`;
                         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                     }}
                 >

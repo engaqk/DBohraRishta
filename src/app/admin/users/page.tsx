@@ -547,13 +547,18 @@ export default function AdminUsersPage() {
                                             {/* Row */}
                                             <div className="flex items-center gap-4 p-4">
                                                 {/* Avatar */}
-                                                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-100 shrink-0 bg-gradient-to-br from-[#881337]/10 to-[#D4AF37]/10 flex items-center justify-center">
-                                                    {u.libasImageUrl ? (
-                                                        <img src={u.libasImageUrl} alt={u.name} className="w-full h-full object-cover" loading="lazy" />
-                                                    ) : (
-                                                        <span className="text-[#881337] font-black text-sm">
-                                                            {(u.name || u.email || '?').charAt(0).toUpperCase()}
-                                                        </span>
+                                                <div className="relative shrink-0">
+                                                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-100 bg-gradient-to-br from-[#881337]/10 to-[#D4AF37]/10 flex items-center justify-center">
+                                                        {u.libasImageUrl ? (
+                                                            <img src={u.libasImageUrl} alt={u.name} className="w-full h-full object-cover" loading="lazy" />
+                                                        ) : (
+                                                            <span className="text-[#881337] font-black text-sm">
+                                                                {(u.name || u.email || '?').charAt(0).toUpperCase()}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {u.isOnline && (
+                                                        <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse" title="Online now" />
                                                     )}
                                                 </div>
 

@@ -831,8 +831,11 @@ export default function AdminVerificationPage() {
                                                             loading="lazy" 
                                                         />
                                                     </div>
+                                                    {u.isOnline && (
+                                                        <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse z-10" title="User is Online" />
+                                                    )}
                                                     {u.isPhotoVerified && (
-                                                        <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 border-2 border-white">
+                                                        <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 border-2 border-white z-10">
                                                             <ShieldCheck className="w-2.5 h-2.5" />
                                                         </div>
                                                     )}

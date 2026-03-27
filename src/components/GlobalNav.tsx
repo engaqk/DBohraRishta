@@ -64,7 +64,7 @@ export default function GlobalNav() {
 
     return (
         <>
-            <div className={isAdminPage ? "h-0" : "h-16 spacer-placeholder"} />
+            {/* Spacer handled by RootLayout pt-16 */}
             <div id="global-navigation-bar" className={navClasses}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">

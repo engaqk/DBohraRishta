@@ -30,7 +30,7 @@ export async function GET(request: Request) {
                     'profession', 'professionType', 'mobile', 'mobileCode', 'email',
                     'adminMessage', 'isItsVerified', 'isCandidateFormComplete', 'createdAt',
                     'unreadMsgCountForAdmin', 'totalMsgCount', 'dob', 'fatherName', 'motherName',
-                    'libasImageUrl', 'itsImageUrl', 'selfieUrl', 'selfieImageUrl', 'selfieStatus', 'isPhotoVerified'
+                    'libasImageUrl', 'itsImageUrl', 'selfieUrl', 'selfieImageUrl', 'selfieStatus', 'isPhotoVerified', 'isOnline'
                 ).get(),
             
             // Efficient counts for stats (doesn't download any documents)

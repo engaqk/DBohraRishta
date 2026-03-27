@@ -2,8 +2,8 @@ import { ADMIN_EMAIL, EmailPayload } from './emailTemplates';
 import * as templates from './emailTemplates';
 
 /**
- * Universal sendEmail function that uses the /api/notify route.
- * Safe for CLIENT components.
+ * Universal sendEmail function that uses the /api/notify route or direct nodemailer.
+ * Safe for BOTH CLIENT & SERVER components.
  */
 export async function sendEmail(payload: EmailPayload): Promise<void> {
     const recipients = Array.isArray(payload.toEmail) ? payload.toEmail : [payload.toEmail];
@@ -15,6 +15,53 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
 
     if (realRecipients.length === 0) return;
 
+    // --- SERVER SIDE DIRECT SEND (Bypasses API fetch for reliability) ---
+    if (typeof window === 'undefined') {
+        try {
+            const { transporter } = await import('./nodemailer');
+            const { isEmailBlocked, recordEmailFailure } = await import('./emailStatusServer');
+
+            // Prepare BCC
+            const isAdminRecipient = realRecipients.some(r => r.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+            const currentBcc = Array.isArray(payload.bcc) ? payload.bcc : (payload.bcc ? [payload.bcc] : []);
+            const isAdminBcc = currentBcc.some(r => r.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+            let bccFinal = payload.bcc;
+            if (!isAdminRecipient && !isAdminBcc) {
+                bccFinal = [...currentBcc, ADMIN_EMAIL];
+            }
+
+            // prepared recipients based on blocklist
+            const activeRecipients: string[] = [];
+            for (const email of realRecipients) {
+                const blocked = await isEmailBlocked(email);
+                if (!blocked || email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase()) {
+                    activeRecipients.push(email);
+                }
+            }
+            if (activeRecipients.length === 0) return;
+
+            const mailOptions = {
+                from: `"53DBohraRishta" <${process.env.GMAIL_USER}>`,
+                to: activeRecipients.join(', '),
+                cc: payload.cc ? (Array.isArray(payload.cc) ? payload.cc.join(', ') : payload.cc) : undefined,
+                bcc: bccFinal ? (Array.isArray(bccFinal) ? bccFinal.join(', ') : bccFinal) : undefined,
+                subject: payload.subject,
+                html: payload.htmlBody,
+            };
+
+            const info = await transporter.sendMail(mailOptions);
+            console.log('[EmailService] Server-direct email sent:', info.messageId);
+            return;
+        } catch (serverError: any) {
+            console.error("[EmailService] Server-direct send failed:", serverError);
+            const { recordEmailFailure } = await import('./emailStatusServer');
+            for (const email of realRecipients) {
+                await recordEmailFailure(email, serverError?.message || 'Direct Send Error');
+            }
+        }
+    }
+
+    // --- CLIENT SIDE FETCH ---
     try {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
         const fetchUrl = typeof window !== 'undefined' ? '/api/notify' : (baseUrl ? `${baseUrl}/api/notify` : '/api/notify');

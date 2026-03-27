@@ -1654,85 +1654,54 @@ export default function RishtaDashboard() {
             )}
 
             {/* 🚀 ENGAGEMENT HUB — HORIZONTAL CAROUSEL ON MOBILE / GRID ON DESKTOP */}
-            {/* 🚀 ENGAGEMENT HUB — COMPACT STATUS & CARDS */}
-            <div className="max-w-7xl mx-auto mb-4 flex items-center justify-between overflow-x-auto no-scrollbar gap-3 pb-1">
-                <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-600 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider backdrop-blur-sm">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        <Eye className="w-3.5 h-3.5 text-emerald-500" /> {performanceData.views} Views
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-600 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider backdrop-blur-sm">
-                        <Heart className="w-3.5 h-3.5 text-[#881337]" /> {performanceData.requests} Interests
-                    </div>
+            {/* 🚀 ENGAGEMENT HUB — ULTRA-COMPACT PILLS ONLY */}
+            <div className="max-w-7xl mx-auto mb-6 flex items-center overflow-x-auto no-scrollbar gap-2 pb-2">
+                {/* Profile Stats */}
+                <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-700 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    <Eye className="w-3.5 h-3.5 text-emerald-500" /> {performanceData.views} Views
                 </div>
+                <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-700 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
+                    <Heart className="w-3.5 h-3.5 text-rose-500" /> {performanceData.requests} Interests
+                </div>
+
+                {/* Platform Stats */}
+                <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-700 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
+                    <Users className="w-3.5 h-3.5 text-[#881337]" /> {platformStats.count}+ Candidates
+                </div>
+                <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" /> {platformStats.activeNow} Live
+                </div>
+
+                {/* Ranking/Streak */}
+                {myProfile?.loginStreak > 0 && (
+                    <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-100 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
+                        <Zap className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> {myProfile.loginStreak}D Boost
+                    </div>
+                )}
+
+                {/* Actions */}
                 <button 
                     onClick={() => requestNotificationPermission(user?.uid)}
                     className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-600 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-all shrink-0 active:scale-95"
                 >
-                    <Bell className="w-3.5 h-3.5 animate-bounce" /> Notify Me
+                    <Bell className="w-3.5 h-3.5" /> Notify
                 </button>
-            </div>
 
-            <div id="engagement-hub" className="max-w-7xl mx-auto mb-6 md:mb-10 flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 snap-x scroll-smooth no-scrollbar pb-4 md:pb-0 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
-                {/* Live Platform Stats */}
-                <div id="platform-footprint-card" className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
-                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-rose-100/30 to-[#881337]/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="flex items-center gap-4 md:gap-6 relative z-10">
-                        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-rose-50 to-rose-100 rounded-2xl md:rounded-3xl flex items-center justify-center text-[#881337] shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
-                            <Users className="w-6 h-6 md:w-8 md:h-8" />
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-black text-rose-600 uppercase tracking-[0.2em] leading-none mb-1 block">Live Activity</span>
-                            <p className="text-base md:text-lg font-black text-gray-900 leading-none truncate">{platformStats.count}+ Candidates</p>
-                            <div className="flex items-center gap-2 mt-2">
-                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping absolute" />
-                                <span className="w-2 h-2 bg-emerald-500 rounded-full relative" />
-                                <span className="text-[10px] text-emerald-600 font-bold">{platformStats.activeNow} online now</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Visibility Boost Card */}
-                <div id="daily-streak-card" className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
-                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-amber-100/30 to-[#D4AF37]/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="flex items-center gap-4 md:gap-6 relative z-10">
-                        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-amber-50 to-amber-200 rounded-2xl md:rounded-3xl flex items-center justify-center text-[#D4AF37] shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
-                            <Zap className="w-6 h-6 md:w-8 md:h-8" />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] leading-none">Smart Ranking</span>
-                                {myProfile?.loginStreak > 1 && <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-[0_0_15px_rgba(212,175,55,0.4)] animate-pulse">🔥 {myProfile.loginStreak}D</span>}
-                            </div>
-                            <p className="text-base md:text-lg font-black text-gray-900 leading-none">Visibility Spike</p>
-                            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed italic">Your profile is currently <span className="text-amber-600 font-black">{myProfile?.loginStreak > 0 ? "Boosted" : "Active"}</span>.</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 🤝 Referral Program (Refer-a-Relative) */}
-                <div
-                    id="referral-reward-card"
-                    className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-gradient-to-br from-[#881337] to-[#4c0519] rounded-[2.5rem] p-6 md:p-7 border border-[#881337]/20 shadow-[0_20px_50px_rgba(136,19,55,0.2)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.3)] hover:-translate-y-2 transition-all duration-500 ease-out cursor-pointer"
+                <button
                     onClick={() => {
-                        const link = `https://www.53dbohrarishta.in/login?ref=${user?.uid}`;
-                        const text = `Assalamu Alaikum!\nI’m using 53DBohraRishta to find genuine, serious matches within our Bohra community. It’s a trusted space built on respect, privacy, and meaningful connections.\n\nالسلام علیکم!\nહું 53DBohraRishta નો ઉપયોગ કરી રહ્યો છું અમારા બોહરા સમાજમાં ગંભીર અને સાચા સંબંધો શોધવા માટે. આ એક વિશ્વસનીય પ્લેટફોર્મ છે જે ગોપનીયતા, આદર અને અર્થપૂર્ણ જોડાણો પર આધારિત છે.\n\n👉 Join here now: ${link}`;
+                        const text = `Salam e Jameel!
+Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRishta.in is a trusted platform app built on respect, privacy, and meaningful connections — with ITS Card Verified Profiles and Matches to ensure authenticity and peace of mind. And the best part: it’s free of cost!
+السلام علیکم!
+અમારા દાવૂદી બોહરા સમાજમાં સાચા અને ગંભીર સંબંધો શોધી રહ્યા છો? 53DBohraRishta.in એ વિશ્વસનીય પ્લેટફોર્મ છે જે ગોપનીયતા, આદર અને અર્થપૂર્ણ જોડાણો પર આધારિત છે — અહીં ITS કાર્ડ ચકાસેલ પ્રોફાઇલ્સ અને મેચેસ ઉપલબ્ધ છે જેથી વિશ્વાસ અને નિશ્ચિતતા વધે. અને સૌથી સારું એ છે કે, આ મફત ઉપલબ્ધ છે!
+👉 Start your journey today: https://www.53dbohrarishta.in
+✨ Join now and connect with sincerity!`;
                         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                     }}
+                    className="flex items-center gap-1.5 bg-rose-50 border border-rose-100 text-[#881337] px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider hover:bg-rose-100 transition-all shrink-0 active:scale-95"
                 >
-                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="flex items-center gap-4 md:gap-6 relative z-10">
-                        <div className="w-12 h-12 md:w-16 md:h-16 bg-white/10 backdrop-blur-md rounded-2xl md:rounded-3xl flex items-center justify-center text-white shadow-inner group-hover:scale-110 transition-transform duration-500 border border-white/20">
-                            <Megaphone className="w-6 h-6 md:w-8 md:h-8" />
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-black text-rose-200 uppercase tracking-[0.2em] leading-none mb-1 block">Community Growth</span>
-                            <p className="text-base md:text-lg font-black text-white leading-none">Refer a Relative</p>
-                            <p className="text-[10px] text-rose-100/60 mt-2 leading-relaxed italic">Help the community grow.</p>
-                        </div>
-                    </div>
-                </div>
+                    <Megaphone className="w-3.5 h-3.5" /> Refer
+                </button>
             </div>
 
             <main className="max-w-7xl mx-auto">
@@ -2693,13 +2662,12 @@ export default function RishtaDashboard() {
 
             {/* 🟢 Floating WhatsApp Share Button */}
             <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Salam e Jameel !
-I’m using 53DBohraRishta to find genuine, serious matches within our Bohra community. It’s a trusted space built on respect, privacy, and meaningful connections.
-
+                href={`https://wa.me/?text=${encodeURIComponent(`Salam e Jameel!
+Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRishta.in is a trusted platform app built on respect, privacy, and meaningful connections — with ITS Card Verified Profiles and Matches to ensure authenticity and peace of mind. And the best part: it’s free of cost!
 السلام علیکم!
-હું 53DBohraRishta નો ઉપયોગ કરી રહ્યો છું અમારા બોહરા સમાજમાં ગંભીર અને સાચા સંબંધો શોધવા માટે. આ એક વિશ્વસનીય પ્લેટફોર્મ છે જે ગોપનીયતા, આદર અને અર્થપૂર્ણ જોડાણો પર આધારિત છે.
-
-👉 Join here now: https://www.53dbohrarishta.in/login`)}`}
+અમારા દાવૂદી બોહરા સમાજમાં સાચા અને ગંભીર સંબંધો શોધી રહ્યા છો? 53DBohraRishta.in એ વિશ્વસનીય પ્લેટફોર્મ છે જે ગોપનીયતા, આદર અને અર્થપૂર્ણ જોડાણો પર આધારિત છે — અહીં ITS કાર્ડ ચકાસેલ પ્રોફાઇલ્સ અને મેચેસ ઉપલબ્ધ છે જેથી વિશ્વાસ અને નિશ્ચિતતા વધે. અને સૌથી સારું એ છે કે, આ મફત ઉપલબ્ધ છે!
+👉 Start your journey today: https://www.53dbohrarishta.in
+✨ Join now and connect with sincerity!`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="fixed bottom-24 right-6 z-[60] bg-[#25D366] text-white p-4 rounded-full shadow-2xl hover:scale-110 active:scale-90 transition-all cursor-pointer flex items-center justify-center group animate-pulse"

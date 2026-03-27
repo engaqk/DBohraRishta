@@ -2222,15 +2222,21 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                         className="absolute top-0 right-0 bottom-0 w-[280px] bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col"
                         onClick={e => e.stopPropagation()}
                     >
-                        {/* Menu Header */}
+                        {/* Menu Header (Personalized) */}
                         <div className="p-6 bg-[#881337] text-white flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold border border-white/30">
-                                    53
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full border-2 border-white/30 overflow-hidden bg-white/20 shadow-lg">
+                                    {myProfile.libasImageUrl || myProfile.selfieImageUrl ? (
+                                        <img src={myProfile.libasImageUrl || myProfile.selfieImageUrl} alt={myProfile.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center font-black text-xl">
+                                            {myProfile.name?.[0]}
+                                        </div>
+                                    )}
                                 </div>
-                                <div>
-                                    <p className="font-serif font-black text-lg leading-tight">DBohraRishta</p>
-                                    <p className="text-[10px] uppercase font-bold text-white/60 tracking-widest">Navigation</p>
+                                <div className="flex flex-col">
+                                    <p className="font-serif font-black text-lg leading-tight truncate w-[160px]">{myProfile.name}</p>
+                                    <p className="text-[10px] uppercase font-bold text-white/60 tracking-widest mt-0.5">ITS Verified Profile</p>
                                 </div>
                             </div>
                             <button onClick={() => setShowMobileMenu(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
@@ -2260,12 +2266,6 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === 'discovery' ? 'bg-rose-50 text-[#881337] font-black' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
                                 <Search className="w-5 h-5" /> Search Profiles
-                            </button>
-                            <button 
-                                onClick={() => { router.push('/success-stories'); setShowMobileMenu(false); }}
-                                className="w-full flex items-center gap-4 p-4 rounded-2xl text-gray-600 hover:bg-gray-50 transition-all font-bold"
-                            >
-                                <Sparkles className="w-5 h-5 text-amber-500" /> Success Stories
                             </button>
 
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 mt-6">Support</p>

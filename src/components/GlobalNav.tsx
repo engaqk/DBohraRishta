@@ -152,15 +152,17 @@ export default function GlobalNav() {
                                     </button>
                                 </>
                             )}
-                            <button 
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    setIsOpen(!isOpen);
-                                }} 
-                                className={`p-2 active:scale-95 transition-transform ${isAdminPage ? 'text-white' : 'text-[#881337]'}`}
-                            >
-                                {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                            </button>
+                            {isAdminPage && (
+                                <button 
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setIsOpen(!isOpen);
+                                    }} 
+                                    className="p-2 active:scale-95 transition-transform text-white"
+                                >
+                                    {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

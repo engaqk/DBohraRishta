@@ -62,6 +62,7 @@ export default function AdminUsersPage() {
     const [filterGender, setFilterGender] = useState<string>('male');
     const [isSyncing, setIsSyncing] = useState(false);
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+    const [visibleCount, setVisibleCount] = useState(50); // Pagination: only show 50 initially
 
 
     // Admin auth guard
@@ -71,7 +72,7 @@ export default function AdminUsersPage() {
     }, [router]);
 
     const fetchDashboardData = useCallback(async () => {
-        setLoading(true);
+        if (users.length === 0) setLoading(true); // Only show full loader on first load
         try {
             const token = localStorage.getItem('admin_auth_token');
             const res = await fetch('/api/admin/dashboard-data', {
@@ -323,7 +324,20 @@ export default function AdminUsersPage() {
             if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [users, search, filterStatus, filterComplete, sortConfig]);
+    }, [users, search, filterStatus, filterComplete, sortConfig, filterGender]);
+
+    // Reset visible count when filters change to show only first items again
+    useEffect(() => {
+        setVisibleCount(50);
+    }, [search, filterStatus, filterComplete, filterGender]);
+
+    // Pre-calculated counts for gender tabs to optimize render performance
+    const genderCounts = useMemo(() => {
+        return {
+            male: users.filter(u => u.gender?.toLowerCase() === 'male').length,
+            female: users.filter(u => u.gender?.toLowerCase() === 'female').length
+        };
+    }, [users]);
 
     const stats = useMemo(() => ({
         total: users.length,
@@ -400,7 +414,7 @@ export default function AdminUsersPage() {
                                 onClick={() => setFilterGender(g)}
                                 className={`py-3 text-[10px] font-black uppercase tracking-widest transition-all relative ${filterGender === g ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
                             >
-                                {g}s ({users.filter(u => u.gender?.toLowerCase() === g).length})
+                                {g}s ({genderCounts[g]})
                                 {filterGender === g && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#881337] rounded-full" />}
                             </button>
                         ))}
@@ -499,9 +513,12 @@ export default function AdminUsersPage() {
                     Showing {activeMainTab === 'firestore' ? filteredAndSorted.length : authUsers.length} {activeMainTab === 'firestore' ? filterGender : ''} results (Total: {activeMainTab === 'firestore' ? stats.total : authUsers.length})
                 </p>
 
-                {loading ? (
+                {loading && users.length === 0 ? (
                     <div className="flex items-center justify-center py-24">
-                        <div className="w-10 h-10 border-4 border-[#881337]/20 border-t-[#881337] rounded-full animate-spin" />
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-10 h-10 border-4 border-[#881337]/20 border-t-[#881337] rounded-full animate-spin" />
+                            <p className="text-xs font-bold text-gray-400 animate-pulse">Initializing Data Center...</p>
+                        </div>
                     </div>
                 ) : activeMainTab === 'firestore' ? (
                     <>
@@ -512,7 +529,7 @@ export default function AdminUsersPage() {
                             </div>
                         ) : (
                             <div className="grid gap-3">
-                                {filteredAndSorted.map(u => {
+                                {filteredAndSorted.slice(0, visibleCount).map(u => {
                                     if (!u) return null;
                                     const statusCfg = STATUS_CONFIG[u.status || ''] || STATUS_CONFIG['pending_verification'];
                                     const userAge = age(u.dob);
@@ -531,7 +548,7 @@ export default function AdminUsersPage() {
                                                 {/* Avatar */}
                                                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-100 shrink-0 bg-gradient-to-br from-[#881337]/10 to-[#D4AF37]/10 flex items-center justify-center">
                                                     {u.libasImageUrl ? (
-                                                        <img src={u.libasImageUrl} alt={u.name} className="w-full h-full object-cover" />
+                                                        <img src={u.libasImageUrl} alt={u.name} className="w-full h-full object-cover" loading="lazy" />
                                                     ) : (
                                                         <span className="text-[#881337] font-black text-sm">
                                                             {(u.name || u.email || '?').charAt(0).toUpperCase()}
@@ -731,6 +748,18 @@ export default function AdminUsersPage() {
                                         </div>
                                     );
                                 })}
+
+                                {/* Load More button */}
+                                {filteredAndSorted.length > visibleCount && (
+                                    <div className="flex justify-center mt-4">
+                                        <button 
+                                            onClick={() => setVisibleCount(prev => prev + 50)}
+                                            className="bg-white border border-gray-200 px-8 py-3 rounded-2xl text-sm font-black text-[#881337] shadow-sm hover:shadow-md hover:bg-rose-50 transition-all flex items-center gap-2"
+                                        >
+                                            <RefreshCw className="w-4 h-4" /> Load More Profiles ({filteredAndSorted.length - visibleCount} remaining)
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </>

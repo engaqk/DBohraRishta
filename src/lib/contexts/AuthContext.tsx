@@ -20,7 +20,6 @@ interface AuthContextType {
     signInWithEmail: (e: string, p: string) => Promise<void>;
     signUpWithEmail: (e: string, p: string) => Promise<void>;
     logout: () => Promise<void>;
-    setDummyUser: (uid: string, email: string) => void;
     resetPassword: (email: string) => Promise<void>;
     verifyEmail: () => Promise<void>;
     refreshUser: () => Promise<void>;
@@ -44,16 +43,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (impersonatedId) {
                 setUser({ uid: impersonatedId, email: localStorage.getItem('impersonated_user_email') || 'impersonated@user.com' });
                 setIsImpersonating(true);
-            } else if (dummyUserStr && !firebaseUser) {
-                // Only use dummy if no real user is logged in
-                setUser({ uid: dummyUserStr, email: `${dummyUserStr}@test.com` });
             } else {
                 setUser(firebaseUser);
                 setIsImpersonating(false);
-                // If we have a real user, clear dummy state from storage to avoid confusion
-                if (firebaseUser) {
-                    localStorage.removeItem('dummy_user_id');
-                }
             }
             setLoading(false);
         });
@@ -83,10 +75,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         window.location.href = '/admin/users';
     };
 
-    const setDummyUser = (uid: string, email: string) => {
-        localStorage.setItem('dummy_user_id', uid);
-        setUser({ uid, email });
-    };
 
     const signInWithGoogle = async () => {
         const provider = new GoogleAuthProvider();
@@ -173,7 +161,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return (
         <AuthContext.Provider value={{
             user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail,
-            logout, setDummyUser, resetPassword, verifyEmail, refreshUser,
+            logout, resetPassword, verifyEmail, refreshUser,
             impersonateUser, stopImpersonating, isImpersonating
         }}>
             {children}

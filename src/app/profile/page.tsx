@@ -7,13 +7,8 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { ArrowLeft, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles, User, Mail, Phone, Heart, Send, X, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { notifyInterestSent } from '@/lib/emailService';
+import { computeMatchScore } from '@/lib/matchUtils';
 
-// Dummy profiles for testing
-const DUMMIES: any[] = [
-    { id: 'dummy1', name: 'Aliya Taher', firstName: 'Aliya', lastName: 'Taher', gender: 'female', dob: '1998-05-15', jamaat: 'Colpetty Jamaat, Colombo', education: 'MBA in Finance', hizratLocation: 'Colombo, LK', isItsVerified: true, bio: 'I am an ambitious professional balancing deen and dunya.', hobbies: 'Traveling, Cooking', partnerQualities: 'Well-educated with good Deeni understanding.', heightFeet: '5', heightInch: '4', maritalStatus: 'Single' },
-    { id: 'dummy2', name: 'Fatima Husain', firstName: 'Fatima', lastName: 'Husain', gender: 'female', dob: '2000-02-10', jamaat: 'Saifee Park Jamaat, Dubai', education: 'Software Engineer', hizratLocation: 'Dubai, UAE', isItsVerified: true, bio: 'Software engineer who loves reading and exploring new tech.', hobbies: 'Reading, Painting', partnerQualities: 'Respectful and financially stable.', heightFeet: '5', heightInch: '6', maritalStatus: 'Single' },
-    { id: 'dummy3', name: 'Zahra Moiz', firstName: 'Zahra', lastName: 'Moiz', gender: 'female', dob: '1999-11-20', jamaat: 'Husaini Jamaat, London', education: 'Doctor of Medicine', hizratLocation: 'London, UK', isItsVerified: true, bio: 'Dedicated doctor with a passion for helping others.', hobbies: 'Photography, Swimming', partnerQualities: 'Family-oriented and supportive.', heightFeet: '5', heightInch: '2', maritalStatus: 'Single' },
-];
 
 function ProfileContent() {
     const searchParams = useSearchParams();
@@ -49,14 +44,10 @@ function ProfileContent() {
                     }
                 }
 
-                if (id) {
-                    let profileData: any = null;
-                    if (id.startsWith('dummy')) {
-                        profileData = DUMMIES.find(d => d.id === id) || null;
-                    } else {
+                    if (id) {
+                        let profileData: any = null;
                         const profileDoc = await getDoc(doc(db, 'users', id));
                         if (profileDoc.exists()) profileData = profileDoc.data();
-                    }
                     if (!profileData) { toast.error('Profile not found'); router.push('/'); return; }
                     setProfile(profileData);
 
@@ -121,34 +112,7 @@ function ProfileContent() {
     // 🤖 AI Compatibility Engine
     const matchScore = useMemo(() => {
         if (!viewerProfile || !profile || user?.uid === id) return null;
-        let score = 65; // Base community match score
-        
-        // 🔹 Ancestral Watan Match (+20)
-        if (viewerProfile.ancestralWatan && profile.ancestralWatan && 
-            viewerProfile.ancestralWatan.toLowerCase().trim() === profile.ancestralWatan.toLowerCase().trim()) {
-            score += 20;
-        }
-
-        // 🔹 Education Compatibility (+10)
-        const getEdLevel = (ed: string) => {
-            if (!ed) return 0;
-            const e = ed.toLowerCase();
-            if (e.includes('doctor') || e.includes('phd')) return 3;
-            if (e.includes('master') || e.includes('mba') || e.includes('ms')) return 2;
-            if (e.includes('graduate') || e.includes('bachelor')) return 1;
-            return 0;
-        };
-        if (getEdLevel(viewerProfile.education) === getEdLevel(profile.education) && getEdLevel(profile.education) > 0) {
-            score += 10;
-        }
-
-        // 🔹 Deeni Alignment (+5)
-        if (viewerProfile.hifzStatus && profile.hifzStatus && 
-            viewerProfile.hifzStatus === profile.hifzStatus) {
-            score += 5;
-        }
-
-        return Math.min(98, score);
+        return computeMatchScore(viewerProfile, profile);
     }, [viewerProfile, profile, id, user?.uid]);
 
     // 💌 Icebreaker Content Validation

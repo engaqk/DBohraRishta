@@ -22,9 +22,11 @@ export default function AdminAuditLogsPage() {
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [visibleCount, setVisibleCount] = useState(50);
 
     useEffect(() => {
         const fetchLogs = async () => {
+            if (logs.length === 0) setLoading(true);
             try {
                 const token = localStorage.getItem('admin_auth_token');
                 const res = await fetch('/api/admin/audit-logs', {
@@ -42,6 +44,11 @@ export default function AdminAuditLogsPage() {
         };
         fetchLogs();
     }, []);
+
+    // Reset pagination on search
+    useEffect(() => {
+        setVisibleCount(50);
+    }, [searchQuery]);
 
     const filteredLogs = logs.filter(l =>
         !searchQuery ||
@@ -100,7 +107,7 @@ export default function AdminAuditLogsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                                {loading ? (
+                                {loading && logs.length === 0 ? (
                                     [1, 2, 3, 4, 5].map(i => (
                                         <tr key={i} className="animate-pulse">
                                             <td colSpan={4} className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-full"></div></td>
@@ -111,38 +118,55 @@ export default function AdminAuditLogsPage() {
                                         <td colSpan={4} className="px-6 py-20 text-center text-gray-400 italic">No logs found matching your criteria.</td>
                                     </tr>
                                 ) : (
-                                    filteredLogs.map(log => (
-                                        <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="w-3.5 h-3.5 text-gray-300" />
-                                                    <span className="text-[10px] font-bold text-gray-500 uppercase">
-                                                        {log.timestamp ? new Date(log.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-2">
-                                                    {getActionIcon(log.action)}
-                                                    <span className="text-xs font-black uppercase tracking-tight text-[#881337]">
-                                                        {log.action.replace('_', ' ')}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <User className="w-3.5 h-3.5 text-gray-400" />
-                                                    <span className="text-sm font-medium text-gray-700">{log.targetUserName || 'N/A'}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="text-xs text-gray-500 line-clamp-1 max-w-md">
-                                                    {log.newStatus ? `Moved to ${log.newStatus}. ` : ''}
-                                                    {log.message || ''}
-                                                </p>
-                                            </td>
-                                        </tr>
-                                    ))
+                                    <>
+                                        {filteredLogs.slice(0, visibleCount).map(log => (
+                                            <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center gap-2">
+                                                        <Clock className="w-3.5 h-3.5 text-gray-300" />
+                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">
+                                                            {log.timestamp ? new Date(log.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center gap-2">
+                                                        {getActionIcon(log.action)}
+                                                        <span className="text-xs font-black uppercase tracking-tight text-[#881337]">
+                                                            {log.action.replace('_', ' ')}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <User className="w-3.5 h-3.5 text-gray-400" />
+                                                        <span className="text-sm font-medium text-gray-700">{log.targetUserName || 'N/A'}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <p className="text-xs text-gray-500 line-clamp-1 max-w-md">
+                                                        {log.newStatus ? `Moved to ${log.newStatus}. ` : ''}
+                                                        {log.message || ''}
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        ))}
+
+                                        {filteredLogs.length > visibleCount && (
+                                            <tr>
+                                                <td colSpan={4} className="px-6 py-8">
+                                                    <div className="flex justify-center">
+                                                        <button 
+                                                            onClick={() => setVisibleCount(prev => prev + 100)}
+                                                            className="bg-white border border-gray-200 px-8 py-2.5 rounded-xl text-[11px] font-black text-[#881337] shadow-sm hover:shadow-md transition-all uppercase tracking-widest"
+                                                        >
+                                                            Load {Math.min(100, filteredLogs.length - visibleCount)} More Logs
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </>
                                 )}
                             </tbody>
                         </table>

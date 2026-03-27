@@ -63,6 +63,7 @@ export default function AdminUsersPage() {
     const [isSyncing, setIsSyncing] = useState(false);
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const [visibleCount, setVisibleCount] = useState(50); // Pagination: only show 50 initially
+    const [visibleCountAuth, setVisibleCountAuth] = useState(50); // Pagination for Auth tab
 
 
     // Admin auth guard
@@ -143,7 +144,7 @@ export default function AdminUsersPage() {
     };
 
     const fetchAuthUsers = async () => {
-        setLoadingAuth(true);
+        if (authUsers.length === 0) setLoadingAuth(true);
         try {
             const token = localStorage.getItem('admin_auth_token');
             const res = await fetch('/api/admin/auth-users', {
@@ -785,9 +786,12 @@ export default function AdminUsersPage() {
                             </button>
                         </div>
 
-                        {loadingAuth ? (
+                        {loadingAuth && authUsers.length === 0 ? (
                             <div className="flex items-center justify-center py-24">
-                                <div className="w-10 h-10 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="w-10 h-10 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
+                                    <p className="text-xs font-bold text-indigo-400 animate-pulse">Syncing User Directory...</p>
+                                </div>
                             </div>
                         ) : authUsers.length === 0 ? (
                             <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
@@ -796,7 +800,7 @@ export default function AdminUsersPage() {
                             </div>
                         ) : (
                             <div className="grid gap-2">
-                                {authUsers.map((au, idx) => {
+                                {authUsers.slice(0, visibleCountAuth).map((au, idx) => {
                                     if (!au) return null;
                                     const hasFirestore = users.some(u => u.uid === au.uid);
                                     const isGoogle = au.providers?.includes('google.com');
@@ -828,17 +832,10 @@ export default function AdminUsersPage() {
                                                 </div>
                                                 <div className="flex flex-col gap-0.5">
                                                     <div className="flex items-center gap-2">
-                                                        {au.isMobileUser ? (
-                                                            <span className="flex items-center gap-1.5 text-sm font-black text-gray-900">
-                                                                <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                                                                {au.mobile}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="flex items-center gap-1.5 text-sm font-black text-gray-900">
-                                                                <Mail className="w-3.5 h-3.5 text-blue-500" />
-                                                                {au.email || 'Anonymous Account'}
-                                                            </span>
-                                                        )}
+                                                        <span className="flex items-center gap-1.5 text-sm font-black text-gray-900">
+                                                            <Mail className="w-3.5 h-3.5 text-blue-500" />
+                                                            {au.email || 'Anonymous Account'}
+                                                        </span>
                                                         {au.emailVerified ? (
                                                             <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                                                         ) : (
@@ -893,6 +890,18 @@ export default function AdminUsersPage() {
                                         </div>
                                     );
                                 })}
+
+                                {/* Load More button for Auth tab */}
+                                {authUsers.length > visibleCountAuth && (
+                                    <div className="flex justify-center mt-6">
+                                        <button 
+                                            onClick={() => setVisibleCountAuth(prev => prev + 50)}
+                                            className="bg-white border-2 border-indigo-50 px-8 py-3 rounded-2xl text-[11px] font-black text-indigo-600 shadow-sm hover:shadow-md hover:bg-indigo-50 transition-all flex items-center gap-2 uppercase tracking-widest"
+                                        >
+                                            <RefreshCw className="w-4 h-4" /> Load More Identities ({authUsers.length - visibleCountAuth} remaining)
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

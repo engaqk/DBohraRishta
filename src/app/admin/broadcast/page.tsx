@@ -23,6 +23,8 @@ export default function AdminBroadcastPage() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [history, setHistory] = useState<BroadcastHistory[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(true);
+    const [visibleCountHistory, setVisibleCountHistory] = useState(10);
     const [formData, setFormData] = useState({
         title: "",
         message: "",
@@ -37,6 +39,7 @@ export default function AdminBroadcastPage() {
     }, []);
 
     const fetchHistory = async () => {
+        if (history.length === 0) setHistoryLoading(true);
         try {
             const token = localStorage.getItem('admin_auth_token');
             const res = await fetch('/api/broadcast/history', {
@@ -48,6 +51,8 @@ export default function AdminBroadcastPage() {
             }
         } catch (e) {
             console.error('Failed to fetch history:', e);
+        } finally {
+            setHistoryLoading(false);
         }
     };
 
@@ -218,11 +223,16 @@ export default function AdminBroadcastPage() {
                                 <History className="w-4 h-4" /> Recent Activity
                             </h2>
 
-                            {history.length === 0 ? (
+                            {historyLoading && history.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <div className="w-8 h-8 border-2 border-rose-100 border-t-rose-900 rounded-full animate-spin mx-auto mb-2" />
+                                    <p className="text-[10px] font-black text-gray-400 animate-pulse">Fetching History...</p>
+                                </div>
+                            ) : history.length === 0 ? (
                                 <p className="text-xs text-center text-gray-400 py-8 italic">No previous broadcasts found.</p>
                             ) : (
                                 <div className="space-y-4">
-                                    {history.map(item => (
+                                    {history.slice(0, visibleCountHistory).map(item => (
                                         <div key={item.id} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                                             <div className="flex items-center justify-between mb-1">
                                                 <p className="text-xs font-bold truncate pr-2">{item.title || 'General Announcement'}</p>
@@ -236,6 +246,15 @@ export default function AdminBroadcastPage() {
                                             </p>
                                         </div>
                                     ))}
+
+                                    {history.length > visibleCountHistory && (
+                                        <button 
+                                            onClick={() => setVisibleCountHistory(prev => prev + 10)}
+                                            className="w-full py-2 text-[10px] font-black uppercase text-gray-400 hover:text-[#881337] transition-colors"
+                                        >
+                                            View Older Broadcasts ({history.length - visibleCountHistory} more)
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>

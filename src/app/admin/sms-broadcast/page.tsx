@@ -64,6 +64,9 @@ export default function AdminSmsBroadcastPage() {
     const [numbers, setNumbers] = useState<PhoneEntry[]>([]);
     const [numbersLoading, setNumbersLoading] = useState(true);
     const [numberSearch, setNumberSearch] = useState("");
+    const [visibleCountNumbers, setVisibleCountNumbers] = useState(50);
+    const [visibleCountHistory, setVisibleCountHistory] = useState(10);
+    const [visibleCountLogs, setVisibleCountLogs] = useState(20);
     const [lastSentResult, setLastSentResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
 
     const MAX_SMS_LENGTH = 160;
@@ -72,7 +75,7 @@ export default function AdminSmsBroadcastPage() {
 
     // Fetch registered mobile numbers from both Firestore + Firebase Auth
     const fetchNumbers = useCallback(async () => {
-        setNumbersLoading(true);
+        if (numbers.length === 0) setNumbersLoading(true);
         try {
             const token = localStorage.getItem('admin_auth_token');
             const res = await fetch('/api/admin/sms-numbers', {
@@ -92,7 +95,7 @@ export default function AdminSmsBroadcastPage() {
     }, []);
 
     const fetchHistory = useCallback(async () => {
-        setHistoryLoading(true);
+        if (history.length === 0) setHistoryLoading(true);
         try {
             const token = localStorage.getItem('admin_auth_token');
             const res = await fetch('/api/admin/sms-broadcast/history', {
@@ -110,7 +113,7 @@ export default function AdminSmsBroadcastPage() {
     }, []);
 
     const fetchSmsLogs = useCallback(async () => {
-        setLogsLoading(true);
+        if (smsLogs.length === 0) setLogsLoading(true);
         try {
             const token = localStorage.getItem('admin_auth_token');
             const res = await fetch('/api/admin/sms-logs', {
@@ -209,6 +212,11 @@ export default function AdminSmsBroadcastPage() {
         n.phone.includes(numberSearch) ||
         (n.name && n.name.toLowerCase().includes(numberSearch.toLowerCase()))
     );
+
+    // Reset pagination on search
+    useEffect(() => {
+        setVisibleCountNumbers(50);
+    }, [numberSearch]);
 
     const sourceLabel = (source: PhoneEntry['source']) => {
         if (source === 'both') return { label: 'Firestore + Auth', cls: 'bg-indigo-100 text-indigo-700 border-indigo-200' };
@@ -482,18 +490,18 @@ export default function AdminSmsBroadcastPage() {
                             </div>
 
                             {/* Numbers Table */}
-                            {numbersLoading ? (
-                                <div className="flex items-center justify-center py-16">
-                                    <Loader2 className="w-6 h-6 animate-spin text-[#881337]" />
-                                    <span className="ml-3 text-sm text-gray-500 font-medium">Fetching from Firestore & Auth...</span>
+                            {numbersLoading && numbers.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-20">
+                                    <div className="w-10 h-10 border-4 border-rose-100 border-t-rose-900 rounded-full animate-spin mb-4" />
+                                    <p className="animate-pulse tracking-widest uppercase text-[10px] font-black text-gray-400">Scanning Identities...</p>
                                 </div>
                             ) : filteredNumbers.length === 0 ? (
                                 <div className="py-12 text-center text-gray-400 text-sm italic">
                                     {numberSearch ? `No results for "${numberSearch}"` : 'No registered mobile numbers found.'}
                                 </div>
                             ) : (
-                                <div className="divide-y divide-gray-50 max-h-[500px] overflow-y-auto">
-                                    {filteredNumbers.map((entry, idx) => {
+                                <div className="divide-y divide-gray-50 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
+                                    {filteredNumbers.slice(0, visibleCountNumbers).map((entry, idx) => {
                                         const { label, cls } = sourceLabel(entry.source);
                                         return (
                                             <div key={entry.phone} className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50/60 transition-colors">
@@ -511,6 +519,17 @@ export default function AdminSmsBroadcastPage() {
                                             </div>
                                         );
                                     })}
+                                    
+                                    {filteredNumbers.length > visibleCountNumbers && (
+                                        <div className="p-4 flex justify-center bg-gray-50/30">
+                                            <button 
+                                                onClick={() => setVisibleCountNumbers(prev => prev + 50)}
+                                                className="text-[10px] font-black uppercase text-[#881337] hover:underline flex items-center gap-1.5"
+                                            >
+                                                <RefreshCw className="w-3 h-3" /> Load {Math.min(50, filteredNumbers.length - visibleCountNumbers)} More Numbers
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -565,13 +584,16 @@ export default function AdminSmsBroadcastPage() {
 
                             <div className="p-5">
                                 {activeTab === 'history' ? (
-                                    historyLoading ? (
-                                        <div className="text-center py-6"><Loader2 className="w-5 h-5 animate-spin mx-auto text-gray-300" /></div>
+                                    historyLoading && history.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <div className="w-8 h-8 border-2 border-rose-100 border-t-rose-900 rounded-full animate-spin mx-auto mb-2" />
+                                            <p className="text-[10px] font-black text-gray-400 animate-pulse">Scanning Archive...</p>
+                                        </div>
                                     ) : history.length === 0 ? (
                                         <p className="text-xs text-center text-gray-400 py-8 italic">No SMS broadcasts sent yet.</p>
                                     ) : (
                                         <div className="space-y-3">
-                                            {history.map(item => {
+                                            {history.slice(0, visibleCountHistory).map(item => {
                                                 const delivered = item.deliveredNumbers?.length ?? 0;
                                                 const failed = item.failedNumbers?.length ?? item.failed ?? 0;
                                                 const total = item.sent ?? item.totalFound ?? 0;
@@ -618,6 +640,15 @@ export default function AdminSmsBroadcastPage() {
                                                     </div>
                                                 );
                                             })}
+
+                                            {history.length > visibleCountHistory && (
+                                                <button 
+                                                    onClick={() => setVisibleCountHistory(prev => prev + 10)}
+                                                    className="w-full py-2 text-[10px] font-black uppercase text-gray-400 hover:text-[#881337] transition-colors"
+                                                >
+                                                    View Older Broadcasts ({history.length - visibleCountHistory} more)
+                                                </button>
+                                            )}
                                         </div>
                                     )
                                 ) : (
@@ -632,8 +663,11 @@ export default function AdminSmsBroadcastPage() {
                                                 <RefreshCw className={`w-3 h-3 ${logsLoading ? 'animate-spin' : ''}`} /> Refresh
                                             </button>
                                         </div>
-                                        {logsLoading ? (
-                                            <div className="text-center py-6"><Loader2 className="w-5 h-5 animate-spin mx-auto text-gray-300" /></div>
+                                        {logsLoading && smsLogs.length === 0 ? (
+                                            <div className="text-center py-12">
+                                                <div className="w-8 h-8 border-2 border-amber-100 border-t-amber-500 rounded-full animate-spin mx-auto mb-2" />
+                                                <p className="text-[10px] font-black text-gray-400 animate-pulse">Monitoring Signals...</p>
+                                            </div>
                                         ) : smsLogs.length === 0 ? (
                                             <div className="text-center py-8">
                                                 <Activity className="w-8 h-8 text-gray-200 mx-auto mb-2" />
@@ -641,8 +675,8 @@ export default function AdminSmsBroadcastPage() {
                                                 <p className="text-[10px] text-gray-300 mt-1">Events appear here after SMS is sent.</p>
                                             </div>
                                         ) : (
-                                            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                                                {smsLogs.map(log => (
+                                            <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                                                {smsLogs.slice(0, visibleCountLogs).map(log => (
                                                     <div key={log.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
                                                         {log.status === 'DELIVERED' ? (
                                                             <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -664,6 +698,15 @@ export default function AdminSmsBroadcastPage() {
                                                         </p>
                                                     </div>
                                                 ))}
+
+                                                {smsLogs.length > visibleCountLogs && (
+                                                    <button 
+                                                        onClick={() => setVisibleCountLogs(prev => prev + 20)}
+                                                        className="w-full py-2 text-[10px] font-black uppercase text-gray-400 hover:text-[#881337] transition-colors"
+                                                    >
+                                                        See Older Logs ({smsLogs.length - visibleCountLogs} more)
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                     </div>

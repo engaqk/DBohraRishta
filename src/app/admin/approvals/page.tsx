@@ -45,6 +45,7 @@ export default function AdminVerificationPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const [filterGender, setFilterGender] = useState<string>('male');
+    const [visibleCount, setVisibleCount] = useState(50); // Pagination
     const { user, impersonateUser } = useAuth();
     const router = useRouter();
 
@@ -62,7 +63,7 @@ export default function AdminVerificationPage() {
             return matchesSearch && matchesGender;
         });
 
-        return [...filtered].sort((a, b) => {
+        const sorted = [...filtered].sort((a, b) => {
             let valA = a[sortConfig.key];
             let valB = b[sortConfig.key];
 
@@ -79,7 +80,19 @@ export default function AdminVerificationPage() {
             if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [allUsers, searchQuery, sortConfig]);
+
+        return sorted;
+    }, [allUsers, searchQuery, sortConfig, filterGender]);
+
+    // Reset pagination when filter/search changes
+    useEffect(() => {
+        setVisibleCount(50);
+    }, [searchQuery, filterGender]);
+
+    const genderCounts = useMemo(() => ({
+        male: allUsers.filter(u => u.gender?.toLowerCase() === 'male').length,
+        female: allUsers.filter(u => u.gender?.toLowerCase() === 'female').length
+    }), [allUsers]);
 
     const analytics = useMemo(() => {
         return {
@@ -91,7 +104,7 @@ export default function AdminVerificationPage() {
     }, [allUsers, requestStats]);
 
     const fetchDashboardData = useCallback(async () => {
-        setLoading(true);
+        if (allUsers.length === 0) setLoading(true);
         try {
             const token = localStorage.getItem('admin_auth_token');
             const res = await fetch('/api/admin/dashboard-data', {
@@ -465,7 +478,7 @@ export default function AdminVerificationPage() {
                                                     className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden border-2 border-amber-300 shadow cursor-pointer hover:opacity-90 transition-opacity"
                                                     onClick={() => setFullscreenImage(selectedUser.itsImageUrl)}
                                                 >
-                                                    <img src={selectedUser.itsImageUrl} alt="ITS Doc" className="w-full h-full object-contain" />
+                                                    <img src={selectedUser.itsImageUrl} alt="ITS Doc" className="w-full h-full object-contain" loading="lazy" />
                                                 </div>
                                             </div>
                                         )}
@@ -476,7 +489,7 @@ export default function AdminVerificationPage() {
                                                     className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
                                                     onClick={() => setFullscreenImage(selectedUser.libasImageUrl)}
                                                 >
-                                                    <img src={selectedUser.libasImageUrl} alt="Libas Photo" className="w-full h-full object-cover" />
+                                                    <img src={selectedUser.libasImageUrl} alt="Libas Photo" className="w-full h-full object-cover" loading="lazy" />
                                                 </div>
                                             </div>
                                         )}
@@ -491,7 +504,7 @@ export default function AdminVerificationPage() {
                                                     className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden border-2 border-blue-200 shadow cursor-pointer hover:opacity-90 transition-opacity"
                                                     onClick={() => setFullscreenImage(selectedUser.selfieImageUrl || selectedUser.selfieUrl)}
                                                 >
-                                                    <img src={selectedUser.selfieImageUrl || selectedUser.selfieUrl} alt="Selfie" className="w-full h-full object-cover" />
+                                                    <img src={selectedUser.selfieImageUrl || selectedUser.selfieUrl} alt="Selfie" className="w-full h-full object-cover" loading="lazy" />
                                                 </div>
                                             </div>
                                         )}
@@ -635,8 +648,11 @@ export default function AdminVerificationPage() {
                     </div>
                 )}
 
-                {loading ? (
-                    <div className="text-center p-12 text-gray-500 font-bold animate-pulse">Scanning database...</div>
+                {loading && allUsers.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-24 text-gray-500 font-bold">
+                        <div className="w-12 h-12 border-4 border-rose-100 border-t-rose-900 rounded-full animate-spin mb-4" />
+                        <p className="animate-pulse tracking-widest uppercase text-xs">Scanning database identities...</p>
+                    </div>
                 ) : (
                     <>
                         {/* Premium Analytics Cards */}
@@ -765,7 +781,7 @@ export default function AdminVerificationPage() {
                                     onClick={() => setFilterGender(g)}
                                     className={`py-4 px-6 text-[10px] font-black uppercase tracking-widest transition-all relative ${filterGender === g ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
-                                    {g}s ({allUsers.filter(u => u.gender?.toLowerCase() === g).length})
+                                    {g}s ({g === 'male' ? genderCounts.male : genderCounts.female})
                                     {filterGender === g && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
                                 </button>
                             ))}
@@ -798,71 +814,91 @@ export default function AdminVerificationPage() {
                                 <div className="col-span-2 text-right">Actions</div>
                             </div>
                             <div className="divide-y divide-gray-100">
-                                {sortedUsers.length === 0 ? (
-                                    <div className="p-10 text-center text-gray-400 font-bold uppercase text-sm">No users found</div>
-                                ) : (
-                                    sortedUsers.map((u) => {
-                                        const now = Date.now();
-                                        const createdTime = u.createdAt?.seconds ? u.createdAt.seconds * 1000 : new Date(u.createdAt || 0).getTime();
-                                        const isNew = now - createdTime < 24 * 60 * 60 * 1000;
-                                        const hasNewMsg = msgCounts[u.id]?.userMsgs > 0;
-
-                                        return (
-                                            <div
-                                                key={u.id}
-                                                className={`p-4 md:px-6 md:py-4 flex flex-col md:grid md:grid-cols-12 gap-4 items-center cursor-pointer transition-colors relative ${hasNewMsg ? 'bg-blue-50/50 hover:bg-blue-100/50 border-l-4 border-blue-500' : isNew ? 'bg-amber-50/30 hover:bg-amber-100/30 border-l-4 border-amber-400' : 'hover:bg-gray-50/80'}`}
-                                                onClick={() => openDetails(u)}
-                                            >
-                                                <div className="col-span-2 flex items-center gap-3 w-full">
-                                                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0 border border-gray-100">
-                                                        {u.libasImageUrl ? <img src={u.libasImageUrl} alt="Profile" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[#881337] font-bold bg-rose-50">{u.name?.charAt(0) || '?'}</div>}
+                                {sortedUsers.slice(0, visibleCount).map((u, idx) => {
+                                    const hasNewMsgs = (msgCounts[u.id]?.userMsgs || 0) > 0;
+                                    return (
+                                        <div key={u.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors group relative">
+                                            {/* Profile Column */}
+                                            <div className="col-span-2 flex items-center gap-3">
+                                                <div className="relative">
+                                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200">
+                                                        <img 
+                                                            src={u.itsImageUrl || '/placeholder-its.png'} 
+                                                            alt="" 
+                                                            className="w-full h-full object-cover"
+                                                            loading="lazy" 
+                                                        />
                                                     </div>
-                                                    <div className="flex-1 truncate">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <p className="font-bold text-[#881337] truncate">{u.name}</p>
-                                                            {isNew && <span className="bg-amber-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm">NEW</span>}
+                                                    {u.isPhotoVerified && (
+                                                        <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 border-2 border-white">
+                                                            <ShieldCheck className="w-2.5 h-2.5" />
                                                         </div>
-                                                        <p className="text-[10px] text-gray-400 truncate">{u.mobile || u.mobileNumber || "No mobile"}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="col-span-2 w-full text-sm font-medium text-gray-700">{u.itsNumber}</div>
-                                                <div className="col-span-2 w-full text-sm text-gray-500 truncate">{u.hizratLocation || 'N/A'}</div>
-                                                <div className="col-span-2 w-full">
-                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(u.status)}`}>{getStatusLabel(u.status)}</span>
-                                                </div>
-                                                <div className="col-span-2 w-full flex flex-col items-start gap-1">
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                                                        {u.createdAt ? (new Date(createdTime).toLocaleDateString()) : 'N/A'}
-                                                    </p>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); openDetails(u, 'messages'); }}
-                                                        className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all text-[10px] font-bold border ${hasNewMsg ? 'bg-blue-100 text-blue-700 border-blue-200 shadow-sm' : 'text-[#881337] hover:bg-rose-50 border-transparent hover:border-rose-100'}`}
-                                                    >
-                                                        <MessageCircle className={`w-3.5 h-3.5 ${hasNewMsg ? 'animate-bounce' : ''}`} />
-                                                        <span>{hasNewMsg ? 'New Message' : 'View Chat'}</span>
-                                                        {msgCounts[u.id] && (
-                                                            <span className={`ml-1 px-1.5 py-0.5 rounded-full border ${hasNewMsg ? 'bg-blue-200 border-blue-300' : 'bg-rose-100 border-rose-200'}`}>
-                                                                {msgCounts[u.id].userMsgs}/{msgCounts[u.id].total}
-                                                            </span>
-                                                        )}
-                                                    </button>
-                                                </div>
-                                                <div className="col-span-2 w-full flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                                    <button onClick={() => openDetails(u)} className="p-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 shadow-sm transition-colors" title="Open Complete Details"><ArrowRight className="w-4 h-4" /></button>
-                                                    {(!u.status || u.status === 'pending_verification' || u.status === 'pending') && (
-                                                        <button onClick={() => handleStatusMove(u.id, 'verified')} className="p-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg hover:bg-emerald-100 shadow-sm" title="Quick Verify"><CheckCircle className="w-4 h-4" /></button>
                                                     )}
-                                                    <button 
-                                                        onClick={() => handleDeleteUser(u.id, u.name)}
-                                                        className="p-2 bg-red-50 text-red-600 border border-red-100 rounded-lg hover:bg-red-100 shadow-sm transition-colors" 
-                                                        title="Delete Profile Permanently"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <p className="font-bold text-sm text-[#881337] truncate max-w-[120px]">{u.name}</p>
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{u.gender || 'Unknown'}</p>
                                                 </div>
                                             </div>
-                                        );
-                                    })
+
+                                            {/* ITS Column */}
+                                            <div className="col-span-2">
+                                                <span className="text-xs font-mono font-bold text-gray-600">{u.itsNumber}</span>
+                                            </div>
+
+                                            {/* Location Column */}
+                                            <div className="col-span-2">
+                                                <div className="flex flex-col">
+                                                    <p className="text-xs font-bold text-gray-700 truncate">{u.hizratLocation}</p>
+                                                    <p className="text-[9px] text-gray-400 truncate">{u.jamaat}</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Status Column */}
+                                            <div className="col-span-2">
+                                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-tighter ${getStatusColor(u.status)}`}>
+                                                    {getStatusLabel(u.status)}
+                                                </span>
+                                            </div>
+
+                                            {/* Date Column */}
+                                            <div className="col-span-2">
+                                                <p className="text-xs text-gray-500 font-medium">
+                                                    {u.createdAt?.seconds ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : new Date(u.createdAt || 0).toLocaleDateString()}
+                                                </p>
+                                            </div>
+
+                                            {/* Action Column */}
+                                            <div className="col-span-2 flex items-center justify-end gap-2">
+                                                {hasNewMsgs && (
+                                                    <div className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse mr-1" title="New messages" />
+                                                )}
+                                                <button 
+                                                    onClick={() => openDetails(u)}
+                                                    className="px-4 py-1.5 bg-gray-100 hover:bg-[#881337] hover:text-white text-gray-600 rounded-lg text-[10px] font-black uppercase transition-all"
+                                                >
+                                                    View Details
+                                                </button>
+                                                <button 
+                                                    onClick={() => openDetails(u, 'messages')}
+                                                    className={`p-2 rounded-lg transition-all ${hasNewMsgs ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'text-gray-400 hover:bg-gray-100'}`}
+                                                >
+                                                    <MessageCircle className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                {sortedUsers.length > visibleCount && (
+                                    <div className="p-8 flex justify-center bg-gray-50/50">
+                                        <button 
+                                            onClick={() => setVisibleCount(prev => prev + 50)}
+                                            className="bg-white border-2 border-rose-50 px-10 py-3 rounded-2xl text-[11px] font-black text-[#881337] shadow-sm hover:scale-105 transition-all flex items-center gap-3 uppercase tracking-[0.2em]"
+                                        >
+                                            <ArrowRight className="w-4 h-4" /> Load More Profiles ({sortedUsers.length - visibleCount} hidden)
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </div>

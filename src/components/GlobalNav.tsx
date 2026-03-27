@@ -31,8 +31,8 @@ export default function GlobalNav() {
 
     // Auto-close mobile menu on route change
     useEffect(() => {
-        if (isOpen) setIsOpen(false);
-    }, [pathname, isOpen]);
+        setIsOpen(false);
+    }, [pathname]);
 
     // Don't show nav on login, onboarding, or admin pages
     if (pathname === '/login' || pathname === '/onboarding' || pathname?.startsWith('/admin')) return null;

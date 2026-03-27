@@ -302,6 +302,7 @@ export default function AdminUsersPage() {
             const matchGender = u.gender?.toLowerCase() === filterGender;
             const matchStatus = filterStatus === 'all' || u.status === filterStatus;
             const matchComplete = filterComplete === 'all' ||
+                (filterComplete === 'online' && u.isOnline) ||
                 (filterComplete === 'complete' && (u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved')) ||
                 (filterComplete === 'submitted' && u.isCandidateFormComplete && u.status === 'pending_verification') ||
                 (filterComplete === 'incomplete' && !u.isCandidateFormComplete && u.status !== 'verified' && u.status !== 'approved');
@@ -342,6 +343,7 @@ export default function AdminUsersPage() {
 
     const stats = useMemo(() => ({
         total: users.length,
+        live: users.filter(u => u.isOnline).length,
         complete: users.filter(u => u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved').length,
         onboardingSubmitted: users.filter(u => u.isCandidateFormComplete && u.status === 'pending_verification').length,
         onboardingPending: users.filter(u => !u.isCandidateFormComplete && u.status !== 'verified' && u.status !== 'approved').length,
@@ -428,6 +430,7 @@ export default function AdminUsersPage() {
                 <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
                     {[
                         { label: 'Total Registrations', value: stats.total, color: 'text-gray-900', bg: 'bg-white border-gray-200', filter: 'all' },
+                        { label: 'Live Candidates', value: stats.live, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100', filter: 'online' },
                         { label: 'Wait Approval', value: stats.onboardingSubmitted, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', filter: 'submitted' },
                         { label: 'Pending Onboarding', value: stats.onboardingPending, color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-100', filter: 'incomplete' },
                         { label: 'Form Complete', value: stats.complete, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-100', filter: 'complete' },

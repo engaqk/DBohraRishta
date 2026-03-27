@@ -99,6 +99,7 @@ export default function AdminVerificationPage() {
     const analytics = useMemo(() => {
         return {
             totalUsers: allUsers.length,
+            liveCount: allUsers.filter(u => u.isOnline).length,
             pendingCount: allUsers.filter(u => !u.status || u.status === 'pending' || u.status === 'pending_verification').length,
             holdCount: allUsers.filter(u => u.status === 'hold').length,
             acceptedRatio: requestStats.total > 0 ? Math.round((requestStats.accepted / requestStats.total) * 100) : 0,
@@ -658,7 +659,19 @@ export default function AdminVerificationPage() {
                 ) : (
                     <>
                         {/* Premium Analytics Cards */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
+                            <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex items-center gap-5 hover:scale-[1.02] transition-all group cursor-default">
+                                <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors shadow-inner">
+                                    <div className="relative">
+                                        <Users className="w-7 h-7" />
+                                        <div className="absolute top-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white animate-pulse" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400/80 mb-1">Live Now</p>
+                                    <h2 className="text-3xl font-black font-serif text-emerald-600">{analytics.liveCount}</h2>
+                                </div>
+                            </div>
                             <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex items-center gap-5 hover:scale-[1.02] transition-all group cursor-default">
                                 <div className="w-14 h-14 bg-rose-50 text-[#881337] rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-rose-100 transition-colors shadow-inner">
                                     <BarChart3 className="w-7 h-7" />

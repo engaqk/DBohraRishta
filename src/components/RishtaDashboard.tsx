@@ -23,6 +23,7 @@ interface UserProfile {
     jamaat?: string;
     education?: string;
     location?: string;
+    hizratLocation?: string;
     isItsVerified?: boolean;
     gender?: string;
     libasImageUrl?: string;

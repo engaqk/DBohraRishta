@@ -105,7 +105,11 @@ function ProfileContent() {
         return profile.name || profile.firstName || '';
     })();
 
-    const photos = [profile?.libasImageUrl, profile?.extraImageUrl].filter(Boolean) as string[];
+    const photos = [
+        profile?.libasImageUrl, 
+        profile?.extraImageUrl,
+        (profile?.isPhotoVerified || profile?.selfieStatus === 'verified' ? profile?.selfieImageUrl : null)
+    ].filter(Boolean) as string[];
     const currentPhoto = photos[activePhotoIdx] || null;
     const age = profile?.dob ? Math.floor((Date.now() - new Date(profile.dob).getTime()) / 31557600000) : null;
 
@@ -137,16 +141,6 @@ function ProfileContent() {
         if (!user || !id) return;
         if (icebreakerError) { toast.error(icebreakerError); return; }
 
-        if (id.startsWith('dummy')) {
-            setActionLoading(true);
-            setTimeout(() => { 
-                setRequestSent(true); 
-                toast.success('Demo request sent!'); 
-                setActionLoading(false); 
-                setShowInterestModal(false);
-            }, 800);
-            return;
-        }
         try {
             setActionLoading(true);
             const spamQ = query(collection(db, 'rishta_requests'), where('from', '==', user.uid));
@@ -202,7 +196,7 @@ function ProfileContent() {
         <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center text-gray-400 font-bold">Profile Not Found</div>
     );
 
-    const { jamaat, hizratLocation, libasImageUrl, extraImageUrl, gender,
+    const { jamaat, location, hizratLocation, libasImageUrl, extraImageUrl, gender,
         hobbies, partnerQualities, bio, isItsVerified, heightFeet, heightInch,
         maritalStatus, educationDetails, education, professionType, fatherName,
         motherName, city, state, country, mobile, mobileCode, email, dob,
@@ -255,7 +249,7 @@ function ProfileContent() {
                                 <div className="space-y-2">
                                     <div className="flex flex-col">
                                         <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Location</span>
-                                        <span className="text-xs font-bold text-gray-700">{profile.hizratLocation || profile.city || 'Confidential'}</span>
+                                        <span className="text-xs font-bold text-gray-700">{profile.location || profile.hizratLocation || profile.city || 'Confidential'}</span>
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Occupation</span>
@@ -399,7 +393,7 @@ function ProfileContent() {
                                     <div className="flex flex-wrap items-center gap-2 mt-2">
                                         <div className="bg-[#D4AF37]/20 backdrop-blur-sm border border-white/20 px-2.5 py-1 rounded-lg">
                                             <p className="text-white text-[11px] font-black uppercase tracking-widest leading-none">
-                                                {jamaat || city || 'Bohra Community'} • {hizratLocation || 'Global'}
+                                                {jamaat || city || 'Bohra Community'} • {location || hizratLocation || 'Global'}
                                             </p>
                                         </div>
                                         {matchScore !== null && (
@@ -483,7 +477,7 @@ function ProfileContent() {
                                 { label: 'Profession', value: professionType },
                                 { label: 'Marital', value: maritalStatus || 'Single' },
                                 { label: 'Height', value: heightFeet ? `${heightFeet}'${heightInch || '0'}"` : null },
-                                { label: 'City', value: city || hizratLocation },
+                                { label: 'City', value: city || location || hizratLocation },
                                 { label: 'DOB', value: dob },
                             ].filter(d => d.value).map(d => (
                                 <div key={d.label} className="bg-gray-50 rounded-xl px-3 py-2 border border-gray-100">

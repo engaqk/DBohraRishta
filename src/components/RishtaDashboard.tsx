@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera } from 'lucide-react';
+import { Sparkles, Zap, Smartphone, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment, setDoc } from 'firebase/firestore';
@@ -22,7 +22,7 @@ interface UserProfile {
     dob?: string;
     jamaat?: string;
     education?: string;
-    hizratLocation?: string;
+    location?: string;
     isItsVerified?: boolean;
     gender?: string;
     libasImageUrl?: string;
@@ -65,6 +65,7 @@ interface UserProfile {
     referralCount?: number;
     isCommunityContributor?: boolean;
     createdAt?: any;
+    verifiedPhone?: string;
 }
 
 interface RishtaRequest {
@@ -143,6 +144,74 @@ export default function RishtaDashboard() {
     const [notifications, setNotifications] = useState<any[]>([]);
     const [recentViews, setRecentViews] = useState<any[]>([]);
     const [bookmarkedProfileIds, setBookmarkedProfileIds] = useState<Set<string>>(new Set());
+
+    // Mobile Verification State
+    const [showMobileVerifyModal, setShowMobileVerifyModal] = useState(false);
+    const [newMobileVerifyInput, setNewMobileVerifyInput] = useState('');
+    const [mobileVerifyOtpSent, setMobileVerifyOtpSent] = useState(false);
+    const [mobileVerifyLoading, setMobileVerifyLoading] = useState(false);
+    const [mobileVerifyOtpCode, setMobileVerifyOtpCode] = useState('');
+
+    const handleSendMobileVerify = async () => {
+        if (!user?.email) {
+            toast.error("No registered email found for verification.");
+            return;
+        }
+        setMobileVerifyLoading(true);
+        try {
+            const res = await fetch('/api/otp/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: user.email }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setMobileVerifyOtpSent(true);
+                toast.success("Verification code sent to " + user.email);
+            } else {
+                toast.error(data.error || "Failed to send code");
+            }
+        } catch {
+            toast.error("Connection error. Try again.");
+        } finally {
+            setMobileVerifyLoading(false);
+        }
+    };
+
+    const handleVerifyMobileVerify = async () => {
+        if (!mobileVerifyOtpCode || mobileVerifyOtpCode.length !== 6) {
+            toast.error("Enter the 6-digit verification code.");
+            return;
+        }
+        if (!user?.email) return;
+        setMobileVerifyLoading(true);
+        try {
+            const res = await fetch('/api/otp/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: user.email, code: mobileVerifyOtpCode }),
+            });
+            const data = await res.json();
+            if (!data.success) {
+                toast.error(data.error || "Invalid verification code");
+                return;
+            }
+            // OTP verified — save the new mobile to Firestore
+            await updateDoc(doc(db, "users", user.uid), {
+                mobile: newMobileVerifyInput,
+                verifiedPhone: newMobileVerifyInput,
+            });
+            
+            setMobileVerifyOtpSent(false);
+            setShowMobileVerifyModal(false);
+            setMobileVerifyOtpCode('');
+            toast.success("✅ Mobile number verified successfully!");
+        } catch (error: any) {
+            toast.error("Error: " + error.message);
+        } finally {
+            setMobileVerifyLoading(false);
+        }
+    };
     const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
     const [latestBroadcast, setLatestBroadcast] = useState<{ id: string; title?: string; message: string; type?: string } | null>(null);
     const [generatingBiodata, setGeneratingBiodata] = useState(false);
@@ -722,7 +791,7 @@ export default function RishtaDashboard() {
                             ...req,
                             otherUserName: uData.name || "Unknown Member",
                             otherUserAge: uData.dob ? Math.floor((new Date().getTime() - new Date(uData.dob).getTime()) / 31557600000) : 25,
-                            otherUserLocation: uData.hizratLocation || "Global Network",
+                            otherUserLocation: uData.location || uData.hizratLocation || "Global Network",
                             otherUserEducation: uData.education || uData.profession || "Graduated",
                             otherUserMobile: uData.mobile ? `${uData.mobileCode || ''} ${uData.mobile}` : "Not Shared",
                             otherUserEmail: uData.email || "Not Shared",
@@ -851,12 +920,6 @@ export default function RishtaDashboard() {
 
 
     const handleRequestAction = async (requestId: string, newStatus: string) => {
-        // Mock action for dummy requests, don't execute transaction
-        if (requestId.includes('dummy')) {
-            toast.success(`Demo Request ${newStatus}!`);
-            setAllRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
-            return;
-        }
 
         try {
             await updateDoc(doc(db, "rishta_requests", requestId), {
@@ -1214,11 +1277,12 @@ export default function RishtaDashboard() {
                     const matchesSearch = !searchQuery ||
                         p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         p.jamaat?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        p.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         p.hizratLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         p.education?.toLowerCase().includes(searchQuery.toLowerCase());
 
                     const matchesEducation = !filters.education || p.education?.toLowerCase().includes(filters.education.toLowerCase());
-                    const matchesLocation = !filters.location || p.hizratLocation?.toLowerCase().includes(filters.location.toLowerCase()) || p.city?.toLowerCase().includes(filters.location.toLowerCase());
+                    const matchesLocation = !filters.location || p.location?.toLowerCase().includes(filters.location.toLowerCase()) || p.hizratLocation?.toLowerCase().includes(filters.location.toLowerCase()) || p.city?.toLowerCase().includes(filters.location.toLowerCase());
                     const matchesMarital = !filters.maritalStatus || p.maritalStatus?.toLowerCase() === filters.maritalStatus.toLowerCase();
 
                     if (showOnlyBookmarked) {
@@ -1342,7 +1406,6 @@ export default function RishtaDashboard() {
                                         <DiscoveryCard
                                             key={p.id}
                                             {...p}
-                                            isDummy={(p as any).isDummy}
                                             matchScore={computeMatchScore(myProfile, p)}
                                             isMyProfileVerified={myProfile?.isItsVerified === true}
                                             bio={p.bio}
@@ -1606,81 +1669,78 @@ export default function RishtaDashboard() {
                 </div>
             )}
 
-            {/* 🚀 PLATFORM ACTIVITY & ENGAGEMENT STATS — REFINED PREMIUM UI */}
-            <div className="max-w-7xl mx-auto mb-10 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
-                {/* Real-time Presence Boost */}
-                <div id="daily-streak-card" className="relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
+            {/* 🚀 ENGAGEMENT HUB — HORIZONTAL CAROUSEL ON MOBILE / GRID ON DESKTOP */}
+            <div id="engagement-hub" className="max-w-7xl mx-auto mb-6 md:mb-10 flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 snap-x scroll-smooth no-scrollbar pb-4 md:pb-0 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
+                {/* Visibility Boost Card */}
+                <div id="daily-streak-card" className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
                     <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-amber-100/30 to-[#D4AF37]/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="flex items-center gap-6 relative z-10">
-                        <div className="w-16 h-16 bg-gradient-to-br from-amber-50 to-amber-200 rounded-3xl flex items-center justify-center text-[#D4AF37] shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
-                            <Sparkles className="w-8 h-8" />
+                    <div className="flex items-center gap-4 md:gap-6 relative z-10">
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-amber-50 to-amber-200 rounded-2xl md:rounded-3xl flex items-center justify-center text-[#D4AF37] shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
+                            <Zap className="w-6 h-6 md:w-8 md:h-8" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2 mb-1">
                                 <span className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] leading-none">Smart Ranking</span>
-                                {myProfile?.loginStreak > 1 && <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-[0_0_15px_rgba(212,175,55,0.4)] animate-pulse">🔥 STREAK: {myProfile.loginStreak}</span>}
+                                {myProfile?.loginStreak > 1 && <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-[0_0_15px_rgba(212,175,55,0.4)] animate-pulse">🔥 {myProfile.loginStreak}D</span>}
                             </div>
-                            <p className="text-lg font-black text-gray-900 leading-none">Visibility Spike</p>
-                            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">Your biodata is currently <span className="text-amber-600 font-black uppercase tracking-widest">{myProfile?.loginStreak > 0 ? "Boosted" : "Standard"}</span> globally.</p>
+                            <p className="text-base md:text-lg font-black text-gray-900 leading-none">Visibility Spike</p>
+                            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed italic">Your profile is currently <span className="text-amber-600 font-black">{myProfile?.loginStreak > 0 ? "Boosted" : "Active"}</span>.</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Live Platform Stats */}
-                <div id="platform-footprint-card" className="relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
+                <div id="platform-footprint-card" className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
                     <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-rose-100/30 to-[#881337]/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="flex items-center gap-6 relative z-10">
-                        <div className="w-16 h-16 bg-gradient-to-br from-rose-50 to-rose-100 rounded-3xl flex items-center justify-center text-[#881337] shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
-                            <Users className="w-8 h-8" />
+                    <div className="flex items-center gap-4 md:gap-6 relative z-10">
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-rose-50 to-rose-100 rounded-2xl md:rounded-3xl flex items-center justify-center text-[#881337] shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
+                            <Users className="w-6 h-6 md:w-8 md:h-8" />
                         </div>
                         <div>
                             <span className="text-[10px] font-black text-rose-600 uppercase tracking-[0.2em] leading-none mb-1 block">Live Activity</span>
-                            <p className="text-lg font-black text-gray-900 leading-none truncate">{platformStats.count}+ Candidates</p>
+                            <p className="text-base md:text-lg font-black text-gray-900 leading-none truncate">{platformStats.count}+ Candidates</p>
                             <div className="flex items-center gap-2 mt-2">
-                                <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping absolute" />
-                                <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full relative" />
-                                <span className="text-xs text-emerald-600 font-bold tracking-tight">{platformStats.activeNow} members online</span>
+                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping absolute" />
+                                <span className="w-2 h-2 bg-emerald-500 rounded-full relative" />
+                                <span className="text-[10px] text-emerald-600 font-bold">{platformStats.activeNow} online now</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Stay Updated Card / PWA Boost */}
-                <div id="notification-boost-card" className="relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out cursor-pointer" onClick={() => requestNotificationPermission(user?.uid)}>
+                <div id="notification-boost-card" className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out cursor-pointer" onClick={() => requestNotificationPermission(user?.uid)}>
                     <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-indigo-100/30 to-indigo-600/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="flex items-center gap-6 relative z-10">
-                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-3xl flex items-center justify-center text-indigo-600 shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
-                            <Bell className="w-8 h-8" />
+                    <div className="flex items-center gap-4 md:gap-6 relative z-10">
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl md:rounded-3xl flex items-center justify-center text-indigo-600 shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
+                            <Bell className="w-6 h-6 md:w-8 md:h-8" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] leading-none">Instant Alerts</span>
-                                <span className="bg-indigo-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">ACTION REQUIRED</span>
-                            </div>
-                            <p className="text-lg font-black text-gray-900 leading-none">Match Discovery</p>
-                            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">Turn on push notifications to find your soulmate faster.</p>
+                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] leading-none mb-1 block">Instant Alerts</span>
+                            <p className="text-base md:text-lg font-black text-gray-900 leading-none">Enable Notify</p>
+                            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed italic">Get match updates instantly.</p>
                         </div>
                     </div>
                 </div>
 
                 {/* 🚀 NEW: Profile Insights (Heatmap) */}
-                <div id="profile-performance-card" className="relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
+                <div id="profile-performance-card" className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
                     <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-emerald-100/30 to-emerald-600/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="flex items-center gap-6 relative z-10">
-                        <div className="w-16 h-16 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-3xl flex items-center justify-center text-emerald-600 shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
-                            <Eye className="w-8 h-8" />
+                    <div className="flex items-center gap-4 md:gap-6 relative z-10">
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl md:rounded-3xl flex items-center justify-center text-emerald-600 shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
+                            <Eye className="w-6 h-6 md:w-8 md:h-8" />
                         </div>
                         <div className="flex-1">
                             <span className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] leading-none mb-1 block">Profile Insights</span>
                             <div className="flex items-end gap-3">
                                 <div>
-                                    <p className="text-xl font-black text-gray-900 leading-none">{performanceData.views}</p>
-                                    <p className="text-[8px] font-bold text-gray-500 uppercase mt-1">Profile Views</p>
+                                    <p className="text-base md:text-lg font-black text-gray-900 leading-none">{performanceData.views}</p>
+                                    <p className="text-[8px] font-bold text-gray-500 uppercase mt-1 text-center">Views</p>
                                 </div>
                                 <div className="w-[1px] h-6 bg-gray-100" />
                                 <div>
-                                    <p className="text-xl font-black text-[#881337] leading-none">{performanceData.requests}</p>
-                                    <p className="text-[8px] font-bold text-gray-500 uppercase mt-1">Interests</p>
+                                    <p className="text-base md:text-lg font-black text-[#881337] leading-none">{performanceData.requests}</p>
+                                    <p className="text-[8px] font-bold text-gray-500 uppercase mt-1 text-center">Interests</p>
                                 </div>
                             </div>
                         </div>
@@ -1688,24 +1748,24 @@ export default function RishtaDashboard() {
                 </div>
 
                 {/* 🤝 NEW: Referral Program (Refer-a-Relative) */}
-                <div 
-                    id="referral-reward-card" 
-                    className="relative group overflow-hidden bg-gradient-to-br from-[#881337] to-[#4c0519] rounded-[2.5rem] p-7 border border-[#881337]/20 shadow-[0_20px_50px_rgba(136,19,55,0.2)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.3)] hover:-translate-y-2 transition-all duration-500 ease-out cursor-pointer"
+                <div
+                    id="referral-reward-card"
+                    className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-gradient-to-br from-[#881337] to-[#4c0519] rounded-[2.5rem] p-6 md:p-7 border border-[#881337]/20 shadow-[0_20px_50px_rgba(136,19,55,0.2)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.3)] hover:-translate-y-2 transition-all duration-500 ease-out cursor-pointer"
                     onClick={() => {
-                        const link = `${window.location.origin}/login?ref=${user?.uid}`;
-                        const text = `Assalamu Alaikum! I'm using DBohraRishta for finding serious matches in our community. Join using my referral link: ${link}`;
+                        const link = `https://www.53dbohrarishta.in/login?ref=${user?.uid}`;
+                        const text = `Assalamu Alaikum!\nLooking for genuine, serious matches in our Bohra community? 53DBohraRishta is a trusted platform built on respect, privacy, and meaningful connections.\nالسلام علیکم!\nઅમારા બોહરા સમાજમાં સાચા અને ગંભીર સંબંધો શોધી રહ્યા છો? 53DBohraRishta એ વિશ્વસનીય પ્લેટફોર્મ છે જે ગોપનીયતા, આદર અને અર્થપૂર્ણ જોડાણો પર આધારિત છે.\n👉 Start your journey today: ${link}\n✨ Join now and connect with sincerity!`;
                         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                     }}
                 >
                     <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="flex items-center gap-6 relative z-10">
-                        <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center text-white shadow-inner group-hover:scale-110 transition-transform duration-500 border border-white/20">
-                            <Megaphone className="w-8 h-8" />
+                    <div className="flex items-center gap-4 md:gap-6 relative z-10">
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-white/10 backdrop-blur-md rounded-2xl md:rounded-3xl flex items-center justify-center text-white shadow-inner group-hover:scale-110 transition-transform duration-500 border border-white/20">
+                            <Megaphone className="w-6 h-6 md:w-8 md:h-8" />
                         </div>
                         <div>
                             <span className="text-[10px] font-black text-rose-200 uppercase tracking-[0.2em] leading-none mb-1 block">Community Growth</span>
-                            <p className="text-lg font-black text-white leading-none">Refer a Relative</p>
-                            <p className="text-[10px] text-rose-100/60 mt-2 leading-relaxed italic">Help the community grow & earn "Contributor" status.</p>
+                            <p className="text-base md:text-lg font-black text-white leading-none">Refer a Relative</p>
+                            <p className="text-[10px] text-rose-100/60 mt-2 leading-relaxed italic">Help the community grow.</p>
                         </div>
                     </div>
                 </div>
@@ -1719,7 +1779,9 @@ export default function RishtaDashboard() {
                         <div id="profile-completeness-section" className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
 
                             <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-rose-50 mb-4 shadow-md relative">
-                                {myProfile.libasImageUrl || myProfile.extraImageUrl || myProfile.itsImageUrl ? (
+                                {myProfile.isPhotoVerified && myProfile.selfieImageUrl ? (
+                                    <img src={myProfile.selfieImageUrl} alt="Biodata" className="w-full h-full object-cover" />
+                                ) : myProfile.libasImageUrl || myProfile.extraImageUrl || myProfile.itsImageUrl ? (
                                     <img src={myProfile.libasImageUrl || myProfile.extraImageUrl || myProfile.itsImageUrl} alt="Biodata" className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-4xl">
@@ -1747,11 +1809,21 @@ export default function RishtaDashboard() {
                                         <button onClick={refreshUser} className="text-[10px] text-gray-400 hover:text-[#881337] font-bold underline">Refresh status</button>
                                     </div>
                                 )}
+                                {myProfile.verifiedPhone ? (
+                                    <span className="bg-orange-50 text-orange-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-orange-100"><Check className="w-3 h-3" /> Mobile Verified</span>
+                                ) : (
+                                    <span onClick={() => {
+                                        setNewMobileVerifyInput(myProfile.mobile || '');
+                                        setShowMobileVerifyModal(true);
+                                    }} className="bg-gray-50 text-gray-600 px-3 py-1 cursor-pointer hover:bg-gray-100 transition-colors rounded-full text-xs font-bold flex items-center gap-1 border border-gray-200">
+                                        <Smartphone className="w-3 h-3" /> Verify Mobile
+                                    </span>
+                                )}
                             </div>
 
                             {/* Profile Completeness */}
                             {(() => {
-                                const fields = ['name', 'itsNumber', 'gender', 'dob', 'jamaat', 'education', 'hizratLocation', 'libasImageUrl', 'fatherName', 'motherName', 'maritalStatus', 'mobile', 'address', 'professionType'];
+                                const fields = ['name', 'itsNumber', 'gender', 'dob', 'jamaat', 'education', 'location', 'libasImageUrl', 'fatherName', 'motherName', 'maritalStatus', 'mobile', 'verifiedPhone', 'address', 'professionType'];
                                 let filled = 0;
                                 fields.forEach(f => { if (myProfile[f] || (f === 'professionType' && myProfile['profession']) || (f === 'education' && myProfile['educationDetails'])) filled++; });
                                 let pct = Math.floor((filled / fields.length) * 100);
@@ -1789,6 +1861,16 @@ export default function RishtaDashboard() {
                                                 {!(user?.emailVerified || myProfile.isEmailVerified) && <ArrowRight className="w-3.5 h-3.5 text-gray-300" />}
                                             </div>
 
+                                            <div className={`p-3 rounded-xl border flex items-center justify-between transition-all ${myProfile.verifiedPhone ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-white border-gray-100 text-gray-700'}`}>
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.verifiedPhone ? 'bg-emerald-500 text-white' : 'border-2 border-gray-200'}`}>
+                                                        {myProfile.verifiedPhone && <Check className="w-3 h-3" />}
+                                                    </div>
+                                                    <span className="text-xs font-bold">Mobile Verification</span>
+                                                </div>
+                                                {!myProfile.verifiedPhone && <button onClick={() => setShowMobileVerifyModal(true)} className="text-[9px] font-black uppercase bg-[#881337] text-white px-2 py-1 rounded-lg">Verify Now</button>}
+                                            </div>
+
                                             <div className={`p-3 rounded-xl border flex items-center justify-between transition-all ${myProfile.libasImageUrl ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-white border-gray-100 text-gray-700'}`}>
                                                 <div className="flex items-center gap-2.5">
                                                     <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.libasImageUrl ? 'bg-emerald-500 text-white' : 'border-2 border-gray-200'}`}>
@@ -1800,7 +1882,7 @@ export default function RishtaDashboard() {
                                             </div>
 
                                             {/* Selfie Verification Item */}
-                                            <div 
+                                            <div
                                                 id="selfie-verification-row"
                                                 onClick={() => {
                                                     if (!myProfile.isPhotoVerified && myProfile.selfieStatus !== "pending") {
@@ -1842,6 +1924,7 @@ export default function RishtaDashboard() {
 
                                         {myProfile.status === 'verified' && (
                                             <button
+                                                id="download-biodata-btn"
                                                 onClick={handleDownloadBiodata}
                                                 disabled={generatingBiodata}
                                                 className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all mt-6 flex items-center justify-center gap-2 group"
@@ -1943,7 +2026,7 @@ export default function RishtaDashboard() {
 
                                             <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}>
                                                 <span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Location</span>
-                                                <span className="text-sm font-bold" style={{ color: '#1f2937' }}>{myProfile.hizratLocation || myProfile.city}</span>
+                                                <span className="text-sm font-bold" style={{ color: '#1f2937' }}>{myProfile.location || myProfile.hizratLocation || myProfile.city}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -2184,7 +2267,11 @@ export default function RishtaDashboard() {
             {/* My Profile Preview Modal */}
             {
                 showMyProfileModal && myProfile && (() => {
-                    const photos = [myProfile.libasImageUrl, myProfile.extraImageUrl].filter(Boolean) as string[];
+                    const photos = [
+                        myProfile.libasImageUrl, 
+                        myProfile.extraImageUrl,
+                        (myProfile.isPhotoVerified || myProfile.selfieStatus === 'verified' ? myProfile.selfieImageUrl : null)
+                    ].filter(Boolean) as string[];
                     const age = myProfile.dob ? Math.floor((Date.now() - new Date(myProfile.dob).getTime()) / 31557600000) : null;
                     const isFemale = myProfile.gender === 'female';
                     // Show how others see it: Blurred surname for females
@@ -2332,7 +2419,7 @@ export default function RishtaDashboard() {
                                                 { label: 'Profession', value: myProfile.professionType },
                                                 { label: 'Marital', value: myProfile.maritalStatus || 'Single' },
                                                 { label: 'Height', value: myProfile.heightFeet ? `${myProfile.heightFeet}'${myProfile.heightInch || '0'}"` : null },
-                                                { label: 'City', value: myProfile.city || myProfile.hizratLocation },
+                                                { label: 'City', value: myProfile.city || myProfile.location || myProfile.hizratLocation },
                                                 { label: 'DOB', value: myProfile.dob },
                                             ].filter(d => d.value).map(d => (
                                                 <div key={d.label} className="bg-white rounded-2xl px-4 py-3 border border-gray-100 shadow-sm">
@@ -2565,6 +2652,104 @@ export default function RishtaDashboard() {
                     </div>
                 </div>
             )}
+            {/* Mobile Verification Modal */}
+            {showMobileVerifyModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="bg-[#881337] p-6 text-white text-center relative">
+                            <button onClick={() => setShowMobileVerifyModal(false)} className="absolute top-4 right-4 text-white/60 hover:text-white"><X className="w-5 h-5" /></button>
+                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <Smartphone className="w-8 h-8 text-[#D4AF37]" />
+                            </div>
+                            <h3 className="text-xl font-bold font-serif">Verify Mobile Number</h3>
+                            <p className="text-white/70 text-[10px] uppercase font-bold tracking-[0.2em] mt-1">Security Verification</p>
+                        </div>
+                        <div className="p-8">
+                            {!mobileVerifyOtpSent ? (
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">My Mobile Number</label>
+                                        <input 
+                                            type="tel"
+                                            value={newMobileVerifyInput}
+                                            onChange={(e) => setNewMobileVerifyInput(e.target.value)}
+                                            placeholder="+919876543210"
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-[#881337] outline-none transition-all"
+                                        />
+                                    </div>
+                                    <p className="text-[11px] text-gray-500 text-center leading-relaxed">
+                                        To verify your identity, we'll send a 6-digit code to your registered email: <br/>
+                                        <span className="text-[#881337] font-bold">{user?.email}</span>
+                                    </p>
+                                    <button 
+                                        onClick={handleSendMobileVerify}
+                                        disabled={mobileVerifyLoading}
+                                        className="w-full bg-[#881337] text-white py-4 rounded-2xl font-black text-sm shadow-xl hover:shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                                    >
+                                        {mobileVerifyLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-4 h-4" />}
+                                        Send Code to Email
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <div className="bg-emerald-50 text-emerald-700 p-4 rounded-2xl border border-emerald-100 text-[11px] font-medium leading-relaxed">
+                                        ✅ Code sent! Please check your inbox (and spam folder) for the 6-digit verification code.
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Enter 6-Digit Code</label>
+                                        <input 
+                                            type="text"
+                                            maxLength={6}
+                                            value={mobileVerifyOtpCode}
+                                            onChange={(e) => setMobileVerifyOtpCode(e.target.value.replace(/\D/g, ''))}
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-center text-2xl font-black tracking-[0.5em] focus:ring-2 focus:ring-[#881337] outline-none transition-all"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <button 
+                                        onClick={handleVerifyMobileVerify}
+                                        disabled={mobileVerifyLoading}
+                                        className="w-full bg-[#881337] text-white py-4 rounded-2xl font-black text-sm shadow-xl hover:shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                                    >
+                                        {mobileVerifyLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5 text-[#D4AF37]" />}
+                                        Verify & Activate
+                                    </button>
+                                    <button 
+                                        onClick={() => setMobileVerifyOtpSent(false)}
+                                        className="w-full text-[10px] font-black uppercase text-gray-400 hover:text-[#881337] transition-colors"
+                                    >
+                                        Change Mobile Number
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 🟢 Floating WhatsApp Share Button */}
+            <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Salam e Jameel !
+I’m using 53DBohraRishta to find genuine, serious matches within our Bohra community. It’s a trusted space built on respect, privacy, and meaningful connections.
+
+السلام علیکم!
+હું 53DBohraRishta નો ઉપયોગ કરી રહ્યો છું અમારા બોહરા સમાજમાં ગંભીર અને સાચા સંબંધો શોધવા માટે. આ એક વિશ્વસનીય પ્લેટફોર્મ છે જે ગોપનીયતા, આદર અને અર્થપૂર્ણ જોડાણો પર આધારિત છે.
+
+👉 Join here now: https://www.53dbohrarishta.in/login`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="fixed bottom-24 right-6 z-[60] bg-[#25D366] text-white p-4 rounded-full shadow-2xl hover:scale-110 active:scale-90 transition-all cursor-pointer flex items-center justify-center group animate-pulse"
+                title="Share with Community"
+            >
+                <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.445 0 .062 5.383.06 11.992c0 2.113.553 4.176 1.604 6.003L0 24l6.163-1.617a11.831 11.831 0 005.883 1.565h.004c6.607 0 11.99-5.383 11.992-11.992a11.78 11.78 0 00-3.486-8.452z"/>
+                </svg>
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                </span>
+                <span className="absolute right-full mr-4 bg-gray-900 text-white text-[10px] px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl font-bold">Share with Community</span>
+            </a>
         </div>
     );
 }

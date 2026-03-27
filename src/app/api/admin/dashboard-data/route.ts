@@ -26,7 +26,7 @@ export async function GET(request: Request) {
             adminDb.collection('users')
                 .select(
                     'name', 'itsNumber', 'ejamaatId', 'gender', 'maritalStatus', 'status', 
-                    'hizratLocation', 'city', 'country', 'education', 'educationDetails',
+                    'location', 'hizratLocation', 'city', 'country', 'education', 'educationDetails',
                     'profession', 'professionType', 'mobile', 'mobileCode', 'email',
                     'adminMessage', 'isItsVerified', 'isCandidateFormComplete', 'createdAt',
                     'unreadMsgCountForAdmin', 'totalMsgCount', 'dob', 'fatherName', 'motherName',

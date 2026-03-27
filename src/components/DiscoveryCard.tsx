@@ -14,13 +14,13 @@ interface DiscoveryCardProps {
     dob?: string;
     jamaat?: string;
     education?: string;
+    location?: string;
     hizratLocation?: string;
     itsImageUrl?: string;
     libasImageUrl?: string;
     matchScore?: number;
     isMyProfileVerified?: boolean;
     gender?: string;
-    isDummy?: boolean;
     heightFeet?: string;
     heightInch?: string;
     hobbies?: string;
@@ -50,8 +50,8 @@ interface DiscoveryCardProps {
 }
 
 export default function DiscoveryCard({
-    id, name, dob, jamaat, education, hizratLocation, libasImageUrl, matchScore = 85,
-    isMyProfileVerified = false, isDummy = false, heightFeet, heightInch,
+    id, name, dob, jamaat, education, location, hizratLocation, libasImageUrl, matchScore = 85,
+    isMyProfileVerified = false, heightFeet, heightInch,
     partnerQualities, isBlurSecurityEnabled = true, isItsVerified = false, bio,
     isOnline = false, viewerItsNumber = '', extraImageUrl,
     ejamaatId, itsNumber, maritalStatus, mobile, mobileCode, email,
@@ -149,11 +149,6 @@ export default function DiscoveryCard({
         if (!user) { toast.error('You must be logged in'); return; }
         if (!isMyProfileVerified) { toast.error('Your ITS must be verified by Admin before sending requests'); return; }
 
-        if (isDummy) {
-            setLoading(true);
-            setTimeout(() => { setRequestSent(true); toast.success('Demo request sent!'); setLoading(false); }, 800);
-            return;
-        }
 
         try {
             setLoading(true);
@@ -266,7 +261,6 @@ export default function DiscoveryCard({
                     {/* Top badges */}
                     <div className="absolute top-3 left-3 right-3 z-30 flex items-start justify-between">
                         <div className="flex flex-col gap-1.5 items-start">
-                            {isDummy && <span className="bg-[#881337] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase shadow">Sample</span>}
                             {(profileData?.isOnline || isOnline) ? (
                                 <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />Active Now
@@ -406,7 +400,7 @@ export default function DiscoveryCard({
                             { label: 'Profession', value: professionType },
                             { label: 'Marital', value: maritalStatus || 'Single' },
                             { label: 'Height', value: heightFeet ? `${heightFeet}'${heightInch || '0'}"` : null },
-                            { label: 'City', value: city || hizratLocation },
+                            { label: 'City', value: city || location || hizratLocation },
                             { label: 'DOB', value: dob },
                             {
                                 label: 'Created', value: createdAt ? (() => {
@@ -478,7 +472,7 @@ export default function DiscoveryCard({
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (isMyProfileVerified && !requestSent && !isDummy) {
+                                    if (isMyProfileVerified && !requestSent) {
                                         setShowIcebreakerModal(true);
                                     } else {
                                         handleSendRequest();

@@ -131,7 +131,7 @@ export async function POST(request: Request) {
                         subject: `✨ New Profile Verified from ${userData?.city || 'the community'} – 53DBohraRishta`,
                         htmlBody: getNewCandidateVerifiedTemplate({
                             newCandidateGender: userData?.gender || 'unknown',
-                            newCandidateCity: userData?.city || userData?.hizratLocation || 'our community'
+                            newCandidateCity: userData?.city || userData?.location || userData?.hizratLocation || 'our community'
                         })
                     });
                 }

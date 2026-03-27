@@ -14,19 +14,24 @@ export async function POST(req: Request) {
     const FIREBASE_DETERMINISTIC_SALT = process.env.FIREBASE_DETERMINISTIC_SALT || 'dbohrarishta_firebase_salt_2026';
 
     try {
-        const { phone, code } = await req.json();
+        const { phone, email, code } = await req.json();
 
-        if (!phone || !code) {
-            return NextResponse.json({ error: 'Phone and OTP code are required' }, { status: 400 });
+        if ((!phone && !email) || !code) {
+            return NextResponse.json({ error: 'Phone/Email and verification code are required' }, { status: 400 });
         }
 
-        const cleanPhone = phone.replace(/[\s\-\+()]/g, '');
+        let identifier = '';
+        if (email) {
+            identifier = email.toLowerCase().trim();
+        } else {
+            identifier = phone.replace(/[\s\-\+()]/g, '');
+        }
 
-        // 1. Fetch the secret from Redis using the phone number
-        const savedSecret: string | null = await redis.get(`otp:${cleanPhone}`);
+        // 1. Fetch the secret from Redis using the identifier
+        const savedSecret: string | null = await redis.get(`otp:${identifier}`);
 
         if (!savedSecret) {
-            return NextResponse.json({ error: 'OTP expired or not found' }, { status: 400 });
+            return NextResponse.json({ error: 'Verification code expired or not found' }, { status: 400 });
         }
 
         // 2. Verify the OTP against the saved secret
@@ -39,18 +44,25 @@ export async function POST(req: Request) {
         const isValid = totp.validate({ token: code.toString(), window: 1 }) !== null;
 
         if (!isValid) {
-            return NextResponse.json({ error: 'Invalid or expired OTP code' }, { status: 400 });
+            return NextResponse.json({ error: 'Invalid or expired verification code' }, { status: 400 });
         }
 
         // SUCCESS!
         // 3. Delete the OTP from Redis so it can't be reused
-        await redis.del(`otp:${cleanPhone}`);
+        await redis.del(`otp:${identifier}`);
 
-        // 4. Generate deterministic Firebase internal credentials
-        const internalEmail = `${cleanPhone}@dbohrarishta.local`;
+        if (email) {
+            return NextResponse.json({
+                success: true,
+                message: 'Email verified successfully',
+            });
+        }
+
+        // 4. Generate deterministic Firebase internal credentials (only for mobile login)
+        const internalEmail = `${identifier}@dbohrarishta.local`;
         const internalPassword = crypto
             .createHmac('sha256', FIREBASE_DETERMINISTIC_SALT)
-            .update(cleanPhone)
+            .update(identifier)
             .digest('hex')
             .substring(0, 24);
 

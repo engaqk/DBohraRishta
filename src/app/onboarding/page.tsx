@@ -29,7 +29,7 @@ export default function OnboardingPage() {
         itsNumber: "",
         jamaat: "",
         education: "",
-        hizratLocation: "",
+        location: "",
         bio: "",
         informationProvidedBy: "Myself (Candidate)",
         isBlurSecurityEnabled: true,
@@ -268,7 +268,7 @@ export default function OnboardingPage() {
         if (!libasImage) newErrors.libasImage = `Please upload a photo in ${formData.gender === 'female' ? 'Rida' : 'Kurta Saya'}.`;
 
         if (!formData.education) newErrors.education = "Education details are required.";
-        if (!formData.hizratLocation) newErrors.hizratLocation = "Location is required.";
+        if (!formData.location) newErrors.location = "Location is required.";
         if (!formData.bio) newErrors.bio = "About me is required.";
 
         if (Object.keys(newErrors).length > 0) {
@@ -373,7 +373,7 @@ export default function OnboardingPage() {
                     candidateEmail: formData.email,
                     itsNumber: formData.itsNumber,
                     gender: formData.gender,
-                    city: formData.hizratLocation,
+                    city: formData.location,
                     onboardingStatus: 'submitted'
                 });
             } catch (adminEmailErr) {
@@ -692,7 +692,7 @@ export default function OnboardingPage() {
                             <div className="space-y-5 pt-4 border-t border-gray-100">
                                 <div className="flex items-start flex-col mb-2">
                                     <h2 className="text-xl font-bold font-serif mb-1">Dunyawi Details</h2>
-                                    <p className="text-xs text-gray-500">Education and current Hizrat (Location) preferences.</p>
+                                    <p className="text-xs text-gray-500">Education and current Location preferences.</p>
                                 </div>
 
                                 {/* Guardian Mode */}
@@ -736,8 +736,8 @@ export default function OnboardingPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Current Location</label>
-                                    <input name="hizratLocation" onChange={handleChange} value={formData.hizratLocation} className={`w-full bg-gray-50 border ${errors.hizratLocation ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. Dubai, UAE" />
-                                    {errors.hizratLocation && <p className="text-red-500 text-xs font-bold mt-1">{errors.hizratLocation}</p>}
+                                    <input name="location" onChange={handleChange} value={formData.location} className={`w-full bg-gray-50 border ${errors.location ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. Dubai, UAE" />
+                                    {errors.location && <p className="text-red-500 text-xs font-bold mt-1">{errors.location}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Bio (Be Intentional)</label>

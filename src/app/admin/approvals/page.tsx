@@ -19,7 +19,8 @@ interface PendingUser {
     itsImageUrl: string | null;
     libasImageUrl: string | null;
     status: string;
-    hizratLocation: string;
+    location?: string;
+    hizratLocation?: string;
     mobileNumber?: string;
     adminMessage?: string;
     [key: string]: any;
@@ -56,6 +57,7 @@ export default function AdminVerificationPage() {
             const matchesSearch = !searchQuery ||
                 u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 u.itsNumber?.includes(searchQuery) ||
+                u.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 u.hizratLocation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 u.jamaat?.toLowerCase().includes(searchQuery.toLowerCase());
             
@@ -455,7 +457,7 @@ export default function AdminVerificationPage() {
                                         <div><p className="text-gray-500 uppercase text-[10px] font-bold">Gender & Height</p><p className="font-medium text-gray-800 capitalize">{selectedUser.gender || "N/A"} • {selectedUser.heightFeet ? `${selectedUser.heightFeet}' ${selectedUser.heightInch}"` : "N/A"}</p></div>
                                         <div><p className="text-gray-500 uppercase text-[10px] font-bold">Marital Status</p><p className="font-medium text-gray-800 capitalize">{selectedUser.maritalStatus || "Single"}</p></div>
                                         <div><p className="text-gray-500 uppercase text-[10px] font-bold">Jamaat</p><p className="font-medium text-gray-800">{selectedUser.jamaat}</p></div>
-                                        <div><p className="text-gray-500 uppercase text-[10px] font-bold">Location</p><p className="font-medium text-gray-800">{selectedUser.hizratLocation}</p></div>
+                                         <div><p className="text-gray-500 uppercase text-[10px] font-bold">Location</p><p className="font-medium text-gray-800">{selectedUser.location || selectedUser.hizratLocation}</p></div>
                                         <div><p className="text-gray-500 uppercase text-[10px] font-bold">Mobile</p><p className="font-medium text-gray-800">{selectedUser.mobile || selectedUser.mobileNumber || "Not set"}</p></div>
                                         <div><p className="text-gray-500 uppercase text-[10px] font-bold">Email</p><p className="font-medium text-gray-800">{selectedUser.email || "Not set"}</p></div>
                                         <div className="col-span-2"><p className="text-gray-500 uppercase text-[10px] font-bold">Education</p><p className="font-medium text-gray-800">{selectedUser.completedUpto || "N/A"} — {selectedUser.educationDetails || "No details"}</p></div>
@@ -743,7 +745,7 @@ export default function AdminVerificationPage() {
                                                     <div className="flex items-center justify-between mb-3">
                                                         <div>
                                                             <p className="font-black text-sm text-gray-900">{u.name}</p>
-                                                            <p className="text-[10px] text-gray-400 font-bold">{u.hizratLocation} · {u.itsNumber}</p>
+                                                            <p className="text-[10px] text-gray-400 font-bold">{u.location || u.hizratLocation} · {u.itsNumber}</p>
                                                         </div>
                                                         <button
                                                             onClick={() => openDetails(u, 'biodata')}
@@ -802,8 +804,8 @@ export default function AdminVerificationPage() {
                                 <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'itsNumber', direction: p.key === 'itsNumber' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
                                     ITS Number {sortConfig.key === 'itsNumber' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                                 </div>
-                                <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'hizratLocation', direction: p.key === 'hizratLocation' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
-                                    Location {sortConfig.key === 'hizratLocation' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'location', direction: p.key === 'location' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                                    Location {sortConfig.key === 'location' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                                 </div>
                                 <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'status', direction: p.key === 'status' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
                                     Status {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
@@ -849,7 +851,7 @@ export default function AdminVerificationPage() {
                                             {/* Location Column */}
                                             <div className="col-span-2">
                                                 <div className="flex flex-col">
-                                                    <p className="text-xs font-bold text-gray-700 truncate">{u.hizratLocation}</p>
+                                                    <p className="text-xs font-bold text-gray-700 truncate">{u.location || u.hizratLocation}</p>
                                                     <p className="text-[9px] text-gray-400 truncate">{u.jamaat}</p>
                                                 </div>
                                             </div>

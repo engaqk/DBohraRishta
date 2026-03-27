@@ -60,6 +60,8 @@ interface UserProfile {
     isOnline?: boolean;
     lastActive?: any;
     isEmailVerified?: boolean;
+    loginStreak?: number;
+    lastLoginDate?: any;
     createdAt?: any;
 }
 
@@ -142,6 +144,7 @@ export default function RishtaDashboard() {
     const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
     const [latestBroadcast, setLatestBroadcast] = useState<{ id: string; title?: string; message: string; type?: string } | null>(null);
     const [generatingBiodata, setGeneratingBiodata] = useState(false);
+    const [platformStats, setPlatformStats] = useState({ count: 50, activeNow: 5 });
     const biodataRef = useRef<HTMLDivElement>(null);
 
     // Filter State for Discovery
@@ -224,6 +227,38 @@ export default function RishtaDashboard() {
         updateStatus(true);
         const interval = setInterval(() => updateStatus(true), 3 * 60 * 1000); // Heartbeat every 3m
 
+        // Check Login Streak
+        const handleStreakCheck = async () => {
+            if (!user || isImpersonating) return;
+            const docRef = doc(db, 'users', user.uid);
+            const snap = await getDoc(docRef);
+            if (!snap.exists()) return;
+            
+            const data = snap.data();
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const lastLogin = data.lastLoginDate?.toDate ? data.lastLoginDate.toDate() : (data.lastLoginDate ? new Date(data.lastLoginDate) : null);
+            
+            if (!lastLogin) {
+                await updateDoc(docRef, { lastLoginDate: serverTimestamp(), loginStreak: 1 });
+            } else {
+                const lastDay = new Date(lastLogin.getFullYear(), lastLogin.getMonth(), lastLogin.getDate());
+                const diff = (today.getTime() - lastDay.getTime()) / (86400000);
+                if (diff === 1) await updateDoc(docRef, { lastLoginDate: serverTimestamp(), loginStreak: increment(1) });
+                else if (diff > 1) await updateDoc(docRef, { lastLoginDate: serverTimestamp(), loginStreak: 1 });
+            }
+        };
+        handleStreakCheck();
+
+        // Fetch Stats
+        const fetchStats = () => {
+            fetch('/api/public-stats').then(r => r.json()).then(d => {
+                if (d.success) setPlatformStats({ count: d.count, activeNow: d.activeNow });
+            }).catch(() => {});
+        };
+        fetchStats();
+        const statsIv = setInterval(fetchStats, 60000);
+
         // Cleanup: Set offline when tab closes/unmounts
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'hidden') updateStatus(false);
@@ -251,6 +286,7 @@ export default function RishtaDashboard() {
         return () => {
             unsub();
             clearInterval(interval);
+            clearInterval(statsIv);
             updateStatus(false);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
@@ -1155,14 +1191,7 @@ export default function RishtaDashboard() {
                     if (onlineA && !onlineB) return -1;
                     if (!onlineA && onlineB) return 1;
 
-                    // Priority 2: Match Score (for logged-in users)
-                    if (myProfile) {
-                        const scoreA = computeMatchScore(myProfile, a);
-                        const scoreB = computeMatchScore(myProfile, b);
-                        if (scoreA !== scoreB) return scoreB - scoreA;
-                    }
-
-                    // Priority 3: Last Active Time
+                    // Priority 2: New Member Spike (Joined last 7 days)
                     const getTime = (val: any) => {
                         if (!val) return 0;
                         if (typeof val.toMillis === 'function') return val.toMillis();
@@ -1170,6 +1199,24 @@ export default function RishtaDashboard() {
                         const d = new Date(val);
                         return isNaN(d.getTime()) ? 0 : d.getTime();
                     };
+                    const isNewA = (Date.now() - getTime(a.createdAt)) < 604800000;
+                    const isNewB = (Date.now() - getTime(b.createdAt)) < 604800000;
+                    if (isNewA && !isNewB) return -1;
+                    if (!isNewA && isNewB) return 1;
+
+                    // Priority 3: Login Streak Boost (Daily Presence)
+                    const streakA = (a as any).loginStreak || 0;
+                    const streakB = (b as any).loginStreak || 0;
+                    if (streakA !== streakB) return streakB - streakA;
+
+                    // Priority 4: Match Score (for logged-in users)
+                    if (myProfile) {
+                        const scoreA = computeMatchScore(myProfile, a);
+                        const scoreB = computeMatchScore(myProfile, b);
+                        if (scoreA !== scoreB) return scoreB - scoreA;
+                    }
+
+                    // Priority 5: Last Active Time
                     return getTime(b.lastActive) - getTime(a.lastActive);
                 });
 
@@ -1287,7 +1334,7 @@ export default function RishtaDashboard() {
                             >
                                 <div className="flex flex-col items-center gap-1">
                                     {tab === 'mybiodata' ? 'My Biodata'
-                                        : tab === 'messages' ? 'Accepted'
+                                        : tab === 'messages' ? 'Accepted (Chat Now)'
                                             : tab === 'discovery' ? 'Search Profile'
                                                 : 'Requests'}
                                     {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337]" />}
@@ -1517,6 +1564,64 @@ export default function RishtaDashboard() {
 
                 </div>
             )}
+
+            {/* 🚀 PLATFORM ACTIVITY & ENGAGEMENT STATS — REFINED PREMIUM UI */}
+            <div className="max-w-7xl mx-auto mb-10 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
+                {/* Real-time Presence Boost */}
+                <div id="daily-streak-card" className="relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
+                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-amber-100/30 to-[#D4AF37]/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
+                    <div className="flex items-center gap-6 relative z-10">
+                        <div className="w-16 h-16 bg-gradient-to-br from-amber-50 to-amber-200 rounded-3xl flex items-center justify-center text-[#D4AF37] shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
+                            <Sparkles className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] leading-none">Smart Ranking</span>
+                                {myProfile?.loginStreak > 1 && <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-[0_0_15px_rgba(212,175,55,0.4)] animate-pulse">🔥 STREAK: {myProfile.loginStreak}</span>}
+                            </div>
+                            <p className="text-lg font-black text-gray-900 leading-none">Visibility Spike</p>
+                            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">Your biodata is currently <span className="text-amber-600 font-black uppercase tracking-widest">{myProfile?.loginStreak > 0 ? "Boosted" : "Standard"}</span> globally.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Live Platform Stats */}
+                <div id="platform-footprint-card" className="relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
+                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-rose-100/30 to-[#881337]/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
+                    <div className="flex items-center gap-6 relative z-10">
+                        <div className="w-16 h-16 bg-gradient-to-br from-rose-50 to-rose-100 rounded-3xl flex items-center justify-center text-[#881337] shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
+                            <Users className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-black text-rose-600 uppercase tracking-[0.2em] leading-none mb-1 block">Live Activity</span>
+                            <p className="text-lg font-black text-gray-900 leading-none truncate">{platformStats.count}+ Candidates</p>
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping absolute" />
+                                <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full relative" />
+                                <span className="text-xs text-emerald-600 font-bold tracking-tight">{platformStats.activeNow} members online</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stay Updated Card / PWA Boost */}
+                <div id="notification-boost-card" className="relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out cursor-pointer" onClick={() => requestNotificationPermission(user?.uid)}>
+                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-indigo-100/30 to-indigo-600/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
+                    <div className="flex items-center gap-6 relative z-10">
+                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-3xl flex items-center justify-center text-indigo-600 shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
+                            <Bell className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] leading-none">Instant Alerts</span>
+                                <span className="bg-indigo-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">ACTION REQUIRED</span>
+                            </div>
+                            <p className="text-lg font-black text-gray-900 leading-none">Match Discovery</p>
+                            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">Turn on push notifications to find your soulmate faster.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <main className="max-w-7xl mx-auto">
 
@@ -1981,7 +2086,7 @@ export default function RishtaDashboard() {
                     <ShieldCheck className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Requests</span>
                 </button>
                 <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'messages' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <MessageCircle className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Accepted</span>
+                    <MessageCircle className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Accepted (Chat Now)</span>
                     {allRequests.filter(r => r.status === 'accepted' && r.isIncoming).length > 0 && <span className="absolute -top-0.5 right-3 w-1.5 h-1.5 bg-red-500 rounded-full" />}
                 </button>
             </nav>

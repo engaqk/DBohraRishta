@@ -114,12 +114,16 @@ export default function GlobalNav() {
                             )}
                             {user ? (
                                 <>
-                                    <button onClick={() => router.push('/')} className={`flex items-center gap-1.5 transition font-medium text-sm px-3 py-1.5 rounded-lg ${isActive('/') ? (isAdminPage ? 'text-white bg-white/10' : 'text-[#881337] bg-rose-50') : 'hover:bg-black/5'} font-bold`}>
-                                        <Home className="w-4 h-4" /> Dashboard
-                                    </button>
-                                    <button onClick={() => router.push('/candidate-registration')} className={`flex items-center gap-1.5 transition font-medium text-sm px-3 py-1.5 rounded-lg ${isActive('/candidate-registration') ? (isAdminPage ? 'text-white bg-white/10' : 'text-[#881337] bg-rose-50') : 'hover:bg-black/5'} font-bold`}>
-                                        <User className="w-4 h-4" /> My Biodata
-                                    </button>
+                                    {!isAdminPage && (
+                                        <>
+                                            <button onClick={() => router.push('/')} className={`flex items-center gap-1.5 transition font-medium text-sm px-3 py-1.5 rounded-lg ${isActive('/') ? 'text-[#881337] bg-rose-50' : 'hover:bg-black/5'} font-bold`}>
+                                                <Home className="w-4 h-4" /> Dashboard
+                                            </button>
+                                            <button onClick={() => router.push('/candidate-registration')} className={`flex items-center gap-1.5 transition font-medium text-sm px-3 py-1.5 rounded-lg ${isActive('/candidate-registration') ? 'text-[#881337] bg-rose-50' : 'hover:bg-black/5'} font-bold`}>
+                                                <User className="w-4 h-4" /> My Biodata
+                                            </button>
+                                        </>
+                                    )}
                                     <button onClick={handleLogout} className="text-red-600 flex items-center gap-1 hover:text-red-700 transition font-bold text-sm bg-red-50 px-3 py-1.5 rounded-full ml-2">
                                         <LogOut className="w-4 h-4" /> Logout
                                     </button>

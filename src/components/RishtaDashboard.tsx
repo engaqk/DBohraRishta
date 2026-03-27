@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, Zap, Smartphone, MessageCircle, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart } from 'lucide-react';
+import { Sparkles, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment, setDoc } from 'firebase/firestore';
@@ -148,6 +148,7 @@ export default function RishtaDashboard() {
 
     // Mobile Verification State
     const [showMobileVerifyModal, setShowMobileVerifyModal] = useState(false);
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [newMobileVerifyInput, setNewMobileVerifyInput] = useState('');
     const [mobileVerifyOtpSent, setMobileVerifyOtpSent] = useState(false);
     const [mobileVerifyLoading, setMobileVerifyLoading] = useState(false);
@@ -1743,14 +1744,9 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                     </div>
                                 )}
                                 {myProfile.verifiedPhone ? (
-                                    <span className="bg-orange-50 text-orange-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-orange-100"><Check className="w-3 h-3" /> Mobile Verified</span>
+                                    <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-emerald-100"><Check className="w-3 h-3" /> Mobile Verified</span>
                                 ) : (
-                                    <span onClick={() => {
-                                        setNewMobileVerifyInput(myProfile.mobile || '');
-                                        setShowMobileVerifyModal(true);
-                                    }} className="bg-gray-50 text-gray-600 px-3 py-1 cursor-pointer hover:bg-gray-100 transition-colors rounded-full text-xs font-bold flex items-center gap-1 border border-gray-200">
-                                        <Smartphone className="w-3 h-3" /> Verify Mobile
-                                    </span>
+                                    <span className="bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-amber-100"><Clock className="w-3 h-3" /> Mobile Pending</span>
                                 )}
                             </div>
 
@@ -1891,26 +1887,29 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                      https://53dbohrarishta.in
                                  </div>
 
-                                 {/* Header section (Matching Login Branding) */}
-                                 <div className="text-center mb-10 mt-10 relative z-10">
-                                    <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full font-bold text-3xl" 
-                                         style={{ 
-                                            color: '#D4AF37', 
-                                            border: '2px solid #D4AF37',
-                                            backgroundColor: '#ffffff',
-                                            boxShadow: '0 0 0 4px rgba(255,255,255,0.2), 0 0 30px rgba(212,175,55,0.5)'
-                                         }}>
-                                        53
-                                    </div>
-                                    <h1 className="text-4xl font-extrabold tracking-tight mb-1" style={{ color: '#881337', fontFamily: 'serif' }}>
-                                        DBohra<span style={{ color: '#D4AF37', fontWeight: 'normal', fontStyle: 'italic' }}>Rishta</span>
-                                    </h1>
-                                    <div className="flex items-center justify-center gap-2 mt-2">
-                                        <div className="h-[1px] w-8" style={{ backgroundColor: 'rgba(136, 19, 55, 0.2)' }} />
-                                        <p className="text-[10px] font-sans font-black tracking-[0.3em] uppercase" style={{ color: 'rgba(136, 19, 55, 0.6)' }}>Intelligent Matches</p>
-                                        <div className="h-[1px] w-8" style={{ backgroundColor: 'rgba(136, 19, 55, 0.2)' }} />
-                                    </div>
-                                </div>
+                                 {/* Header section (Matching Login Branding) - REFIXED */}
+                                 <div className="relative z-10 -mt-10 -mx-10 mb-10 overflow-hidden">
+                                     <div className="bg-[#881337] p-10 text-center relative">
+                                         {/* 53 Badge (Premium Login Style) */}
+                                         <div className="relative w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                                            <div className="absolute inset-0 bg-[#D4AF37] rounded-full opacity-20 animate-pulse scale-110" />
+                                            <div className="absolute inset-0 bg-white/10 rounded-full backdrop-blur-sm border border-white/30" />
+                                            <div className="relative w-16 h-16 rounded-full border-2 border-[#D4AF37] bg-white flex items-center justify-center shadow-[0_0_20px_rgba(212,175,55,0.4)]">
+                                                <span className="text-3xl font-black text-[#D4AF37] font-serif">53</span>
+                                            </div>
+                                         </div>
+
+                                         <h1 className="text-5xl font-black tracking-tight mb-2 text-white font-serif">
+                                             DBohra<span className="text-[#D4AF37]">Rishta</span>
+                                         </h1>
+                                         
+                                         <div className="flex items-center justify-center gap-3">
+                                            <div className="h-[1px] w-12 bg-white/20" />
+                                            <p className="text-[12px] font-sans font-black tracking-[0.4em] uppercase text-white/80">Intelligent Matches</p>
+                                            <div className="h-[1px] w-12 bg-white/20" />
+                                         </div>
+                                     </div>
+                                 </div>
 
                                 <div className="flex gap-10 mb-8 relative z-10 px-4">
                                     {/* Left: Photo & Verification */}
@@ -2193,7 +2192,107 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                     <MessageCircle className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Accepted (Chat Now)</span>
                     {allRequests.filter(r => r.status === 'accepted' && r.isIncoming).length > 0 && <span className="absolute -top-0.5 right-3 w-1.5 h-1.5 bg-red-500 rounded-full" />}
                 </button>
+                <button 
+                    onClick={() => setShowAdminHelpChat(true)} 
+                    className="flex flex-col items-center gap-0.5 transition-colors text-gray-400 hover:text-[#881337]"
+                >
+                    <div className="relative">
+                        <MessageSquare className="w-5 h-5" />
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white animate-pulse" />
+                    </div>
+                    <span className="text-[8px] font-bold uppercase">Help</span>
+                </button>
+                <button 
+                    onClick={() => setShowMobileMenu(true)}
+                    className={`flex flex-col items-center gap-0.5 transition-colors ${showMobileMenu ? 'text-[#881337]' : 'text-gray-400'}`}
+                >
+                    <Menu className="w-5 h-5" />
+                    <span className="text-[8px] font-bold uppercase">Menu</span>
+                </button>
             </nav>
+
+            {/* 🍔 Right Side Mobile Menu */}
+            {showMobileMenu && (
+                <div className="fixed inset-0 z-[100] md:hidden" onClick={() => setShowMobileMenu(false)}>
+                    {/* Backdrop */}
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" />
+                    
+                    {/* Slide-over Content */}
+                    <div 
+                        className="absolute top-0 right-0 bottom-0 w-[280px] bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Menu Header */}
+                        <div className="p-6 bg-[#881337] text-white flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold border border-white/30">
+                                    53
+                                </div>
+                                <div>
+                                    <p className="font-serif font-black text-lg leading-tight">DBohraRishta</p>
+                                    <p className="text-[10px] uppercase font-bold text-white/60 tracking-widest">Navigation</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowMobileMenu(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        {/* Menu Links */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 mt-2">Account</p>
+                            <button 
+                                onClick={() => { setActiveTab('mybiodata'); setShowMobileMenu(false); }}
+                                className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === 'mybiodata' ? 'bg-rose-50 text-[#881337] font-black' : 'text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                <User className="w-5 h-5" /> My Biodata
+                            </button>
+                            <button 
+                                onClick={() => { router.push('/candidate-registration'); setShowMobileMenu(false); }}
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl text-gray-600 hover:bg-gray-50 transition-all"
+                            >
+                                <RefreshCw className="w-5 h-5" /> Update Profile
+                            </button>
+
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 mt-6">Discovery</p>
+                            <button 
+                                onClick={() => { setActiveTab('discovery'); setShowMobileMenu(false); }}
+                                className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === 'discovery' ? 'bg-rose-50 text-[#881337] font-black' : 'text-gray-600 hover:bg-gray-50'}`}
+                            >
+                                <Search className="w-5 h-5" /> Search Profiles
+                            </button>
+                            <button 
+                                onClick={() => { router.push('/success-stories'); setShowMobileMenu(false); }}
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl text-gray-600 hover:bg-gray-50 transition-all font-bold"
+                            >
+                                <Sparkles className="w-5 h-5 text-amber-500" /> Success Stories
+                            </button>
+
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 mt-6">Support</p>
+                            <button 
+                                onClick={() => { setShowAdminHelpChat(true); setShowMobileMenu(false); }}
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl text-rose-700 font-bold bg-rose-50/30 hover:bg-rose-50 transition-all"
+                            >
+                                <HelpCircle className="w-5 h-5" /> Admin Help
+                            </button>
+                        </div>
+
+                        {/* Menu Footer */}
+                        <div className="p-6 border-t border-gray-100 bg-gray-50">
+                            <button 
+                                onClick={() => { logout(); setShowMobileMenu(false); }}
+                                className="w-full flex items-center justify-center gap-2 py-4 bg-white border border-rose-100 text-[#881337] rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm active:scale-95 transition-all"
+                            >
+                                <LogOut className="w-4 h-4" /> Sign Out
+                            </button>
+                            <p className="text-center text-[9px] text-gray-400 mt-4 leading-relaxed">
+                                Version 2.1.0 (ITS-Verified)<br/>
+                                © 2026 DBohraRishta Online
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Premium Modal — hidden as premium payments are not active yet */}
 

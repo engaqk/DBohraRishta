@@ -835,8 +835,8 @@ export default function AdminVerificationPage() {
                                         <div key={u.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors group relative">
                                             {/* Profile Column */}
                                             <div className="col-span-2 flex items-center gap-3">
-                                                <div className="relative">
-                                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200">
+                                                <div className="flex -space-x-3 hover:space-x-1 transition-all">
+                                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-sm z-20">
                                                         <img 
                                                             src={u.itsImageUrl || '/placeholder-its.png'} 
                                                             alt="" 
@@ -844,11 +844,19 @@ export default function AdminVerificationPage() {
                                                             loading="lazy" 
                                                         />
                                                     </div>
+                                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-sm z-10">
+                                                        <img 
+                                                            src={u.libasImageUrl || '/placeholder-profile.png'} 
+                                                            alt="" 
+                                                            className="w-full h-full object-cover"
+                                                            loading="lazy" 
+                                                        />
+                                                    </div>
                                                     {u.isOnline && (
-                                                        <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse z-10" title="User is Online" />
+                                                        <div className="absolute -top-0.5 left-7 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse z-30" title="User is Online" />
                                                     )}
                                                     {u.isPhotoVerified && (
-                                                        <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 border-2 border-white z-10">
+                                                        <div className="absolute -bottom-1 left-7 bg-emerald-500 text-white rounded-full p-0.5 border-2 border-white z-30">
                                                             <ShieldCheck className="w-2.5 h-2.5" />
                                                         </div>
                                                     )}

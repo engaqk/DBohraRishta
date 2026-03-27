@@ -1674,24 +1674,6 @@ export default function RishtaDashboard() {
             </div>
 
             <div id="engagement-hub" className="max-w-7xl mx-auto mb-6 md:mb-10 flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 snap-x scroll-smooth no-scrollbar pb-4 md:pb-0 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100">
-                {/* Visibility Boost Card */}
-                <div id="daily-streak-card" className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
-                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-amber-100/30 to-[#D4AF37]/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    <div className="flex items-center gap-4 md:gap-6 relative z-10">
-                        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-amber-50 to-amber-200 rounded-2xl md:rounded-3xl flex items-center justify-center text-[#D4AF37] shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
-                            <Zap className="w-6 h-6 md:w-8 md:h-8" />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] leading-none">Smart Ranking</span>
-                                {myProfile?.loginStreak > 1 && <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-[0_0_15px_rgba(212,175,55,0.4)] animate-pulse">🔥 {myProfile.loginStreak}D</span>}
-                            </div>
-                            <p className="text-base md:text-lg font-black text-gray-900 leading-none">Visibility Spike</p>
-                            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed italic">Your profile is currently <span className="text-amber-600 font-black">{myProfile?.loginStreak > 0 ? "Boosted" : "Active"}</span>.</p>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Live Platform Stats */}
                 <div id="platform-footprint-card" className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
                     <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-rose-100/30 to-[#881337]/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
@@ -1707,6 +1689,24 @@ export default function RishtaDashboard() {
                                 <span className="w-2 h-2 bg-emerald-500 rounded-full relative" />
                                 <span className="text-[10px] text-emerald-600 font-bold">{platformStats.activeNow} online now</span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Visibility Boost Card */}
+                <div id="daily-streak-card" className="flex-shrink-0 w-[85%] md:w-auto snap-start relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-6 md:p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
+                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-amber-100/30 to-[#D4AF37]/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
+                    <div className="flex items-center gap-4 md:gap-6 relative z-10">
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-amber-50 to-amber-200 rounded-2xl md:rounded-3xl flex items-center justify-center text-[#D4AF37] shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
+                            <Zap className="w-6 h-6 md:w-8 md:h-8" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] leading-none">Smart Ranking</span>
+                                {myProfile?.loginStreak > 1 && <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-[0_0_15px_rgba(212,175,55,0.4)] animate-pulse">🔥 {myProfile.loginStreak}D</span>}
+                            </div>
+                            <p className="text-base md:text-lg font-black text-gray-900 leading-none">Visibility Spike</p>
+                            <p className="text-[10px] text-gray-400 mt-2 leading-relaxed italic">Your profile is currently <span className="text-amber-600 font-black">{myProfile?.loginStreak > 0 ? "Boosted" : "Active"}</span>.</p>
                         </div>
                     </div>
                 </div>

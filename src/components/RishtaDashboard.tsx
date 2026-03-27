@@ -149,6 +149,12 @@ export default function RishtaDashboard() {
     // Mobile Verification State
     const [showMobileVerifyModal, setShowMobileVerifyModal] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+    useEffect(() => {
+        const handleOpenMenu = () => setShowMobileMenu(true);
+        window.addEventListener('trigger-mobile-menu', handleOpenMenu);
+        return () => window.removeEventListener('trigger-mobile-menu', handleOpenMenu);
+    }, []);
     const [newMobileVerifyInput, setNewMobileVerifyInput] = useState('');
     const [mobileVerifyOtpSent, setMobileVerifyOtpSent] = useState(false);
     const [mobileVerifyLoading, setMobileVerifyLoading] = useState(false);
@@ -2201,13 +2207,6 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                         <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white animate-pulse" />
                     </div>
                     <span className="text-[8px] font-bold uppercase">Help</span>
-                </button>
-                <button 
-                    onClick={() => setShowMobileMenu(true)}
-                    className={`flex flex-col items-center gap-0.5 transition-colors ${showMobileMenu ? 'text-[#881337]' : 'text-gray-400'}`}
-                >
-                    <Menu className="w-5 h-5" />
-                    <span className="text-[8px] font-bold uppercase">Menu</span>
                 </button>
             </nav>
 

@@ -152,17 +152,19 @@ export default function GlobalNav() {
                                     </button>
                                 </>
                             )}
-                            {isAdminPage && (
-                                <button 
-                                    onClick={(e) => {
-                                        e.preventDefault();
+                            <button 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    if (!isAdminPage) {
+                                        window.dispatchEvent(new CustomEvent('trigger-mobile-menu'));
+                                    } else {
                                         setIsOpen(!isOpen);
-                                    }} 
-                                    className="p-2 active:scale-95 transition-transform text-white"
-                                >
-                                    {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                                </button>
-                            )}
+                                    }
+                                }} 
+                                className={`p-2 active:scale-95 transition-transform ${isAdminPage ? 'text-white' : 'text-[#881337]'}`}
+                            >
+                                {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -241,6 +241,12 @@ export default function RishtaDashboard() {
                     setLatestBroadcast({ id: bId, ...bDoc.data() } as any);
                 }
             }
+        }, (err) => {
+            console.error("Broadcast Listener Error:", err);
+            // If we get permission denied, it's a sign our auth token is stale
+            if (err.code === 'permission-denied' && !isImpersonating) {
+                refreshUser().catch(() => {});
+            }
         });
         return () => {
             unsub();
@@ -270,6 +276,8 @@ export default function RishtaDashboard() {
             const ids = new Set<string>();
             snap.docs.forEach(d => ids.add(d.data().profileId));
             setBookmarkedProfileIds(ids);
+        }, (err) => {
+            console.error("Bookmarks Listener Error:", err);
         });
         return () => unsub();
     }, [user]);

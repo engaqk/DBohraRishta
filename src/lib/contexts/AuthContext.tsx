@@ -38,12 +38,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             const impersonatedId = localStorage.getItem('impersonated_user_id');
-            const dummyUserStr = localStorage.getItem('dummy_user_id');
 
-            if (impersonatedId) {
-                setUser({ uid: impersonatedId, email: localStorage.getItem('impersonated_user_email') || 'impersonated@user.com' });
+            if (firebaseUser && impersonatedId) {
+                // We have a real admin session AND an impersonation request
+                setUser({ 
+                    uid: impersonatedId, 
+                    email: localStorage.getItem('impersonated_user_email') || 'impersonated@user.com',
+                    isAdmin: true // Helper flag for UI
+                });
                 setIsImpersonating(true);
             } else {
+                // Normal flow: No impersonation or no active firebase session
+                if (!firebaseUser && impersonatedId) {
+                    // Clean up stale impersonation if auth session is gone
+                    localStorage.removeItem('impersonated_user_id');
+                    localStorage.removeItem('impersonated_user_email');
+                }
                 setUser(firebaseUser);
                 setIsImpersonating(false);
             }

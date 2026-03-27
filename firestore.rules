@@ -50,7 +50,7 @@ service cloud.firestore {
            request.resource.data.get('selfieStatus', '') in ['', 'pending', 'rejected'])
         ))
       );
-      allow delete: if false; // Deletions must go through secure Admin API 
+      allow delete: if isAdmin(); // Deletions allowed for system integrity checks by Admin
 
       // Notifications: Only owner/admin reads
       match /notifications/{notifId} {
@@ -59,19 +59,22 @@ service cloud.firestore {
       }
     }
 
-    // Rishta Requests: Only involved parties can read/update
+    // Rishta Requests: Protected list/get
     match /rishta_requests/{requestId} {
-      allow read: if signedIn(); // Optimization: Allow list for dashboard, but filtered by query
-      allow create: if signedIn();
-      allow update: if signedIn() && (
-        isOwner(resource.data.from) || 
-        isOwner(resource.data.to) ||
-        isAdmin()
+      allow read: if signedIn() && (
+        isAdmin() ||
+        resource.data.from == request.auth.uid ||
+        resource.data.to == request.auth.uid
       );
+      allow create, update: if signedIn();
 
       // Chat messages subcollection
       match /messages/{messageId} {
-        allow read, write: if signedIn();
+        allow read, write: if signedIn() && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/rishta_requests/$(requestId)).data.from == request.auth.uid ||
+          get(/databases/$(database)/documents/rishta_requests/$(requestId)).data.to == request.auth.uid
+        );
       }
     }
 
@@ -92,22 +95,24 @@ service cloud.firestore {
     // Official announcements: All read, Admin write
     match /broadcasts/{broadcastId} {
       allow read: if signedIn();
-      allow write: if false; // Dispatched through API only
+      allow write: if isAdmin();
     }
 
-    // Audit logs
+    // Audit logs: Admin only
     match /admin_audit_logs/{logId} {
-      allow read, write: if false; // Exclusively via Server API
+      allow read, write: if isAdmin();
     }
 
-    // SMS Broadcasts
+    // SMS Broadcasts: Admin only
     match /sms_broadcasts/{broadcastId} {
-      allow read, write: if false; // Exclusively via Server API
+      allow read: if isAdmin();
+      allow write: if false; // Strictly via Server SDK
     }
 
-    // SMS delivery logs
+    // SMS delivery logs: Admin only
     match /sms_logs/{logId} {
-      allow read, write: if false; // Exclusively via Server API
+      allow read: if isAdmin();
+      allow write: if false; // Strictly via Server SDK
     }
 
     // Bookmarks: Private to user OR Admin
@@ -128,8 +133,8 @@ service cloud.firestore {
     match /profile_views/{viewId} {
       allow read, write: if signedIn() && (
         isAdmin() ||
-        (resource != null && resource.data.get('profileId', '') == request.auth.uid) ||
-        request.method == 'create'
+        request.method == 'create' ||
+        (resource != null && resource.data.profileId == request.auth.uid)
       );
     }
   }

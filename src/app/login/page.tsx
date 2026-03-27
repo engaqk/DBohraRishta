@@ -35,9 +35,17 @@ export default function LoginPage() {
     const [authLoading, setAuthLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
 
-    // Detect if running on a mobile/touch device
+    // Detect if running on a mobile/touch device & capture referrals
     useEffect(() => {
         setIsMobileDevice(/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+        
+        // Capture Referral Code
+        const params = new URLSearchParams(window.location.search);
+        const refCode = params.get('ref');
+        if (refCode) {
+            localStorage.setItem('pending_referral_code', refCode);
+            console.log("Captured referral code:", refCode);
+        }
     }, []);
 
     useEffect(() => {

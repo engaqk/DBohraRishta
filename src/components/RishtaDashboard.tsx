@@ -62,6 +62,8 @@ interface UserProfile {
     isEmailVerified?: boolean;
     loginStreak?: number;
     lastLoginDate?: any;
+    referralCount?: number;
+    isCommunityContributor?: boolean;
     createdAt?: any;
 }
 
@@ -145,6 +147,7 @@ export default function RishtaDashboard() {
     const [latestBroadcast, setLatestBroadcast] = useState<{ id: string; title?: string; message: string; type?: string } | null>(null);
     const [generatingBiodata, setGeneratingBiodata] = useState(false);
     const [platformStats, setPlatformStats] = useState({ count: 50, activeNow: 5 });
+    const [performanceData, setPerformanceData] = useState({ views: 0, requests: 0 });
     const biodataRef = useRef<HTMLDivElement>(null);
 
     // Filter State for Discovery
@@ -258,6 +261,44 @@ export default function RishtaDashboard() {
         };
         fetchStats();
         const statsIv = setInterval(fetchStats, 60000);
+
+        // Fetch Performance Insights
+        const fetchPerformance = async () => {
+            if (!user) return;
+            try {
+                const viewsQ = query(collection(db, 'profile_views'), where('profileId', '==', user.uid));
+                const viewsSnap = await getDocs(viewsQ);
+                const reqsQ = query(collection(db, 'interest_requests'), where('to', '==', user.uid));
+                const reqsSnap = await getDocs(reqsQ);
+                setPerformanceData({ views: viewsSnap.size, requests: reqsSnap.size });
+            } catch (e) {}
+        };
+        fetchPerformance();
+
+        // Process Pending Referrals
+        const processReferral = async () => {
+            if (!user || isImpersonating) return;
+            const pendingRef = localStorage.getItem('pending_referral_code');
+            if (!pendingRef) return;
+            
+            const uDoc = await getDoc(doc(db, 'users', user.uid));
+            if (uDoc.exists() && uDoc.data().referredBy) {
+                localStorage.removeItem('pending_referral_code');
+                return;
+            }
+            if (pendingRef === user.uid) {
+                localStorage.removeItem('pending_referral_code');
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, 'users', user.uid), { referredBy: pendingRef, referredAt: serverTimestamp() });
+                await updateDoc(doc(db, 'users', pendingRef), { referralCount: increment(1), isCommunityContributor: true });
+                localStorage.removeItem('pending_referral_code');
+                toast.success("Joined via Community Referral! 🤝", { icon: '✨' });
+            } catch (e) { localStorage.removeItem('pending_referral_code'); }
+        };
+        processReferral();
 
         // Cleanup: Set offline when tab closes/unmounts
         const handleVisibilityChange = () => {
@@ -1618,6 +1659,53 @@ export default function RishtaDashboard() {
                             </div>
                             <p className="text-lg font-black text-gray-900 leading-none">Match Discovery</p>
                             <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">Turn on push notifications to find your soulmate faster.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 🚀 NEW: Profile Insights (Heatmap) */}
+                <div id="profile-performance-card" className="relative group overflow-hidden bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-7 border border-white shadow-[0_20px_50px_rgba(136,19,55,0.05)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.15)] hover:-translate-y-2 transition-all duration-500 ease-out">
+                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br from-emerald-100/30 to-emerald-600/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
+                    <div className="flex items-center gap-6 relative z-10">
+                        <div className="w-16 h-16 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-3xl flex items-center justify-center text-emerald-600 shadow-inner group-hover:rotate-[360deg] transition-transform duration-[1200ms] border border-white">
+                            <Eye className="w-8 h-8" />
+                        </div>
+                        <div className="flex-1">
+                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] leading-none mb-1 block">Profile Insights</span>
+                            <div className="flex items-end gap-3">
+                                <div>
+                                    <p className="text-xl font-black text-gray-900 leading-none">{performanceData.views}</p>
+                                    <p className="text-[8px] font-bold text-gray-500 uppercase mt-1">Profile Views</p>
+                                </div>
+                                <div className="w-[1px] h-6 bg-gray-100" />
+                                <div>
+                                    <p className="text-xl font-black text-[#881337] leading-none">{performanceData.requests}</p>
+                                    <p className="text-[8px] font-bold text-gray-500 uppercase mt-1">Interests</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 🤝 NEW: Referral Program (Refer-a-Relative) */}
+                <div 
+                    id="referral-reward-card" 
+                    className="relative group overflow-hidden bg-gradient-to-br from-[#881337] to-[#4c0519] rounded-[2.5rem] p-7 border border-[#881337]/20 shadow-[0_20px_50px_rgba(136,19,55,0.2)] hover:shadow-[0_40px_80px_rgba(136,19,55,0.3)] hover:-translate-y-2 transition-all duration-500 ease-out cursor-pointer"
+                    onClick={() => {
+                        const link = `${window.location.origin}/login?ref=${user?.uid}`;
+                        const text = `Assalamu Alaikum! I'm using DBohraRishta for finding serious matches in our community. Join using my referral link: ${link}`;
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                    }}
+                >
+                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
+                    <div className="flex items-center gap-6 relative z-10">
+                        <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center text-white shadow-inner group-hover:scale-110 transition-transform duration-500 border border-white/20">
+                            <Megaphone className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-black text-rose-200 uppercase tracking-[0.2em] leading-none mb-1 block">Community Growth</span>
+                            <p className="text-lg font-black text-white leading-none">Refer a Relative</p>
+                            <p className="text-[10px] text-rose-100/60 mt-2 leading-relaxed italic">Help the community grow & earn "Contributor" status.</p>
                         </div>
                     </div>
                 </div>

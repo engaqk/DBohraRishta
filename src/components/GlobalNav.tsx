@@ -57,8 +57,9 @@ export default function GlobalNav() {
 
     const handleLogout = async () => {
         setIsOpen(false);
+        const redirectPath = isAdminPage ? '/admin/login' : '/login';
         await logout();
-        router.push('/login');
+        router.push(redirectPath);
     };
 
     return (

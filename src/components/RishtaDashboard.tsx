@@ -1654,9 +1654,17 @@ export default function RishtaDashboard() {
             )}
 
             {/* 🚀 ENGAGEMENT HUB — HORIZONTAL CAROUSEL ON MOBILE / GRID ON DESKTOP */}
-            {/* 🚀 ENGAGEMENT HUB — ULTRA-COMPACT PILLS ONLY */}
+            {/* 🚀 ENGAGEMENT HUB — ULTRA-COMPACT PILLS ONLY (REORDERED) */}
             <div className="max-w-7xl mx-auto mb-6 flex items-center overflow-x-auto no-scrollbar gap-2 pb-2">
-                {/* Profile Stats */}
+                {/* 1. Live Platform Stats */}
+                <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" /> {platformStats.activeNow} Live
+                </div>
+                <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-700 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
+                    <Users className="w-3.5 h-3.5 text-[#881337]" /> {platformStats.count}+ Candidates
+                </div>
+
+                {/* 2. Profile Stats */}
                 <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-700 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                     <Eye className="w-3.5 h-3.5 text-emerald-500" /> {performanceData.views} Views
@@ -1665,29 +1673,14 @@ export default function RishtaDashboard() {
                     <Heart className="w-3.5 h-3.5 text-rose-500" /> {performanceData.requests} Interests
                 </div>
 
-                {/* Platform Stats */}
-                <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-700 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
-                    <Users className="w-3.5 h-3.5 text-[#881337]" /> {platformStats.count}+ Candidates
-                </div>
-                <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" /> {platformStats.activeNow} Live
-                </div>
-
-                {/* Ranking/Streak */}
+                {/* 3. Ranking/Boost */}
                 {myProfile?.loginStreak > 0 && (
                     <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-100 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
                         <Zap className="w-3.5 h-3.5 text-amber-500 animate-pulse" /> {myProfile.loginStreak}D Boost
                     </div>
                 )}
 
-                {/* Actions */}
-                <button 
-                    onClick={() => requestNotificationPermission(user?.uid)}
-                    className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-600 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-all shrink-0 active:scale-95"
-                >
-                    <Bell className="w-3.5 h-3.5" /> Notify
-                </button>
-
+                {/* 4. Actions */}
                 <button
                     onClick={() => {
                         const text = `Salam e Jameel!
@@ -1701,6 +1694,13 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                     className="flex items-center gap-1.5 bg-rose-50 border border-rose-100 text-[#881337] px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider hover:bg-rose-100 transition-all shrink-0 active:scale-95"
                 >
                     <Megaphone className="w-3.5 h-3.5" /> Refer
+                </button>
+
+                <button 
+                    onClick={() => requestNotificationPermission(user?.uid)}
+                    className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-600 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-all shrink-0 active:scale-95"
+                >
+                    <Bell className="w-3.5 h-3.5" /> Notify
                 </button>
             </div>
 

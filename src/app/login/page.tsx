@@ -317,6 +317,15 @@ export default function LoginPage() {
                     {/* Mobile Login Removed */}
                     {null}
 
+                    <div className="mt-8 border-t border-gray-100 pt-6 text-center">
+                        <button 
+                            onClick={() => router.push('/admin/login')}
+                            className="text-[11px] font-bold text-gray-400 uppercase tracking-widest hover:text-[#881337] transition-colors flex items-center justify-center gap-2 mx-auto"
+                        >
+                            <ShieldCheck className="w-3.5 h-3.5" /> Are you an Admin? Login here
+                        </button>
+                    </div>
+
 
 
 

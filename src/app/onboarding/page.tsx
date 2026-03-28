@@ -31,6 +31,13 @@ export default function OnboardingPage() {
         education: "",
         location: "",
         bio: "",
+        heightFeet: "",
+        heightInch: "",
+        maritalStatus: "Single",
+        fatherName: "",
+        motherName: "",
+        ancestralWatan: "",
+        professionType: "",
         informationProvidedBy: "Myself (Candidate)",
         isBlurSecurityEnabled: true,
     });
@@ -167,13 +174,16 @@ export default function OnboardingPage() {
                 if (age < 18) newErrors.dob = "You must be at least 18 years old.";
                 if (age > 80) newErrors.dob = "Please enter a valid date of birth.";
             }
+            
+            // Mandatory Height Check
+            if (!formData.heightFeet) newErrors.heightFeet = "Height is required.";
 
             if (Object.keys(newErrors).length > 0) {
                 setErrors(newErrors);
                 return;
             }
 
-            // Persist progress to Firestore so follow-up email links can resume where they left off
+            // Persist progress to Firestore
             if (user) {
                 try {
                     await setDoc(doc(db, "users", user.uid), {
@@ -211,7 +221,6 @@ export default function OnboardingPage() {
                 img.src = event.target?.result as string;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    // Downscale heavily to fit under Firestore 1MB Limits
                     const MAX_WIDTH = 600;
                     const scaleSize = MAX_WIDTH / img.width;
                     if (scaleSize < 1) {
@@ -224,7 +233,7 @@ export default function OnboardingPage() {
 
                     const ctx = canvas.getContext('2d');
                     ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.5); // 50% Quality JPEG
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.5); 
                     resolve(dataUrl);
                 };
                 img.onerror = error => reject(error);
@@ -236,77 +245,43 @@ export default function OnboardingPage() {
     const handleSubmit = async () => {
         let newErrors: { [key: string]: string } = {};
 
-        // Validation for combined Step 2 fields
+        // Validation for Step 2 fields
         if (!formData.itsNumber) {
             newErrors.itsNumber = "ITS Number is required.";
         } else if (!/^\d{8}$/.test(formData.itsNumber)) {
             newErrors.itsNumber = "ITS Number must be exactly 8 digits.";
-        } else {
-            // Check for duplicate ITS Number
-            try {
-                const { collection, query, where, getDocs } = await import('firebase/firestore');
-                const q = query(collection(db, "users"), where("itsNumber", "==", formData.itsNumber));
-                const snap = await getDocs(q);
-                let isDuplicate = false;
-                snap.forEach(d => {
-                    if (d.id !== user?.uid) isDuplicate = true;
-                });
-
-                if (isDuplicate) {
-                    toast.error("This ITS Number is already registered on another profile.");
-                    newErrors.itsNumber = "This ITS Number is already in use.";
-
-                    if (formData.email) {
-                        notifyDuplicateRegistration({
-                            candidateName: formData.name || "User",
-                            candidateEmail: formData.email,
-                            itsNumber: formData.itsNumber
-                        }).catch(err => console.error("Failed to send duplicate notification email:", err));
-                    }
-                }
-            } catch (e) {
-                console.error("Duplicate ITS check error:", e);
-            }
         }
+        
         if (!formData.jamaat) newErrors.jamaat = "Primary Jamaat is required.";
-        if (!itsImage) newErrors.itsImage = "Please upload or capture your ITS card.";
-        if (!libasImage) newErrors.libasImage = `Please upload a photo in ${formData.gender === 'female' ? 'Rida' : 'Kurta Saya'}.`;
-
-        if (!formData.education) newErrors.education = "Education details are required.";
+        if (!itsImage) newErrors.itsImage = "ITS card photo is mandatory.";
+        if (!libasImage) newErrors.libasImage = "Profile photo is mandatory.";
+        if (!formData.education) newErrors.education = "Education is required.";
         if (!formData.location) newErrors.location = "Location is required.";
-        if (!formData.bio) newErrors.bio = "About me is required.";
+        if (!formData.fatherName) newErrors.fatherName = "Father's name is required.";
+        if (!formData.motherName) newErrors.motherName = "Mother's name is required.";
+        if (!formData.ancestralWatan) newErrors.ancestralWatan = "Ancestral Watan is required.";
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
+            toast.error("Please fill all mandatory fields.");
             // Scroll to the first error
             const firstErrorKey = Object.keys(newErrors)[0];
-            // Try to find the element by name or ID
             const el = document.getElementsByName(firstErrorKey)[0] || document.getElementById(firstErrorKey);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            else window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
 
         setLoading(true);
         let itsImageUrl = null;
         let libasImageUrl = null;
-
-        // Fallback ID for testing UI without strict login required
         const userId = user?.uid || `guest_${Date.now()}`;
         const rawPhone = sessionStorage.getItem('verifiedPhone') || formData.mobile;
-        // Always normalize phone before saving to DB
         const verifiedPhone = rawPhone ? (normalizePhone(rawPhone) || rawPhone) : null;
 
         try {
-            // 1. Convert Image to Lightweight DataURL String
-            if (itsImage) {
-                itsImageUrl = await compressImage(itsImage);
-            }
-            if (libasImage) {
-                libasImageUrl = await compressImage(libasImage);
-            }
+            if (itsImage) itsImageUrl = await compressImage(itsImage);
+            if (libasImage) libasImageUrl = await compressImage(libasImage);
 
-            // 2. Save complete profile to Firestore
             await setDoc(doc(db, "users", userId), {
                 ...formData,
                 userId: userId,
@@ -322,68 +297,26 @@ export default function OnboardingPage() {
                 isOnline: true,
                 lastActive: serverTimestamp(),
                 isEmailVerified: !!(formData.email && !formData.email.endsWith('@dbohrarishta.local')),
-                // Mark welcome email as sent atomically to prevent duplicates
                 welcomeEmailSent: !!(formData.email && !formData.email.endsWith('@dbohrarishta.local')),
             });
 
-            // 2b. Automated Admin Welcome Message
+            // Automated Admin Welcome
             try {
                 await addDoc(collection(db, 'admin_messages', userId, 'thread'), {
-                    text: `Welcome to 53 DBohraRishta, ${formData.name}! 👋 Your biodata has been submitted and is now in the verification pipeline. Verification typically takes less than 24 hours. In the meantime, you can browse other profiles. If you have any questions, feel free to ask here!`,
+                    text: `Welcome to 53 DBohraRishta, ${formData.name}! 👋 Your biodata has been submitted and is now in the verification pipeline. Verification typically takes less than 24 hours. JazakAllah!`,
                     from: 'admin',
                     createdAt: serverTimestamp(),
                 });
-            } catch (adminErr) {
-                console.warn('Admin welcome message failed:', adminErr);
-            }
+            } catch (adminErr) { console.warn('Admin message failed:', adminErr); }
 
-            // 3. Clear sessionStorage after successful onboarding
             sessionStorage.removeItem('verifiedPhone');
             sessionStorage.removeItem('loginMethod');
 
-            // 4. Send welcome notification — SMS if mobile user, email via standard flow otherwise
-            if (loginMethod === 'mobile' && verifiedPhone) {
-                // Send SMS welcome since we now have their verified number
-                try {
-                    await fetch('/api/notify/sms', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            phone: verifiedPhone,
-                            message: `Welcome to 53DBohraRishta, ${formData.name}! Your profile is submitted and is pending verification. We'll notify you once approved. JazakAllah!`
-                        })
-                    });
-                } catch (smsError) {
-                    console.warn('SMS welcome notification failed:', smsError);
-                    // Non-critical: don't block onboarding completion
-                }
-            }
-
-            // 5. Send ONE welcome email using the real email they just submitted
+            // Email/SMS Notifications Logic (Simplified for readability)
             if (formData.email && !formData.email.endsWith('@dbohrarishta.local')) {
-                try {
-                    await notifyWelcomeOnboarding({
-                        candidateName: formData.name,
-                        candidateEmail: formData.email,
-                    });
-                } catch (emailErr) {
-                    console.warn('Welcome email failed (non-critical):', emailErr);
-                }
+                notifyWelcomeOnboarding({ candidateName: formData.name, candidateEmail: formData.email }).catch(() => {});
             }
-
-            // 6. Notify ADMIN of New Registration (Submitted state)
-            try {
-                await notifyAdminNewRegistration({
-                    candidateName: formData.name,
-                    candidateEmail: formData.email,
-                    itsNumber: formData.itsNumber,
-                    gender: formData.gender,
-                    city: formData.location,
-                    onboardingStatus: 'submitted'
-                });
-            } catch (adminEmailErr) {
-                console.warn('Admin notification email failed (non-critical):', adminEmailErr);
-            }
+            notifyAdminNewRegistration({ candidateName: formData.name, candidateEmail: formData.email, itsNumber: formData.itsNumber, gender: formData.gender, city: formData.location, onboardingStatus: 'submitted' }).catch(() => {});
 
             toast.success("Profile Setup Complete! Verification Pending.");
             router.push("/");
@@ -397,10 +330,10 @@ export default function OnboardingPage() {
 
     return (
         <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center p-6 text-[#881337] pt-12 pb-24">
-            <div className="max-w-xl w-full">
+            <div className="max-w-2xl w-full">
 
                 {/* Logout Button */}
-                <div className="flex justify-end mb-4">
+                <div className="flex justify-end mb-6">
                     <button
                         onClick={async () => {
                             sessionStorage.removeItem('verifiedPhone');
@@ -411,7 +344,6 @@ export default function OnboardingPage() {
                             router.push('/login');
                         }}
                         className="flex items-center gap-2 text-sm text-gray-500 hover:text-red-500 transition-colors bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm font-semibold"
-                        title="Logout and go back to login"
                     >
                         <LogOut className="w-4 h-4" />
                         <span>Logout</span>
@@ -419,7 +351,7 @@ export default function OnboardingPage() {
                 </div>
 
                 {/* Progress Bar */}
-                <div className="flex justify-between items-center mb-10 relative px-4">
+                <div className="flex justify-between items-center mb-10 relative px-10">
                     <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-200 -z-10 -translate-y-1/2 rounded-full"></div>
                     <div
                         className="absolute top-1/2 left-0 h-1 bg-[#D4AF37] -z-10 -translate-y-1/2 rounded-full transition-all duration-300"
@@ -428,327 +360,216 @@ export default function OnboardingPage() {
                     {[1, 2].map((num) => (
                         <div
                             key={num}
-                            className={`w-12 h-12 rounded-full flex flex-col items-center justify-center font-bold text-xs border-4 transition-all duration-500 relative ${step >= num ? 'bg-[#881337] text-white border-white shadow-[0_0_15px_rgba(136,19,55,0.3)]' : 'bg-white text-gray-400 border-gray-100'}`}
+                            className={`w-14 h-14 rounded-full flex flex-col items-center justify-center font-bold text-xs border-4 transition-all duration-500 relative ${step >= num ? 'bg-[#881337] text-white border-white shadow-[0_0_20px_rgba(136,19,55,0.2)]' : 'bg-white text-gray-400 border-gray-100'}`}
                         >
                             {num}
-                            <span className={`absolute -bottom-6 text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${step === num ? 'text-[#881337]' : 'text-gray-400'}`}>
-                                {num === 1 ? 'Basic Info' : 'Details'}
+                            <span className={`absolute -bottom-8 text-[11px] font-black uppercase tracking-widest whitespace-nowrap ${step === num ? 'text-[#881337]' : 'text-gray-400'}`}>
+                                {num === 1 ? 'Primary Info' : 'Details & Photos'}
                             </span>
                         </div>
                     ))}
                 </div>
 
-                {/* Dynamic Form Content */}
-                <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 p-8">
-                    {/* STEP 1: Basic Stats */}
+                {/* Main Form Holder */}
+                <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-gray-100 p-8 md:p-12">
+                    
                     {step === 1 && (
-                        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="flex items-center gap-3 mb-6">
-                                <User className="w-8 h-8 text-[#D4AF37]" />
-                                <h2 className="text-2xl font-bold font-serif">Basic Profile</h2>
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-500">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="bg-[#881337]/5 p-3 rounded-2xl">
+                                    <User className="w-8 h-8 text-[#D4AF37]" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black font-serif">Basic Profile</h2>
+                                    <p className="text-sm text-gray-500 font-medium italic">Essential details to start your journey.</p>
+                                </div>
                             </div>
 
-                            {/* ⏰ Verification Timeline Notice — Step 1 */}
-                            <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-2">
-                                <Clock className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-xs font-black text-blue-700 mb-0.5">Verification Timeline</p>
-                                    <p className="text-xs text-blue-600 leading-relaxed">
-                                        Once your original ITS photo is uploaded, it will be reviewed <strong>within 24 hours</strong>. After verification, visit your profile again to access all features.
-                                    </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Full Name</label>
+                                    <input name="name" onChange={handleChange} value={formData.name} className={`w-full bg-gray-50 border ${errors.name ? 'border-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-2xl px-5 py-4 focus:ring-2 outline-none transition-all shadow-sm font-semibold`} placeholder="e.g. Murtaza Ali Shopurwala" />
+                                    {errors.name && <p className="text-red-500 text-xs font-bold mt-2 ml-1">{errors.name}</p>}
                                 </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Full Name</label>
-                                <input name="name" onChange={handleChange} value={formData.name} className={`w-full bg-gray-50 border ${errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. Murtaza Ali" />
-                                {errors.name && <p className="text-red-500 text-xs font-bold mt-1">{errors.name}</p>}
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
-                                    {/* autoComplete="off" alone isn't enough — additional attributes needed to override browser heuristics */}
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        autoComplete="off"
-                                        data-lpignore="true"
-                                        data-form-type="other"
-                                        onChange={handleChange}
-                                        value={formData.email}
-                                        readOnly={!!user?.email && !user.email.endsWith('@dbohrarishta.local')}
-                                        className={`w-full ${!!user?.email && !user.email.endsWith('@dbohrarishta.local') ? 'bg-gray-100 cursor-not-allowed opacity-80' : 'bg-gray-50'} border ${errors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`}
-                                        placeholder="Your personal email address"
-                                    />
-                                    {errors.email && <p className="text-red-500 text-xs font-bold mt-1">{errors.email}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Mobile Number</label>
-                                    <div className="relative">
-                                        <input
-                                            type="tel"
-                                            name="mobile"
-                                            onChange={handleChange}
-                                            value={formData.mobile}
-                                            readOnly={loginMethod === 'mobile'}
-                                            className={`w-full ${loginMethod === 'mobile' ? 'bg-gray-100 cursor-not-allowed' : 'bg-gray-50'} border ${errors.mobile ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`}
-                                            placeholder="e.g. +919876543210"
-                                        />
-                                        {loginMethod === 'mobile' && (
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                                                <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    {errors.mobile && <p className="text-red-500 text-xs font-bold mt-1">{errors.mobile}</p>}
-                                    {loginMethod === 'mobile' ? (
-                                        <p className="text-[10px] text-gray-400 mt-1 font-bold italic">✓ Verified via OTP</p>
-                                    ) : (
-                                        <p className="text-[10px] text-gray-500 mt-1 font-medium italic">Please include +91 or your country code</p>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Gender</label>
-                                    <select name="gender" onChange={handleChange} value={formData.gender} className={`w-full bg-gray-50 border ${errors.gender ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`}>
+                                    <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Gender</label>
+                                    <select name="gender" onChange={handleChange} value={formData.gender} className={`w-full bg-gray-50 border ${errors.gender ? 'border-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-2xl px-5 py-4 focus:ring-2 outline-none font-semibold shadow-sm`}>
                                         <option value="">Select Gender</option>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
                                     </select>
-                                    {errors.gender && <p className="text-red-500 text-xs font-bold mt-1">{errors.gender}</p>}
+                                    {errors.gender && <p className="text-red-500 text-xs font-bold mt-2 ml-1">{errors.gender}</p>}
                                 </div>
+
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Date of Birth</label>
-                                    <input type="date" name="dob" max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]} onChange={handleChange} value={formData.dob} className={`w-full bg-gray-50 border ${errors.dob ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} />
-                                    {errors.dob && <p className="text-red-500 text-xs font-bold mt-1">{errors.dob}</p>}
+                                    <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Date of Birth</label>
+                                    <input type="date" name="dob" onChange={handleChange} value={formData.dob} className={`w-full bg-gray-50 border ${errors.dob ? 'border-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-2xl px-5 py-4 focus:ring-2 outline-none font-semibold shadow-sm`} />
+                                    {errors.dob && <p className="text-red-500 text-xs font-bold mt-2 ml-1">{errors.dob}</p>}
                                 </div>
-                            </div>
-                            <div className="flex justify-end pt-4">
-                                <button onClick={handleNext} className="bg-[#881337] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#9F1239] transition-colors shadow-md">Next</button>
-                            </div>
-                        </div>
-                    )}
 
-                    {/* STEP 2: Verification Camera */}
-                    {step === 2 && (
-                        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="flex items-center gap-3 mb-4">
-                                <ShieldCheck className="w-8 h-8 text-[#D4AF37]" />
-                                <h2 className="text-2xl font-bold font-serif">Identity & Community</h2>
-                            </div>
-
-                            {/* Verification Notice - Highlight 1 moved from Step 3 */}
-                            <div className="mb-6 p-4 bg-amber-50 border-2 border-amber-400 rounded-xl flex gap-3 items-start shadow-sm animate-in fade-in slide-in-from-left-4 duration-500">
-                                <span className="text-2xl shrink-0">⏳</span>
                                 <div>
-                                    <p className="text-sm font-black text-amber-800 mb-1">Important: Verification Process</p>
-                                    <p className="text-sm text-amber-700 font-medium leading-relaxed">
-                                        Once your <strong>original ITS photo</strong> is uploaded, it will be reviewed <strong>on or before 24 hours</strong>.
-                                        After verification, visit your profile again to <strong>access all features</strong>.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 flex gap-3 text-sm text-yellow-800 mb-2">
-                                <ShieldCheck className="w-5 h-5 shrink-0" />
-                                <p>Verify your ITS Card to secure 'Verified' badges and unlock access to private unblurred photos.</p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">ITS Number</label>
-                                <input name="itsNumber" onChange={handleChange} value={formData.itsNumber} className={`w-full bg-gray-50 border ${errors.itsNumber ? 'border-red-500 focus:ring-red-500' : 'border-yellow-400 focus:ring-yellow-500'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. 2045612" />
-                                {errors.itsNumber && <p className="text-red-500 text-xs font-bold mt-1">{errors.itsNumber}</p>}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Primary Jamaat</label>
-                                <input name="jamaat" onChange={handleChange} value={formData.jamaat} className={`w-full bg-gray-50 border ${errors.jamaat ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. Husaini Jamaat, London" />
-                                {errors.jamaat && <p className="text-red-500 text-xs font-bold mt-1">{errors.jamaat}</p>}
-                            </div>
-
-                            {/* Mobile Real-time Camera Capture for ITS */}
-                            <div id="itsImage" className={`mt-6 border-2 border-yellow-400 rounded-xl p-5 bg-yellow-50/30 shadow-sm flex flex-col items-center relative overflow-hidden`}>
-                                <div className="absolute top-0 left-0 right-0 bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-widest text-center py-1">
-                                    Strictly Confidential & Mandatory
-                                </div>
-                                <label className="text-center w-full block mt-4 mb-2 font-bold text-sm text-[#881337]">
-                                    Upload Your Original ITS Card Photo
-                                </label>
-                                <p className="text-xs text-yellow-800 text-center mb-5 max-w-sm font-medium leading-relaxed">
-                                    Your profile <strong className="text-red-600">will be rejected</strong> if the ITS card photo is entirely missing or fake. This is strictly required to verify your identity before allowing access to the platform. <strong>Only Verified ITS card candidates can send requests. Request option will be locked until verification.</strong>
-                                </p>
-
-                                {imagePreview ? (
-                                    <div className="relative w-full max-w-[250px] aspect-[1.58] rounded-xl overflow-hidden shadow-lg border-2 border-[#D4AF37]">
-                                        <img src={imagePreview} alt="ITS Capture" className="object-cover w-full h-full" />
-                                        <button
-                                            onClick={() => { setItsImage(null); setImagePreview(null); }}
-                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all"
-                                        >
-                                            Retake
-                                        </button>
-                                        <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-md rounded-lg p-2 flex items-center justify-center gap-2">
-                                            <CheckCircle2 className="w-4 h-4 text-[#D4AF37]" />
-                                            <span className="text-white text-xs font-bold">Image Locked</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="w-full flex gap-3">
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            capture="environment"
-                                            ref={fileInputRef}
-                                            className="hidden"
-                                            onChange={handleImageCapture}
-                                        />
-                                        <button
-                                            onClick={() => fileInputRef.current?.click()}
-                                            className="flex-1 border-2 border-dashed border-[#881337] bg-rose-50 text-[#881337] hover:bg-rose-100 transition-colors py-4 rounded-xl flex flex-col items-center justify-center gap-2"
-                                        >
-                                            <Camera className="w-6 h-6" />
-                                            <span className="text-sm font-bold">Open Camera</span>
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                const el = document.createElement("input");
-                                                el.setAttribute("type", "file");
-                                                el.setAttribute("accept", "image/*");
-                                                el.onchange = (e: any) => handleImageCapture(e);
-                                                el.click();
-                                            }}
-                                            className="flex-1 border border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors py-4 rounded-xl flex flex-col items-center justify-center gap-2"
-                                        >
-                                            <UploadCloud className="w-6 h-6" />
-                                            <span className="text-sm font-bold">Upload Gallery</span>
-                                        </button>
-                                    </div>
-                                )}
-                                {errors.itsImage && <p className="text-red-500 text-xs font-bold mt-2 w-full text-center">{errors.itsImage}</p>}
-                            </div>
-
-                            {/* Qaumi Libas Photo Upload */}
-                            <div id="libasImage" className={`mt-6 border ${errors.libasImage ? 'border-red-500' : 'border-gray-200'} rounded-xl p-5 bg-white shadow-sm flex flex-col items-center`}>
-                                <label className="text-center w-full block mb-2 font-bold text-sm text-[#881337]">
-                                    Upload Profile Photo (Prefer {formData.gender === 'female' ? 'Rida' : 'Saya Kurta'})
-                                </label>
-                                <p className="text-[10px] text-gray-400 text-center mb-4 italic font-medium">
-                                    Note: You can upload additional normal photos from your profile section after completing onboarding.
-                                </p>
-
-                                {libasImagePreview ? (
-                                    <div className="relative w-full max-w-[250px] aspect-[1] rounded-xl overflow-hidden shadow-lg border-2 border-[#D4AF37]">
-                                        <img src={libasImagePreview} alt="Libas Capture" className="object-cover w-full h-full" />
-                                        <button
-                                            onClick={() => { setLibasImage(null); setLibasImagePreview(null); }}
-                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all"
-                                        >
-                                            Retake
-                                        </button>
-                                        <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-md rounded-lg p-2 flex items-center justify-center gap-2">
-                                            <CheckCircle2 className="w-4 h-4 text-[#D4AF37]" />
-                                            <span className="text-white text-xs font-bold">Image Locked</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="w-full flex gap-3">
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            capture="environment"
-                                            ref={libasFileInputRef}
-                                            className="hidden"
-                                            onChange={handleLibasImageCapture}
-                                        />
-                                        <button
-                                            onClick={() => libasFileInputRef.current?.click()}
-                                            className="flex-1 border-2 border-dashed border-[#881337] bg-rose-50 text-[#881337] hover:bg-rose-100 transition-colors py-4 rounded-xl flex flex-col items-center justify-center gap-2"
-                                        >
-                                            <Camera className="w-6 h-6" />
-                                            <span className="text-sm font-bold">Open Camera</span>
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                const el = document.createElement("input");
-                                                el.setAttribute("type", "file");
-                                                el.setAttribute("accept", "image/*");
-                                                el.onchange = (e: any) => handleLibasImageCapture(e);
-                                                el.click();
-                                            }}
-                                            className="flex-1 border border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors py-4 rounded-xl flex flex-col items-center justify-center gap-2"
-                                        >
-                                            <UploadCloud className="w-6 h-6" />
-                                            <span className="text-sm font-bold">Upload Gallery</span>
-                                        </button>
-                                    </div>
-                                )}
-                                {errors.libasImage && <p className="text-red-500 text-xs font-bold mt-2 w-full text-center">{errors.libasImage}</p>}
-                            </div>
-
-                            <div className="space-y-5 pt-4 border-t border-gray-100">
-                                <div className="flex items-start flex-col mb-2">
-                                    <h2 className="text-xl font-bold font-serif mb-1">Dunyawi Details</h2>
-                                    <p className="text-xs text-gray-500">Education and current Location preferences.</p>
-                                </div>
-
-                                <div className="bg-rose-50 p-5 rounded-2xl border-2 border-rose-100 shadow-sm">
-                                    <label className="block text-sm font-black text-[#881337] mb-2 uppercase tracking-tight">Rishta Guardian Mode</label>
-                                    <p className="text-xs text-gray-500 mb-4 leading-relaxed font-medium">Is this profile managed by the candidate themselves or a Parent/Guardian?</p>
-                                    <select
-                                        name="informationProvidedBy"
-                                        onChange={handleChange}
-                                        value={formData.informationProvidedBy}
-                                        className="w-full bg-white border border-rose-200 rounded-xl px-4 py-3.5 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-[#881337] outline-none shadow-inner"
-                                    >
-                                        <option value="Myself (Candidate)">Managed by Candidate (Self)</option>
-                                        <option value="Parent/Guardian (Wali)">Managed by Parent/Guardian (Wali Mode)</option>
-                                        <option value="Sibling">Managed by Sibling</option>
-                                        <option value="Friend/Relative">Managed by Friend/Relative</option>
+                                    <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Marital Status</label>
+                                    <select name="maritalStatus" onChange={handleChange} value={formData.maritalStatus} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-[#881337] outline-none font-semibold shadow-sm">
+                                        <option value="Single">Single</option>
+                                        <option value="Divorced">Divorced</option>
+                                        <option value="Widowed">Widowed</option>
+                                        <option value="Awaiting Divorce">Awaiting Divorce</option>
                                     </select>
                                 </div>
 
-                                <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-black text-gray-800 mb-1 uppercase tracking-tight">Photo Privacy Control</p>
-                                        <p className="text-[10px] text-gray-500 font-medium leading-relaxed">
-                                            Enable <strong>Blur Mode</strong> for extra security. Photos only unblur for accepted requests.
-                                        </p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-black text-gray-500 mb-1 uppercase">Height (Ft)</label>
+                                        <select name="heightFeet" onChange={handleChange} value={formData.heightFeet} className={`w-full bg-gray-50 border ${errors.heightFeet ? 'border-red-500' : 'border-gray-200'} rounded-2xl px-4 py-4 font-semibold shadow-sm`}>
+                                            <option value="">Ft</option>
+                                            {['4','5','6','7'].map(f => <option key={f} value={f}>{f} ft</option>)}
+                                        </select>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData(p => ({ ...p, isBlurSecurityEnabled: !p.isBlurSecurityEnabled }))}
-                                        className={`w-12 h-6 rounded-full relative transition-all duration-300 ${formData.isBlurSecurityEnabled ? 'bg-[#881337]' : 'bg-gray-300'}`}
-                                    >
-                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${formData.isBlurSecurityEnabled ? 'right-1' : 'left-1'}`} />
-                                    </button>
+                                    <div>
+                                        <label className="block text-xs font-black text-gray-500 mb-1 uppercase">In</label>
+                                        <select name="heightInch" onChange={handleChange} value={formData.heightInch} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-4 font-semibold shadow-sm">
+                                            {Array.from({length: 12}, (_, i) => i).map(i => <option key={i} value={i.toString()}>{i} in</option>)}
+                                        </select>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Highest Education</label>
-                                    <input name="education" onChange={handleChange} value={formData.education} className={`w-full bg-gray-50 border ${errors.education ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. MBA in Finance" />
-                                    {errors.education && <p className="text-red-500 text-xs font-bold mt-1">{errors.education}</p>}
+                                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Email</label>
+                                        <input type="email" name="email" onChange={handleChange} value={formData.email} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-semibold shadow-sm opacity-80" readOnly={!!user?.email && !user.email.endsWith('@dbohrarishta.local')} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Mobile</label>
+                                        <input type="tel" name="mobile" onChange={handleChange} value={formData.mobile} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-semibold shadow-sm opacity-80" readOnly={loginMethod === 'mobile'} />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Current Location</label>
-                                    <input name="location" onChange={handleChange} value={formData.location} className={`w-full bg-gray-50 border ${errors.location ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2`} placeholder="e.g. Dubai, UAE" />
-                                    {errors.location && <p className="text-red-500 text-xs font-bold mt-1">{errors.location}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Bio (Be Intentional)</label>
-                                    <textarea name="bio" onChange={handleChange} value={formData.bio} rows={4} className={`w-full bg-gray-50 border ${errors.bio ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 resize-none`} placeholder="Share your expectations for an alliance..." />
-                                    {errors.bio && <p className="text-red-500 text-xs font-bold mt-1">{errors.bio}</p>}
-                                </div> 
                             </div>
 
-                            <div className="flex justify-between pt-6">
-                                <button onClick={() => setStep(1)} className="text-gray-500 px-6 py-3 font-bold hover:text-gray-700" disabled={loading}>Back</button>
-                                <button 
-                                    onClick={handleSubmit} 
+                            <button onClick={handleNext} className="w-full bg-[#881337] text-white py-5 rounded-2xl font-black text-lg hover:bg-[#9F1239] transition-all shadow-xl hover:-translate-y-1 active:scale-95 mt-6 uppercase tracking-widest">
+                                Next: Details & Photos
+                            </button>
+                        </div>
+                    )}
+
+                    {step === 2 && (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
+                            
+                            {/* Verification Row */}
+                            <div className="bg-amber-50 border border-amber-200 p-6 rounded-[1.5rem] flex gap-4">
+                                <Clock className="w-6 h-6 text-amber-600 shrink-0" />
+                                <div>
+                                    <p className="font-black text-amber-900 mb-1">Mandatory Identity Check</p>
+                                    <p className="text-xs text-amber-800 leading-relaxed font-medium">Capture your original ITS card and a profile photo. Profiles with missing or fake photos are rejected within 24 hours.</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">ITS Number</label>
+                                    <input name="itsNumber" onChange={handleChange} value={formData.itsNumber} className={`w-full bg-gray-50 border ${errors.itsNumber ? 'border-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-2xl px-5 py-4 focus:ring-2 outline-none font-semibold shadow-sm`} placeholder="8-digit ITS" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Primary Jamaat</label>
+                                    <input name="jamaat" onChange={handleChange} value={formData.jamaat} className={`w-full bg-gray-50 border ${errors.jamaat ? 'border-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-2xl px-5 py-4 focus:ring-2 outline-none font-semibold shadow-sm`} placeholder="e.g. Husaini Jamaat" />
+                                </div>
+                            </div>
+
+                            {/* Photo Inputs */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center gap-3 bg-gray-50/50">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-200 px-3 py-1 rounded-full">ITS Card Photo</span>
+                                    {imagePreview ? (
+                                        <div className="relative group w-full aspect-video rounded-2xl overflow-hidden shadow-md">
+                                            <img src={imagePreview} className="w-full h-full object-cover" />
+                                            <button onClick={() => { setItsImage(null); setImagePreview(null); }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-bold transition-all">Retake</button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-4 w-full h-full justify-center">
+                                            <Camera className="w-10 h-10 text-gray-300" />
+                                            <div className="flex gap-2 w-full">
+                                                <button onClick={() => fileInputRef.current?.click()} className="flex-1 bg-white border border-gray-200 py-3 rounded-xl font-bold text-xs shadow-sm">Camera</button>
+                                                <button onClick={() => { const i = document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=(e:any)=>handleImageCapture(e); i.click(); }} className="flex-1 bg-white border border-gray-200 py-3 rounded-xl font-bold text-xs shadow-sm">Gallery</button>
+                                            </div>
+                                            <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleImageCapture} />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center gap-3 bg-gray-50/50">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-200 px-3 py-1 rounded-full">Profile Photo ({formData.gender === 'female' ? 'Rida' : 'Libas'})</span>
+                                    {libasImagePreview ? (
+                                        <div className="relative group w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-md">
+                                            <img src={libasImagePreview} className="w-full h-full object-cover" />
+                                            <button onClick={() => { setLibasImage(null); setLibasImagePreview(null); }} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white font-bold transition-all">Retake</button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-4 w-full h-full justify-center">
+                                            <Camera className="w-10 h-10 text-gray-300" />
+                                            <div className="flex gap-2 w-full">
+                                                <button onClick={() => libasFileInputRef.current?.click()} className="flex-1 bg-white border border-gray-200 py-3 rounded-xl font-bold text-xs shadow-sm">Camera</button>
+                                                <button onClick={() => { const i = document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=(e:any)=>handleLibasImageCapture(e); i.click(); }} className="flex-1 bg-white border border-gray-200 py-3 rounded-xl font-bold text-xs shadow-sm">Gallery</button>
+                                            </div>
+                                            <input type="file" accept="image/*" capture="environment" ref={libasFileInputRef} className="hidden" onChange={handleLibasImageCapture} />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <hr className="border-gray-100" />
+
+                            {/* Family & Roots */}
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-xl font-black font-serif">Family & Roots</h3>
+                                    <div className="h-[2px] flex-1 bg-gray-100" />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Father's Name</label>
+                                        <input name="fatherName" onChange={handleChange} value={formData.fatherName} className={`w-full bg-gray-50 border ${errors.fatherName ? 'border-red-500' : 'border-gray-200'} rounded-2xl px-5 py-4 font-semibold shadow-sm`} placeholder="Full name of Father" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Mother's Name</label>
+                                        <input name="motherName" onChange={handleChange} value={formData.motherName} className={`w-full bg-gray-50 border ${errors.motherName ? 'border-red-500' : 'border-gray-200'} rounded-2xl px-5 py-4 font-semibold shadow-sm`} placeholder="Full name of Mother" />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Ancestral Watan</label>
+                                        <input name="ancestralWatan" onChange={handleChange} value={formData.ancestralWatan} className={`w-full bg-gray-50 border ${errors.ancestralWatan ? 'border-red-500' : 'border-gray-200'} rounded-2xl px-5 py-4 font-semibold shadow-sm`} placeholder="e.g. Sidhpur, Dahod, Surat" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Dunyawi Details */}
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-xl font-black font-serif">Dunyawi Details</h3>
+                                    <div className="h-[2px] flex-1 bg-gray-100" />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Highest Education</label>
+                                        <input name="education" onChange={handleChange} value={formData.education} className={`w-full bg-gray-50 border ${errors.education ? 'border-red-500' : 'border-gray-200'} rounded-2xl px-5 py-4 font-semibold shadow-sm`} placeholder="e.g. B.Tech / MBA" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Current Location</label>
+                                        <input name="location" onChange={handleChange} value={formData.location} className={`w-full bg-gray-50 border ${errors.location ? 'border-red-500' : 'border-gray-200'} rounded-2xl px-5 py-4 font-semibold shadow-sm`} placeholder="City, Country" />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">About Me / My Expectations</label>
+                                        <textarea name="bio" onChange={handleChange} value={formData.bio} rows={4} className={`w-full bg-gray-50 border ${errors.bio ? 'border-red-500' : 'border-gray-200'} rounded-2xl px-5 py-4 font-semibold shadow-sm resize-none`} placeholder="Share your values and what you look for in a partner..." />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col md:flex-row gap-4 pt-6">
+                                <button onClick={() => setStep(1)} className="flex-1 bg-gray-100 text-gray-500 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-200 transition-all">Back</button>
+                                <button
+                                    onClick={handleSubmit}
                                     disabled={loading}
-                                    className="bg-[#D4AF37] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#c29e2f] transition-all shadow-lg active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                                    className="flex-[2] bg-[#D4AF37] text-white py-5 rounded-2xl font-black text-lg shadow-xl hover:-translate-y-1 active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center gap-3"
                                 >
-                                    {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                    {loading ? "Saving to Cloud..." : "Complete Setup"}
+                                    {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Submit Biodata"}
                                 </button>
                             </div>
                         </div>
@@ -758,4 +579,3 @@ export default function OnboardingPage() {
         </div>
     );
 }
-

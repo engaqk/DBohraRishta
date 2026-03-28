@@ -155,12 +155,12 @@ export default function RishtaDashboard() {
             reader.readAsDataURL(audioBlob);
             reader.onloadend = async () => {
                 const base64Audio = reader.result as string;
-                
+
                 // Directly save Base64 string to Firestore (like selfies)
                 await updateDoc(doc(db, 'users', user.uid), {
                     voiceIntroUrl: base64Audio
                 });
-                
+
                 toast.success("Voice Intro saved to profile! ✨");
                 setAudioBlob(null);
                 setAudioPreviewUrl(null);
@@ -302,7 +302,7 @@ export default function RishtaDashboard() {
                 mobile: newMobileVerifyInput,
                 verifiedPhone: newMobileVerifyInput,
             });
-            
+
             setMobileVerifyOtpSent(false);
             setShowMobileVerifyModal(false);
             setMobileVerifyOtpCode('');
@@ -392,7 +392,7 @@ export default function RishtaDashboard() {
             if (!user) return;
             // Ghosting Prevention: Don't track online status if Admin is impersonating
             if (isImpersonating) return;
-            
+
             try {
                 const userRef = doc(db, 'users', user.uid);
                 await updateDoc(userRef, {
@@ -413,12 +413,12 @@ export default function RishtaDashboard() {
             const docRef = doc(db, 'users', user.uid);
             const snap = await getDoc(docRef);
             if (!snap.exists()) return;
-            
+
             const data = snap.data();
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const lastLogin = data.lastLoginDate?.toDate ? data.lastLoginDate.toDate() : (data.lastLoginDate ? new Date(data.lastLoginDate) : null);
-            
+
             if (!lastLogin) {
                 await updateDoc(docRef, { lastLoginDate: serverTimestamp(), loginStreak: 1 });
             } else {
@@ -439,20 +439,14 @@ export default function RishtaDashboard() {
         fetchStats();
         const statsIv = setInterval(fetchStats, 60000);
 
-        // Fetch Live Performance Insights (Views & Interests)
-        const viewsUnsub = onSnapshot(query(collection(db, 'profile_views'), where('profileId', '==', user.uid)), (snap) => {
-            setPerformanceData(prev => ({ ...prev, views: snap.size }));
-        });
-        const reqsUnsub = onSnapshot(query(collection(db, 'rishta_requests'), where('to', '==', user.uid)), (snap) => {
-            setPerformanceData(prev => ({ ...prev, requests: snap.size }));
-        });
+        // Process Pending Referrals
 
         // Process Pending Referrals
         const processReferral = async () => {
             if (!user || isImpersonating) return;
             const pendingRef = localStorage.getItem('pending_referral_code');
             if (!pendingRef) return;
-            
+
             const uDoc = await getDoc(doc(db, 'users', user.uid));
             if (uDoc.exists() && uDoc.data().referredBy) {
                 localStorage.removeItem('pending_referral_code');
@@ -586,7 +580,7 @@ export default function RishtaDashboard() {
     // --- 🛡️ ADMIN SUPPORT THREAD LISTENER ---
     useEffect(() => {
         if (!user) return;
-        
+
         // Listen to the specific thread for this user under admin_messages
         const q = query(
             collection(db, `admin_messages/${user.uid}/thread`),
@@ -623,9 +617,9 @@ export default function RishtaDashboard() {
                     const diff = Date.now() - lastActive.getTime();
                     if (diff < 5 * 60 * 1000) setAdminLastSeen('Online');
                     else {
-                        setAdminLastSeen(new Intl.DateTimeFormat('en-IN', { 
-                            hour: 'numeric', 
-                            minute: 'numeric', 
+                        setAdminLastSeen(new Intl.DateTimeFormat('en-IN', {
+                            hour: 'numeric',
+                            minute: 'numeric',
                             hour12: true,
                             day: 'numeric',
                             month: 'short'
@@ -670,48 +664,48 @@ export default function RishtaDashboard() {
 
     // 🚀 Deployment Watcher: Keep App Updated
     useEffect(() => {
-        const clientVersion = process.env.NEXT_PUBLIC_BUILD_ID;
-        if (!clientVersion) return;
+        // Use consistent versioning keys
+        const clientVersion = process.env.NEXT_PUBLIC_BUILD_ID || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || 'development';
+        if (!clientVersion || clientVersion === 'development') return;
 
         const checkVersion = async () => {
             try {
                 // Fetch with cache bust
                 const res = await fetch(`/api/version?t=${Date.now()}`);
                 const data = await res.json();
-                if (data.version && data.version !== clientVersion) {
-                    // Avoid refreshing if user is in middle of something important
-                    const isBusy = isRecording || uploadingSelfie || mobileVerifyLoading || 
+
+                // Only refresh if versions are known and actually different
+                if (data.version && data.version !== 'development' && data.version !== clientVersion) {
+                    // Avoid refreshing during sensitive user actions
+                    const isBusy = isRecording || uploadingSelfie || mobileVerifyLoading ||
                                   generatingBiodata || isUploadingVoice || userMsgInput.trim().length > 5 ||
-                                  paying;
-                                  
+                                  paying || showMyProfileModal;
+
                     if (!isBusy) {
-                        console.log('New deployment detected. Refreshing app safely...');
-                        // If the window is hidden, refresh immediately.
-                        // If visible, show a brief notice before refreshing to avoid jarring experience.
+                        console.log('New version detected. Refreshing safely...');
                         if (document.visibilityState === 'hidden') {
                             window.location.reload();
                         } else {
                             toast("Updating dashboard to latest version...", { icon: '🚀', duration: 3000 });
                             setTimeout(() => {
-                                // Double check if still not busy after toast
                                 if (!(isRecording || uploadingSelfie || isUploadingVoice)) {
                                     window.location.reload();
                                 }
                             }, 3500);
                         }
                     } else {
-                        console.log('Update available, but user is busy. Postponing refresh.');
+                        console.log('Update available but user is busy.');
                     }
                 }
             } catch (e) {
-                // Silent fail if offline or API error
+                // Ignore silent errors
             }
         };
 
-        // Check every 5 minutes
-        const interval = setInterval(checkVersion, 5 * 60 * 1000);
+        // Check every 15 minutes (less aggressive)
+        const interval = setInterval(checkVersion, 15 * 60 * 1000);
 
-        // Also check when window regains focus (user returns to app)
+        // Also check when window regains focus
         window.addEventListener('focus', checkVersion);
 
         return () => {
@@ -749,7 +743,7 @@ export default function RishtaDashboard() {
         try {
             // Use html-to-image instead of html2canvas to avoid parsing errors with modern CSS (lab, oklch)
             const { toPng } = await import('html-to-image');
-            
+
             const dataUrl = await toPng(biodataRef.current, {
                 cacheBust: true,
                 pixelRatio: 3, // Higher resolution
@@ -1000,18 +994,23 @@ export default function RishtaDashboard() {
         let unsubDiscovery: (() => void) | null = null;
 
         const unsubMe = onSnapshot(doc(db, "users", user.uid), (meRef) => {
-            if (!meRef.exists() && !isImpersonating) {
-                router.push('/onboarding');
-                return;
+            const profileData = meRef.data() || {};
+
+            // Critical Redirection Guard:
+            // If doc doesn't exist OR form is incomplete, send to onboarding.
+            // SKIP this for Admins or if Impersonating.
+            if (!isImpersonating && profileData.role !== 'admin') {
+                if (!meRef.exists() || profileData.isCandidateFormComplete === false) {
+                    console.log("Redirecting to onboarding: Incomplete profile.");
+                    router.push('/onboarding');
+                    return;
+                }
             }
-            const profileData = meRef.data() || { status: 'incomplete', isItsVerified: false };
-            setMyProfile({ id: meRef.id, ...profileData });
-            
-            // Real-time Performance Data updates from fields
-            setPerformanceData({ 
-                views: Math.max((profileData as any).viewsCount || 0, performanceData.views), 
-                requests: Math.max((profileData as any).interestsCount || 0, performanceData.requests) 
-            });
+
+            setMyProfile({ id: meRef.id, ...profileData } as any);
+
+            // Performance metrics are now derived directly from myProfile fields in the UI
+            // to ensure consistency and prevent clobbering from multiple listeners.
 
             const isVerified = profileData.isItsVerified === true || profileData.status === 'verified' || profileData.status === 'approved';
             const celebKey = `verified_celebrated_${user.uid}`;
@@ -1379,11 +1378,11 @@ export default function RishtaDashboard() {
                                             <div className="flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => {
-                                                        setActiveChat({ 
-                                                            id: msg.id, 
+                                                        setActiveChat({
+                                                            id: msg.id,
                                                             otherUserId: msg.otherUserId,
-                                                            name: msg.otherUserName, 
-                                                            imageUrl: msg.otherUserLibasUrl || undefined 
+                                                            name: msg.otherUserName,
+                                                            imageUrl: msg.otherUserLibasUrl || undefined
                                                         });
                                                     }}
                                                     className="bg-[#881337] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-[#9F1239] transition-all flex items-center gap-2">
@@ -1614,7 +1613,24 @@ export default function RishtaDashboard() {
     if (loading) return null;
 
     return (
-        <div className="min-h-screen bg-[#F9FAFB] text-[#881337] p-3 pb-24 md:p-12 md:pb-12">
+        <div className={`min-h-screen bg-[#F9FAFB] text-[#881337] p-3 pb-24 md:p-12 md:pb-12 ${isImpersonating ? 'pt-12' : ''}`}>
+            {/* Impersonation Banner */}
+            {isImpersonating && (
+                <div className="bg-red-600 text-white px-4 py-2 text-center text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-4 shadow-inner fixed top-0 left-0 right-0 z-[1001]">
+                    <span className="flex items-center gap-2">
+                        <ShieldCheck className="w-3 h-3" /> IMPERSONATION MODE ACTIVE
+                    </span>
+                    <button
+                        onClick={() => {
+                            sessionStorage.removeItem('impersonate_user_id');
+                            window.location.href = '/admin/users';
+                        }}
+                        className="bg-white text-red-600 px-3 py-1 rounded-full font-black hover:bg-red-50 transition-colors shadow-sm"
+                    >
+                        Stop Impersonating
+                    </button>
+                </div>
+            )}
             <header className="max-w-7xl mx-auto mb-4 hidden md:flex items-center">
                 <div className="flex-1">
                     <nav className="flex bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden divide-x divide-gray-100">
@@ -1654,8 +1670,8 @@ export default function RishtaDashboard() {
                                     </div>
                                 </div>
                             </div>
-                            <button 
-                                onClick={() => setShowAdminHelpChat(false)} 
+                            <button
+                                onClick={() => setShowAdminHelpChat(false)}
                                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all active:scale-95"
                             >
                                 <X className="w-4 h-4" />
@@ -1882,10 +1898,10 @@ export default function RishtaDashboard() {
                 {/* 2. Profile Stats */}
                 <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-700 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                    <Eye className="w-3.5 h-3.5 text-emerald-500" /> {performanceData.views} Views
+                    <Eye className="w-3.5 h-3.5 text-emerald-500" /> {myProfile?.viewsCount || 0} Views
                 </div>
                 <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-700 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
-                    <Heart className="w-3.5 h-3.5 text-rose-500" /> {performanceData.requests} Interests
+                    <Heart className="w-3.5 h-3.5 text-rose-500" /> {myProfile?.interestsCount || 0} Interests
                 </div>
 
                 {/* 3. Ranking/Boost */}
@@ -1911,7 +1927,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                     <Megaphone className="w-3.5 h-3.5" /> Refer
                 </button>
 
-                <button 
+                <button
                     onClick={() => requestNotificationPermission(user?.uid)}
                     className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-600 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-all shrink-0 active:scale-95"
                 >
@@ -2062,7 +2078,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                 </p>
 
                                                 {!isRecording && !audioBlob && !myProfile.voiceIntroUrl && (
-                                                    <button 
+                                                    <button
                                                         onClick={startRecording}
                                                         className="flex items-center justify-center gap-2 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-[#881337] hover:bg-rose-50 transition-all active:scale-95"
                                                     >
@@ -2073,7 +2089,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                 {!isRecording && !audioBlob && myProfile.voiceIntroUrl && (
                                                     <div className="flex items-center gap-2">
                                                         <audio src={myProfile.voiceIntroUrl} controls className="h-8 flex-1" />
-                                                        <button 
+                                                        <button
                                                             onClick={startRecording}
                                                             className="p-2 bg-white border border-gray-200 rounded-xl text-[#881337] hover:bg-rose-50"
                                                             title="Re-record"
@@ -2089,7 +2105,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                             <div className="w-2 h-2 bg-[#881337] rounded-full" />
                                                             Recording... {recordingTime}s / 30s
                                                         </div>
-                                                        <button 
+                                                        <button
                                                             onClick={stopRecording}
                                                             className="px-6 py-1.5 bg-[#881337] text-white rounded-lg text-xs font-bold shadow-lg"
                                                         >
@@ -2102,7 +2118,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                     <div className="flex flex-col gap-3">
                                                         <div className="flex items-center gap-2 p-2 bg-white border border-gray-100 rounded-xl">
                                                             <audio src={audioPreviewUrl!} controls className="h-8 flex-1" />
-                                                            <button 
+                                                            <button
                                                                 onClick={() => { setAudioBlob(null); setAudioPreviewUrl(null); }}
                                                                 className="p-2 text-gray-400 hover:text-rose-600"
                                                             >
@@ -2110,13 +2126,13 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                             </button>
                                                         </div>
                                                         <div className="flex gap-2">
-                                                            <button 
+                                                            <button
                                                                 onClick={startRecording}
                                                                 className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold"
                                                             >
                                                                 Re-record
                                                             </button>
-                                                            <button 
+                                                            <button
                                                                 onClick={handleUploadVoice}
                                                                 disabled={isUploadingVoice}
                                                                 className="flex-1 py-2 bg-[#881337] text-white rounded-xl text-xs font-bold shadow-md hover:bg-[#9F1239] flex items-center justify-center gap-2"
@@ -2150,6 +2166,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                         </button>
 
                                         {myProfile.status === 'verified' && (
+                                            <div className='flex flex-col gap-3 mt-4'>
                                             <button
                                                 id="download-biodata-btn"
                                                 onClick={handleDownloadBiodata}
@@ -2157,8 +2174,21 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                 className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all mt-6 flex items-center justify-center gap-2 group"
                                             >
                                                 {generatingBiodata ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 group-hover:scale-110 transition-transform" />}
-                                                Download/Generate Biodata with QR Code
+                                                Download / Print My Biodata
                                             </button>
+
+                                            <button
+                                                onClick={() => {
+                                                    const shareUrl = `${window.location.origin}/profile?id=${user.uid}`;
+                                                    const text = `Assalamu Alaiykum! Check out my official Digital Biodata on 53DBohraRishta Community: ${shareUrl}`;
+                                                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                                                }}
+                                                className="w-full bg-[#25D366] text-white py-3 rounded-xl text-sm font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 mt-4 active:scale-95"
+                                            >
+                                                <div className="w-5 h-5 flex items-center justify-center rounded-full bg-white text-[#25D366] font-extrabold text-[10px] pb-[px] border-2 border-white/50 ring-1 ring-[#25D366]/20">53</div>
+                                                Share Profile on WhatsApp
+                                            </button>
+                                            </div>
                                         )}
                                     </div>
                                 );
@@ -2167,11 +2197,11 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
 
                         {/* 🖼️ HIDDEN BIODATA TEMPLATE FOR EXPORT */}
                         <div className="fixed left-[-9999px] top-0">
-                            <div 
+                            <div
                                 ref={biodataRef}
                                 className="w-[750px] p-10 relative overflow-hidden"
-                                style={{ 
-                                    fontFamily: 'serif', 
+                                style={{
+                                    fontFamily: 'serif',
                                     backgroundColor: '#ffffff',
                                     color: '#1a1a1a'
                                 }}
@@ -2195,11 +2225,11 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                 <span className="text-5xl font-black text-[#D4AF37] font-serif tracking-tighter">53</span>
                                             </div>
                                          </div>
- 
+
                                          <h1 className="text-6xl font-black tracking-tight mb-5 text-white font-serif drop-shadow-sm">
                                              DBohra<span className="text-[#D4AF37]">Rishta</span>
                                          </h1>
-                                         
+
                                          <div className="flex flex-col items-center gap-4">
                                             <div className="h-[1.5px] w-32 bg-white/20" />
                                             <p className="text-[14px] font-sans font-black tracking-[0.6em] uppercase text-white/90 drop-shadow-md">INTELLIGENT MATCHES</p>
@@ -2228,17 +2258,17 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                     {/* Right: Essential Profile Details */}
                                     <div className="flex-1 pt-2">
                                         <h2 className="text-4xl font-black mb-6" style={{ color: '#111827', lineHeight: 1 }}>{myProfile.name}</h2>
-                                        
+
                                         <div className="space-y-6 font-sans">
                                             {/* Contact Card */}
                                             <div className="p-5 rounded-2xl border" style={{ backgroundColor: '#fcf8f9', borderColor: '#f5e6e9', boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>
                                                 <div className="grid grid-cols-1 gap-y-3">
                                                     <div className="flex items-center gap-3">
-                                                        <div style={{ color: '#881337' }}><Phone size={16} /></div> 
+                                                        <div style={{ color: '#881337' }}><Phone size={16} /></div>
                                                         <span className="text-sm font-bold">{myProfile.mobileCode} {myProfile.mobile}</span>
                                                     </div>
                                                     <div className="flex items-center gap-3">
-                                                        <div style={{ color: '#881337' }}><Mail size={16} /></div> 
+                                                        <div style={{ color: '#881337' }}><Mail size={16} /></div>
                                                         <span className="text-sm font-bold">{myProfile.email}</span>
                                                     </div>
                                                 </div>
@@ -2291,9 +2321,9 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                             Verification ID: {myProfile.itsNumber?.substring(0, 4)}XXXXX
                                         </p>
                                     </div>
-                                    
-                                    <div 
-                                        className="flex flex-col items-center gap-2 p-3 rounded-2xl border" 
+
+                                    <div
+                                        className="flex flex-col items-center gap-2 p-3 rounded-2xl border"
                                         style={{ backgroundColor: '#f9fafb', borderColor: '#f3f4f6', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}
                                     >
                                         <div className="p-1 rounded bg-white" style={{ boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>
@@ -2488,8 +2518,8 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                     <MessageCircle className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Accepted (Chat Now)</span>
                     {allRequests.filter(r => r.status === 'accepted' && r.isIncoming).length > 0 && <span className="absolute -top-0.5 right-3 w-1.5 h-1.5 bg-red-500 rounded-full" />}
                 </button>
-                <button 
-                    onClick={() => setShowAdminHelpChat(true)} 
+                <button
+                    onClick={() => setShowAdminHelpChat(true)}
                     className="flex flex-col items-center gap-0.5 transition-colors text-gray-400 hover:text-[#881337]"
                 >
                     <div className="relative">
@@ -2505,9 +2535,9 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                 <div className="fixed inset-0 z-[100] md:hidden" onClick={() => setShowMobileMenu(false)}>
                     {/* Backdrop */}
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300" />
-                    
+
                     {/* Slide-over Content */}
-                    <div 
+                    <div
                         className="absolute top-0 right-0 bottom-0 w-[280px] bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col"
                         onClick={e => e.stopPropagation()}
                     >
@@ -2538,13 +2568,13 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                         {/* Menu Links */}
                         <div className="flex-1 overflow-y-auto p-4 space-y-2">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 mt-2">Account</p>
-                            <button 
+                            <button
                                 onClick={() => { setActiveTab('mybiodata'); setShowMobileMenu(false); }}
                                 className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === 'mybiodata' ? 'bg-rose-50 text-[#881337] font-black' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
                                 <User className="w-5 h-5" /> My Biodata
                             </button>
-                            <button 
+                            <button
                                 onClick={() => { router.push('/candidate-registration'); setShowMobileMenu(false); }}
                                 className="w-full flex items-center gap-4 p-4 rounded-2xl text-gray-600 hover:bg-gray-50 transition-all"
                             >
@@ -2552,7 +2582,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                             </button>
 
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 mt-6">Discovery</p>
-                            <button 
+                            <button
                                 onClick={() => { setActiveTab('discovery'); setShowMobileMenu(false); }}
                                 className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === 'discovery' ? 'bg-rose-50 text-[#881337] font-black' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
@@ -2560,7 +2590,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                             </button>
 
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 mt-6">Support</p>
-                            <button 
+                            <button
                                 onClick={() => { setShowAdminHelpChat(true); setShowMobileMenu(false); }}
                                 className="w-full flex items-center gap-4 p-4 rounded-2xl text-rose-700 font-bold bg-rose-50/30 hover:bg-rose-50 transition-all"
                             >
@@ -2570,14 +2600,14 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
 
                         {/* Menu Footer */}
                         <div className="p-6 border-t border-gray-100 bg-gray-50">
-                            <button 
+                            <button
                                 onClick={() => { logout(); setShowMobileMenu(false); }}
                                 className="w-full flex items-center justify-center gap-2 py-4 bg-white border border-rose-100 text-[#881337] rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm active:scale-95 transition-all"
                             >
                                  <LogOut className="w-4 h-4" /> Sign Out
                             </button>
                             {isImpersonating && (
-                                <button 
+                                <button
                                     onClick={() => { stopImpersonating(); setShowMobileMenu(false); }}
                                     className="w-full flex items-center justify-center gap-2 py-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm active:scale-95 transition-all mt-3"
                                 >
@@ -2599,7 +2629,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
             {
                 showMyProfileModal && myProfile && (() => {
                     const photos = [
-                        myProfile.libasImageUrl, 
+                        myProfile.libasImageUrl,
                         myProfile.extraImageUrl,
                         (myProfile.isPhotoVerified || myProfile.selfieStatus === 'verified' ? myProfile.selfieImageUrl : null)
                     ].filter(Boolean) as string[];
@@ -2933,18 +2963,18 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                             </button>
                         </div>
                         <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-6">Selfie Verification</p>
-                        
+
                         <div className="bg-blue-50/50 p-5 rounded-3xl border border-blue-100 flex flex-col items-center text-center mb-8">
                             <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-4 text-blue-600">
                                 <Camera size={32} />
                             </div>
                             <h4 className="font-black text-sm text-gray-900 mb-2">Upload a Live Selfie</h4>
                             <p className="text-xs text-gray-500 mb-6 italic">Ensure your face is clearly visible. This will be compared with your Libas profile photo for verification. Private & secure.</p>
-                            
-                            <input 
-                                type="file" 
+
+                            <input
+                                type="file"
                                 ref={selfieInputRef}
-                                className="hidden" 
+                                className="hidden"
                                 accept="image/*"
                                 capture="user"
                                 onChange={handleSelfieFileChange}
@@ -2953,7 +2983,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                             {selfieImageUrl ? (
                                 <div className="space-y-4 w-full">
                                     <img src={selfieImageUrl} alt="Selfie preview" className="w-full h-40 object-cover rounded-2xl border border-blue-100" />
-                                    <button 
+                                    <button
                                         onClick={handleSelfieUpload}
                                         disabled={uploadingSelfie}
                                         className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-200 active:scale-95 transition-all disabled:opacity-50"
@@ -2965,7 +2995,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                     </button>
                                 </div>
                             ) : (
-                                <button 
+                                <button
                                     onClick={() => selfieInputRef.current?.click()}
                                     className="w-full py-4 bg-white text-blue-600 rounded-2xl border-2 border-blue-200 border-dashed font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-all active:scale-95"
                                 >
@@ -2974,7 +3004,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                             )}
                         </div>
 
-                        <button 
+                        <button
                             onClick={() => setShowSelfieModal(false)}
                             className="w-full py-3 text-gray-400 font-black text-[10px] uppercase tracking-widest"
                         >
@@ -3000,7 +3030,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 <div className="space-y-6">
                                     <div>
                                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">My Mobile Number</label>
-                                        <input 
+                                        <input
                                             type="tel"
                                             value={newMobileVerifyInput}
                                             onChange={(e) => setNewMobileVerifyInput(e.target.value)}
@@ -3012,7 +3042,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                         To verify your identity, we'll send a 6-digit code to your registered email: <br/>
                                         <span className="text-[#881337] font-bold">{user?.email}</span>
                                     </p>
-                                    <button 
+                                    <button
                                         onClick={handleSendMobileVerify}
                                         disabled={mobileVerifyLoading}
                                         className="w-full bg-[#881337] text-white py-4 rounded-2xl font-black text-sm shadow-xl hover:shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
@@ -3028,7 +3058,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Enter 6-Digit Code</label>
-                                        <input 
+                                        <input
                                             type="text"
                                             maxLength={6}
                                             value={mobileVerifyOtpCode}
@@ -3037,7 +3067,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                             autoFocus
                                         />
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={handleVerifyMobileVerify}
                                         disabled={mobileVerifyLoading}
                                         className="w-full bg-[#881337] text-white py-4 rounded-2xl font-black text-sm shadow-xl hover:shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
@@ -3045,7 +3075,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                         {mobileVerifyLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5 text-[#D4AF37]" />}
                                         Verify & Activate
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setMobileVerifyOtpSent(false)}
                                         className="w-full text-[10px] font-black uppercase text-gray-400 hover:text-[#881337] transition-colors"
                                     >
@@ -3106,7 +3136,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
 
                         {/* Input Area */}
                         <div className="p-4 bg-white border-t border-gray-100 flex gap-3 items-center">
-                            <input 
+                            <input
                                 type="text"
                                 value={userMsgInput}
                                 onChange={(e) => setUserMsgInput(e.target.value)}
@@ -3114,7 +3144,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-sm focus:ring-2 focus:ring-[#881337] outline-none transition-all"
                                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessageToAdmin()}
                             />
-                            <button 
+                            <button
                                 onClick={handleSendMessageToAdmin}
                                 disabled={!userMsgInput.trim()}
                                 className="w-12 h-12 bg-[#881337] text-white rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all disabled:opacity-50"

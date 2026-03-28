@@ -56,7 +56,7 @@ service cloud.firestore {
           (request.resource.data.get('isCommunityContributor', false) == resource.data.get('isCommunityContributor', false))
         )) ||
         // Referral/Stats Logic: Allow targeted update of counters by others
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralCount', 'isCommunityContributor', 'interestsCount']))
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralCount', 'isCommunityContributor', 'interestsCount', 'viewsCount']))
       );
       allow delete: if isAdmin();
 

@@ -202,15 +202,19 @@ export default function DiscoveryCard({
             });
             if (recent >= 20) { toast.error('Request limit: max 20 per 24 hours', { icon: '🛡️' }); return; }
 
+            const isImpersonating = typeof window !== 'undefined' ? sessionStorage.getItem('impersonate_user_id') : null;
+
             await addDoc(collection(db, 'rishta_requests'), {
                 from: user.uid, to: id, status: 'pending_response',
                 icebreaker: icebreakerText.trim(), timestamp: serverTimestamp(),
             });
 
-            // Increment interest count on target profile
-            await updateDoc(doc(db, 'users', id), {
-                interestsCount: increment(1)
-            }).catch(() => {});
+            // Increment interest count on target profile (only if not impersonating)
+            if (!isImpersonating) {
+                await updateDoc(doc(db, 'users', id), {
+                    interestsCount: increment(1)
+                }).catch(() => {});
+            }
 
             // Email notification via Gmail SMTP API
             if (email) {

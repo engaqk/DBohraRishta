@@ -65,8 +65,10 @@ function ProfileContent() {
                         sOut.forEach(check); sIn.forEach(check);
                         setRequestSent(active); setRejectCount(rejects); setRequestStatus(status);
 
-                        // 👁️ Record Profile View (if not me)
-                        if (user.uid !== id && meData) {
+                        // 👁️ Record Profile View (if not me and NOT impersonating)
+                        const isImpersonating = typeof window !== 'undefined' ? sessionStorage.getItem('impersonate_user_id') : null;
+                        
+                        if (user.uid !== id && meData && !isImpersonating) {
                             const viewRef = collection(db, 'profile_views');
                             const viewKey = `${user.uid}_${id}`;
                             addDoc(viewRef, {
@@ -157,16 +159,20 @@ function ProfileContent() {
             });
             if (recent >= 20) { toast.error('Max 20 requests per 24 hours', { icon: '🛡️' }); return; }
 
+            const isImpersonating = typeof window !== 'undefined' ? sessionStorage.getItem('impersonate_user_id') : null;
+
             await addDoc(collection(db, 'rishta_requests'), {
                 from: user.uid, to: id, status: 'pending_response',
                 icebreaker: icebreaker || '', 
                 timestamp: serverTimestamp(),
             });
 
-            // Increment interest count on target profile
-            await updateDoc(doc(db, 'users', id), {
-                interestsCount: increment(1)
-            }).catch(() => {});
+            // Increment interest count on target profile (only if not admin/impersonating)
+            if (!isImpersonating) {
+                await updateDoc(doc(db, 'users', id), {
+                    interestsCount: increment(1)
+                }).catch(() => {});
+            }
 
             if (profile?.email) {
                 notifyInterestSent({
@@ -328,8 +334,26 @@ function ProfileContent() {
 
     return (
         <div className="min-h-screen bg-[#F9FAFB]">
+            {/* Impersonation Banner */}
+            {typeof window !== 'undefined' && sessionStorage.getItem('impersonate_user_id') && (
+                <div className="bg-red-600 text-white px-4 py-2 text-center text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-4 shadow-inner sticky top-0 z-[100]">
+                    <span className="flex items-center gap-2">
+                        <ShieldCheck className="w-3 h-3" /> IMPERSONATION MODE ACTIVE
+                    </span>
+                    <button 
+                        onClick={() => {
+                            sessionStorage.removeItem('impersonate_user_id');
+                            window.location.href = '/admin/users';
+                        }}
+                        className="bg-white text-red-600 px-3 py-1 rounded-full font-black hover:bg-red-50 transition-colors"
+                    >
+                        Return to Admin
+                    </button>
+                </div>
+            )}
+
             {/* Sticky Nav */}
-            <div className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-40">
+            <div className={`bg-white border-b border-gray-100 shadow-sm sticky top-0 z-40 ${typeof window !== 'undefined' && sessionStorage.getItem('impersonate_user_id') ? 'mt-0' : ''}`}>
                 <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
                     <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-500 hover:text-[#881337] font-bold transition-colors text-sm">
                         <ArrowLeft className="w-4 h-4" /> Back

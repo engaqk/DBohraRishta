@@ -589,7 +589,7 @@ export default function RishtaDashboard() {
         
         // Listen to the specific thread for this user under admin_messages
         const q = query(
-            collection(db, 'admin_messages', user.uid, 'thread'),
+            collection(db, `admin_messages/${user.uid}/thread`),
             orderBy('createdAt', 'asc')
         );
 
@@ -613,7 +613,7 @@ export default function RishtaDashboard() {
 
     // Fetch Admin Last Seen for Help Chat
     useEffect(() => {
-        const { collection, query, where, limit, onSnapshot } = require('firebase/firestore');
+        if (!db) return;
         const q = query(collection(db, 'users'), where('role', '==', 'admin'), limit(1));
         const unsub = onSnapshot(q, (snap: any) => {
             if (!snap.empty) {

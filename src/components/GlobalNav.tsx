@@ -18,7 +18,7 @@ export default function GlobalNav() {
     useEffect(() => {
         if (!user) return;
         const q = query(
-            collection(db, 'users', user.uid, 'notifications'),
+            collection(db, `users/${user.uid}/notifications`),
             where('isRead', '==', false)
         );
 

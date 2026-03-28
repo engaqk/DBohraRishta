@@ -28,7 +28,9 @@ service cloud.firestore {
       allow create: if signedIn() && isOwner(userId) && 
         !(request.resource.data.get('status', '') in ['verified', 'approved', 'archived', 'premium']) &&
         request.resource.data.get('isPhotoVerified', false) == false &&
-        request.resource.data.get('isItsVerified', false) == false;
+        request.resource.data.get('isItsVerified', false) == false &&
+        request.resource.data.get('role', 'user') == 'user' &&
+        request.resource.data.get('isCommunityContributor', false) == false;
 
       allow update: if signedIn() && (
         isAdmin() || 
@@ -45,12 +47,18 @@ service cloud.firestore {
           (request.resource.data.get('status', '') == resource.data.get('status', '') ||
            !(request.resource.data.get('status', '') in ['verified', 'approved', 'archived', 'premium'])) &&
 
-          // 4. Selfie Review Status: Must be same as before OR set to a non-authoritative status
+          // 4. Selfie Review Status: Must be same as before OR set to non-authoritative
           (request.resource.data.get('selfieStatus', '') == resource.data.get('selfieStatus', '') ||
-           request.resource.data.get('selfieStatus', '') in ['', 'pending', 'rejected'])
-        ))
+           request.resource.data.get('selfieStatus', '') in ['', 'pending', 'rejected']) &&
+           
+          // 5. Protected Privileges: Role and Contributor status cannot be self-modified
+          (request.resource.data.get('role', 'user') == resource.data.get('role', 'user')) &&
+          (request.resource.data.get('isCommunityContributor', false) == resource.data.get('isCommunityContributor', false))
+        )) ||
+        // Referral/Stats Logic: Allow targeted update of counters by others
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralCount', 'isCommunityContributor', 'interestsCount']))
       );
-      allow delete: if isAdmin(); // Deletions allowed for system integrity checks by Admin
+      allow delete: if isAdmin();
 
       // Notifications: Only owner/admin reads
       match /notifications/{notifId} {
@@ -66,7 +74,13 @@ service cloud.firestore {
         resource.data.from == request.auth.uid ||
         resource.data.to == request.auth.uid
       );
-      allow create, update: if signedIn();
+      allow create: if signedIn() && request.resource.data.from == request.auth.uid;
+      allow update: if signedIn() && (
+        isAdmin() ||
+        resource.data.from == request.auth.uid ||
+        resource.data.to == request.auth.uid
+      );
+      allow delete: if isAdmin();
 
       // Chat messages subcollection
       match /messages/{messageId} {
@@ -117,25 +131,22 @@ service cloud.firestore {
 
     // Bookmarks: Private to user OR Admin
     match /bookmarks/{bookmarkId} {
-      allow read, write: if signedIn() && (
-        isAdmin() ||
-        request.method == 'create' || 
-        (resource != null && resource.data.userId == request.auth.uid)
-      );
+      allow read, delete: if signedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
     }
 
     // Unblur Requests: Involved parties
     match /unblur_requests/{requestId} {
-      allow read, create, update, delete: if signedIn();
+      allow read: if signedIn() && (isAdmin() || resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.from == request.auth.uid;
+      allow update: if signedIn() && (isAdmin() || resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow delete: if isAdmin();
     }
 
     // Profile Views: Owner or Admin
     match /profile_views/{viewId} {
-      allow read, write: if signedIn() && (
-        isAdmin() ||
-        request.method == 'create' ||
-        (resource != null && resource.data.profileId == request.auth.uid)
-      );
+      allow read: if signedIn() && (isAdmin() || resource.data.profileId == request.auth.uid);
+      allow create: if signedIn() && (isAdmin() || request.resource.data.viewerId == request.auth.uid);
     }
   }
 }

@@ -747,21 +747,20 @@ export default function RishtaDashboard() {
         if (!biodataRef.current) return;
         setGeneratingBiodata(true);
         try {
-            // Lazy load html2canvas to avoid parsing errors on initialization or other pages
-            const html2canvas = (await import('html2canvas')).default;
+            // Use html-to-image instead of html2canvas to avoid parsing errors with modern CSS (lab, oklch)
+            const { toPng } = await import('html-to-image');
             
-            const canvas = await html2canvas(biodataRef.current, {
-                useCORS: true,
-                scale: 2,
-                backgroundColor: '#ffffff',
-                logging: false, // Turn off logging to minimize console noise
+            const dataUrl = await toPng(biodataRef.current, {
+                cacheBust: true,
+                pixelRatio: 3, // Higher resolution
+                backgroundColor: '#ffffff'
             });
-            const image = canvas.toDataURL("image/png");
+
             const link = document.createElement('a');
-            link.href = image;
+            link.href = dataUrl;
             link.download = `Biodata_${myProfile?.name?.replace(/\s+/g, '_') || 'Profile'}.png`;
             link.click();
-            toast.success("Biodata downloaded successfully!");
+            toast.success("Biodata downloaded successfully! ✨");
         } catch (err) {
             console.error(err);
             toast.error("Failed to generate biodata image.");

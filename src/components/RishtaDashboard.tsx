@@ -763,6 +763,52 @@ export default function RishtaDashboard() {
         }
     };
 
+    const handleSharePDFBiodata = async () => {
+        if (!biodataRef.current || !user || !myProfile) return;
+        setGeneratingBiodata(true);
+        try {
+            const { toPng } = await import('html-to-image');
+            const { jsPDF } = await import('jspdf');
+
+            const dataUrl = await toPng(biodataRef.current, {
+                cacheBust: true,
+                pixelRatio: 2,
+                backgroundColor: '#ffffff'
+            });
+
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgProps = pdf.getImageProperties(dataUrl);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            
+            pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+            const pdfBlob = pdf.output('blob');
+            const fileName = `Biodata_${myProfile.name?.replace(/\s+/g, '_') || 'Candidate'}.pdf`;
+            const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+            const shareUrl = `${window.location.origin}/profile?id=${user.uid}`;
+            const shareText = `Assalamu Alaiykum! Check out my official Digital Biodata on 53DBohraRishta Community:\n\n🔗 View Online: ${shareUrl}`;
+
+            if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+                await navigator.share({
+                    files: [pdfFile],
+                    text: shareText,
+                    title: `Biodata - ${myProfile.name}`
+                }).catch(() => {});
+            } else {
+                pdf.save(fileName);
+                const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+                window.open(waUrl, '_blank');
+                toast.success('PDF generated! Please share it along with the link on WhatsApp.', { icon: '📄', duration: 4000 });
+            }
+        } catch (err) {
+            console.error('PDF Share failed:', err);
+            toast.error('Failed to generate PDF.');
+        } finally {
+            setGeneratingBiodata(false);
+        }
+    };
+
     const handleITSReupload = async (file: File) => {
         if (!user || !file) return;
         if (file.size > 5 * 1024 * 1024) { toast.error('Image must be less than 5MB'); return; }
@@ -3179,6 +3225,22 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                 </span>
                 <span className="absolute right-full mr-4 bg-gray-900 text-white text-[10px] px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl font-bold">Share with Community</span>
             </a>
+
+            {/* 📄 Floating Share Biodata PDF Button (Verified only) */}
+            {myProfile?.status === 'verified' && (
+                <button
+                    onClick={handleSharePDFBiodata}
+                    disabled={generatingBiodata}
+                    className="fixed bottom-40 right-6 z-[60] bg-white text-[#881337] p-1.5 rounded-full shadow-2xl hover:scale-110 active:scale-90 transition-all cursor-pointer flex items-center justify-center border-2 border-rose-100 ring-4 ring-[#25D366]/40"
+                    title="Generate & Share PDF"
+                >
+                    {generatingBiodata ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                        <div className="w-10 h-10 flex items-center justify-center rounded-full bg-[#881337] text-white font-black text-[14px]">53</div>
+                    )}
+                </button>
+            )}
         </div>
     );
 }

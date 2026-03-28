@@ -230,7 +230,6 @@ export default function RishtaDashboard() {
 
     // Admin Messaging State
     const [adminMsgThread, setAdminMsgThread] = useState<{ id: string; text: string; from: 'admin' | 'user'; createdAt: any }[]>([]);
-    const [userMsgInput, setUserMsgInput] = useState('');
     const [showAdminMessages, setShowAdminMessages] = useState(false);
     const [itsReuploadUrl, setItsReuploadUrl] = useState<string | null>(null);
     const [showVerifiedCelebration, setShowVerifiedCelebration] = useState(false);

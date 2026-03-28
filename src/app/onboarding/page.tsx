@@ -46,15 +46,20 @@ export default function OnboardingPage() {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     const data = userDoc.data();
-                    if (!data.isCandidateFormComplete) {
-                        setFormData(prev => ({
-                            ...prev,
-                            ...data,
-                            // Ensure internal email doesn't overwrite if they just logged in with Google
-                            email: (data.email && !data.email.endsWith('@dbohrarishta.local')) ? data.email : prev.email
-                        }));
-                        if (data.loginMethod) setLoginMethod(data.loginMethod);
+                    
+                    // Redirect if already complete
+                    if (data.isCandidateFormComplete) {
+                        router.push("/");
+                        return;
                     }
+                    
+                    setFormData(prev => ({
+                        ...prev,
+                        ...data,
+                        // Ensure internal email doesn't overwrite if they just logged in with Google
+                        email: (data.email && !data.email.endsWith('@dbohrarishta.local')) ? data.email : prev.email
+                    }));
+                    if (data.loginMethod) setLoginMethod(data.loginMethod);
                 }
 
                 // 2. Fallback/Supplement with sessionStorage (for fresh OTP logins)
@@ -84,7 +89,7 @@ export default function OnboardingPage() {
         };
 
         loadInitialData();
-    }, [user]);
+    }, [user, router]);
 
     // Image State
     const [itsImage, setItsImage] = useState<File | null>(null);
@@ -544,8 +549,6 @@ export default function OnboardingPage() {
                                 </div>
                             </div>
 
-
-
                             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 flex gap-3 text-sm text-yellow-800 mb-2">
                                 <ShieldCheck className="w-5 h-5 shrink-0" />
                                 <p>Verify your ITS Card to secure 'Verified' badges and unlock access to private unblurred photos.</p>
@@ -577,7 +580,6 @@ export default function OnboardingPage() {
 
                                 {imagePreview ? (
                                     <div className="relative w-full max-w-[250px] aspect-[1.58] rounded-xl overflow-hidden shadow-lg border-2 border-[#D4AF37]">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img src={imagePreview} alt="ITS Capture" className="object-cover w-full h-full" />
                                         <button
                                             onClick={() => { setItsImage(null); setImagePreview(null); }}
@@ -592,7 +594,6 @@ export default function OnboardingPage() {
                                     </div>
                                 ) : (
                                     <div className="w-full flex gap-3">
-                                        {/* Hidden Native File Input supporting Mobile Cameras via capture="environment" */}
                                         <input
                                             type="file"
                                             accept="image/*"
@@ -610,8 +611,6 @@ export default function OnboardingPage() {
                                         </button>
                                         <button
                                             onClick={() => {
-                                                // Trick to only open file gallery by removing the capture explicit tag strictly for this click, or using another ref. 
-                                                // Simplest way is to just use a standard file input without capture:
                                                 const el = document.createElement("input");
                                                 el.setAttribute("type", "file");
                                                 el.setAttribute("accept", "image/*");
@@ -639,7 +638,6 @@ export default function OnboardingPage() {
 
                                 {libasImagePreview ? (
                                     <div className="relative w-full max-w-[250px] aspect-[1] rounded-xl overflow-hidden shadow-lg border-2 border-[#D4AF37]">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img src={libasImagePreview} alt="Libas Capture" className="object-cover w-full h-full" />
                                         <button
                                             onClick={() => { setLibasImage(null); setLibasImagePreview(null); }}
@@ -654,7 +652,6 @@ export default function OnboardingPage() {
                                     </div>
                                 ) : (
                                     <div className="w-full flex gap-3">
-                                        {/* Hidden Native File Input supporting Mobile Cameras via capture="environment" */}
                                         <input
                                             type="file"
                                             accept="image/*"
@@ -688,14 +685,12 @@ export default function OnboardingPage() {
                                 {errors.libasImage && <p className="text-red-500 text-xs font-bold mt-2 w-full text-center">{errors.libasImage}</p>}
                             </div>
 
-                            {/* STEP 3 CONTENT MERGED HERE */}
                             <div className="space-y-5 pt-4 border-t border-gray-100">
                                 <div className="flex items-start flex-col mb-2">
                                     <h2 className="text-xl font-bold font-serif mb-1">Dunyawi Details</h2>
                                     <p className="text-xs text-gray-500">Education and current Location preferences.</p>
                                 </div>
 
-                                {/* Guardian Mode */}
                                 <div className="bg-rose-50 p-5 rounded-2xl border-2 border-rose-100 shadow-sm">
                                     <label className="block text-sm font-black text-[#881337] mb-2 uppercase tracking-tight">Rishta Guardian Mode</label>
                                     <p className="text-xs text-gray-500 mb-4 leading-relaxed font-medium">Is this profile managed by the candidate themselves or a Parent/Guardian?</p>
@@ -712,7 +707,6 @@ export default function OnboardingPage() {
                                     </select>
                                 </div>
 
-                                {/* Privacy Toggle */}
                                 <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
                                     <div className="flex-1">
                                         <p className="text-sm font-black text-gray-800 mb-1 uppercase tracking-tight">Photo Privacy Control</p>
@@ -764,3 +758,4 @@ export default function OnboardingPage() {
         </div>
     );
 }
+

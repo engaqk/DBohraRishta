@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, Lock } from 'lucide-react';
+import { ShieldCheck, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, Lock, PauseCircle } from 'lucide-react';
 import { notifyInterestSent } from '@/lib/emailService';
-import { collection, addDoc, query, where, getDocs, serverTimestamp, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, serverTimestamp, deleteDoc, doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -47,6 +47,7 @@ interface DiscoveryCardProps {
     createdAt?: any;
     selfieImageUrl?: string;
     selfieStatus?: string;
+    voiceIntroUrl?: string;
 }
 
 export default function DiscoveryCard({
@@ -56,7 +57,7 @@ export default function DiscoveryCard({
     isOnline = false, viewerItsNumber = '', extraImageUrl,
     ejamaatId, itsNumber, maritalStatus, mobile, mobileCode, email,
     fatherName, motherName, professionType, educationDetails,
-    city, state, gender, createdAt, selfieImageUrl, selfieStatus,
+    city, state, gender, createdAt, selfieImageUrl, selfieStatus, voiceIntroUrl,
 }: DiscoveryCardProps) {
     const { user } = useAuth();
     const router = useRouter();
@@ -69,6 +70,30 @@ export default function DiscoveryCard({
     const [icebreakerText, setIcebreakerText] = useState('');
     const [activePhotoIdx, setActivePhotoIdx] = useState(0);
     const [showLightbox, setShowLightbox] = useState(false);
+    const [isPlayingVoice, setIsPlayingVoice] = useState(false);
+    const [audioInstance, setAudioInstance] = useState<HTMLAudioElement | null>(null);
+
+    // Voice Playback Handler
+    const toggleVoicePlay = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!voiceIntroUrl) return;
+
+        if (isPlayingVoice) {
+            audioInstance?.pause();
+            setIsPlayingVoice(false);
+        } else {
+            if (audioInstance) {
+                audioInstance.play();
+                setIsPlayingVoice(true);
+            } else {
+                const audio = new Audio(voiceIntroUrl);
+                audio.onended = () => setIsPlayingVoice(false);
+                audio.play();
+                setAudioInstance(audio);
+                setIsPlayingVoice(true);
+            }
+        }
+    };
 
     const [profileData, setProfileData] = useState<any>(null);
 
@@ -181,6 +206,11 @@ export default function DiscoveryCard({
                 from: user.uid, to: id, status: 'pending_response',
                 icebreaker: icebreakerText.trim(), timestamp: serverTimestamp(),
             });
+
+            // Increment interest count on target profile
+            await updateDoc(doc(db, 'users', id), {
+                interestsCount: increment(1)
+            }).catch(() => {});
 
             // Email notification via Gmail SMTP API
             if (email) {
@@ -380,6 +410,40 @@ export default function DiscoveryCard({
                             )}
                         </div>
                     </div>
+
+                    {/* 🔊 Voice Intro Playback */}
+                    {voiceIntroUrl && (
+                        <div 
+                            onClick={toggleVoicePlay}
+                            className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl border transition-all cursor-pointer active:scale-95 shadow-sm
+                            ${isPlayingVoice ? 'bg-[#881337] border-[#881337] text-white' : 'bg-rose-50 border-rose-100 text-[#881337] hover:bg-rose-100'}`}
+                        >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isPlayingVoice ? 'bg-white/20' : 'bg-[#881337] text-white'}`}>
+                                {isPlayingVoice ? (
+                                    <PauseCircle className="w-5 h-5" />
+                                ) : (
+                                    <div className="flex items-center gap-0.5">
+                                        <div className="w-0.5 h-3 bg-white rounded-full animate-[bounce_1s_infinite]" />
+                                        <div className="w-0.5 h-4 bg-white rounded-full animate-[bounce_1.2s_infinite]" />
+                                        <div className="w-0.5 h-2 bg-white rounded-full animate-[bounce_0.8s_infinite]" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex flex-col">
+                                <span className={`text-[10px] font-black uppercase tracking-wider ${isPlayingVoice ? 'text-white/80' : 'text-[#881337]/60'}`}>
+                                    {isPlayingVoice ? 'Now Playing' : 'Voice Intro'}
+                                </span>
+                                <span className="text-xs font-bold">Hear {firstName}'s Introduction</span>
+                            </div>
+                            {isPlayingVoice && (
+                                <div className="ml-auto w-12 h-4 flex items-center gap-0.5">
+                                    {[1,2,3,4,5].map(i => (
+                                        <div key={i} className={`flex-1 bg-white rounded-full animate-pulse`} style={{ height: `${Math.random()*100}%`, animationDelay: `${i*0.1}s` }} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {bio && (
                         <div className="bg-[#D4AF37]/5 border-l-4 border-[#D4AF37] p-3 rounded-r-xl relative overflow-hidden group/bio">

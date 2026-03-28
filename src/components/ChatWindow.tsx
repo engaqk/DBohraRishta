@@ -1,12 +1,13 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Send, ArrowLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface ChatWindowProps {
     connectionId: string; // The requestId acts as the chat room
+    otherUserId: string;
     otherUserName: string;
     otherUserImageUrl?: string;
     onClose: () => void;
@@ -19,8 +20,9 @@ interface ChatMessage {
     timestamp: any;
 }
 
-export default function ChatWindow({ connectionId, otherUserName, otherUserImageUrl, onClose }: ChatWindowProps) {
+export default function ChatWindow({ connectionId, otherUserId, otherUserName, otherUserImageUrl, onClose }: ChatWindowProps) {
     const { user } = useAuth();
+    const [otherUserStatus, setOtherUserStatus] = useState<{ isOnline: boolean; lastActive: any } | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [loading, setLoading] = useState(true);
@@ -62,6 +64,44 @@ export default function ChatWindow({ connectionId, otherUserName, otherUserImage
             }
         });
         return groups;
+    };
+
+    // --- OTHER USER STATUS LISTENER ---
+    useEffect(() => {
+        if (!otherUserId) return;
+        const unsub = onSnapshot(doc(db, 'users', otherUserId), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                setOtherUserStatus({ 
+                    isOnline: data.isOnline || false, 
+                    lastActive: data.lastActive 
+                });
+            }
+        });
+        return () => unsub();
+    }, [otherUserId]);
+
+    const formatLastSeen = () => {
+        if (!otherUserStatus) return 'Offline';
+        if (otherUserStatus.isOnline) return 'Online';
+        if (!otherUserStatus.lastActive) return 'Offline';
+        
+        try {
+            const lastActive = otherUserStatus.lastActive?.toDate 
+                ? otherUserStatus.lastActive.toDate() 
+                : new Date(otherUserStatus.lastActive);
+            
+            const diff = Date.now() - lastActive.getTime();
+            if (isNaN(diff)) return 'Offline';
+            const mins = Math.floor(diff / 60000);
+            
+            if (mins < 1) return 'Active just now';
+            if (mins < 60) return `${mins}m ago`;
+            if (mins < 1440) return `${Math.floor(mins/60)}h ago`;
+            return lastActive.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        } catch (e) {
+            return 'Recently';
+        }
     };
 
     useEffect(() => {
@@ -132,9 +172,14 @@ export default function ChatWindow({ connectionId, otherUserName, otherUserImage
                         otherUserName.charAt(0)
                     )}
                 </div>
-                <div>
-                    <h3 className="font-bold">{otherUserName}</h3>
-                    <p className="text-xs text-rose-200">Private & Secure</p>
+                <div className="flex-1">
+                    <h3 className="font-bold leading-tight">{otherUserName}</h3>
+                    <div className="flex items-center gap-1.5 leading-none mt-0.5">
+                        {otherUserStatus?.isOnline && <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>}
+                        <p className="text-[10px] text-rose-200 font-medium">
+                            {formatLastSeen()}
+                        </p>
+                    </div>
                 </div>
             </div>
 

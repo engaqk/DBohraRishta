@@ -360,10 +360,32 @@ export default function AdminVerificationPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col p-6 text-[#881337] pt-12 md:px-12">
+        <div className="min-h-screen bg-gray-50 flex flex-col p-4 md:p-6 text-[#881337] pt-4 md:px-12">
+            {/* Mobile Header (Admin) */}
+            <div className="md:hidden flex items-center justify-between mb-6 bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#881337] text-white rounded-2xl flex items-center justify-center font-bold text-lg shadow-lg">53</div>
+                    <div>
+                        <h1 className="text-xl font-bold font-serif leading-tight">Admin</h1>
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Control Panel</p>
+                    </div>
+                </div>
+                <button
+                    onClick={() => {
+                        localStorage.removeItem("admin_auth_token");
+                        toast.success("Admin session terminated.");
+                        router.push('/admin/login');
+                    }}
+                    className="w-10 h-10 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-sm border border-rose-100"
+                    title="Logout"
+                >
+                    <LogOut className="w-5 h-5" />
+                </button>
+            </div>
+
             <div className="max-w-[1400px] w-full mx-auto">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-                    <div className="flex items-center gap-4">
+                    <div className="hidden md:flex items-center gap-4">
                         <div className="w-12 h-12 bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] rounded-full flex items-center justify-center font-bold text-xl shadow-[0_0_20px_rgba(212,175,55,0.4)] border-2 border-[#D4AF37] ring-4 ring-white/20">53</div>
                         <div>
                             <h1 className="text-2xl font-extrabold font-serif text-[#881337] tracking-tight leading-tight">DBohra<span className="text-[#D4AF37] font-medium italic">Rishta</span></h1>

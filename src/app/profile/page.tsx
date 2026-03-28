@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
-import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, increment } from 'firebase/firestore';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { ArrowLeft, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles, User, Mail, Phone, Heart, Send, X, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -77,6 +77,11 @@ function ProfileContent() {
                                 timestamp: serverTimestamp(),
                                 viewKey: viewKey
                             }).catch(e => console.error("Error logging profile view", e));
+
+                            // Increment view count on target profile
+                            updateDoc(doc(db, 'users', id), {
+                                viewsCount: increment(1)
+                            }).catch(() => {});
                         }
                     }
                 }
@@ -157,6 +162,11 @@ function ProfileContent() {
                 icebreaker: icebreaker || '', 
                 timestamp: serverTimestamp(),
             });
+
+            // Increment interest count on target profile
+            await updateDoc(doc(db, 'users', id), {
+                interestsCount: increment(1)
+            }).catch(() => {});
 
             if (profile?.email) {
                 notifyInterestSent({

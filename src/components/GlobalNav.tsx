@@ -199,6 +199,10 @@ export default function GlobalNav() {
                                 <button onClick={() => router.push('/')} className="w-full text-left flex items-center gap-3 font-bold text-lg p-3 rounded-2xl bg-white/10">
                                     <Home className="w-5 h-5" /> Public Dashboard
                                 </button>
+                                <div className="h-px bg-white/10 my-2" />
+                                <button onClick={handleLogout} className="w-full text-left text-white flex items-center gap-3 font-black text-lg p-3 bg-white/10 rounded-2xl">
+                                    <LogOut className="w-5 h-5" /> Secure Logout
+                                </button>
                             </>
                         ) : user ? (
                             <>

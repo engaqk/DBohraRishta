@@ -5,7 +5,7 @@ import { collection, query, orderBy, addDoc, serverTimestamp, onSnapshot, collec
 import { db } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send, MessageCircle, ShieldAlert, Database, Trash2, Camera } from "lucide-react";
+import { Users, Search, ArrowLeft, ShieldCheck, Clock, XCircle, CheckCircle, Archive, Mail, Phone, User, Calendar, MapPin, RefreshCw, Send, MessageCircle, ShieldAlert, Database, Trash2, Camera, LogOut } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface RegistrationUser {
@@ -356,8 +356,28 @@ export default function AdminUsersPage() {
 
     return (
         <div className="min-h-screen bg-[#F9FAFB] text-[#881337]">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#881337] to-[#9F1239] px-6 py-5 shadow-lg">
+            {/* Mobile Header (Admin) */}
+            <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-gray-100 sticky top-0 z-30">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => router.push('/admin/approvals')} className="p-2 bg-gray-50 rounded-xl"><ArrowLeft className="w-4 h-4" /></button>
+                    <div>
+                        <h1 className="text-sm font-black uppercase tracking-tight">Admin Directory</h1>
+                    </div>
+                </div>
+                <button
+                    onClick={() => {
+                        localStorage.removeItem("admin_auth_token");
+                        toast.success("Admin session terminated.");
+                        router.push('/admin/login');
+                    }}
+                    className="p-3 bg-rose-50 text-rose-600 rounded-xl active:scale-95 transition-all shadow-sm border border-rose-100"
+                >
+                    <LogOut className="w-4 h-4" />
+                </button>
+            </div>
+
+            {/* Header (Desktop) */}
+            <div className="hidden md:block bg-gradient-to-r from-[#881337] to-[#9F1239] px-6 py-5 shadow-lg">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <button onClick={() => router.push('/admin/approvals')}

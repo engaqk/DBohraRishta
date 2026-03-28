@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart } from 'lucide-react';
+import { Sparkles, Mic, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment, setDoc } from 'firebase/firestore';
@@ -67,6 +67,7 @@ interface UserProfile {
     isCommunityContributor?: boolean;
     createdAt?: any;
     verifiedPhone?: string;
+    voiceIntroUrl?: string;
 }
 
 interface RishtaRequest {
@@ -84,16 +85,107 @@ interface RishtaRequest {
     otherUserEmail: string;
     otherUserLibasUrl: string | null;
     otherUserBlurSecurityEnabled: boolean;
+    otherUserId: string;
 }
 
 export default function RishtaDashboard() {
-    const { user, loading, logout, verifyEmail, refreshUser, isImpersonating } = useAuth();
+    const { user, loading, logout, verifyEmail, refreshUser, isImpersonating, stopImpersonating } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
     const tabParam = searchParams.get('tab');
     const adminChatParam = searchParams.get('adminChat');
 
     // UI State
+    // Voice Intro States
+    const [isRecording, setIsRecording] = useState(false);
+    const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+    const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
+    const [recordingTime, setRecordingTime] = useState(0);
+    const [isUploadingVoice, setIsUploadingVoice] = useState(false);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Voice Intro Handlers
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            const chunks: Blob[] = [];
+
+            mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'audio/webm' });
+                setAudioBlob(blob);
+                setAudioPreviewUrl(URL.createObjectURL(blob));
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+            setRecordingTime(0);
+            timerRef.current = setInterval(() => {
+                setRecordingTime((prev) => {
+                    if (prev >= 30) {
+                        stopRecording();
+                        return 30;
+                    }
+                    return prev + 1;
+                });
+            }, 1000);
+        } catch (err) {
+            toast.error("Microphone access denied or not available.");
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        }
+        setIsRecording(false);
+        if (timerRef.current) clearInterval(timerRef.current);
+    };
+
+    const handleUploadVoice = async () => {
+        if (!audioBlob || !user) return;
+        setIsUploadingVoice(true);
+        try {
+            // Convert Blob to Base64 String
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = async () => {
+                const base64Audio = reader.result as string;
+                
+                // Directly save Base64 string to Firestore (like selfies)
+                await updateDoc(doc(db, 'users', user.uid), {
+                    voiceIntroUrl: base64Audio
+                });
+                
+                toast.success("Voice Intro saved to profile! ✨");
+                setAudioBlob(null);
+                setAudioPreviewUrl(null);
+                refreshUser();
+                setIsUploadingVoice(false);
+            };
+        } catch (err) {
+            toast.error("Failed to save voice intro.");
+            setIsUploadingVoice(false);
+        }
+    };
+
+    const handleDeleteVoice = async () => {
+        if (!user || !window.confirm("Delete your voice intro?")) return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), {
+                voiceIntroUrl: null
+            });
+            toast.success("Voice Intro removed.");
+            refreshUser();
+        } catch (err) {
+            toast.error("Failed to delete.");
+        }
+    };
+
     const [activeTab, setActiveTab] = useState<'mybiodata' | 'discovery' | 'requests' | 'messages' | 'notifications'>('discovery');
 
     // Sync tab with URL
@@ -127,9 +219,11 @@ export default function RishtaDashboard() {
     const [myProfile, setMyProfile] = useState<any>(null);
 
     // Feature Modules State
-    const [activeChat, setActiveChat] = useState<{ id: string, name: string, imageUrl?: string } | null>(null);
+    const [activeChat, setActiveChat] = useState<{ id: string, otherUserId: string, name: string, imageUrl?: string } | null>(null);
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [paying, setPaying] = useState(false);
+    const [adminLastSeen, setAdminLastSeen] = useState<string | null>(null);
+    const [userMsgInput, setUserMsgInput] = useState('');
     const [showMyProfileModal, setShowMyProfileModal] = useState(false);
     const [activePreviewPhotoIdx, setActivePreviewPhotoIdx] = useState(0);
     const [showPreviewLightbox, setShowPreviewLightbox] = useState(false);
@@ -296,12 +390,19 @@ export default function RishtaDashboard() {
 
         // --- Heartbeat Logic ---
         const updateStatus = async (status: boolean) => {
+            if (!user) return;
+            // Ghosting Prevention: Don't track online status if Admin is impersonating
+            if (isImpersonating) return;
+            
             try {
-                await updateDoc(doc(db, 'users', user.uid), {
+                const userRef = doc(db, 'users', user.uid);
+                await updateDoc(userRef, {
                     isOnline: status,
                     lastActive: serverTimestamp()
                 });
-            } catch (e) { }
+            } catch (e) {
+                console.error("Status Update Failed", e);
+            }
         };
 
         updateStatus(true);
@@ -339,18 +440,13 @@ export default function RishtaDashboard() {
         fetchStats();
         const statsIv = setInterval(fetchStats, 60000);
 
-        // Fetch Performance Insights
-        const fetchPerformance = async () => {
-            if (!user) return;
-            try {
-                const viewsQ = query(collection(db, 'profile_views'), where('profileId', '==', user.uid));
-                const viewsSnap = await getDocs(viewsQ);
-                const reqsQ = query(collection(db, 'interest_requests'), where('to', '==', user.uid));
-                const reqsSnap = await getDocs(reqsQ);
-                setPerformanceData({ views: viewsSnap.size, requests: reqsSnap.size });
-            } catch (e) {}
-        };
-        fetchPerformance();
+        // Fetch Live Performance Insights (Views & Interests)
+        const viewsUnsub = onSnapshot(query(collection(db, 'profile_views'), where('profileId', '==', user.uid)), (snap) => {
+            setPerformanceData(prev => ({ ...prev, views: snap.size }));
+        });
+        const reqsUnsub = onSnapshot(query(collection(db, 'rishta_requests'), where('to', '==', user.uid)), (snap) => {
+            setPerformanceData(prev => ({ ...prev, requests: snap.size }));
+        });
 
         // Process Pending Referrals
         const processReferral = async () => {
@@ -488,6 +584,60 @@ export default function RishtaDashboard() {
         return () => unsub();
     }, [user]);
 
+    // --- 🛡️ ADMIN SUPPORT THREAD LISTENER ---
+    useEffect(() => {
+        if (!user) return;
+        
+        // Listen to the specific thread for this user under admin_messages
+        const q = query(
+            collection(db, 'admin_messages', user.uid, 'thread'),
+            orderBy('createdAt', 'asc')
+        );
+
+        const unsub = onSnapshot(q, (snap) => {
+            const msgs = snap.docs.map(d => {
+                const data = d.data();
+                return {
+                    id: d.id,
+                    text: data.text || '',
+                    from: data.from || 'admin',
+                    createdAt: data.createdAt
+                } as any;
+            });
+            setAdminMsgThread(msgs);
+        }, (err) => {
+            console.error("Admin Thread Listener Error:", err);
+        });
+
+        return () => unsub();
+    }, [user]);
+
+    // Fetch Admin Last Seen for Help Chat
+    useEffect(() => {
+        const { collection, query, where, limit, onSnapshot } = require('firebase/firestore');
+        const q = query(collection(db, 'users'), where('role', '==', 'admin'), limit(1));
+        const unsub = onSnapshot(q, (snap: any) => {
+            if (!snap.empty) {
+                const adminData = snap.docs[0].data();
+                if (adminData.lastActive) {
+                    const lastActive = adminData.lastActive.toDate();
+                    const diff = Date.now() - lastActive.getTime();
+                    if (diff < 5 * 60 * 1000) setAdminLastSeen('Online');
+                    else {
+                        setAdminLastSeen(new Intl.DateTimeFormat('en-IN', { 
+                            hour: 'numeric', 
+                            minute: 'numeric', 
+                            hour12: true,
+                            day: 'numeric',
+                            month: 'short'
+                        }).format(lastActive));
+                    }
+                }
+            }
+        });
+        return () => unsub();
+    }, []);
+
     const markAllNotificationsRead = async () => {
         if (!user || notifications.length === 0) return;
         const unread = notifications.filter(n => !n.isRead);
@@ -530,9 +680,29 @@ export default function RishtaDashboard() {
                 const res = await fetch(`/api/version?t=${Date.now()}`);
                 const data = await res.json();
                 if (data.version && data.version !== clientVersion) {
-                    console.log('New deployment detected. Refreshing app...');
-                    // Automatically reload to latest version
-                    window.location.reload();
+                    // Avoid refreshing if user is in middle of something important
+                    const isBusy = isRecording || uploadingSelfie || mobileVerifyLoading || 
+                                  generatingBiodata || isUploadingVoice || userMsgInput.trim().length > 5 ||
+                                  paying;
+                                  
+                    if (!isBusy) {
+                        console.log('New deployment detected. Refreshing app safely...');
+                        // If the window is hidden, refresh immediately.
+                        // If visible, show a brief notice before refreshing to avoid jarring experience.
+                        if (document.visibilityState === 'hidden') {
+                            window.location.reload();
+                        } else {
+                            toast("Updating dashboard to latest version...", { icon: '🚀', duration: 3000 });
+                            setTimeout(() => {
+                                // Double check if still not busy after toast
+                                if (!(isRecording || uploadingSelfie || isUploadingVoice)) {
+                                    window.location.reload();
+                                }
+                            }, 3500);
+                        }
+                    } else {
+                        console.log('Update available, but user is busy. Postponing refresh.');
+                    }
                 }
             } catch (e) {
                 // Silent fail if offline or API error
@@ -805,6 +975,7 @@ export default function RishtaDashboard() {
                             otherUserEmail: uData.email || "Not Shared",
                             otherUserLibasUrl: uData.libasImageUrl || null,
                             otherUserBlurSecurityEnabled: uData.isBlurSecurityEnabled !== false,
+                            otherUserId: targetId,
                         });
                     }
                 } catch (e) { }
@@ -837,6 +1008,12 @@ export default function RishtaDashboard() {
             }
             const profileData = meRef.data() || { status: 'incomplete', isItsVerified: false };
             setMyProfile({ id: meRef.id, ...profileData });
+            
+            // Real-time Performance Data updates from fields
+            setPerformanceData({ 
+                views: Math.max((profileData as any).viewsCount || 0, performanceData.views), 
+                requests: Math.max((profileData as any).interestsCount || 0, performanceData.requests) 
+            });
 
             const isVerified = profileData.isItsVerified === true || profileData.status === 'verified' || profileData.status === 'approved';
             const celebKey = `verified_celebrated_${user.uid}`;
@@ -897,13 +1074,13 @@ export default function RishtaDashboard() {
 
         // --- Heartbeat Logic ---
         const updateOnlineStatus = async (online: boolean) => {
-            if (!user) return;
+            if (!user || isImpersonating) return;
             try {
-                await updateDoc(doc(db, "users", user.uid), {
+                await updateDoc(doc(db, 'users', user.uid), {
                     isOnline: online,
                     lastActive: serverTimestamp()
                 });
-            } catch (e) { }
+            } catch (e) {}
         };
 
         const heartbeat = setInterval(() => updateOnlineStatus(true), 30000);
@@ -1141,6 +1318,7 @@ export default function RishtaDashboard() {
                         <section className="lg:col-span-4">
                             <ChatWindow
                                 connectionId={activeChat.id}
+                                otherUserId={activeChat.otherUserId}
                                 otherUserName={activeChat.name}
                                 otherUserImageUrl={activeChat.imageUrl}
                                 onClose={() => setActiveChat(null)}
@@ -1203,7 +1381,12 @@ export default function RishtaDashboard() {
                                             <div className="flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => {
-                                                        setActiveChat({ id: msg.id, name: msg.otherUserName, imageUrl: msg.otherUserLibasUrl || undefined });
+                                                        setActiveChat({ 
+                                                            id: msg.id, 
+                                                            otherUserId: msg.otherUserId,
+                                                            name: msg.otherUserName, 
+                                                            imageUrl: msg.otherUserLibasUrl || undefined 
+                                                        });
                                                     }}
                                                     className="bg-[#881337] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-[#9F1239] transition-all flex items-center gap-2">
                                                     <MessageCircle className="w-4 h-4" /> Start Protected Chat
@@ -1457,59 +1640,86 @@ export default function RishtaDashboard() {
                 </div>
                 {/* ── Floating Admin Help Chat Panel ── */}
                 {showAdminHelpChat && (
-                    <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden" style={{ maxHeight: '460px' }}>
-                        {/* Header */}
-                        <div className="bg-gradient-to-r from-[#881337] to-[#9F1239] px-4 py-3 flex items-center justify-between shrink-0">
-                            <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center text-white text-sm">🛡️</div>
-                                <div>
-                                    <p className="text-white font-bold text-sm">Admin Support</p>
-                                    <p className="text-white/70 text-[10px]">DBohraRishta Team</p>
+                    <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 w-80 md:w-[400px] bg-white rounded-3xl shadow-2xl border border-rose-100 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300" style={{ maxHeight: '520px' }}>
+                        {/* Header - Premium Style */}
+                        <div className="bg-[#881337] px-5 py-4 flex items-center justify-between shrink-0 shadow-sm relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
+                            <div className="flex items-center gap-3 relative z-10">
+                                <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white shadow-inner border border-white/10">
+                                    <ShieldCheck className="w-5 h-5 text-[#D4AF37]" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <p className="text-white font-black text-sm uppercase tracking-wider leading-tight">Support Desk</p>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
+                                        <p className="text-rose-100 text-[10px] font-bold">Online • Fast Response</p>
+                                    </div>
                                 </div>
                             </div>
-                            <button onClick={() => setShowAdminHelpChat(false)} className="text-white/80 hover:text-white"><X className="w-4 h-4" /></button>
+                            <button 
+                                onClick={() => setShowAdminHelpChat(false)} 
+                                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all active:scale-95"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
                         </div>
 
-                        {/* Messages */}
-                        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 bg-gray-50">
+                        {/* Messages - Matching Admin Dashboard Style */}
+                        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-[#FDFCFD] min-h-[300px]" style={{ backgroundImage: 'radial-gradient(#88133708 1.5px, transparent 0)', backgroundSize: '24px 24px' }}>
                             {adminMsgThread.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <p className="text-2xl mb-2">👋</p>
-                                    <p className="text-gray-500 text-sm font-bold">Need help?</p>
-                                    <p className="text-gray-400 text-xs mt-1">Send a message and the admin team will reply shortly.</p>
+                                <div className="text-center py-12 flex flex-col items-center">
+                                    <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center text-3xl mb-4 border border-rose-100/50">👋</div>
+                                    <p className="text-[#881337] text-lg font-black font-serif">Need assistance?</p>
+                                    <p className="text-gray-400 text-xs mt-1 max-w-[180px] leading-relaxed">Send a message and our verified admin team will respond shortly.</p>
                                 </div>
                             ) : (
-                                adminMsgThread.map(msg => (
-                                    <div key={msg.id} className={`flex ${msg.from === 'admin' ? 'justify-start' : 'justify-end'}`}>
-                                        <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm shadow-sm ${msg.from === 'admin'
-                                            ? 'bg-white text-gray-800 rounded-tl-sm border border-gray-100'
-                                            : 'bg-[#881337] text-white rounded-tr-sm'
-                                            }`}>
-                                            <p className="text-[9px] font-bold uppercase opacity-60 mb-0.5">{msg.from === 'admin' ? 'Admin' : 'You'}</p>
-                                            <p>{msg.text}</p>
+                                adminMsgThread.map(msg => {
+                                    const isAdmin = msg.from === 'admin';
+                                    return (
+                                        <div key={msg.id} className={`flex ${isAdmin ? 'justify-start' : 'justify-end'}`}>
+                                            <div className={`max-w-[85%] flex flex-col ${isAdmin ? 'items-start' : 'items-end'}`}>
+                                                <div className={`px-4 py-3 rounded-2xl text-[13px] shadow-sm relative ${isAdmin
+                                                    ? 'bg-white text-gray-800 rounded-tl-sm border border-rose-100 shadow-rose-900/5'
+                                                    : 'bg-[#881337] text-white rounded-tr-sm shadow-xl shadow-rose-900/10'
+                                                    }`}>
+                                                    <p className={`text-[9px] font-black uppercase tracking-widest mb-1 opacity-60 ${isAdmin ? 'text-[#881337]' : 'text-rose-100'}`}>
+                                                        {isAdmin ? 'ADMIN' : (myProfile?.name?.split(' ')[0] || 'YOU')}
+                                                    </p>
+                                                    <p className="leading-relaxed font-medium">{msg.text}</p>
+                                                </div>
+                                                <p className="text-[8px] text-gray-400 font-bold mt-1 px-1 uppercase tracking-tighter">
+                                                    {msg.createdAt?.seconds ? new Date(msg.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Sending...'}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
+                            <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })} />
                         </div>
 
-                        {/* Input */}
-                        <div className="border-t border-gray-100 p-3 bg-white flex gap-2 shrink-0">
-                            <input
-                                type="text"
-                                value={userMsgInput}
-                                onChange={e => setUserMsgInput(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessageToAdmin(); } }}
-                                placeholder="Type your message..."
-                                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#881337]/30 focus:border-[#881337]"
-                            />
-                            <button
-                                onClick={handleSendMessageToAdmin}
-                                disabled={!userMsgInput.trim()}
-                                className="w-9 h-9 bg-[#881337] text-white rounded-xl flex items-center justify-center hover:bg-[#9F1239] transition-colors disabled:opacity-40"
-                            >
-                                <Send className="w-4 h-4" />
-                            </button>
+                        {/* Input Area */}
+                        <div className="p-4 bg-white border-t border-rose-50 shrink-0">
+                            <div className="flex gap-2 items-end">
+                                <div className="flex-1 bg-gray-50 border border-rose-100/50 rounded-2xl px-4 py-3 flex items-center gap-2 focus-within:ring-2 focus-within:ring-rose-100 transition-all">
+                                    <input
+                                        type="text"
+                                        value={userMsgInput}
+                                        onChange={e => setUserMsgInput(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessageToAdmin(); } }}
+                                        placeholder="Ask admin anything..."
+                                        className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400 text-gray-800"
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleSendMessageToAdmin}
+                                    disabled={!userMsgInput.trim()}
+                                    className="w-12 h-12 bg-[#881337] text-white rounded-2xl flex items-center justify-center hover:bg-[#9F1239] transition-all shadow-lg shadow-rose-900/20 disabled:opacity-40 active:scale-90 shrink-0"
+                                >
+                                    <Send className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <p className="text-[8px] text-center text-gray-400 font-bold uppercase tracking-widest mt-3">Verified Support Channel • DBohraRishta</p>
                         </div>
                     </div>
                 )}
@@ -1732,10 +1942,8 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                             <h3 className="font-bold text-2xl text-[#881337] text-center font-serif">{myProfile.name}</h3>
                             <p className="text-sm text-gray-500 mb-2">ITS: {myProfile.itsNumber} · {myProfile.jamaat}</p>
                             <div className="flex flex-wrap items-center justify-center gap-2 mt-1 mb-4">
-                                {myProfile.isItsVerified ? (
-                                    <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-emerald-100"><Check className="w-3 h-3" /> ITS Verified</span>
-                                ) : (
-                                    <span className="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-yellow-100"><Clock className="w-3 h-3" /> ITS Pending</span>
+                                {myProfile.isItsVerified && (
+                                    <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-emerald-100"><Check className="w-3 h-3" /> ITS Card Verified</span>
                                 )}
                                 {user?.emailVerified || myProfile.isEmailVerified ? (
                                     <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-blue-100"><Check className="w-3 h-3" /> Email Verified</span>
@@ -1836,6 +2044,92 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                     <button className="text-[10px] font-black bg-[#881337] text-white px-2 py-1 rounded-lg">Get Verified</button>
                                                 )}
                                             </div>
+
+                                            {/* 🔊 Voice Intro Section */}
+                                            <div className="p-4 rounded-xl border border-rose-100 bg-rose-50/30 flex flex-col gap-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.voiceIntroUrl ? 'bg-[#881337] text-white' : 'border-2 border-gray-200 text-gray-400'}`}>
+                                                            {myProfile.voiceIntroUrl ? <Check className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-700">Voice Intro (30s)</span>
+                                                    </div>
+                                                    {myProfile.voiceIntroUrl && !isRecording && !audioBlob && (
+                                                        <button onClick={handleDeleteVoice} className="text-[10px] font-black text-rose-600 uppercase hover:underline">Delete</button>
+                                                    )}
+                                                </div>
+
+                                                <p className="text-[10px] text-gray-500 leading-relaxed italic">
+                                                    Record a short introduction to let others hear your voice and personality.
+                                                </p>
+
+                                                {!isRecording && !audioBlob && !myProfile.voiceIntroUrl && (
+                                                    <button 
+                                                        onClick={startRecording}
+                                                        className="flex items-center justify-center gap-2 py-2 bg-white border border-rose-200 rounded-xl text-xs font-bold text-[#881337] hover:bg-rose-50 transition-all active:scale-95"
+                                                    >
+                                                        <Mic className="w-4 h-4" /> Start Recording
+                                                    </button>
+                                                )}
+
+                                                {!isRecording && !audioBlob && myProfile.voiceIntroUrl && (
+                                                    <div className="flex items-center gap-2">
+                                                        <audio src={myProfile.voiceIntroUrl} controls className="h-8 flex-1" />
+                                                        <button 
+                                                            onClick={startRecording}
+                                                            className="p-2 bg-white border border-gray-200 rounded-xl text-[#881337] hover:bg-rose-50"
+                                                            title="Re-record"
+                                                        >
+                                                            <RefreshCw className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {isRecording && (
+                                                    <div className="flex flex-col items-center gap-2 py-2 bg-rose-100 rounded-xl animate-pulse">
+                                                        <div className="flex items-center gap-2 text-[#881337] font-black">
+                                                            <div className="w-2 h-2 bg-[#881337] rounded-full" />
+                                                            Recording... {recordingTime}s / 30s
+                                                        </div>
+                                                        <button 
+                                                            onClick={stopRecording}
+                                                            className="px-6 py-1.5 bg-[#881337] text-white rounded-lg text-xs font-bold shadow-lg"
+                                                        >
+                                                            Stop & Preview
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {!isRecording && audioBlob && (
+                                                    <div className="flex flex-col gap-3">
+                                                        <div className="flex items-center gap-2 p-2 bg-white border border-gray-100 rounded-xl">
+                                                            <audio src={audioPreviewUrl!} controls className="h-8 flex-1" />
+                                                            <button 
+                                                                onClick={() => { setAudioBlob(null); setAudioPreviewUrl(null); }}
+                                                                className="p-2 text-gray-400 hover:text-rose-600"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button 
+                                                                onClick={startRecording}
+                                                                className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold"
+                                                            >
+                                                                Re-record
+                                                            </button>
+                                                            <button 
+                                                                onClick={handleUploadVoice}
+                                                                disabled={isUploadingVoice}
+                                                                className="flex-1 py-2 bg-[#881337] text-white rounded-xl text-xs font-bold shadow-md hover:bg-[#9F1239] flex items-center justify-center gap-2"
+                                                            >
+                                                                {isUploadingVoice ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                                                                Upload Intro
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {pct < 100 && (
@@ -1865,7 +2159,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                 className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all mt-6 flex items-center justify-center gap-2 group"
                                             >
                                                 {generatingBiodata ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 group-hover:scale-110 transition-transform" />}
-                                                Download Digital Biodata
+                                                Download/Generate Biodata with QR Code
                                             </button>
                                         )}
                                     </div>
@@ -1885,39 +2179,37 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 }}
                             >
                                 {/* Premium Border Overlay */}
-                                <div className="absolute inset-0 border-[15px]" style={{ borderColor: '#881337' }} />
-                                <div className="absolute inset-[20px] border-2" style={{ borderColor: '#D4AF37' }} />
+                                 <div className="absolute inset-0 border-[15px]" style={{ borderColor: '#881337' }} />
+                                 <div className="absolute inset-[20px] border-2" style={{ borderColor: '#D4AF37' }} />
 
                                  {/* URL Branding at Top */}
                                  <div className="absolute top-4 left-0 right-0 text-center text-[8px] font-black uppercase tracking-[0.5em]" style={{ color: 'rgba(136, 19, 55, 0.3)' }}>
                                      https://53dbohrarishta.in
                                  </div>
 
-                                 {/* Header section (Matching Login Branding) - REFIXED */}
+                                 {/* Header section (Matching Screenshot Branding) */}
                                  <div className="relative z-10 -mt-10 -mx-10 mb-10 overflow-hidden">
-                                     <div className="bg-[#881337] p-10 text-center relative">
-                                         {/* 53 Badge (Premium Login Style) */}
-                                         <div className="relative w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-                                            <div className="absolute inset-0 bg-[#D4AF37] rounded-full opacity-20 animate-pulse scale-110" />
-                                            <div className="absolute inset-0 bg-white/10 rounded-full backdrop-blur-sm border border-white/30" />
-                                            <div className="relative w-16 h-16 rounded-full border-2 border-[#D4AF37] bg-white flex items-center justify-center shadow-[0_0_20px_rgba(212,175,55,0.4)]">
-                                                <span className="text-3xl font-black text-[#D4AF37] font-serif">53</span>
+                                     <div className="bg-[#881337] p-12 text-center relative border-b-2 border-[#D4AF37]/20">
+                                         {/* 53 Badge (Screenshot Style) */}
+                                         <div className="relative w-24 h-24 mx-auto mb-8 flex items-center justify-center">
+                                            <div className="absolute inset-0 bg-[#D4AF37] rounded-full opacity-25 blur-2xl scale-150 animate-pulse" />
+                                            <div className="relative w-20 h-20 rounded-full border-4 border-[#D4AF37] bg-white flex items-center justify-center shadow-[0_15px_35px_rgba(0,0,0,0.3)]">
+                                                <span className="text-5xl font-black text-[#D4AF37] font-serif tracking-tighter">53</span>
                                             </div>
                                          </div>
-
-                                         <h1 className="text-5xl font-black tracking-tight mb-2 text-white font-serif">
+ 
+                                         <h1 className="text-6xl font-black tracking-tight mb-5 text-white font-serif drop-shadow-sm">
                                              DBohra<span className="text-[#D4AF37]">Rishta</span>
                                          </h1>
                                          
-                                         <div className="flex items-center justify-center gap-3">
-                                            <div className="h-[1px] w-12 bg-white/20" />
-                                            <p className="text-[12px] font-sans font-black tracking-[0.4em] uppercase text-white/80">Intelligent Matches</p>
-                                            <div className="h-[1px] w-12 bg-white/20" />
+                                         <div className="flex flex-col items-center gap-4">
+                                            <div className="h-[1.5px] w-32 bg-white/20" />
+                                            <p className="text-[14px] font-sans font-black tracking-[0.6em] uppercase text-white/90 drop-shadow-md">INTELLIGENT MATCHES</p>
                                          </div>
                                      </div>
                                  </div>
 
-                                <div className="flex gap-10 mb-8 relative z-10 px-4">
+                                 <div className="flex gap-10 mb-8 relative z-10 px-4">
                                     {/* Left: Photo & Verification */}
                                     <div className="w-56 shrink-0">
                                         <div className="w-56 h-72 rounded-2xl overflow-hidden mb-4" style={{ border: '4px solid #ffffff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
@@ -1931,7 +2223,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                         </div>
                                         <div className="flex flex-col gap-2">
                                             <div className="px-3 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#fff1f2', color: '#881337', border: '1px solid #ffe4e6', boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>{myProfile.gender} Member</div>
-                                            <div className="px-3 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #dcfce7', boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>ITS Verified Member</div>
+                                            <div className="px-3 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-wider" style={{ backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #dcfce7', boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)' }}>ITS Card Verified Member</div>
                                         </div>
                                     </div>
 
@@ -2235,7 +2527,9 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 </div>
                                 <div className="flex flex-col">
                                     <p className="font-serif font-black text-lg leading-tight truncate w-[160px]">{myProfile.name}</p>
-                                    <p className="text-[10px] uppercase font-bold text-white/60 tracking-widest mt-0.5">ITS Verified Profile</p>
+                                    {myProfile.isItsVerified && (
+                                        <p className="text-[10px] uppercase font-bold text-white/60 tracking-widest mt-0.5">ITS Card Verified</p>
+                                    )}
                                 </div>
                             </div>
                             <button onClick={() => setShowMobileMenu(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
@@ -2282,8 +2576,16 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 onClick={() => { logout(); setShowMobileMenu(false); }}
                                 className="w-full flex items-center justify-center gap-2 py-4 bg-white border border-rose-100 text-[#881337] rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm active:scale-95 transition-all"
                             >
-                                <LogOut className="w-4 h-4" /> Sign Out
+                                 <LogOut className="w-4 h-4" /> Sign Out
                             </button>
+                            {isImpersonating && (
+                                <button 
+                                    onClick={() => { stopImpersonating(); setShowMobileMenu(false); }}
+                                    className="w-full flex items-center justify-center gap-2 py-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm active:scale-95 transition-all mt-3"
+                                >
+                                    <ShieldAlert className="w-4 h-4" /> Stop Impersonating
+                                </button>
+                            )}
                             <p className="text-center text-[9px] text-gray-400 mt-4 leading-relaxed">
                                 Version 2.1.0 (ITS-Verified)<br/>
                                 © 2026 DBohraRishta Online
@@ -2757,6 +3059,75 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                     </div>
                 </div>
             )}
+
+            {/* 💬 Admin Help Chat Modal */}
+            {showAdminHelpChat && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-lg h-full sm:h-[600px] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+                        {/* Chat Header */}
+                        <div className="p-6 bg-[#881337] text-white flex items-center justify-between shadow-lg">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
+                                    <ShieldCheck className="w-7 h-7 text-[#D4AF37]" />
+                                </div>
+                                <div>
+                                    <h3 className="font-serif font-black text-lg">Admin Support</h3>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
+                                            {adminLastSeen ? `Last seen ${adminLastSeen}` : 'Online Support'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowAdminHelpChat(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        {/* Messages Area */}
+                        <div className="flex-1 overflow-y-auto p-6 bg-gray-50 flex flex-col gap-4">
+                            {adminMsgThread.length === 0 ? (
+                                <div className="flex-1 flex flex-col items-center justify-center opacity-40">
+                                    <MessageSquare className="w-12 h-12 mb-3" />
+                                    <p className="text-sm font-bold">Start a conversation with Admin</p>
+                                </div>
+                            ) : (
+                                adminMsgThread.map((msg, i) => (
+                                    <div key={msg.id || i} className={`max-w-[85%] flex flex-col ${msg.from === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
+                                        <div className={`p-4 rounded-2xl text-sm shadow-sm ${msg.from === 'user' ? 'bg-[#881337] text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none border border-gray-100'}`}>
+                                            {msg.text}
+                                        </div>
+                                        <span className="text-[9px] font-bold text-gray-400 mt-1 uppercase">
+                                            {msg.createdAt?.toDate ? new Intl.DateTimeFormat('en-IN', { hour: 'numeric', minute: 'numeric', hour12: true }).format(msg.createdAt.toDate()) : 'Sent'}
+                                        </span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Input Area */}
+                        <div className="p-4 bg-white border-t border-gray-100 flex gap-3 items-center">
+                            <input 
+                                type="text"
+                                value={userMsgInput}
+                                onChange={(e) => setUserMsgInput(e.target.value)}
+                                placeholder="Type your message..."
+                                className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-sm focus:ring-2 focus:ring-[#881337] outline-none transition-all"
+                                onKeyPress={(e) => e.key === 'Enter' && handleSendMessageToAdmin()}
+                            />
+                            <button 
+                                onClick={handleSendMessageToAdmin}
+                                disabled={!userMsgInput.trim()}
+                                className="w-12 h-12 bg-[#881337] text-white rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all disabled:opacity-50"
+                            >
+                                <Send className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             {/* 🟢 Floating WhatsApp Share Button */}
             <a

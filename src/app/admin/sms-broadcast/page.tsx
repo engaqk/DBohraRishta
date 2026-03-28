@@ -6,7 +6,7 @@ import { db } from "@/lib/firebase/config";
 import {
     Send, Loader2, ArrowLeft, Smartphone, CheckCircle2, History,
     MessageSquare, AlertCircle, RefreshCw, User, Database, ShieldCheck, Search,
-    Zap, XCircle, Clock, Activity
+    Zap, XCircle, Clock, Activity, LogOut
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -225,7 +225,28 @@ export default function AdminSmsBroadcastPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col p-6 text-[#881337] pt-12 md:px-12">
+        <div className="min-h-screen bg-gray-50 flex flex-col p-6 text-[#881337] md:pt-12 md:px-12">
+            {/* 📱 Mobile Sticky Header (Premium Refresh) */}
+            <div className="md:hidden sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-6 py-4 flex items-center justify-between shadow-sm -mx-6 -mt-6 mb-6">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-gradient-to-br from-[#881337] to-[#9F1239] text-white rounded-xl flex items-center justify-center font-black text-sm shadow-lg shadow-rose-900/20 ring-2 ring-white">53</div>
+                    <div className="flex flex-col">
+                        <h2 className="text-[13px] font-black font-serif text-[#881337] leading-none">Gateway</h2>
+                        <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mt-0.5">DBohraRishta</span>
+                    </div>
+                </div>
+                <button
+                    onClick={() => {
+                        localStorage.removeItem("admin_auth_token");
+                        toast.success("Admin session terminated.");
+                        router.push('/admin/login');
+                    }}
+                    className="w-10 h-10 bg-gray-50 text-gray-500 rounded-xl flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 active:scale-95 transition-all border border-gray-100"
+                    title="Logout"
+                >
+                    <LogOut className="w-5 h-5" />
+                </button>
+            </div>
             <div className="max-w-5xl w-full mx-auto">
 
                 {/* Back */}

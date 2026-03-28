@@ -2212,33 +2212,18 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                         </button>
 
                                         {myProfile.status === 'verified' && (
-                                            <div className='flex flex-col gap-3 mt-4'>
-                                            <button
-                                                id="download-biodata-btn"
-                                                onClick={handleDownloadBiodata}
-                                                disabled={generatingBiodata}
-                                                className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all mt-6 flex items-center justify-center gap-2 group"
-                                            >
-                                                {generatingBiodata ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 group-hover:scale-110 transition-transform" />}
-                                                Download / Print My Biodata
-                                            </button>
-
-                                            <button
-                                                onClick={() => {
-                                                    const shareUrl = `${window.location.origin}/profile?id=${user.uid}`;
-                                                    const text = `Assalamu Alaiykum! Check out my official Digital Biodata on 53DBohraRishta Community: ${shareUrl}`;
-                                                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                                                }}
-                                                className="w-full bg-[#25D366] text-white py-3 rounded-xl text-sm font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 mt-4 active:scale-95"
-                                            >
-                                                <div className="w-5 h-5 flex items-center justify-center rounded-full bg-white text-[#25D366] font-extrabold text-[10px] pb-[px] border-2 border-white/50 ring-1 ring-[#25D366]/20">53</div>
-                                                Share Profile on WhatsApp
-                                            </button>
+                                            <div className='flex flex-col gap-3 mt-6'>
+                                                <button
+                                                    id='download-biodata-btn'
+                                                    onClick={handleDownloadBiodata}
+                                                    disabled={generatingBiodata}
+                                                    className='w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3 rounded-xl text-sm font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group active:scale-95'
+                                                >
+                                                    {generatingBiodata ? <RefreshCw className='w-4 h-4 animate-spin' /> : <Download className='w-4 h-4 group-hover:scale-110 transition-transform' />}
+                                                    Download PNG (Gallery Image)
+                                                </button>
                                             </div>
-                                        )}
-                                    </div>
-                                );
-                            })()}
+                                         )}
                         </div>
 
                         {/* 🖼️ HIDDEN BIODATA TEMPLATE FOR EXPORT */}
@@ -3244,3 +3229,4 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
         </div>
     );
 }
+

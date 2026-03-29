@@ -402,9 +402,16 @@ export default function OnboardingPage() {
                                     {errors.gender && <p className="text-red-500 text-xs font-bold mt-2 ml-1">{errors.gender}</p>}
                                 </div>
 
-                                <div>
+                                <div className="space-y-1">
                                     <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Date of Birth</label>
-                                    <input type="date" name="dob" onChange={handleChange} value={formData.dob} className={`w-full bg-gray-50 border ${errors.dob ? 'border-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-2xl px-5 py-4 focus:ring-2 outline-none font-semibold shadow-sm`} />
+                                    <input 
+                                        type="date" 
+                                        name="dob" 
+                                        onChange={handleChange} 
+                                        value={formData.dob} 
+                                        max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                                        className={`w-full bg-gray-50 border ${errors.dob ? 'border-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-2xl px-5 py-4 focus:ring-2 outline-none font-semibold shadow-sm`} 
+                                    />
                                     {errors.dob && <p className="text-red-500 text-xs font-bold mt-2 ml-1">{errors.dob}</p>}
                                 </div>
 

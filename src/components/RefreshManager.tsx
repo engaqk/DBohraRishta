@@ -13,14 +13,14 @@ export default function RefreshManager() {
                 const res = await fetch('/api/version', { cache: 'no-store' });
                 const data = await res.json();
                 const currentServerVersion = data.version;
-                
+
                 if (currentVersionRef.current === null) {
                     // First load, save the current baseline version
                     currentVersionRef.current = currentServerVersion;
                 } else if (currentVersionRef.current !== currentServerVersion && currentServerVersion !== 'development') {
                     // Version changed! A new deployment occurred while the user had the app open
                     console.log("New deployment detected. Prompting user to reload...");
-                    
+
                     // Don't forcefully reload, it breaks UX during file uploads or form filling. Show a sticky, clickable toast:
                     if (!sessionStorage.getItem('update_toast_shown')) {
                         sessionStorage.setItem('update_toast_shown', 'true');
@@ -29,8 +29,8 @@ export default function RefreshManager() {
                                 <div className="flex flex-col items-start gap-2">
                                     <div className="font-bold text-sm text-gray-900">✨ New Update Available!</div>
                                     <p className="text-xs text-gray-600">We've just released a new feature or fix. Please refresh to continue.</p>
-                                    <button 
-                                        onClick={() => window.location.reload()} 
+                                    <button
+                                        onClick={() => window.location.reload()}
                                         className="mt-1 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider"
                                     >
                                         Refresh Now
@@ -49,10 +49,8 @@ export default function RefreshManager() {
         // Delay the first check slightly so it doesn't block critical rendering path
         const initialTimer = setTimeout(checkVersion, 3000);
 
-        // Check if an update occurred every 5 minutes while the app stays open
-        const intervalId = setInterval(checkVersion, 5 * 60 * 1000);
-
-        // Also check whenever the user returns to the tab after it was hidden/in background
+        // Instead of a periodic background interval which can disrupt active sessions,
+        // we check for updates when the user returns to the app tab (visibility changes to visible)
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
                 checkVersion();
@@ -71,7 +69,6 @@ export default function RefreshManager() {
 
         return () => {
             clearTimeout(initialTimer);
-            clearInterval(intervalId);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, []);

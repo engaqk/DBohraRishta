@@ -434,7 +434,7 @@ export default function RishtaDashboard() {
         const fetchStats = () => {
             fetch('/api/public-stats').then(r => r.json()).then(d => {
                 if (d.success) setPlatformStats({ count: d.count, activeNow: d.activeNow });
-            }).catch(() => {});
+            }).catch(() => { });
         };
         fetchStats();
         const statsIv = setInterval(fetchStats, 60000);
@@ -487,7 +487,7 @@ export default function RishtaDashboard() {
             console.error("Broadcast Listener Error:", err);
             // If we get permission denied, it's a sign our auth token is stale
             if (err.code === 'permission-denied' && !isImpersonating) {
-                refreshUser().catch(() => {});
+                refreshUser().catch(() => { });
             }
         });
         return () => {
@@ -662,57 +662,6 @@ export default function RishtaDashboard() {
         }
     }, [activeTab, user]);
 
-    // 🚀 Deployment Watcher: Keep App Updated
-    useEffect(() => {
-        // Use consistent versioning keys
-        const clientVersion = process.env.NEXT_PUBLIC_BUILD_ID || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || 'development';
-        if (!clientVersion || clientVersion === 'development') return;
-
-        const checkVersion = async () => {
-            try {
-                // Fetch with cache bust
-                const res = await fetch(`/api/version?t=${Date.now()}`);
-                const data = await res.json();
-
-                // Only refresh if versions are known and actually different
-                if (data.version && data.version !== 'development' && data.version !== clientVersion) {
-                    // Avoid refreshing during sensitive user actions
-                    const isBusy = isRecording || uploadingSelfie || mobileVerifyLoading ||
-                                  generatingBiodata || isUploadingVoice || userMsgInput.trim().length > 5 ||
-                                  paying || showMyProfileModal;
-
-                    if (!isBusy) {
-                        console.log('New version detected. Refreshing safely...');
-                        if (document.visibilityState === 'hidden') {
-                            window.location.reload();
-                        } else {
-                            toast("Updating dashboard to latest version...", { icon: '🚀', duration: 3000 });
-                            setTimeout(() => {
-                                if (!(isRecording || uploadingSelfie || isUploadingVoice)) {
-                                    window.location.reload();
-                                }
-                            }, 3500);
-                        }
-                    } else {
-                        console.log('Update available but user is busy.');
-                    }
-                }
-            } catch (e) {
-                // Ignore silent errors
-            }
-        };
-
-        // Check every 15 minutes (less aggressive)
-        const interval = setInterval(checkVersion, 15 * 60 * 1000);
-
-        // Also check when window regains focus
-        window.addEventListener('focus', checkVersion);
-
-        return () => {
-            clearInterval(interval);
-            window.removeEventListener('focus', checkVersion);
-        };
-    }, []);
 
     const handleSendMessageToAdmin = async () => {
         if (!userMsgInput.trim() || !user) return;
@@ -776,11 +725,18 @@ export default function RishtaDashboard() {
                 backgroundColor: '#ffffff'
             });
 
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgProps = pdf.getImageProperties(dataUrl);
-            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const imgProps = jsPDF.prototype.getImageProperties(dataUrl);
+            const pdfWidth = 210; // Fixed A4 width in mm
             const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            
+
+            // Create a custom-sized PDF that matches the generated image's aspect ratio
+            // to prevent the bottom (QR code) from being cut off.
+            const pdf = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: [pdfWidth, pdfHeight]
+            });
+
             pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
             const pdfBlob = pdf.output('blob');
             const fileName = `Biodata_${myProfile.name?.replace(/\s+/g, '_') || 'Candidate'}.pdf`;
@@ -794,7 +750,7 @@ export default function RishtaDashboard() {
                     files: [pdfFile],
                     text: shareText,
                     title: `Biodata - ${myProfile.name}`
-                }).catch(() => {});
+                }).catch(() => { });
             } else {
                 pdf.save(fileName);
                 const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
@@ -1123,7 +1079,7 @@ export default function RishtaDashboard() {
                     isOnline: online,
                     lastActive: serverTimestamp()
                 });
-            } catch (e) {}
+            } catch (e) { }
         };
 
         const heartbeat = setInterval(() => updateOnlineStatus(true), 30000);
@@ -2204,7 +2160,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                         >
                                             <Sparkles className="w-3.5 h-3.5" /> Preview My Public Biodata
                                         </button>
-                                         <button
+                                        <button
                                             onClick={() => router.push('/candidate-registration')}
                                             className="w-full bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all mt-2 flex items-center justify-center gap-1"
                                         >
@@ -2223,7 +2179,10 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                     Download PNG (Gallery Image)
                                                 </button>
                                             </div>
-                                         )}
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         {/* 🖼️ HIDDEN BIODATA TEMPLATE FOR EXPORT */}
@@ -2238,37 +2197,37 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 }}
                             >
                                 {/* Premium Border Overlay */}
-                                 <div className="absolute inset-0 border-[15px]" style={{ borderColor: '#881337' }} />
-                                 <div className="absolute inset-[20px] border-2" style={{ borderColor: '#D4AF37' }} />
+                                <div className="absolute inset-0 border-[15px]" style={{ borderColor: '#881337' }} />
+                                <div className="absolute inset-[20px] border-2" style={{ borderColor: '#D4AF37' }} />
 
-                                 {/* URL Branding at Top */}
-                                 <div className="absolute top-4 left-0 right-0 text-center text-[8px] font-black uppercase tracking-[0.5em]" style={{ color: 'rgba(136, 19, 55, 0.3)' }}>
-                                     https://53dbohrarishta.in
-                                 </div>
+                                {/* URL Branding at Top */}
+                                <div className="absolute top-4 left-0 right-0 text-center text-[8px] font-black uppercase tracking-[0.5em]" style={{ color: 'rgba(136, 19, 55, 0.3)' }}>
+                                    https://53dbohrarishta.in
+                                </div>
 
-                                 {/* Header section (Matching Screenshot Branding) */}
-                                 <div className="relative z-10 -mt-10 -mx-10 mb-10 overflow-hidden">
-                                     <div className="bg-[#881337] p-12 text-center relative border-b-2 border-[#D4AF37]/20">
-                                         {/* 53 Badge (Screenshot Style) */}
-                                         <div className="relative w-24 h-24 mx-auto mb-8 flex items-center justify-center">
+                                {/* Header section (Matching Screenshot Branding) */}
+                                <div className="relative z-10 -mt-10 -mx-10 mb-10 overflow-hidden">
+                                    <div className="bg-[#881337] p-12 text-center relative border-b-2 border-[#D4AF37]/20">
+                                        {/* 53 Badge (Screenshot Style) */}
+                                        <div className="relative w-24 h-24 mx-auto mb-8 flex items-center justify-center">
                                             <div className="absolute inset-0 bg-[#D4AF37] rounded-full opacity-25 blur-2xl scale-150 animate-pulse" />
                                             <div className="relative w-20 h-20 rounded-full border-4 border-[#D4AF37] bg-white flex items-center justify-center shadow-[0_15px_35px_rgba(0,0,0,0.3)]">
                                                 <span className="text-5xl font-black text-[#D4AF37] font-serif tracking-tighter">53</span>
                                             </div>
-                                         </div>
+                                        </div>
 
-                                         <h1 className="text-6xl font-black tracking-tight mb-5 text-white font-serif drop-shadow-sm">
-                                             DBohra<span className="text-[#D4AF37]">Rishta</span>
-                                         </h1>
+                                        <h1 className="text-6xl font-black tracking-tight mb-5 text-white font-serif drop-shadow-sm">
+                                            DBohra<span className="text-[#D4AF37]">Rishta</span>
+                                        </h1>
 
-                                         <div className="flex flex-col items-center gap-4">
+                                        <div className="flex flex-col items-center gap-4">
                                             <div className="h-[1.5px] w-32 bg-white/20" />
                                             <p className="text-[14px] font-sans font-black tracking-[0.6em] uppercase text-white/90 drop-shadow-md">INTELLIGENT MATCHES</p>
-                                         </div>
-                                     </div>
-                                 </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                 <div className="flex gap-10 mb-8 relative z-10 px-4">
+                                <div className="flex gap-10 mb-8 relative z-10 px-4">
                                     {/* Left: Photo & Verification */}
                                     <div className="w-56 shrink-0">
                                         <div className="w-56 h-72 rounded-2xl overflow-hidden mb-4" style={{ border: '4px solid #ffffff', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
@@ -2309,7 +2268,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                             <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
                                                 <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Age / DOB</span><span className="font-bold" style={{ color: '#1f2937' }}>{myProfile.dob ? `${new Date().getFullYear() - new Date(myProfile.dob).getFullYear()} Years` : 'N/A'}</span></div>
                                                 <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Height</span><span className="font-bold" style={{ color: '#1f2937' }}>{myProfile.heightFeet}'{myProfile.heightInch}"</span></div>
-                                                 <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Education</span><span className="font-bold leading-normal text-xs" style={{ color: '#1f2937' }}>{myProfile.education}</span></div>
+                                                <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Education</span><span className="font-bold leading-normal text-xs" style={{ color: '#1f2937' }}>{myProfile.education}</span></div>
                                                 <div className="flex flex-col border-l-2 pl-3" style={{ borderLeftColor: '#D4AF37' }}><span className="text-[9px] font-black uppercase mb-0.5" style={{ color: '#9ca3af' }}>Marital Status</span><span className="font-bold text-xs" style={{ color: '#1f2937' }}>{myProfile.maritalStatus || 'Single'}</span></div>
                                             </div>
 
@@ -2333,7 +2292,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                         </div>
                                     </div>
 
-                                     <div>
+                                    <div>
                                         <h3 className="text-[11px] font-black uppercase tracking-widest mb-3 pb-1" style={{ color: '#881337', borderBottom: '2px solid #D4AF37' }}>About Me</h3>
                                         <p className="text-xs leading-relaxed italic" style={{ color: '#4b5563' }}>
                                             {myProfile.bio || "Seeking a companion based on deen and traditional values. Looking forward to connecting with a compatible match. Ameen."}
@@ -2635,7 +2594,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 onClick={() => { logout(); setShowMobileMenu(false); }}
                                 className="w-full flex items-center justify-center gap-2 py-4 bg-white border border-rose-100 text-[#881337] rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm active:scale-95 transition-all"
                             >
-                                 <LogOut className="w-4 h-4" /> Sign Out
+                                <LogOut className="w-4 h-4" /> Sign Out
                             </button>
                             {isImpersonating && (
                                 <button
@@ -2646,7 +2605,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 </button>
                             )}
                             <p className="text-center text-[9px] text-gray-400 mt-4 leading-relaxed">
-                                Version 2.1.0 (ITS-Verified)<br/>
+                                Version 2.1.0 (ITS-Verified)<br />
                                 © 2026 DBohraRishta Online
                             </p>
                         </div>
@@ -3070,7 +3029,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                         />
                                     </div>
                                     <p className="text-[11px] text-gray-500 text-center leading-relaxed">
-                                        To verify your identity, we'll send a 6-digit code to your registered email: <br/>
+                                        To verify your identity, we'll send a 6-digit code to your registered email: <br />
                                         <span className="text-[#881337] font-bold">{user?.email}</span>
                                     </p>
                                     <button
@@ -3202,7 +3161,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                 title="Share with Community"
             >
                 <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.445 0 .062 5.383.06 11.992c0 2.113.553 4.176 1.604 6.003L0 24l6.163-1.617a11.831 11.831 0 005.883 1.565h.004c6.607 0 11.99-5.383 11.992-11.992a11.78 11.78 0 00-3.486-8.452z"/>
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.445 0 .062 5.383.06 11.992c0 2.113.553 4.176 1.604 6.003L0 24l6.163-1.617a11.831 11.831 0 005.883 1.565h.004c6.607 0 11.99-5.383 11.992-11.992a11.78 11.78 0 00-3.486-8.452z" />
                 </svg>
                 <span className="absolute -top-1 -right-1 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
@@ -3229,4 +3188,6 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
         </div>
     );
 }
+
+
 

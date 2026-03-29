@@ -1,77 +1,70 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import toast from "react-hot-toast";
 
 export default function RefreshManager() {
     const currentVersionRef = useRef<string | null>(null);
+    const pathname = usePathname();
 
     useEffect(() => {
         const checkVersion = async () => {
             try {
-                // Fetch the current deployment version on the server
                 const res = await fetch('/api/version', { cache: 'no-store' });
                 const data = await res.json();
                 const currentServerVersion = data.version;
 
                 if (currentVersionRef.current === null) {
-                    // First load, save the current baseline version
                     currentVersionRef.current = currentServerVersion;
                 } else if (currentVersionRef.current !== currentServerVersion && currentServerVersion !== 'development') {
-                    // Version changed! A new deployment occurred while the user had the app open
-                    console.log("New deployment detected. Prompting user to reload...");
-
-                    // Don't forcefully reload, it breaks UX during file uploads or form filling. Show a sticky, clickable toast:
-                    if (!sessionStorage.getItem('update_toast_shown')) {
-                        sessionStorage.setItem('update_toast_shown', 'true');
-                        toast(
-                            (t) => (
-                                <div className="flex flex-col items-start gap-2">
-                                    <div className="font-bold text-sm text-gray-900">✨ New Update Available!</div>
-                                    <p className="text-xs text-gray-600">We've just released a new feature or fix. Please refresh to continue.</p>
-                                    <button
-                                        onClick={() => window.location.reload()}
-                                        className="mt-1 bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider"
-                                    >
-                                        Refresh Now
-                                    </button>
-                                </div>
-                            ),
-                            { duration: Infinity, style: { border: '2px solid #2563EB', padding: '16px', borderRadius: '24px' } }
-                        );
-                    }
+                    console.log("New version detected. Marking for background update on next navigation...");
+                    sessionStorage.setItem('pendingUpdate', 'true');
                 }
-            } catch (e) {
-                // Silently handle errors (e.g. offline) so we don't spam the UI
-            }
+            } catch (e) {}
         };
 
-        // Delay the first check slightly so it doesn't block critical rendering path
+        // 1. Check once on mount (with short delay)
         const initialTimer = setTimeout(checkVersion, 3000);
 
-        // Instead of a periodic background interval which can disrupt active sessions,
-        // we check for updates when the user returns to the app tab (visibility changes to visible)
+        // 2. Check periodically in the background (silent & non-disruptive)
+        const intervalTimer = setInterval(checkVersion, 10 * 60 * 1000); // Every 10 mins
+
+        // 3. Check when user returns to the tab
         const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                checkVersion();
-            }
+            if (document.visibilityState === 'visible') checkVersion();
         };
-
         document.addEventListener('visibilitychange', handleVisibilityChange);
-
-        // Show a nice toast if we just refreshed due to an update
-        if (sessionStorage.getItem('app_just_updated') === 'true') {
-            setTimeout(() => {
-                toast.success("App refreshed with the latest features!", { icon: "✨", duration: 4000 });
-                sessionStorage.removeItem('app_just_updated');
-            }, 1000);
-        }
 
         return () => {
             clearTimeout(initialTimer);
+            clearInterval(intervalTimer);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, []);
 
-    return null; // This is a utility component, no UI needed
+    // 4. NAVIGATION INTERCEPTOR:
+    // When the user navigates to a new page, if there's a pending update,
+    // we force a full page reload to swap in the new version.
+    useEffect(() => {
+        if (sessionStorage.getItem('pendingUpdate') === 'true') {
+            console.log("Swapping to new version on navigation...");
+            sessionStorage.removeItem('pendingUpdate');
+            sessionStorage.setItem('app_just_updated', 'true');
+            
+            // Forces the next page to be a full, fresh server load
+            window.location.reload();
+        }
+    }, [pathname]);
+
+    useEffect(() => {
+        if (sessionStorage.getItem('app_just_updated') === 'true') {
+            setTimeout(() => {
+                toast.success("53DBohraRishta updated to latest version!", { icon: "✨", duration: 4000 });
+                sessionStorage.removeItem('app_just_updated');
+            }, 1000);
+        }
+    }, []);
+
+    return null;
 }

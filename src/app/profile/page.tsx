@@ -221,133 +221,137 @@ function ProfileContent() {
 
     if (!user) {
         return (
-            <div className="min-h-screen bg-[#fcf8f9] flex flex-col items-center select-none pb-20">
-                {/* Premium Branding Header (Unified with Dashboard) */}
-                <div className="w-full bg-[#881337] pt-16 pb-12 text-center relative overflow-hidden border-b-4 border-[#D4AF37]/20 shadow-2xl">
-                    {/* Background Texture/Sparkles */}
+            <div className="min-h-screen bg-[#fcf8f9] flex flex-col items-center select-none pb-24">
+                {/* 🏰 High-Definition Branding Header */}
+                <div className="w-full bg-gradient-to-b from-[#881337] to-[#70102d] pt-20 pb-24 text-center relative overflow-hidden border-b-[6px] border-[#D4AF37] shadow-2xl">
                     <div className="absolute inset-0 opacity-10 pointer-events-none">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full blur-3xl -tr-32 -tt-32" />
-                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#D4AF37]/30 rounded-full blur-3xl -bl-32 -bb-32" />
+                        <div className="absolute top-0 right-0 w-80 h-80 bg-white/20 rounded-full blur-[100px] -tr-32 -tt-32" />
+                        <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#D4AF37]/30 rounded-full blur-[100px] -bl-32 -bb-32" />
                     </div>
 
-                    <p className="relative z-10 text-[9px] font-black tracking-[0.7em] text-white/40 uppercase mb-8">https://53dbohrarishta.in</p>
+                    <p className="relative z-10 text-[10px] font-black tracking-[1em] text-white/40 uppercase mb-10">www.53dbohrarishta.in</p>
                     
-                    {/* 53 Badge (Unified Style) */}
-                    <div className="relative w-24 h-24 mx-auto mb-8 flex items-center justify-center z-10">
-                        <div className="absolute inset-0 bg-[#D4AF37]/40 rounded-full blur-2xl animate-pulse scale-150" />
-                        <div className="relative w-24 h-24 rounded-full border-[3px] border-[#D4AF37] bg-white flex items-center justify-center shadow-[0_15px_35px_rgba(0,0,0,0.4)]">
-                            <span className="text-5xl font-black text-[#D4AF37] font-serif tracking-tighter">53</span>
+                    {/* Iconic 53 Badge */}
+                    <div className="relative w-28 h-28 mx-auto mb-10 flex items-center justify-center z-10">
+                        <div className="absolute inset-0 bg-[#D4AF37]/40 rounded-full blur-3xl animate-pulse scale-150" />
+                        <div className="relative w-28 h-28 rounded-full border-[4px] border-[#D4AF37] bg-white flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                            <span className="text-6xl font-black text-[#D4AF37] font-serif tracking-tighter">53</span>
                         </div>
                     </div>
 
-                    <h1 className="relative z-10 text-5xl font-black tracking-tight mb-4 text-white font-serif drop-shadow-lg">
+                    <h1 className="relative z-10 text-6xl font-black tracking-tight mb-4 text-white font-serif drop-shadow-2xl">
                         DBohra<span className="text-[#D4AF37]">Rishta</span>
                     </h1>
 
-                    <div className="relative z-10 flex items-center justify-center gap-4 mt-2">
-                        <div className="h-[1.5px] w-20 bg-white/20" />
-                        <p className="text-[12px] font-sans font-black tracking-[0.5em] uppercase text-white/80">Intelligent Matches</p>
-                        <div className="h-[1.5px] w-20 bg-white/20" />
+                    <div className="relative z-10 flex flex-col items-center gap-4 mt-4">
+                        <div className="h-[2px] w-32 bg-white/30" />
+                        <p className="text-[14px] font-sans font-black tracking-[0.7em] uppercase text-[#D4AF37] drop-shadow-lg">Intelligence • Heritage • Trust</p>
                     </div>
                 </div>
 
-                {/* Digital BioData Preview (Unified with Dashboard Layout) */}
-                <div className="w-full max-w-[540px] -mt-8 bg-white rounded-[3rem] shadow-[0_45px_100px_-20px_rgba(136,19,55,0.25)] border border-white/50 overflow-hidden relative group p-1 z-30">
-                    <div className="p-8 md:p-10 relative z-10 bg-white rounded-[2.8rem]">
+                {/* 📜 The Digital Masterpiece Card (Preview) */}
+                <div className="w-full max-w-[580px] -mt-16 bg-white rounded-[4rem] shadow-[0_60px_120px_-20px_rgba(136,19,55,0.3)] border border-white/50 overflow-hidden relative group p-1 z-30 ring-[12px] ring-white/30 backdrop-blur-md">
+                    <div className="p-10 md:p-14 relative z-10 bg-white rounded-[3.8rem]">
                         
                         {/* Status Label (Bio Preview) */}
-                        <div className="flex items-center justify-center gap-4 mb-10">
-                            <div className="h-[1.5px] flex-1 bg-gradient-to-r from-transparent to-[#D4AF37]/30" />
-                            <h2 className="text-[14px] font-black uppercase tracking-[0.4em] text-[#881337]/60">Digital BioData</h2>
-                            <div className="h-[1.5px] flex-1 bg-gradient-to-l from-transparent to-[#D4AF37]/30" />
+                        <div className="flex items-center justify-center gap-6 mb-12">
+                            <div className="h-[1.5px] flex-1 bg-gradient-to-r from-transparent to-[#D4AF37]/40" />
+                            <h2 className="text-[16px] font-black uppercase tracking-[0.6em] text-[#881337] italic">Profile Preview</h2>
+                            <div className="h-[1.5px] flex-1 bg-gradient-to-l from-transparent to-[#D4AF37]/40" />
                         </div>
 
-                        <div className="flex flex-col md:flex-row gap-8 mb-10">
-                            {/* Photo Section (Blurred for safety) */}
-                            <div className="w-44 h-56 mx-auto md:mx-0 rounded-[35px] overflow-hidden ring-8 ring-rose-50/50 shadow-2xl shrink-0 relative bg-gray-50 border border-rose-100">
+                        <div className="flex flex-col md:flex-row gap-12 mb-14">
+                            {/* Dominant Portrait (Safety Blurred) */}
+                            <div className="w-56 h-72 mx-auto md:mx-0 rounded-[50px] overflow-hidden shadow-[0_40px_80px_-15px_rgba(136,19,55,0.3)] shrink-0 relative bg-gray-50 border-[6px] border-rose-50/50">
                                 {profile.libasImageUrl ? (
-                                    <img src={profile.libasImageUrl} className="w-full h-full object-cover blur-[8px] scale-110 opacity-60" />
+                                    <img src={profile.libasImageUrl} className="w-full h-full object-cover blur-[12px] scale-110 opacity-60 grayscale-[0.3]" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-200"><User size={64} /></div>
+                                    <div className="w-full h-full flex items-center justify-center text-gray-200"><User size={80} /></div>
                                 )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-white/40 to-transparent" />
-                                <div className="absolute top-3 left-0 right-0 px-3">
-                                    <div className="px-2 py-1 bg-white/80 backdrop-blur-md rounded-lg text-[8px] font-black text-[#881337] uppercase tracking-widest text-center shadow-sm">Photo Locked</div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                                <div className="absolute top-4 left-0 right-0 px-4">
+                                    <div className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-xl text-[9px] font-black text-[#881337] uppercase tracking-widest text-center shadow-lg border border-rose-100/50">LOCKED FOR PRIVACY</div>
                                 </div>
                             </div>
 
-                            <div className="flex-1 pt-2">
-                                <h2 className="text-3xl font-black text-gray-900 font-serif mb-2 leading-tight">
+                            <div className="flex-1 pt-4 text-center md:text-left">
+                                <h2 className="text-4xl font-black text-black font-serif mb-4 leading-tight italic">
                                     {profile.name?.split(' ')[0] || 'Member'} ●●●●
                                 </h2>
-                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-100 mb-6 shadow-sm">
-                                    <ShieldCheck size={14} className="fill-emerald-800/10" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">ITS Verified Member</span>
+                                <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-emerald-50 text-emerald-800 border-2 border-emerald-100 mb-8 shadow-md">
+                                    <ShieldCheck size={18} className="fill-emerald-800/10 text-emerald-600" />
+                                    <span className="text-[11px] font-black uppercase tracking-widest">ITS Verified Profile</span>
                                 </div>
                                 
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4 text-center">
-                                        <div className="flex flex-col p-3 bg-gray-50 rounded-2xl border border-gray-100/50">
-                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Age</span>
-                                            <span className="text-sm font-black text-gray-800">{profile.dob ? `${new Date().getFullYear() - new Date(profile.dob).getFullYear()} Years` : 'N/A'}</span>
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-5 text-center">
+                                        <div className="flex flex-col p-4 bg-gray-50 rounded-[2rem] border-b-4 border-gray-100/50 shadow-inner">
+                                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Age</span>
+                                            <span className="text-lg font-black text-[#881337]">{profile.dob ? `${new Date().getFullYear() - new Date(profile.dob).getFullYear()} Yrs` : 'N/A'}</span>
                                         </div>
-                                        <div className="flex flex-col p-3 bg-gray-50 rounded-2xl border border-gray-100/50">
-                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Status</span>
-                                            <span className="text-sm font-black text-gray-800">{profile.maritalStatus || 'Single'}</span>
+                                        <div className="flex flex-col p-4 bg-gray-50 rounded-[2rem] border-b-4 border-gray-100/50 shadow-inner">
+                                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Marital Status</span>
+                                            <span className="text-lg font-black text-[#881337]">{profile.maritalStatus || 'Single'}</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3 p-3.5 bg-rose-50/40 rounded-2xl border border-rose-100/30">
-                                        <MapPin size={14} className="text-[#881337] opacity-60" />
-                                        <div className="flex flex-col">
-                                            <span className="text-[8px] font-black text-gray-400 uppercase">Current Home</span>
-                                            <span className="text-xs font-bold text-gray-800">{profile.location || profile.hizratLocation || profile.city || 'Confidential'}</span>
+                                    <div className="flex items-center gap-4 p-5 bg-[#fdf2f4]/40 rounded-[2rem] border-2 border-rose-100/30 shadow-sm">
+                                        <div className="w-10 h-10 rounded-2xl bg-[#881337] flex items-center justify-center text-white shadow-lg"><MapPin size={20} /></div>
+                                        <div className="flex flex-col text-left">
+                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Base Location</span>
+                                            <span className="text-[14px] font-black text-black leading-tight uppercase truncate max-w-[180px]">{profile.location || profile.hizratLocation || profile.city || 'Confidential'}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Bio teaser / Profile Highlights */}
-                        <div className="mb-10 p-6 bg-[#fdf2f4] rounded-[30px] border border-rose-100 shadow-inner relative overflow-hidden">
-                            <div className="absolute -top-4 -right-4 w-16 h-16 bg-[#881337]/5 rounded-full pointer-events-none" />
-                            <p className="text-sm text-[#881337] font-serif italic leading-relaxed text-center font-medium">
-                                &ldquo;{profile.bio && profile.bio.length > 120 ? `${profile.bio.substring(0, 120)}...` : profile.bio || "Searching for a compatible match who values deen and family traditions."}&rdquo;
+                        {/* High-Contrast Bio Preview */}
+                        <div className="mb-12 p-8 bg-[#fdf2f4]/60 rounded-[40px] border-l-[12px] border-[#881337] shadow-xl relative overflow-hidden group-hover:scale-[1.02] transition-transform duration-500">
+                            <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
+                                <Sparkles size={120} />
+                            </div>
+                            <p className="text-[20px] leading-relaxed italic font-serif text-black font-black text-center relative z-10 antialiased">
+                                &ldquo;{profile.bio && profile.bio.length > 200 ? `${profile.bio.substring(0, 200)}...` : profile.bio || "Searching for a compatible soulmate based on mutual respect for deen, tradition, and family values."}&rdquo;
                             </p>
                         </div>
 
-                        {/* Bottom CTA Block */}
-                        <div className="text-center pt-4 border-t border-gray-100 mt-2">
-                             <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-50 rounded-full text-amber-800 border-2 border-amber-200 mb-8 mx-auto shadow-sm">
-                                <Lock size={16} className="fill-amber-800/10" />
-                                <span className="text-[11px] font-black uppercase tracking-widest">Full Biodata Locked</span>
+                        {/* Executive CTA Block */}
+                        <div className="text-center pt-8 border-t-2 border-gray-100 mt-4">
+                             <div className="inline-flex items-center gap-3 px-6 py-3 bg-amber-50 rounded-2xl text-amber-800 border-2 border-amber-200 mb-10 mx-auto shadow-md animate-pulse">
+                                <Lock size={18} className="fill-amber-800/10 text-amber-600" />
+                                <span className="text-[12px] font-black uppercase tracking-widest">Access Full Details (Private)</span>
                             </div>
                             
-                            <h3 className="text-2xl font-black text-[#881337] font-serif mb-3">View Full Profile?</h3>
-                            <p className="text-gray-500 text-sm mb-10 max-w-[340px] mx-auto leading-relaxed font-medium">
-                                Direct contact information, ancestral details, and professional background are protected for user privacy.
+                            <h3 className="text-3xl font-black text-[#881337] font-serif mb-4 italic leading-tight">Proceed to Full Disclosure?</h3>
+                            <p className="text-gray-500 text-[15px] mb-12 max-w-[380px] mx-auto leading-relaxed font-bold">
+                                Contact details, ancestral Watans, and detailed educational history are exclusively available to verified members only.
                             </p>
 
                             <button 
                                 onClick={() => router.push('/login')}
-                                className="w-full py-5 bg-[#881337] text-white rounded-[1.5rem] font-black text-sm uppercase tracking-[0.25em] shadow-[0_25px_50px_-12px_rgba(136,19,55,0.4)] hover:shadow-[0_30px_60px_-12px_rgba(136,19,55,0.5)] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                                className="w-full py-6 bg-gradient-to-r from-[#881337] to-[#500b1d] text-white rounded-[2rem] font-black text-[15px] uppercase tracking-[0.3em] shadow-[0_30px_60px_-15px_rgba(80,11,29,0.5)] hover:shadow-[0_40px_80px_-15px_rgba(80,11,29,0.6)] active:scale-[0.97] transition-all flex items-center justify-center gap-4 group"
                             >
-                                <Sparkles size={20} />
-                                Login to View Details
+                                <Sparkles size={24} className="group-hover:rotate-12 transition-transform" />
+                                Unlock Official BioData
                             </button>
                             
-                            <p className="mt-8 text-xs text-gray-400 font-bold">
-                                Not a member? <button onClick={() => router.push('/login')} className="text-[#D4AF37] border-b-2 border-[#D4AF37]/30 hover:border-[#D4AF37] pb-0.5 tracking-wide transition-all">Create your Biodata</button>
+                            <p className="mt-10 text-[13px] text-gray-400 font-black uppercase tracking-widest">
+                                Not registered? <button onClick={() => router.push('/login')} className="text-[#D4AF37] border-b-2 border-[#D4AF37]/50 hover:border-[#D4AF37] pb-1 transition-all">Join the Community</button>
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Footer Branding */}
-                <div className="mt-16 text-center opacity-30 group cursor-default">
-                    <p className="text-[12px] font-black text-[#881337] uppercase tracking-[0.5em] group-hover:tracking-[0.8em] transition-all">
-                        53DBOHRARISHTA.IN
-                    </p>
-                    <p className="text-[9px] text-[#881337] font-black mt-2">Intelligent Matching System</p>
+                {/* Eternal Branding Footer */}
+                <div className="mt-20 text-center opacity-40 group cursor-default">
+                    <div className="flex items-center justify-center gap-6 mb-4">
+                        <div className="h-[1px] w-16 bg-[#881337]/50" />
+                        <p className="text-[14px] font-black text-[#881337] uppercase tracking-[0.6em] group-hover:tracking-[1em] transition-all duration-700">
+                            53DBOHRARISHTA.IN
+                        </p>
+                        <div className="h-[1px] w-16 bg-[#881337]/50" />
+                    </div>
+                    <p className="text-[11px] text-[#881337] font-black tracking-widest">Trusted Heritage & Matrimonial Hub</p>
                 </div>
             </div>
         );

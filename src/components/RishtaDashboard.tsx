@@ -725,9 +725,12 @@ export default function RishtaDashboard() {
                 backgroundColor: '#ffffff'
             });
 
-            const imgProps = jsPDF.prototype.getImageProperties(dataUrl);
+            // Use a temporary image to get dimensions for aspect ratio calculation
+            const img = new Image();
+            img.src = dataUrl;
+            await new Promise((resolve) => { img.onload = resolve; });
             const pdfWidth = 210; // Fixed A4 width in mm
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            const pdfHeight = (img.height * pdfWidth) / img.width;
 
             // Create a custom-sized PDF that matches the generated image's aspect ratio
             // to prevent the bottom (QR code) from being cut off.
@@ -2176,7 +2179,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                     className='w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3 rounded-xl text-sm font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group active:scale-95'
                                                 >
                                                     {generatingBiodata ? <RefreshCw className='w-4 h-4 animate-spin' /> : <Download className='w-4 h-4 group-hover:scale-110 transition-transform' />}
-                                                    Download PNG (Gallery Image)
+                                                    Generate My Biodata with QR
                                                 </button>
                                             </div>
                                         )}

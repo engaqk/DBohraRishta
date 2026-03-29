@@ -56,7 +56,7 @@ service cloud.firestore {
           (request.resource.data.get('isCommunityContributor', false) == resource.data.get('isCommunityContributor', false))
         )) ||
         // Referral/Stats Logic: Allow targeted update of counters by others
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralCount', 'isCommunityContributor', 'interestsCount', 'viewsCount']))
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralCount', 'interestsCount', 'viewsCount']))
       );
       allow delete: if isAdmin();
 
@@ -77,8 +77,14 @@ service cloud.firestore {
       allow create: if signedIn() && request.resource.data.from == request.auth.uid;
       allow update: if signedIn() && (
         isAdmin() ||
-        resource.data.from == request.auth.uid ||
-        resource.data.to == request.auth.uid
+        (resource.data.from == request.auth.uid && (
+            // Sender can ONLY update to 'withdrawn' or same status
+            request.resource.data.status in [resource.data.status, 'withdrawn']
+        )) ||
+        (resource.data.to == request.auth.uid && (
+            // Receiver can ONLY update to 'accepted' or 'declined' or 'read'
+            request.resource.data.status in ['accepted', 'declined', 'read', resource.data.status]
+        ))
       );
       allow delete: if isAdmin();
 
@@ -139,7 +145,17 @@ service cloud.firestore {
     match /unblur_requests/{requestId} {
       allow read: if signedIn() && (isAdmin() || resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
       allow create: if signedIn() && request.resource.data.from == request.auth.uid;
-      allow update: if signedIn() && (isAdmin() || resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow update: if signedIn() && (
+        isAdmin() ||
+        (resource.data.from == request.auth.uid && (
+            // Sender can only change status to 'withdrawn' from current
+            request.resource.data.status in [resource.data.status, 'withdrawn']
+        )) ||
+        (resource.data.to == request.auth.uid && (
+            // Receiver can only accept/decline
+            request.resource.data.status in ['accepted', 'declined', resource.data.status]
+        ))
+      );
       allow delete: if isAdmin();
     }
 

@@ -14,8 +14,13 @@ export default function OnboardingPage() {
     const router = useRouter();
     const { user } = useAuth();
 
+    const [isMounted, setIsMounted] = useState(false);
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [loginMethod, setLoginMethod] = useState<string>('');  // 'mobile' | 'google' | ''
 
@@ -23,7 +28,7 @@ export default function OnboardingPage() {
     const [formData, setFormData] = useState({
         name: "",
         email: "",
-        mobile: "",
+        mobile: "+91 ",
         gender: "",
         dob: "",
         itsNumber: "",
@@ -74,7 +79,9 @@ export default function OnboardingPage() {
                 const method = sessionStorage.getItem('loginMethod');
                 
                 if (verifiedPhone) {
-                    setFormData(prev => ({ ...prev, mobile: prev.mobile || verifiedPhone }));
+                    setFormData(prev => ({ ...prev, mobile: verifiedPhone }));
+                } else if (!formData.mobile || formData.mobile === "+91 ") {
+                    setFormData(prev => ({ ...prev, mobile: "+91 " }));
                 }
                 if (method) {
                     setLoginMethod(prev => prev || method);
@@ -328,8 +335,10 @@ export default function OnboardingPage() {
         }
     };
 
+    if (!isMounted) return null;
+
     return (
-        <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center p-6 text-[#881337] pt-12 pb-24">
+        <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center p-6 text-[#881337] pt-12 pb-24" suppressHydrationWarning>
             <div className="max-w-2xl w-full">
 
                 {/* Logout Button */}
@@ -447,8 +456,17 @@ export default function OnboardingPage() {
                                         <input type="email" name="email" onChange={handleChange} value={formData.email} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-semibold shadow-sm opacity-80" readOnly={!!user?.email && !user.email.endsWith('@dbohrarishta.local')} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Mobile</label>
-                                        <input type="tel" name="mobile" onChange={handleChange} value={formData.mobile} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-semibold shadow-sm opacity-80" readOnly={loginMethod === 'mobile'} />
+                                        <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Mobile Number</label>
+                                        <input 
+                                            type="tel" 
+                                            name="mobile" 
+                                            onChange={handleChange} 
+                                            value={formData.mobile} 
+                                            placeholder="+91 88888 88888"
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-semibold shadow-sm focus:ring-2 focus:ring-[#881337] outline-none" 
+                                            readOnly={loginMethod === 'mobile'} 
+                                        />
+                                        <p className="text-[10px] text-gray-400 mt-2 font-bold px-1 italic">Include country code (e.g., +91, +971, +1)</p>
                                     </div>
                                 </div>
                             </div>

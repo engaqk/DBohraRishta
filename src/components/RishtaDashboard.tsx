@@ -712,57 +712,51 @@ export default function RishtaDashboard() {
         }
     };
 
-    const handleSharePDFBiodata = async () => {
+    const handleShareImageBiodata = async () => {
         if (!biodataRef.current || !user || !myProfile) return;
         setGeneratingBiodata(true);
         try {
-            const { toPng } = await import('html-to-image');
-            const { jsPDF } = await import('jspdf');
+            const { toBlob } = await import('html-to-image');
 
-            const dataUrl = await toPng(biodataRef.current, {
+            // Generate a high-resolution image for clear zooming (pixelRatio 4)
+            const blob = await toBlob(biodataRef.current, {
                 cacheBust: true,
-                pixelRatio: 2,
+                pixelRatio: 4, 
                 backgroundColor: '#ffffff'
             });
 
-            // Use a temporary image to get dimensions for aspect ratio calculation
-            const img = new Image();
-            img.src = dataUrl;
-            await new Promise((resolve) => { img.onload = resolve; });
-            const pdfWidth = 210; // Fixed A4 width in mm
-            const pdfHeight = (img.height * pdfWidth) / img.width;
+            if (!blob) throw new Error("Failed to generate image blob");
 
-            // Create a custom-sized PDF that matches the generated image's aspect ratio
-            // to prevent the bottom (QR code) from being cut off.
-            const pdf = new jsPDF({
-                orientation: 'p',
-                unit: 'mm',
-                format: [pdfWidth, pdfHeight]
-            });
-
-            pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-            const pdfBlob = pdf.output('blob');
-            const fileName = `Biodata_${myProfile.name?.replace(/\s+/g, '_') || 'Candidate'}.pdf`;
-            const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+            const fileName = `Biodata_${myProfile.name?.replace(/\s+/g, '_') || 'Candidate'}.png`;
+            const imageFile = new File([blob], fileName, { type: 'image/png' });
 
             const shareUrl = `${window.location.origin}/profile?id=${user.uid}`;
             const shareText = `Assalamu Alaiykum! Check out my official Digital Biodata on 53DBohraRishta Community:\n\n🔗 View Online: ${shareUrl}`;
 
-            if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+            // Check if native sharing with files is supported
+            if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
                 await navigator.share({
-                    files: [pdfFile],
+                    files: [imageFile],
                     text: shareText,
                     title: `Biodata - ${myProfile.name}`
                 }).catch(() => { });
             } else {
-                pdf.save(fileName);
+                // Fallback: download if sharing isn't supported
+                const dataUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = fileName;
+                link.click();
+                URL.revokeObjectURL(dataUrl);
+                toast.success("Ready to share! (Biodata saved to gallery)");
+                
+                // Also open WhatsApp with the text
                 const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
                 window.open(waUrl, '_blank');
-                toast.success('PDF generated! Please share it along with the link on WhatsApp.', { icon: '📄', duration: 4000 });
             }
         } catch (err) {
-            console.error('PDF Share failed:', err);
-            toast.error('Failed to generate PDF.');
+            console.error('Image Share failed:', err);
+            toast.error("Sharing failed. Try manual download.");
         } finally {
             setGeneratingBiodata(false);
         }
@@ -3173,13 +3167,13 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                 <span className="absolute right-full mr-4 bg-gray-900 text-white text-[10px] px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl font-bold">Share with Community</span>
             </a>
 
-            {/* 📄 Floating Share Biodata PDF Button (Verified only) */}
+            {/* 📄 Floating Share Biodata Button (Verified only) */}
             {myProfile?.status === 'verified' && (
                 <button
-                    onClick={handleSharePDFBiodata}
+                    onClick={handleShareImageBiodata}
                     disabled={generatingBiodata}
                     className="fixed bottom-40 right-6 z-[60] bg-white text-[#881337] p-1.5 rounded-full shadow-2xl hover:scale-110 active:scale-90 transition-all cursor-pointer flex items-center justify-center border-2 border-rose-100 ring-4 ring-[#25D366]/40"
-                    title="Generate & Share PDF"
+                    title="Generate & Share Biodata"
                 >
                     {generatingBiodata ? (
                         <Loader2 className="w-5 h-5 animate-spin" />

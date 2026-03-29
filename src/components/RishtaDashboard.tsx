@@ -2182,222 +2182,163 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                             })()}
                         </div>
 
-                        {/* 🖼️ HIDDEN BIODATA TEMPLATE FOR EXPORT (RE-OPTIMIZED MASTERPIECE) */}
+                        {/* 🖼️ HIDDEN BIODATA TEMPLATE FOR EXPORT (REFINED TRADITIONAL LAYOUT) */}
                         <div className="fixed left-[-9999px] top-0">
                             <div
                                 ref={biodataRef}
-                                className="w-[850px] p-12 relative overflow-hidden"
+                                className="w-[850px] p-0 relative overflow-hidden bg-white shadow-2xl"
                                 style={{
                                     fontFamily: 'serif',
-                                    backgroundColor: '#ffffff',
                                     color: '#000000'
                                 }}
                             >
-                                {/* Premium Full-Bleed Branding Overlay */}
-                                <div className="absolute inset-0 border-[20px]" style={{ borderColor: '#881337' }} />
-                                <div className="absolute inset-[28px] border-[2px]" style={{ borderColor: '#D4AF37' }} />
-
-                                {/* URL Branding at Top */}
-                                <div className="absolute top-5 left-0 right-0 text-center text-[10px] font-black uppercase tracking-[0.8em]" style={{ color: 'rgba(136, 19, 55, 0.4)' }}>
-                                    www.53dbohrarishta.in
-                                </div>
-
-                                {/* Dynamic Header Section */}
-                                <div className="relative z-10 -mt-12 -mx-12 mb-12 bg-gradient-to-b from-[#881337] to-[#70102d] p-12 text-center border-b-4 border-[#D4AF37]">
-                                    {/* 53 Badge (Iconic Visual) */}
-                                    <div className="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-                                        <div className="absolute inset-0 bg-[#D4AF37] rounded-full opacity-30 blur-2xl scale-125 animate-pulse" />
-                                        <div className="relative w-22 h-22 rounded-full border-[3px] border-[#D4AF37] bg-white flex items-center justify-center shadow-2xl">
+                                {/* 🏰 Executive Branding Header (As per Reference) */}
+                                <div className="bg-[#881337] py-16 px-12 text-center relative border-b-[8px] border-[#D4AF37]/20">
+                                    {/* 53 Badge */}
+                                    <div className="relative w-24 h-24 mx-auto mb-10 flex items-center justify-center">
+                                        <div className="absolute inset-0 bg-white rounded-full opacity-10 blur-xl scale-125" />
+                                        <div className="relative w-22 h-22 rounded-full border-[3px] border-[#D4AF37]/50 bg-white flex items-center justify-center shadow-2xl">
                                             <span className="text-5xl font-black text-[#D4AF37] font-serif tracking-tighter">53</span>
                                         </div>
                                     </div>
 
-                                    <h1 className="text-7xl font-black tracking-tight mb-4 text-white font-serif drop-shadow-md leading-none">
+                                    <h1 className="text-7xl font-black tracking-tight mb-4 text-white font-serif leading-none italic">
                                         DBohra<span className="text-[#D4AF37]">Rishta</span>
                                     </h1>
 
-                                    <div className="flex flex-col items-center gap-3">
-                                        <div className="h-[2px] w-48 bg-white/20" />
-                                        <p className="text-[14px] font-black tracking-[0.7em] uppercase text-[#D4AF37] drop-shadow-lg">Verified Community Matches</p>
+                                    <div className="flex flex-col items-center gap-4 mt-6">
+                                        <div className="h-[1px] w-64 bg-white/20" />
+                                        <p className="text-[16px] font-sans font-black tracking-[0.8em] uppercase text-white drop-shadow-lg">Intelligent Matches</p>
                                     </div>
                                 </div>
 
-                                {/* Section Label: OFFICIAL BIODATA */}
-                                <div className="relative z-10 text-center mb-12">
-                                    <div className="flex items-center justify-center gap-10">
-                                        <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-[#D4AF37]/40" />
-                                        <h2 className="text-[26px] font-black uppercase tracking-[0.5em] text-[#881337] italic">Official BioData</h2>
-                                        <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-[#D4AF37]/40" />
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-12 mb-12 relative z-10 px-8">
-                                    {/* Left Sidebar: Mega Portrait Portrait (Ultimate Power) */}
-                                    <div className="w-[410px] shrink-0">
-                                        <div className="w-[410px] h-[610px] rounded-[70px] overflow-hidden relative shadow-[0_40px_100px_-20px_rgba(136,19,55,0.4)] bg-gray-50 border-[10px] border-white">
-                                            {myProfile.libasImageUrl ? (
-                                                <img src={myProfile.libasImageUrl} alt="Profile" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-200">
-                                                    <User size={200} />
-                                                </div>
-                                            )}
+                                {/* 📜 Main Card Body */}
+                                <div className="p-16 relative">
+                                    <div className="flex gap-14 mb-16 items-start">
+                                        {/* Left Side: Larger Profile Photo (Requested: Bigger) */}
+                                        <div className="w-[360px] shrink-0">
+                                            <div className="w-[360px] h-[520px] rounded-[3rem] overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.25)] border-[8px] border-white">
+                                                {myProfile.libasImageUrl ? (
+                                                    <img src={myProfile.libasImageUrl} alt="Profile" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-200">
+                                                        <User size={150} />
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    {/* Right Section: Core Stats & High Visibility Contact */}
-                                    <div className="flex-1 min-w-0 flex flex-col justify-between py-2">
-                                        <div className="space-y-8">
-                                            <div className="border-b-[6px] border-[#881337]/5 pb-6">
-                                                <h1 className="text-5xl font-black mb-4 leading-[1] text-black font-serif italic">{myProfile.name}</h1>
-                                                <div className="flex items-center gap-2 text-[#881337] font-black uppercase text-[12px] tracking-[0.3em]">
-                                                    <MapPin size={16} className="shrink-0" /> {myProfile.city || myProfile.location || 'India'}
+                                        {/* Right Side: Identity & Core Details (Shifted Tags Here) */}
+                                        <div className="flex-1 space-y-10 pt-4">
+                                            <h1 className="text-6xl font-black text-black font-serif italic mb-4">{myProfile.name}</h1>
+                                            
+                                            {/* Contact Info Box (As per Reference) */}
+                                            <div className="bg-rose-50/40 rounded-[2.5rem] p-8 border border-[#881337]/5 space-y-5">
+                                                <div className="flex items-center gap-5">
+                                                    <Phone size={24} className="text-[#881337]" />
+                                                    <span className="text-[20px] font-black text-black leading-none">{myProfile.mobileCode} {myProfile.mobile}</span>
+                                                </div>
+                                                <div className="flex items-center gap-5">
+                                                    <Mail size={24} className="text-[#881337]" />
+                                                    <span className="text-[18px] font-black text-black leading-none">{myProfile.email}</span>
                                                 </div>
                                             </div>
 
-                                            {/* Balanced Intelligence Bar */}
-                                            <div className="grid grid-cols-3 gap-0 p-7 bg-[#fdf2f4] rounded-[3rem] border border-[#f5e6e9] shadow-inner ring-4 ring-white">
-                                                <div className="flex flex-col items-center justify-center border-r-2 border-[#881337]/10">
-                                                    <span className="text-[12px] font-black uppercase text-gray-500 mb-2">Age</span>
-                                                    <span className="text-4xl font-black text-[#881337]">{myProfile.dob ? `${new Date().getFullYear() - new Date(myProfile.dob).getFullYear()} Y` : 'N/A'}</span>
+                                            {/* Core Stats Grid (Clean Traditional Style) */}
+                                            <div className="grid grid-cols-2 gap-x-12 gap-y-10 py-4 border-t-2 border-b-2 border-gray-100">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-black uppercase text-gray-400 mb-2">Age / DOB</span>
+                                                    <span className="text-[22px] font-black text-black">{myProfile.dob ? `${new Date().getFullYear() - new Date(myProfile.dob).getFullYear()} Years` : 'N/A'}</span>
                                                 </div>
-                                                <div className="flex flex-col items-center justify-center border-r-2 border-[#881337]/10 px-2">
-                                                    <span className="text-[12px] font-black uppercase text-gray-500 mb-2">Height</span>
-                                                    <span className="text-2xl font-black text-[#881337] break-words text-center">{myProfile.heightFeet}'{myProfile.heightInch}"</span>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-black uppercase text-gray-400 mb-2">Height</span>
+                                                    <span className="text-[22px] font-black text-black">{myProfile.heightFeet || 'N/A'}' {myProfile.heightInch || '0'}"</span>
                                                 </div>
-                                                <div className="flex flex-col items-center justify-center px-1">
-                                                    <span className="text-[12px] font-black uppercase text-gray-500 mb-2">Marital</span>
-                                                    <span className="text-sm font-black text-[#881337] text-center uppercase tracking-tight line-clamp-2">{myProfile.maritalStatus || 'Single'}</span>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-black uppercase text-gray-400 mb-2">Education</span>
+                                                    <span className="text-[18px] font-black text-black leading-tight uppercase">{myProfile.education || 'N/A'}</span>
                                                 </div>
-                                            </div>
-
-                                            {/* Identity Tags (Repositioned for Clarity) */}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="py-4 px-6 bg-[#881337] text-white rounded-[1.8rem] text-[12px] font-black uppercase tracking-widest text-center shadow-xl">
-                                                    {myProfile.gender} Candidate
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-black uppercase text-gray-400 mb-2">Marital Status</span>
+                                                    <span className="text-[18px] font-black text-black uppercase">{myProfile.maritalStatus || 'Single'}</span>
                                                 </div>
-                                                <div className="py-4 px-6 bg-emerald-50 text-emerald-800 border-2 border-emerald-100 rounded-[1.8rem] text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-md">
-                                                    <ShieldCheck size={20} className="shrink-0 text-emerald-600" /> ITS Verified Profile
+                                                <div className="flex flex-col col-span-2">
+                                                    <span className="text-[11px] font-black uppercase text-gray-400 mb-2">Location</span>
+                                                    <span className="text-[22px] font-black text-black uppercase">{myProfile.location || myProfile.city || 'N/A'}</span>
                                                 </div>
                                             </div>
 
-                                            {/* Direct Communications (High Contrast) */}
-                                            <div className="space-y-4 pt-4">
-                                                <div className="flex items-center gap-5 p-5 bg-white rounded-[2.2rem] border-2 border-[#881337]/5 shadow-sm">
-                                                    <div className="text-white bg-[#881337] p-4 rounded-3xl shadow-lg shrink-0"><Phone size={24} /></div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-1">WhatsApp Verified</span>
-                                                        <span className="text-[20px] font-black text-black leading-tight tracking-tight">{myProfile.mobileCode} {myProfile.mobile}</span>
-                                                    </div>
+                                            {/* Identity Tags (Repositioned to Right Side as Requested) */}
+                                            <div className="space-y-3 pt-4">
+                                                <div className="py-4 px-8 bg-rose-50 text-[#881337] rounded-full text-[12px] font-black uppercase tracking-[0.3em] text-center border-2 border-rose-100 shadow-sm">
+                                                    {myProfile.gender} Member
                                                 </div>
-                                                <div className="flex items-center gap-5 p-5 bg-white rounded-[2.2rem] border-2 border-[#881337]/5 shadow-sm">
-                                                    <div className="text-white bg-[#881337] p-4 rounded-3xl shadow-lg shrink-0"><Mail size={24} /></div>
-                                                    <div className="flex flex-col min-w-0">
-                                                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-1">Official Email</span>
-                                                        <span className="text-[18px] font-black text-black break-all leading-tight tracking-tighter">{myProfile.email}</span>
-                                                    </div>
+                                                <div className="py-4 px-8 bg-emerald-50 text-emerald-800 rounded-full text-[12px] font-black uppercase tracking-[0.3em] text-center border-2 border-emerald-100 shadow-sm">
+                                                    ITS Card Verified Member
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Deep Intelligence Grid (Maximized Detail) */}
-                                <div className="px-12 space-y-10 mb-12 relative z-10">
-                                    {/* Partner Expectations (Moved to Prominence) */}
-                                    <div className="px-6">
-                                        <h3 className="text-[16px] font-black uppercase tracking-[0.5em] mb-6 text-[#881337]/40 flex items-center gap-5">
-                                            <div className="h-[2px] w-12 bg-[#D4AF37]" /> Partner Expectations
+                                    {/* Partner Expectations (Priority Section) */}
+                                    <div className="mb-16">
+                                        <h3 className="text-[14px] font-black uppercase tracking-[0.4em] mb-6 text-[#881337] flex items-center gap-4">
+                                            Partner Preferences & Expectations
+                                            <div className="h-[2px] flex-1 bg-gray-100" />
                                         </h3>
-                                        <div className="bg-[#fdf2f4]/60 p-10 rounded-[3.5rem] border-l-[15px] border-[#881337] shadow-xl relative overflow-hidden">
-                                            <div className="absolute top-0 right-0 p-8 opacity-[0.05] pointer-events-none">
-                                                <Sparkles size={100} />
-                                            </div>
-                                            <p className="text-[22px] leading-relaxed italic font-serif text-black font-black relative z-10">
-                                                "{myProfile.partnerQualities || "Seeking a compatible partner who shares our traditional values, respect for elders, and a deep commitment to Deen."}"
+                                        <div className="bg-gray-50/50 p-10 rounded-[3rem] border border-gray-100 italic font-serif">
+                                            <p className="text-[22px] leading-relaxed text-black font-black">
+                                                "{myProfile.partnerQualities || "Seeking a compatible soulmate who values our community traditions, respects family values, and maintains a balance between Deen and Dunya."}"
                                             </p>
                                         </div>
                                     </div>
 
-                                    {/* Refined Academic & Professional Duo */}
-                                    <div className="grid grid-cols-2 gap-10 p-10 rounded-[60px] bg-gradient-to-br from-[#881337] to-[#500b1d] text-white shadow-2xl relative overflow-hidden ring-[12px] ring-white">
-                                        <div className="absolute top-0 right-0 p-12 opacity-[0.03] -rotate-12 transition-transform duration-1000 pointer-events-none">
-                                            <GraduationCap size={240} />
-                                        </div>
-                                        <div className="space-y-5 relative z-10">
-                                            <div className="flex items-center gap-6">
-                                                <div className="p-5 rounded-3xl bg-white/20 backdrop-blur-xl border border-white/40 shrink-0"><GraduationCap size={44} /></div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[12px] font-black uppercase text-white/70 tracking-[0.3em] mb-2">Qualifications</span>
-                                                    <span className="text-[26px] font-black leading-tight tracking-tight uppercase">{myProfile.completedUpto || 'Graduated'}</span>
-                                                    <span className="text-[16px] font-bold text-[#D4AF37] italic">{myProfile.educationDetails || myProfile.education}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-5 relative z-10 border-l border-white/20 pl-10">
-                                            <div className="flex items-center gap-6">
-                                                <div className="p-5 rounded-3xl bg-white/20 backdrop-blur-xl border border-white/40 shrink-0"><Briefcase size={44} /></div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[12px] font-black uppercase text-white/70 tracking-[0.3em] mb-2">Work Portfolio</span>
-                                                    <span className="text-[26px] font-black leading-tight tracking-tight uppercase break-words">{myProfile.professionType || 'Professional'}</span>
-                                                    <span className="text-[16px] font-bold text-[#D4AF37] italic">{myProfile.employmentDetails || 'Verified Candidate Profile'}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Detailed Heritage Mapping */}
-                                    <div className="grid grid-cols-2 gap-x-16 px-6">
+                                    {/* Two-Column Detail Block (Family & About Me) */}
+                                    <div className="grid grid-cols-2 gap-16 mb-16">
+                                        {/* Family Background */}
                                         <div className="space-y-8">
-                                            <h3 className="text-[16px] font-black uppercase tracking-[0.5em] mb-6 text-[#881337]/40 flex items-center gap-5">
-                                                <div className="h-[2px] w-12 bg-[#D4AF37]" /> Heritage & Family
+                                            <h3 className="text-[14px] font-black uppercase tracking-[0.4em] text-[#881337] flex items-center gap-4">
+                                                Family Background
+                                                <div className="h-[2px] flex-1 bg-gray-100" />
                                             </h3>
-                                            <div className="space-y-5 text-[18px] font-black">
-                                                <div className="flex items-center justify-between pb-4 border-b-2 border-[#881337]/5"><span className="text-gray-500 text-[12px] uppercase tracking-tighter">Father</span><span className="text-black">{myProfile.fatherName || 'Not Shared'}</span></div>
-                                                <div className="flex items-center justify-between pb-4 border-b-2 border-[#881337]/5"><span className="text-gray-500 text-[12px] uppercase tracking-tighter">Mother</span><span className="text-black">{myProfile.motherName || 'Not Shared'}</span></div>
-                                                <div className="flex items-center justify-between pb-4 border-b-2 border-[#881337]/5"><span className="text-gray-500 text-[12px] uppercase tracking-tighter">Siblings</span><span className="text-black">{myProfile.siblings || '0'} Member(s)</span></div>
-                                                <div className="flex items-center justify-between pb-4 border-b-2 border-[#881337]/5"><span className="text-gray-500 text-[12px] uppercase tracking-tighter">Jamaat</span><span className="text-black italic">{myProfile.jamaat || 'N/A'}</span></div>
-                                                <div className="flex items-center justify-between"><span className="text-gray-500 text-[12px] uppercase tracking-tighter">Ancestral Origin</span><span className="text-black">{myProfile.ancestralWatan || 'N/A'}</span></div>
+                                            <div className="space-y-6 text-[18px] font-black">
+                                                <div className="flex justify-between border-b border-gray-100 pb-3"><span className="text-gray-400 text-[12px] uppercase">Father</span><span className="text-black">{myProfile.fatherName || 'Not Shared'}</span></div>
+                                                <div className="flex justify-between border-b border-gray-100 pb-3"><span className="text-gray-400 text-[12px] uppercase">Mother</span><span className="text-black">{myProfile.motherName || 'Not Shared'}</span></div>
+                                                <div className="flex justify-between border-b border-gray-100 pb-3"><span className="text-gray-400 text-[12px] uppercase">Jamaat</span><span className="text-black italic">{myProfile.jamaat || 'N/A'}</span></div>
+                                                <div className="flex justify-between pb-3"><span className="text-gray-400 text-[12px] uppercase">Watan</span><span className="text-black">{myProfile.ancestralWatan || 'N/A'}</span></div>
                                             </div>
                                         </div>
 
+                                        {/* About Me / Bio */}
                                         <div className="space-y-8">
-                                            <h3 className="text-[16px] font-black uppercase tracking-[0.5em] mb-6 text-[#881337]/40 flex items-center gap-5">
-                                                <div className="h-[2px] w-12 bg-[#D4AF37]" /> Vision & Personality
+                                            <h3 className="text-[14px] font-black uppercase tracking-[0.4em] text-[#881337] flex items-center gap-4">
+                                                Profile Details / Bio
+                                                <div className="h-[2px] flex-1 bg-gray-100" />
                                             </h3>
-                                            <div className="bg-[#f0f9ff]/50 p-10 rounded-[3.5rem] border-l-[15px] border-[#D4AF37] shadow-xl relative min-h-[320px]">
-                                                <p className="text-[20px] font-black leading-relaxed text-black italic">
-                                                    {myProfile.bio || "Searching for a compatible match who values tradition, deen, and building a meaningful life together with sincerity and mutual respect. Ameen."}
-                                                </p>
-                                                <div className="absolute bottom-6 right-8 opacity-[0.05] pointer-events-none">
-                                                    <Users size={120} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Premium Executive Footer (Maximum Authority) */}
-                                <div className="px-14 py-16 mt-6 border-t-[8px] border-[#881337]/5 bg-[#f9fafb] relative z-20 flex items-center justify-between gap-12">
-                                    <div className="flex-1">
-                                        <p className="text-[16px] font-black mb-4 uppercase tracking-[0.3em] text-[#881337]">Official Heritage Doc • Community Verified</p>
-                                        <div className="space-y-2 mb-10">
-                                            <p className="text-[12px] leading-relaxed font-black text-black uppercase">Note: Verified Platform Document</p>
-                                            <p className="text-[13px] leading-relaxed font-bold text-gray-800">
-                                                This profile is issued and verified via 53dbohrarishta.in. Users must perform independent verification before final commitment. Platform assumes no responsibility for data misuse.
+                                            <p className="text-[16px] leading-[1.8] font-black text-gray-700 italic">
+                                                {myProfile.bio || "Searching for a life partner based on mutual respect and community values."}
                                             </p>
                                         </div>
-                                        <div className="inline-flex items-center gap-4 px-8 py-4 bg-white rounded-3xl border-2 border-gray-200 shadow-xl">
-                                            <span className="text-[12px] font-black text-gray-500 uppercase tracking-widest">Digital Auth ID</span>
-                                            <span className="text-[14px] font-black text-[#881337] tracking-[0.2em]">{myProfile.id?.substring(0,6).toUpperCase() || 'BIO99X'}XXXXXXXX</span>
-                                        </div>
                                     </div>
 
-                                    <div className="text-center group shrink-0">
-                                        <div className="p-6 rounded-[3rem] bg-white shadow-[0_30px_70px_-10px_rgba(0,0,0,0.15)] mb-5 border-[6px] border-[#881337]/5 transition-all duration-700 group-hover:scale-105 group-hover:rotate-1">
-                                            <QRCodeCanvas value={`https://53dbohrarishta.in/profile?id=${myProfile.id || user?.uid}`} size={140} />
+                                    {/* 🛡️ Institutional Footer (QR & Legal) */}
+                                    <div className="pt-16 border-t-[3px] border-gray-100 flex items-center justify-between gap-12">
+                                        <div className="flex-1 space-y-6">
+                                            <p className="text-[12px] font-black text-[#881337] uppercase tracking-[0.2em] mb-4">Verified via 53DBohrarishta Online Community</p>
+                                            <p className="text-[10px] leading-relaxed text-gray-400 max-w-[500px] font-bold">
+                                                Note: DBohraRishta is a community platform and is NOT RESPONSIBLE for the accuracy of information shared in this profile or ANY MISUSE of this biodata by any third party. Users are advised to perform their own independent verification before proceeding.
+                                            </p>
+                                            <p className="text-[11px] font-black text-black tracking-widest bg-gray-50 px-5 py-3 rounded-xl inline-block">
+                                                Verification ID: {myProfile.id?.substring(0,8).toUpperCase() || '5049XXXX'}XXXX
+                                            </p>
                                         </div>
-                                        <p className="text-[14px] font-black uppercase tracking-[0.4em] text-[#881337] group-hover:tracking-[0.6em] transition-all">Scan to Verify Presence</p>
+
+                                        <div className="shrink-0 text-center">
+                                            <div className="p-4 bg-[#f9fafb] rounded-[2rem] border-2 border-gray-100 shadow-sm mb-3">
+                                                <QRCodeCanvas value={`https://53dbohrarishta.in/profile?id=${myProfile.id || user?.uid}`} size={120} />
+                                            </div>
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Scan to Verify Presence</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

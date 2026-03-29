@@ -2390,7 +2390,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                         <div className="p-1.5 rounded-xl bg-white" style={{ boxShadow: '0 2px 4px 0 rgba(0,0,0,0.05)' }}>
                                             <QRCodeCanvas value={`https://53dbohrarishta.in/profile?id=${myProfile.id || user?.uid}`} size={110} />
                                         </div>
-                                        <p className="text-[10px] font-black uppercase mt-1" style={{ color: '#881337', tracking: '0.2em' }}>Scan to Verify</p>
+                                        <p className="text-[10px] font-black uppercase mt-1" style={{ color: '#881337', letterSpacing: '0.2em' }}>Scan to Verify</p>
                                     </div>
                                 </div>
                             </div>

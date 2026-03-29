@@ -2234,22 +2234,16 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 </div>
 
                                 <div className="flex gap-14 mb-10 relative z-10 px-8">
-                                    {/* Left Sidebar: Enhanced Photo & Verification */}
-                                    <div className="w-56 shrink-0 text-center">
-                                        <div className="w-56 h-72 rounded-[40px] overflow-hidden mb-6 relative" style={{ border: '6px solid #ffffff', boxShadow: '0 35px 60px -15px rgba(136, 19, 55, 0.3)' }}>
+                                    {/* Left Sidebar: Larger Photo, No Tags Below */}
+                                    <div className="w-80 shrink-0 text-center">
+                                        <div className="w-80 h-[420px] rounded-[45px] overflow-hidden relative" style={{ border: '7px solid #ffffff', boxShadow: '0 40px 70px -15px rgba(136, 19, 55, 0.35)' }}>
                                             {myProfile.libasImageUrl ? (
                                                 <img src={myProfile.libasImageUrl} alt="Profile" className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300">
-                                                    <User size={100} />
+                                                    <User size={140} />
                                                 </div>
                                             )}
-                                        </div>
-                                        <div className="space-y-3 px-2">
-                                            <div className="px-4 py-2.5 bg-[#881337] text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg leading-tight">{myProfile.gender} Member</div>
-                                            <div className="px-4 py-2.5 bg-[#f0fdf4] text-[#166534] border border-[#dcfce7] rounded-full text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 leading-tight shadow-sm">
-                                                <ShieldCheck size={12} className="shrink-0" /> Verified Participant
-                                            </div>
                                         </div>
                                     </div>
 
@@ -2262,37 +2256,45 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                             </div>
                                         </div>
 
-                                        <div className="space-y-8">
-                                            {/* Top Stat Bar - Multi-column layout with fixed widths for safety */}
+                                        <div className="space-y-6">
+                                            {/* Top Stat Bar */}
                                             <div className="grid grid-cols-3 gap-0 p-5 bg-[#fcf8f9] rounded-[32px] border border-[#f5e6e9] shadow-inner">
                                                 <div className="flex flex-col items-center justify-center border-r border-[#881337]/10">
-                                                    <span className="text-[9px] font-black uppercase text-gray-400 mb-1">Age</span>
-                                                    <span className="text-xl font-black text-[#881337]">{myProfile.dob ? `${new Date().getFullYear() - new Date(myProfile.dob).getFullYear()} Y` : 'N/A'}</span>
+                                                    <span className="text-[10px] font-black uppercase text-gray-500 mb-1">Age</span>
+                                                    <span className="text-2xl font-black text-[#881337]">{myProfile.dob ? `${new Date().getFullYear() - new Date(myProfile.dob).getFullYear()} Y` : 'N/A'}</span>
                                                 </div>
                                                 <div className="flex flex-col items-center justify-center border-r border-[#881337]/10">
-                                                    <span className="text-[9px] font-black uppercase text-gray-400 mb-1">Height</span>
-                                                    <span className="text-lg font-black text-[#881337]">{myProfile.heightFeet}'{myProfile.heightInch}"</span>
+                                                    <span className="text-[10px] font-black uppercase text-gray-500 mb-1">Height</span>
+                                                    <span className="text-xl font-black text-[#881337]">{myProfile.heightFeet}'{myProfile.heightInch}"</span>
                                                 </div>
                                                 <div className="flex flex-col items-center justify-center">
-                                                    <span className="text-[9px] font-black uppercase text-gray-400 mb-1">Status</span>
-                                                    <span className="text-xs font-black text-[#881337] text-center px-1 truncate">{myProfile.maritalStatus || 'Single'}</span>
+                                                    <span className="text-[10px] font-black uppercase text-gray-500 mb-1">Status</span>
+                                                    <span className="text-sm font-black text-[#881337] text-center px-1 truncate tracking-tight">{myProfile.maritalStatus || 'Single'}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Tag Section */}
+                                            <div className="flex flex-wrap gap-2.5">
+                                                <div className="px-5 py-2.5 bg-[#881337] text-white rounded-full text-[11px] font-black uppercase tracking-widest shadow-md leading-tight">{myProfile.gender} Member</div>
+                                                <div className="px-5 py-2.5 bg-[#f0fdf4] text-[#166534] border border-[#dcfce7] rounded-full text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 leading-tight shadow-sm">
+                                                    <ShieldCheck size={14} className="shrink-0" /> ITS Verified Profile
                                                 </div>
                                             </div>
 
                                             {/* Second Tier: Contact (Direct Visibility) */}
                                             <div className="grid grid-cols-1 gap-3">
                                                 <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
-                                                    <div className="text-white bg-[#881337] p-2.5 rounded-xl shadow-md shrink-0"><Phone size={16} /></div>
+                                                    <div className="text-white bg-[#881337] p-3 rounded-xl shadow-md shrink-0"><Phone size={18} /></div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Official WhatsApp</span>
-                                                        <span className="text-[13px] font-black text-gray-900">{myProfile.mobileCode} {myProfile.mobile}</span>
+                                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">Official WhatsApp</span>
+                                                        <span className="text-[15px] font-black text-black">{myProfile.mobileCode} {myProfile.mobile}</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
-                                                    <div className="text-white bg-[#881337] p-2.5 rounded-xl shadow-md shrink-0"><Mail size={16} /></div>
+                                                    <div className="text-white bg-[#881337] p-3 rounded-xl shadow-md shrink-0"><Mail size={18} /></div>
                                                     <div className="flex flex-col min-w-0">
-                                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Certified Email</span>
-                                                        <span className="text-[13px] font-black text-gray-900 truncate">{myProfile.email}</span>
+                                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">Certified Email</span>
+                                                        <span className="text-[15px] font-black text-black truncate">{myProfile.email}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2301,64 +2303,67 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 </div>
 
                                 {/* Information Sections - Professional/Academic Highlighted */}
-                                <div className="px-8 grid grid-cols-1 gap-8 mb-10 relative z-10">
-                                    <div className="grid grid-cols-2 gap-8 p-8 rounded-[40px] bg-gradient-to-br from-[#881337] to-[#70102d] text-white shadow-2xl relative overflow-hidden group">
+                                <div className="px-8 grid grid-cols-1 gap-6 mb-10 relative z-10">
+                                    {/* Partner Expectations on Top of Grid */}
+                                    <div className="px-8 pb-4">
+                                        <h3 className="text-[14px] font-black uppercase tracking-[0.3em] mb-4 pb-2 border-b-2 border-[#D4AF37]/30 text-[#881337] flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" /> Partner Expectations
+                                        </h3>
+                                        <p className="text-[17px] leading-relaxed italic font-serif text-black font-black bg-[#fdf2f4]/60 p-6 rounded-[2rem] border-l-[6px] border-[#881337] shadow-sm">
+                                            "{myProfile.partnerQualities || "Seeking a compatible partner based on deen and traditional values."}"
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-8 p-10 rounded-[45px] bg-gradient-to-br from-[#881337] to-[#70102d] text-white shadow-2xl relative overflow-hidden group">
                                         <div className="absolute top-0 right-0 p-8 opacity-10 scale-150 rotate-12 group-hover:rotate-0 transition-transform duration-700 pointer-events-none">
                                             <GraduationCap size={150} />
                                         </div>
                                         <div className="space-y-6 relative z-10">
                                             <div className="flex items-start gap-4">
-                                                <div className="p-3 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 shrink-0"><GraduationCap size={28} /></div>
+                                                <div className="p-3.5 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 shrink-0"><GraduationCap size={32} /></div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-[9px] font-black uppercase text-white/60 tracking-widest mb-1.5">Academics</span>
-                                                    <span className="text-xl font-black leading-tight">{myProfile.completedUpto || 'Graduated'}</span>
-                                                    <span className="text-[11px] font-bold text-white/80 mt-1">{myProfile.educationDetails || myProfile.education}</span>
+                                                    <span className="text-[11px] font-black uppercase text-white tracking-widest mb-1.5 opacity-80">Academics</span>
+                                                    <span className="text-2xl font-black leading-tight">{myProfile.completedUpto || 'Graduated'}</span>
+                                                    <span className="text-[13px] font-bold text-white/90 mt-1">{myProfile.educationDetails || myProfile.education}</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="space-y-6 relative z-10 border-l border-white/20 pl-8">
                                             <div className="flex items-start gap-4">
-                                                <div className="p-3 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 shrink-0"><Briefcase size={28} /></div>
+                                                <div className="p-3.5 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 shrink-0"><Briefcase size={32} /></div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-[9px] font-black uppercase text-white/60 tracking-widest mb-1.5">Profession</span>
-                                                    <span className="text-xl font-black leading-tight break-words">{myProfile.professionType || 'Professional'}</span>
-                                                    <span className="text-[11px] font-bold text-white/80 mt-1">{myProfile.employmentDetails || 'Verified Candidate Profile'}</span>
+                                                    <span className="text-[11px] font-black uppercase text-white tracking-widest mb-1.5 opacity-80">Profession</span>
+                                                    <span className="text-2xl font-black leading-tight break-words">{myProfile.professionType || 'Professional'}</span>
+                                                    <span className="text-[13px] font-bold text-white/90 mt-1">{myProfile.employmentDetails || 'Verified Candidate Profile'}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Family & Personal Grid */}
-                                    <div className="grid grid-cols-2 gap-x-12">
+                                    <div className="grid grid-cols-2 gap-x-12 mt-4 px-4">
                                         {/* Family Info */}
-                                        <div className="space-y-5">
-                                            <h3 className="text-[12px] font-black uppercase tracking-[0.3em] mb-4 pb-2 border-b-2 border-[#D4AF37]/30 text-[#881337] flex items-center gap-2">
+                                        <div className="space-y-6">
+                                            <h3 className="text-[13px] font-black uppercase tracking-[0.3em] mb-4 pb-2 border-b-2 border-[#D4AF37]/30 text-[#881337] flex items-center gap-2">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" /> Family History
                                             </h3>
-                                            <div className="space-y-3.5 text-[14px] text-gray-700">
-                                                <div className="flex items-center justify-between"><span className="text-gray-400 font-bold text-[10px] uppercase">Father</span><span className="font-black">{myProfile.fatherName || 'Not Shared'}</span></div>
-                                                <div className="flex items-center justify-between"><span className="text-gray-400 font-bold text-[10px] uppercase">Mother</span><span className="font-black">{myProfile.motherName || 'Not Shared'}</span></div>
-                                                <div className="flex items-center justify-between"><span className="text-gray-400 font-bold text-[10px] uppercase">Siblings</span><span className="font-black">{myProfile.siblings || '0'} Member(s)</span></div>
-                                                <div className="flex items-center justify-between"><span className="text-gray-400 font-bold text-[10px] uppercase">Jamaat</span><span className="font-black truncate max-w-[170px]">{myProfile.jamaat || 'N/A'}</span></div>
-                                                <div className="flex items-center justify-between"><span className="text-gray-400 font-bold text-[10px] uppercase">Ancestral Watan</span><span className="font-black">{myProfile.ancestralWatan || 'N/A'}</span></div>
+                                            <div className="space-y-4 text-[15px] text-gray-900 font-bold">
+                                                <div className="flex items-center justify-between"><span className="text-gray-500 font-black text-[11px] uppercase tracking-tighter">Father</span><span className="text-black font-black">{myProfile.fatherName || 'Not Shared'}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-gray-500 font-black text-[11px] uppercase tracking-tighter">Mother</span><span className="text-black font-black">{myProfile.motherName || 'Not Shared'}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-gray-500 font-black text-[11px] uppercase tracking-tighter">Siblings</span><span className="text-black font-black">{myProfile.siblings || '0'} Member(s)</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-gray-500 font-black text-[11px] uppercase tracking-tighter">Jamaat</span><span className="text-black font-black truncate max-w-[170px]">{myProfile.jamaat || 'N/A'}</span></div>
+                                                <div className="flex items-center justify-between"><span className="text-gray-500 font-black text-[11px] uppercase tracking-tighter">Ancestral Watan</span><span className="text-black font-black">{myProfile.ancestralWatan || 'N/A'}</span></div>
                                             </div>
                                         </div>
 
                                         {/* Personal Info */}
-                                        <div className="space-y-5">
-                                            <h3 className="text-[12px] font-black uppercase tracking-[0.3em] mb-4 pb-2 border-b-2 border-[#D4AF37]/30 text-[#881337] flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" /> About & Preferences
+                                        <div className="space-y-6">
+                                            <h3 className="text-[13px] font-black uppercase tracking-[0.3em] mb-4 pb-2 border-b-2 border-[#D4AF37]/30 text-[#881337] flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" /> Personal Bio
                                             </h3>
-                                            <div className="space-y-5">
+                                            <div className="space-y-6">
                                                 <div>
-                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1.5">Partner Expectations</span>
-                                                    <p className="text-[12px] leading-relaxed italic font-serif text-gray-600 line-clamp-3">
-                                                        "{myProfile.partnerQualities || "Seeking a compatible partner based on deen and traditional values."}"
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1.5">Personal Bio</span>
-                                                    <p className="text-[12px] leading-relaxed text-gray-600 line-clamp-3">
+                                                    <p className="text-[15px] font-black leading-relaxed text-black bg-gray-50/50 p-5 rounded-2xl border-l-[6px] border-[#D4AF37]">
                                                         {myProfile.bio || "Looking forward to connecting with a compatible match. Ameen."}
                                                     </p>
                                                 </div>

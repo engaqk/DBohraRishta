@@ -463,11 +463,13 @@ export default function OnboardingPage() {
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
                             
                             {/* Verification Row */}
-                            <div className="bg-amber-50 border border-amber-200 p-6 rounded-[1.5rem] flex gap-4">
-                                <Clock className="w-6 h-6 text-amber-600 shrink-0" />
+                            <div className="bg-amber-50 border-2 border-amber-200 p-8 rounded-[2rem] flex gap-5 shadow-sm">
+                                <Clock className="w-8 h-8 text-amber-600 shrink-0" />
                                 <div>
-                                    <p className="font-black text-amber-900 mb-1">Mandatory Identity Check</p>
-                                    <p className="text-xs text-amber-800 leading-relaxed font-medium">Capture your original ITS card and a profile photo. Profiles with missing or fake photos are rejected within 24 hours.</p>
+                                    <p className="font-black text-amber-900 mb-2 text-lg">Mandatory Identity Check</p>
+                                    <p className="text-sm text-amber-800 leading-relaxed font-bold">
+                                        Upload your <span className="underline">original ITS card</span> and a <span className="underline">professional profile photo</span>. Official verification typically takes <span className="bg-amber-200 px-1 rounded">on or before 24 hours</span>. Profiles with missing, blurred, or fake documents are rejected immediately.
+                                    </p>
                                 </div>
                             </div>
 
@@ -484,8 +486,8 @@ export default function OnboardingPage() {
 
                             {/* Photo Inputs */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center gap-3 bg-gray-50/50">
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-200 px-3 py-1 rounded-full">ITS Card Photo</span>
+                                <div className={`border-2 border-dashed ${errors.itsImage ? 'border-red-500 bg-red-50/30' : 'border-gray-200 bg-gray-50/50'} rounded-3xl p-6 flex flex-col items-center gap-3 transition-colors`}>
+                                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${errors.itsImage ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400'}`}>ITS Card Photo *</span>
                                     {imagePreview ? (
                                         <div className="relative group w-full aspect-video rounded-2xl overflow-hidden shadow-md">
                                             <img src={imagePreview} className="w-full h-full object-cover" />
@@ -493,18 +495,19 @@ export default function OnboardingPage() {
                                         </div>
                                     ) : (
                                         <div className="flex flex-col items-center gap-4 w-full h-full justify-center">
-                                            <Camera className="w-10 h-10 text-gray-300" />
+                                            <Camera className={`w-10 h-10 ${errors.itsImage ? 'text-red-300' : 'text-gray-300'}`} />
                                             <div className="flex gap-2 w-full">
-                                                <button onClick={() => fileInputRef.current?.click()} className="flex-1 bg-white border border-gray-200 py-3 rounded-xl font-bold text-xs shadow-sm">Camera</button>
-                                                <button onClick={() => { const i = document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=(e:any)=>handleImageCapture(e); i.click(); }} className="flex-1 bg-white border border-gray-200 py-3 rounded-xl font-bold text-xs shadow-sm">Gallery</button>
+                                                <button onClick={() => fileInputRef.current?.click()} className="flex-1 bg-white border border-gray-200 py-3 rounded-xl font-bold text-xs shadow-sm hover:bg-gray-50">Camera</button>
+                                                <button onClick={() => { const i = document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=(e:any)=>handleImageCapture(e); i.click(); }} className="flex-1 bg-white border border-gray-200 py-3 rounded-xl font-bold text-xs shadow-sm hover:bg-gray-50">Gallery</button>
                                             </div>
                                             <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleImageCapture} />
                                         </div>
                                     )}
+                                    {errors.itsImage && <p className="text-[10px] font-bold text-red-500 mt-1 uppercase tracking-tighter">{errors.itsImage}</p>}
                                 </div>
 
-                                <div className="border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center gap-3 bg-gray-50/50">
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-200 px-3 py-1 rounded-full">Profile Photo ({formData.gender === 'female' ? 'Rida' : 'Libas'})</span>
+                                <div className={`border-2 border-dashed ${errors.libasImage ? 'border-red-500 bg-red-50/30' : 'border-gray-200 bg-gray-50/50'} rounded-3xl p-6 flex flex-col items-center gap-3 transition-colors`}>
+                                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${errors.libasImage ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400'}`}>Profile Photo ({formData.gender === 'female' ? 'Rida' : 'Libas'}) *</span>
                                     {libasImagePreview ? (
                                         <div className="relative group w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-md">
                                             <img src={libasImagePreview} className="w-full h-full object-cover" />
@@ -512,14 +515,15 @@ export default function OnboardingPage() {
                                         </div>
                                     ) : (
                                         <div className="flex flex-col items-center gap-4 w-full h-full justify-center">
-                                            <Camera className="w-10 h-10 text-gray-300" />
+                                            <Camera className={`w-10 h-10 ${errors.libasImage ? 'text-red-300' : 'text-gray-300'}`} />
                                             <div className="flex gap-2 w-full">
-                                                <button onClick={() => libasFileInputRef.current?.click()} className="flex-1 bg-white border border-gray-200 py-3 rounded-xl font-bold text-xs shadow-sm">Camera</button>
-                                                <button onClick={() => { const i = document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=(e:any)=>handleLibasImageCapture(e); i.click(); }} className="flex-1 bg-white border border-gray-200 py-3 rounded-xl font-bold text-xs shadow-sm">Gallery</button>
+                                                <button onClick={() => libasFileInputRef.current?.click()} className="flex-1 bg-white border border-gray-200 py-3 rounded-xl font-bold text-xs shadow-sm hover:bg-gray-50">Camera</button>
+                                                <button onClick={() => { const i = document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=(e:any)=>handleLibasImageCapture(e); i.click(); }} className="flex-1 bg-white border border-gray-200 py-3 rounded-xl font-bold text-xs shadow-sm hover:bg-gray-50">Gallery</button>
                                             </div>
                                             <input type="file" accept="image/*" capture="environment" ref={libasFileInputRef} className="hidden" onChange={handleLibasImageCapture} />
                                         </div>
                                     )}
+                                    {errors.libasImage && <p className="text-[10px] font-bold text-red-500 mt-1 uppercase tracking-tighter">{errors.libasImage}</p>}
                                 </div>
                             </div>
 

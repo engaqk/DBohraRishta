@@ -242,6 +242,7 @@ export default function RishtaDashboard() {
     // Mobile Verification State
     const [showMobileVerifyModal, setShowMobileVerifyModal] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+    const [showShareFabMenu, setShowShareFabMenu ] = useState(false);
 
     useEffect(() => {
         const handleOpenMenu = () => setShowMobileMenu(true);
@@ -686,27 +687,56 @@ export default function RishtaDashboard() {
         }
     };
 
-    const handleDownloadBiodata = async () => {
+    const handleDownloadBiodata = async (format: 'png' | 'pdf' = 'png') => {
         if (!biodataRef.current) return;
         setGeneratingBiodata(true);
         try {
-            // Use html-to-image instead of html2canvas to avoid parsing errors with modern CSS (lab, oklch)
-            const { toPng } = await import('html-to-image');
+            // Give browser a moment to paint the hidden template
+            await new Promise(r => setTimeout(r, 300));
 
-            const dataUrl = await toPng(biodataRef.current, {
-                cacheBust: true,
-                pixelRatio: 3, // Higher resolution
-                backgroundColor: '#ffffff'
-            });
+            const { toPng, toBlob } = await import('html-to-image');
+            
+            if (format === 'png') {
+                const dataUrl = await toPng(biodataRef.current, {
+                    cacheBust: true,
+                    pixelRatio: 5, // Extreme high resolution
+                    backgroundColor: '#ffffff'
+                });
 
-            const link = document.createElement('a');
-            link.href = dataUrl;
-            link.download = `Biodata_${myProfile?.name?.replace(/\s+/g, '_') || 'Profile'}.png`;
-            link.click();
-            toast.success("Biodata downloaded successfully! ✨");
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = `Biodata_${myProfile?.name?.replace(/\s+/g, '_') || 'Profile'}.png`;
+                link.click();
+                toast.success("High-res PNG downloaded! ✨");
+            } else {
+                // PDF Export
+                const blob = await toBlob(biodataRef.current, {
+                    cacheBust: true,
+                    pixelRatio: 3, // Balanced for PDF
+                    backgroundColor: '#ffffff'
+                });
+
+                if (!blob) throw new Error("Failed to generate PDF");
+
+                const { jsPDF } = await import('jspdf');
+                const img = new Image();
+                img.src = URL.createObjectURL(blob);
+                
+                img.onload = () => {
+                    const pdf = new jsPDF({
+                        orientation: 'portrait',
+                        unit: 'px',
+                        format: [img.width / 3, img.height / 3] // Scale back for manageable file size
+                    });
+                    
+                    pdf.addImage(img, 'PNG', 0, 0, img.width / 3, img.height / 3);
+                    pdf.save(`Biodata_${myProfile?.name?.replace(/\s+/g, '_') || 'Profile'}.pdf`);
+                    toast.success("PDF generated successfully! 📄");
+                };
+            }
         } catch (err) {
             console.error(err);
-            toast.error("Failed to generate biodata image.");
+            toast.error("Failed to generate biodata.");
         } finally {
             setGeneratingBiodata(false);
         }
@@ -716,12 +746,18 @@ export default function RishtaDashboard() {
         if (!biodataRef.current || !user || !myProfile) return;
         setGeneratingBiodata(true);
         try {
+            // Immediate UI feedback
+            toast.loading("Generating your Premium Biodata... Please wait.", { id: 'sharing_toast' });
+            
+            // Give browser a moment to paint the hidden template
+            await new Promise(r => setTimeout(r, 500));
+
             const { toBlob } = await import('html-to-image');
 
-            // Generate a high-resolution image for clear zooming (pixelRatio 4)
+            // Generate a super-high-resolution image for clear zooming (pixelRatio 5)
             const blob = await toBlob(biodataRef.current, {
                 cacheBust: true,
-                pixelRatio: 4, 
+                pixelRatio: 5, 
                 backgroundColor: '#ffffff'
             });
 
@@ -731,7 +767,7 @@ export default function RishtaDashboard() {
             const imageFile = new File([blob], fileName, { type: 'image/png' });
 
             const shareUrl = `${window.location.origin}/profile?id=${user.uid}`;
-            const shareText = `Assalamu Alaiykum! Check out my official Digital Biodata on 53DBohraRishta Community:\n\n🔗 View Online: ${shareUrl}`;
+            const shareText = `Assalamu Alaiykum! Check out my official Digital Biodata on 53DBohraRishta.in Platform:\n\n🔗 View Online: ${shareUrl}`;
 
             // Check if native sharing with files is supported
             if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
@@ -758,6 +794,7 @@ export default function RishtaDashboard() {
             console.error('Image Share failed:', err);
             toast.error("Sharing failed. Try manual download.");
         } finally {
+            toast.dismiss('sharing_toast');
             setGeneratingBiodata(false);
         }
     };
@@ -2166,14 +2203,31 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
 
                                         {myProfile.status === 'verified' && (
                                             <div className='flex flex-col gap-3 mt-6'>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <button
+                                                        onClick={() => handleDownloadBiodata('png')}
+                                                        disabled={generatingBiodata}
+                                                        className='w-full bg-emerald-600 text-white py-3 rounded-xl text-xs font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group active:scale-95'
+                                                    >
+                                                        {generatingBiodata ? <RefreshCw className='w-3.5 h-3.5 animate-spin' /> : <Download className='w-3.5 h-3.5 group-hover:scale-110 transition-transform' />}
+                                                        Download PNG
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDownloadBiodata('pdf')}
+                                                        disabled={generatingBiodata}
+                                                        className='w-full bg-blue-600 text-white py-3 rounded-xl text-xs font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group active:scale-95'
+                                                    >
+                                                        {generatingBiodata ? <RefreshCw className='w-3.5 h-3.5 animate-spin' /> : <Layers className='w-3.5 h-3.5 group-hover:scale-110 transition-transform' />}
+                                                        Save as PDF
+                                                    </button>
+                                                </div>
                                                 <button
-                                                    id='download-biodata-btn'
-                                                    onClick={handleDownloadBiodata}
+                                                    onClick={() => handleShareImageBiodata()}
                                                     disabled={generatingBiodata}
-                                                    className='w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3 rounded-xl text-sm font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group active:scale-95'
+                                                    className='w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3.5 rounded-xl text-sm font-black shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group active:scale-95'
                                                 >
-                                                    {generatingBiodata ? <RefreshCw className='w-4 h-4 animate-spin' /> : <Download className='w-4 h-4 group-hover:scale-110 transition-transform' />}
-                                                    Generate My Biodata with QR
+                                                    {generatingBiodata ? <RefreshCw className='w-4 h-4 animate-spin' /> : <Megaphone className='w-4 h-4 group-hover:scale-110 transition-transform text-[#D4AF37]' />}
+                                                    Share BioData on WhatsApp
                                                 </button>
                                             </div>
                                         )}
@@ -2211,7 +2265,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
 
                                 {/* 📜 Document Title & Full Name (Full Width - NO CLIPPING) */}
                                 <div className="pt-12 px-16 text-center">
-                                    <h2 className="text-[24px] font-black uppercase tracking-[0.6em] text-[#881337]/50 mb-6 italic">Official BioData Document</h2>
+                                    <h2 className="text-[24px] font-black uppercase tracking-[0.6em] text-[#881337]/50 mb-6 italic">Official BioData</h2>
                                     <div className="inline-block relative">
                                         <div className="absolute -inset-x-12 -inset-y-4 bg-[#881337]/5 rounded-full -rotate-1 skew-x-3 pointer-events-none" />
                                         <h1 className="relative text-6xl font-black text-black font-serif italic py-4 leading-[1.2] px-4">
@@ -2997,7 +3051,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                             <p className="text-sm text-gray-600 mb-6">Accepting from <span className="font-bold">{acceptingRequest.otherUserName}</span>. Confirm contact details to share.</p>
                             <div className="space-y-4 mb-6">
                                 {acceptError && <div className="p-3 bg-red-50 text-red-600 text-sm font-bold rounded-xl border border-red-100">{acceptError}</div>}
-                                <div><label className="block text-sm font-bold text-gray-700 mb-1">Mobile Number *</label><input value={acceptMobile} onChange={e => { setAcceptMobile(e.target.value); setAcceptError(''); }} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. +91 9876543210" /></div>
+                                <div><label className="block text-sm font-bold text-gray-700 mb-1">Mobile Number *</label><input type="number" value={acceptMobile} onInput={(e) => { if (e.currentTarget.value.length > 14) e.currentTarget.value = e.currentTarget.value.slice(0, 14); }} onChange={e => { setAcceptMobile(e.target.value); setAcceptError(''); }} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. 919876543210" /></div>
                                 <div><label className="block text-sm font-bold text-gray-700 mb-1">Email Address *</label><input type="email" value={acceptEmail} onChange={e => { setAcceptEmail(e.target.value); setAcceptError(''); }} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#881337]" placeholder="e.g. you@example.com" /></div>
                                 <div className="flex gap-2 bg-red-50 p-3 rounded-lg border border-red-100">
                                     <Info className="w-4 h-4 text-[#881337] shrink-0 mt-0.5" /><p className="text-xs text-[#881337] font-medium">These details will be shared mutually upon acceptance.</p>
@@ -3091,10 +3145,11 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                     <div>
                                         <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">My Mobile Number</label>
                                         <input
-                                            type="tel"
+                                            type="number"
                                             value={newMobileVerifyInput}
+                                            onInput={(e) => { if (e.currentTarget.value.length > 14) e.currentTarget.value = e.currentTarget.value.slice(0, 14); }}
                                             onChange={(e) => setNewMobileVerifyInput(e.target.value)}
-                                            placeholder="+919876543210"
+                                            placeholder="919876543210"
                                             className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-[#881337] outline-none transition-all"
                                         />
                                     </div>
@@ -3240,20 +3295,45 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                 <span className="absolute right-full mr-4 bg-gray-900 text-white text-[10px] px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl font-bold">Share with Community</span>
             </a>
 
-            {/* 📄 Floating Share Biodata Button (Verified only) */}
+            {/* 📄 Floating Download/Share 53 Button (Verified only) */}
             {myProfile?.status === 'verified' && (
-                <button
-                    onClick={handleShareImageBiodata}
-                    disabled={generatingBiodata}
-                    className="fixed bottom-40 right-6 z-[60] bg-white text-[#881337] p-1.5 rounded-full shadow-2xl hover:scale-110 active:scale-90 transition-all cursor-pointer flex items-center justify-center border-2 border-rose-100 ring-4 ring-[#25D366]/40"
-                    title="Generate & Share Biodata"
-                >
-                    {generatingBiodata ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                        <div className="w-10 h-10 flex items-center justify-center rounded-full bg-[#881337] text-white font-black text-[14px]">53</div>
+                <div className="fixed bottom-40 right-6 z-[60] flex flex-col items-end gap-3 pointer-events-none">
+                    {showShareFabMenu && (
+                        <div className="flex flex-col gap-2 mb-2 animate-in slide-in-from-bottom-5 fade-in duration-300 pointer-events-auto">
+                            <button 
+                                onClick={() => { handleDownloadBiodata('png'); setShowShareFabMenu(false); }}
+                                className="bg-emerald-600 text-white px-4 py-3 rounded-2xl flex items-center gap-3 shadow-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all border-2 border-emerald-400"
+                            >
+                                <Download className="w-4 h-4" /> Download PNG
+                            </button>
+                            <button 
+                                onClick={() => { handleDownloadBiodata('pdf'); setShowShareFabMenu(false); }}
+                                className="bg-blue-600 text-white px-4 py-3 rounded-2xl flex items-center gap-3 shadow-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all border-2 border-blue-400"
+                            >
+                                <Layers className="w-4 h-4" /> Save as PDF
+                            </button>
+                            <button 
+                                onClick={() => { handleShareImageBiodata(); setShowShareFabMenu(false); }}
+                                className="bg-[#25D366] text-white px-4 py-3 rounded-2xl flex items-center gap-3 shadow-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all border-2 border-green-300"
+                            >
+                                <Send className="w-4 h-4" /> Share WhatsApp
+                            </button>
+                        </div>
                     )}
-                </button>
+                    <button
+                        onClick={() => setShowShareFabMenu(!showShareFabMenu)}
+                        className={`pointer-events-auto relative group flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition-all active:scale-90 ${showShareFabMenu ? 'bg-gray-800 rotate-45' : 'bg-[#881337] hover:scale-110'}`}
+                    >
+                        {generatingBiodata ? (
+                            <Loader2 className="w-6 h-6 animate-spin text-white" />
+                        ) : (
+                            showShareFabMenu ? <X className="w-6 h-6 text-white" /> : <div className="text-white font-black text-xl">53</div>
+                        )}
+                        {!showShareFabMenu && !generatingBiodata && (
+                            <span className="absolute -top-1 -right-1 h-3 w-3 bg-emerald-500 rounded-full border-2 border-white animate-pulse" />
+                        )}
+                    </button>
+                </div>
             )}
         </div>
     );

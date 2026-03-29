@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User, ShieldCheck, Camera, UploadCloud, CheckCircle2, Loader2, Clock, AlertCircle, LogOut } from "lucide-react";
+import { User, ShieldCheck, Camera, UploadCloud, CheckCircle2, Loader2, Clock, AlertCircle, LogOut, Info } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { doc, setDoc, addDoc, collection, serverTimestamp, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -28,7 +28,7 @@ export default function OnboardingPage() {
     const [formData, setFormData] = useState({
         name: "",
         email: "",
-        mobile: "+91 ",
+        mobile: "91",
         gender: "",
         dob: "",
         itsNumber: "",
@@ -79,9 +79,9 @@ export default function OnboardingPage() {
                 const method = sessionStorage.getItem('loginMethod');
                 
                 if (verifiedPhone) {
-                    setFormData(prev => ({ ...prev, mobile: verifiedPhone }));
-                } else if (!formData.mobile || formData.mobile === "+91 ") {
-                    setFormData(prev => ({ ...prev, mobile: "+91 " }));
+                    setFormData(prev => ({ ...prev, mobile: verifiedPhone.replace(/\D/g, '') }));
+                } else if (!formData.mobile || formData.mobile === "91" || formData.mobile === "+91 ") {
+                    setFormData(prev => ({ ...prev, mobile: "91" }));
                 }
                 if (method) {
                     setLoginMethod(prev => prev || method);
@@ -458,15 +458,19 @@ export default function OnboardingPage() {
                                     <div>
                                         <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Mobile Number</label>
                                         <input 
-                                            type="tel" 
+                                            type="number" 
                                             name="mobile" 
                                             onChange={handleChange} 
                                             value={formData.mobile} 
-                                            placeholder="+91 88888 88888"
+                                            placeholder="918888888888"
+                                            onInput={(e) => {
+                                                const val = e.currentTarget.value;
+                                                if (val.length > 14) e.currentTarget.value = val.slice(0, 14);
+                                            }}
                                             className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-semibold shadow-sm focus:ring-2 focus:ring-[#881337] outline-none" 
                                             readOnly={loginMethod === 'mobile'} 
                                         />
-                                        <p className="text-[10px] text-gray-400 mt-2 font-bold px-1 italic">Include country code (e.g., +91, +971, +1)</p>
+                                        <p className="text-[10px] text-gray-400 mt-2 font-bold px-1 italic">Include country code digits (e.g., 91, 971, 1)</p>
                                     </div>
                                 </div>
                             </div>
@@ -494,7 +498,18 @@ export default function OnboardingPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">ITS Number</label>
-                                    <input name="itsNumber" onChange={handleChange} value={formData.itsNumber} className={`w-full bg-gray-50 border ${errors.itsNumber ? 'border-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-2xl px-5 py-4 focus:ring-2 outline-none font-semibold shadow-sm`} placeholder="8-digit ITS" />
+                                    <input 
+                                        type="number" 
+                                        name="itsNumber" 
+                                        onChange={handleChange} 
+                                        value={formData.itsNumber} 
+                                        onInput={(e) => {
+                                            const val = e.currentTarget.value;
+                                            if (val.length > 8) e.currentTarget.value = val.slice(0, 8);
+                                        }}
+                                        className={`w-full bg-gray-50 border ${errors.itsNumber ? 'border-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-2xl px-5 py-4 focus:ring-2 outline-none font-semibold shadow-sm`} 
+                                        placeholder="8-digit ITS" 
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Primary Jamaat</label>
@@ -505,7 +520,7 @@ export default function OnboardingPage() {
                             {/* Photo Inputs */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className={`border-2 border-dashed ${errors.itsImage ? 'border-red-500 bg-red-50/30' : 'border-gray-200 bg-gray-50/50'} rounded-3xl p-6 flex flex-col items-center gap-3 transition-colors`}>
-                                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${errors.itsImage ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400'}`}>ITS Card Photo *</span>
+                                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${errors.itsImage ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400'}`}>Candidate ITS Card Photo *</span>
                                     {imagePreview ? (
                                         <div className="relative group w-full aspect-video rounded-2xl overflow-hidden shadow-md">
                                             <img src={imagePreview} className="w-full h-full object-cover" />
@@ -525,7 +540,7 @@ export default function OnboardingPage() {
                                 </div>
 
                                 <div className={`border-2 border-dashed ${errors.libasImage ? 'border-red-500 bg-red-50/30' : 'border-gray-200 bg-gray-50/50'} rounded-3xl p-6 flex flex-col items-center gap-3 transition-colors`}>
-                                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${errors.libasImage ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400'}`}>Profile Photo ({formData.gender === 'female' ? 'Rida' : 'Libas'}) *</span>
+                                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${errors.libasImage ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400'}`}>Profile Photo (Preferably in Libas-al-Anwar) *</span>
                                     {libasImagePreview ? (
                                         <div className="relative group w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-md">
                                             <img src={libasImagePreview} className="w-full h-full object-cover" />
@@ -541,8 +556,14 @@ export default function OnboardingPage() {
                                             <input type="file" accept="image/*" capture="environment" ref={libasFileInputRef} className="hidden" onChange={handleLibasImageCapture} />
                                         </div>
                                     )}
-                                    {errors.libasImage && <p className="text-[10px] font-bold text-red-500 mt-1 uppercase tracking-tighter">{errors.libasImage}</p>}
                                 </div>
+                            </div>
+
+                            <div className="bg-gray-50/80 p-5 rounded-2xl flex gap-3 border border-gray-100 mt-2">
+                                <Info className="w-4 h-4 text-[#881337] shrink-0 mt-0.5" />
+                                <p className="text-[11px] text-gray-500 font-bold leading-relaxed">
+                                    <span className="text-[#881337] uppercase">Note:</span> You can add a <span className="text-blue-600">verified selfie</span> and additional profile photos from the <span className="underline">"My BioData"</span> section once your profile is officially verified by the admin.
+                                </p>
                             </div>
 
                             <hr className="border-gray-100" />

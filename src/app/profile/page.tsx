@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, increment } from 'firebase/firestore';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { ArrowLeft, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles, User, Mail, Phone, Heart, Send, X, CheckCircle, MapPin } from 'lucide-react';
+import { ArrowLeft, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles, User, Mail, Phone, Heart, Send, X, CheckCircle, MapPin, Play, Pause, Volume2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { notifyInterestSent } from '@/lib/emailService';
 import { computeMatchScore } from '@/lib/matchUtils';
@@ -29,6 +29,8 @@ function ProfileContent() {
     const [icebreaker, setIcebreaker] = useState('');
     const [activePhotoIdx, setActivePhotoIdx] = useState(0);
     const [showLightbox, setShowLightbox] = useState(false);
+    const [isPlayingVoice, setIsPlayingVoice] = useState(false);
+    const [audioInstance, setAudioInstance] = useState<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         const fetchAllData = async () => {
@@ -137,6 +139,26 @@ function ProfileContent() {
         if (linkPattern.test(icebreaker)) return "Website links are not allowed";
         return null;
     }, [icebreaker]);
+
+    const toggleVoicePlay = () => {
+        if (!profile?.voiceIntroUrl) return;
+
+        if (isPlayingVoice) {
+            audioInstance?.pause();
+            setIsPlayingVoice(false);
+        } else {
+            if (audioInstance) {
+                audioInstance.play();
+                setIsPlayingVoice(true);
+            } else {
+                const audio = new Audio(profile.voiceIntroUrl);
+                audio.onended = () => setIsPlayingVoice(false);
+                audio.play();
+                setAudioInstance(audio);
+                setIsPlayingVoice(true);
+            }
+        }
+    };
 
     const handleSendRequest = () => {
         if (!user || !id) return;
@@ -516,6 +538,38 @@ function ProfileContent() {
                                 </div>
                             )}
                         </div>
+
+                        {/* 🔊 Voice Intro Playback */}
+                        {profile?.voiceIntroUrl && (
+                            <div 
+                                onClick={toggleVoicePlay}
+                                className={`flex items-center gap-4 px-5 py-4 rounded-2xl border transition-all cursor-pointer active:scale-95 shadow-sm
+                                ${isPlayingVoice ? 'bg-[#881337] border-[#881337] text-white' : 'bg-rose-50 border-rose-100 text-[#881337] hover:bg-rose-100'}`}
+                            >
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isPlayingVoice ? 'bg-white/20' : 'bg-[#881337] text-white'}`}>
+                                    {isPlayingVoice ? (
+                                        <Pause className="w-5 h-5" />
+                                    ) : (
+                                        <div className="flex items-center gap-0.5">
+                                            <div className="w-0.5 h-3 bg-white rounded-full animate-[bounce_1s_infinite]" />
+                                            <div className="w-0.5 h-4 bg-white rounded-full animate-[bounce_1.2s_infinite]" />
+                                            <div className="w-0.5 h-3 bg-white rounded-full animate-[bounce_0.8s_infinite]" />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex flex-col flex-1">
+                                    <span className={`text-[10px] font-black uppercase tracking-wider ${isPlayingVoice ? 'text-white/80' : 'text-[#881337]/60'}`}>
+                                        {isPlayingVoice ? 'Now Playing' : 'Voice Introduction'}
+                                    </span>
+                                    <span className="text-sm font-black">Listen to {profile.name?.split(' ')[0]}'s Intro</span>
+                                </div>
+                                {isPlayingVoice && (
+                                    <div className="flex items-center gap-1 px-3 py-1 bg-white/10 rounded-full">
+                                        <Volume2 className="w-3.5 h-3.5 animate-pulse" />
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {/* Bio / Tagline */}
                         {bio && (

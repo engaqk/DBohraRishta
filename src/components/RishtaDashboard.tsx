@@ -810,7 +810,7 @@ export default function RishtaDashboard() {
             const { toBlob } = await import('html-to-image');
             const blob = await toBlob(biodataRef.current, {
                 cacheBust: true,
-                pixelRatio: 3, 
+                pixelRatio: 2, 
                 backgroundColor: '#ffffff'
             });
 
@@ -820,41 +820,54 @@ export default function RishtaDashboard() {
             const img = new Image();
             img.src = URL.createObjectURL(blob);
             
-            await new Promise((resolve) => {
+            await new Promise((resolve, reject) => {
                 img.onload = async () => {
-                    const pdf = new jsPDF({
-                        orientation: 'portrait',
-                        unit: 'px',
-                        format: [img.width / 3, img.height / 3]
-                    });
-                    pdf.addImage(img, 'PNG', 0, 0, img.width / 3, img.height / 3);
-                    
-                    const fileName = `Biodata_${myProfile.name?.replace(/\s+/g, '_') || 'Member'}.pdf`;
-                    const pdfBlob = pdf.output('blob');
-                    const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-
-                    const shareUrl = `${window.location.origin}/profile?id=${user.uid}`;
-                    const shareText = `Assalamu Alaiykum! Check out my official Digital Biodata on 53DBohraRishta.in Platform:\n\n🔗 View Online: ${shareUrl}`;
-
-                    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-                        await navigator.share({
-                            files: [pdfFile],
-                            text: shareText,
-                            title: `Biodata - ${myProfile.name}`
-                        }).catch(() => { });
-                    } else {
-                        // Fallback: download and WhatsApp link
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(pdfBlob);
-                        link.download = fileName;
-                        link.click();
+                    try {
+                        const pdf = new jsPDF({
+                            orientation: 'portrait',
+                            unit: 'px',
+                            format: [img.width / 2, img.height / 2]
+                        });
+                        pdf.addImage(img, 'PNG', 0, 0, img.width / 2, img.height / 2, undefined, 'FAST');
                         
-                        const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-                        window.open(waUrl, '_blank');
-                        toast.success("Ready to share! (PDF saved to gallery)");
+                        const fileName = `Biodata_${myProfile.name?.replace(/\s+/g, '_') || 'Member'}.pdf`;
+                        const pdfBlob = pdf.output('blob');
+                        const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+                        const shareUrl = `${window.location.origin}/profile?id=${user.uid}`;
+                        const shareText = `Assalamu Alaiykum! Check out my official Digital Biodata on 53DBohraRishta.in Platform:\n\n🔗 View Online: ${shareUrl}`;
+
+                        const triggerFallback = () => {
+                            const link = document.createElement('a');
+                            link.href = URL.createObjectURL(pdfBlob);
+                            link.download = fileName;
+                            link.click();
+                            
+                            const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+                            window.open(waUrl, '_blank');
+                            toast.success("Ready to share! (PDF saved to gallery)");
+                        };
+
+                        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+                            try {
+                                await navigator.share({
+                                    files: [pdfFile],
+                                    text: shareText,
+                                    title: `Biodata - ${myProfile.name}`
+                                });
+                            } catch (shareErr) {
+                                console.warn('Native share failed, using fallback:', shareErr);
+                                triggerFallback();
+                            }
+                        } else {
+                            triggerFallback();
+                        }
+                        resolve(null);
+                    } catch (e) {
+                        reject(e);
                     }
-                    resolve(null);
                 };
+                img.onerror = () => reject(new Error("Image failed to load"));
             });
         } catch (err) {
             console.error('PDF Share failed:', err);

@@ -32,6 +32,7 @@ export default function AdminBroadcastPage() {
         sendInApp: true,
         sendEmail: false,
         includeAllAuthUsers: false,
+        onlyIncompleteOnboarding: false,
     });
 
     useEffect(() => {
@@ -82,6 +83,7 @@ export default function AdminBroadcastPage() {
                     sendInApp: formData.sendInApp,
                     sendEmail: formData.sendEmail,
                     includeAllAuthUsers: formData.includeAllAuthUsers,
+                    onlyIncompleteOnboarding: formData.onlyIncompleteOnboarding,
                     adminId: user?.uid || 'admin'
                 }),
             });
@@ -93,7 +95,7 @@ export default function AdminBroadcastPage() {
 
             const data = await res.json();
             toast.success(`Broadcast sent! Push: ${data.pushSent}, Emails: ${data.emailsSent}`);
-            setFormData({ title: "", message: "", sendPush: true, sendInApp: true, sendEmail: false, includeAllAuthUsers: false });
+            setFormData({ title: "", message: "", sendPush: true, sendInApp: true, sendEmail: false, includeAllAuthUsers: false, onlyIncompleteOnboarding: false });
             fetchHistory();
         } catch (error: any) {
             toast.error("Failed to send broadcast: " + error.message);
@@ -210,8 +212,8 @@ export default function AdminBroadcastPage() {
                                     </button>
                                 </div>
 
-                                {formData.sendEmail && (
-                                    <div className="flex items-center gap-2 px-2 py-1">
+                                <div className="flex flex-col gap-2 p-2 border-t border-gray-50 mt-2">
+                                    <div className="flex items-center gap-2">
                                         <input
                                             type="checkbox"
                                             id="includeAllAuthUsers"
@@ -223,7 +225,19 @@ export default function AdminBroadcastPage() {
                                             Include all registered users (including those with incomplete profiles)
                                         </label>
                                     </div>
-                                )}
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id="onlyIncompleteOnboarding"
+                                            checked={formData.onlyIncompleteOnboarding}
+                                            onChange={e => setFormData({ ...formData, onlyIncompleteOnboarding: e.target.checked })}
+                                            className="w-4 h-4 text-[#881337] rounded border-gray-300 focus:ring-[#881337]"
+                                        />
+                                        <label htmlFor="onlyIncompleteOnboarding" className="text-xs font-bold text-rose-600 cursor-pointer">
+                                            ONLY send to users with INCOMPLETE onboarding/biodata
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
 
                             <button

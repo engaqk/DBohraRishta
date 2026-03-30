@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, adminMessaging } from '@/lib/firebase/admin';
 import * as admin from 'firebase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -134,6 +134,38 @@ export async function POST(request: Request) {
                             newCandidateCity: userData?.city || userData?.location || userData?.hizratLocation || 'our community'
                         })
                     });
+                }
+
+                // 7. Push Notification broadcast to ALL users for the new profile
+                if (adminMessaging) {
+                    const allTokens: string[] = [];
+                    verifiedUsersSnap.forEach(doc => {
+                        const d = doc.data();
+                        if (d.fcmTokens && Array.isArray(d.fcmTokens) && doc.id !== userId) {
+                            allTokens.push(...d.fcmTokens);
+                        }
+                    });
+
+                    if (allTokens.length > 0) {
+                        const uniqueTokens = Array.from(new Set(allTokens));
+                        const genderLabel = userData?.gender?.toLowerCase() === 'male' ? 'Male' : userData?.gender?.toLowerCase() === 'female' ? 'Female' : 'New';
+                        const cityLabel = userData?.city || 'our community';
+                        
+                        const chunkSize = 500;
+                        for (let i = 0; i < uniqueTokens.length; i += chunkSize) {
+                            const chunk = uniqueTokens.slice(i, i + chunkSize);
+                            await adminMessaging.sendEachForMulticast({
+                                tokens: chunk,
+                                notification: {
+                                    title: '✨ NEW PROFILE VERIFIED',
+                                    body: `A new ${genderLabel} profile from ${cityLabel} has just been verified! Login now to view details.`
+                                },
+                                webpush: {
+                                    fcmOptions: { link: `https://53dbohrarishta.in/profile?id=${userId}` }
+                                }
+                            });
+                        }
+                    }
                 }
             }
 

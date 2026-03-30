@@ -26,10 +26,9 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { title, message, sendPush, sendInApp, sendEmail, includeAllAuthUsers, adminId } = body;
+        const { title, message, sendPush, sendInApp, sendEmail, includeAllAuthUsers, onlyIncompleteOnboarding, adminId } = body;
 
-        // 0. Save to Broadcasts collection (for history and in-app display)
-        // We do this server-side so client needs no write permission
+        // ... (Save broadcast record remains same)
         const broadcastData = {
             title: title || "Platform Update",
             message: message,
@@ -39,11 +38,15 @@ export async function POST(req: Request) {
                 push: !!sendPush,
                 inApp: !!sendInApp,
                 email: !!sendEmail
+            },
+            targeting: {
+                allAuth: !!includeAllAuthUsers,
+                onlyIncomplete: !!onlyIncompleteOnboarding
             }
         };
         const broadcastRef = await adminDb.collection('broadcasts').add(broadcastData);
 
-        console.log(`Starting broadcast record=${broadcastRef.id}: Title="${title}", Push=${sendPush}, Email=${sendEmail}, AllAuth=${includeAllAuthUsers}`);
+        console.log(`Starting broadcast record=${broadcastRef.id}: Title="${title}", OnlyIncomplete=${onlyIncompleteOnboarding}`);
 
         let pushSuccessCount = 0;
         let pFailCount = 0;
@@ -55,37 +58,42 @@ export async function POST(req: Request) {
         const firestoreUsers = usersSnapshot.docs.map(doc => doc.data());
         console.log(`Found ${firestoreUsers.length} users in Firestore.`);
 
-        // 1. Send Push Notifications (FCM)
+        // Helper to identify complete vs incomplete
+        const completedEmailSet = new Set<string>();
+        firestoreUsers.forEach(u => {
+            const isComplete = u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved';
+            if (isComplete && u.email) completedEmailSet.add(u.email.toLowerCase().trim());
+        });
+
+        // 1. Push Notifications
         if (sendPush) {
-            const allTokens = new Set<string>();
+            const pushTokens = new Set<string>();
             firestoreUsers.forEach(u => {
+                const isComplete = u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved';
+                if (onlyIncompleteOnboarding && isComplete) return; // Skip complete ones
+
                 if (u.fcmTokens && Array.isArray(u.fcmTokens)) {
-                    u.fcmTokens.forEach((t: string) => allTokens.add(t));
+                    u.fcmTokens.forEach((t: string) => pushTokens.add(t));
                 }
             });
 
-            const tokensArray = Array.from(allTokens);
-            console.log(`Sending push to ${tokensArray.length} unique tokens.`);
-
-            const chunkSize = 500;
-            for (let i = 0; i < tokensArray.length; i += chunkSize) {
-                const chunk = tokensArray.slice(i, i + chunkSize);
-                if (chunk.length === 0) continue;
-
-                const fcmMessage = {
-                    notification: {
-                        title: title || 'Admin Announcement',
-                        body: message,
-                    },
-                    tokens: chunk,
-                };
-
-                try {
-                    const response = await adminMessaging.sendEachForMulticast(fcmMessage);
-                    pushSuccessCount += response.successCount;
-                    pFailCount += response.failureCount;
-                } catch (e) {
-                    console.error("FCM broadcast error:", e);
+            const tokensArray = Array.from(pushTokens);
+            if (tokensArray.length > 0) {
+                console.log(`Sending push to ${tokensArray.length} tokens (OnlyIncomplete=${onlyIncompleteOnboarding})`);
+                const chunkSize = 500;
+                for (let i = 0; i < tokensArray.length; i += chunkSize) {
+                    const chunk = tokensArray.slice(i, i + chunkSize);
+                    const fcmMessage = {
+                        notification: { title: title || 'Admin Announcement', body: message },
+                        tokens: chunk,
+                    };
+                    try {
+                        const response = await adminMessaging.sendEachForMulticast(fcmMessage);
+                        pushSuccessCount += response.successCount;
+                        pFailCount += response.failureCount;
+                    } catch (e) {
+                        console.error("FCM error:", e);
+                    }
                 }
             }
         }
@@ -93,18 +101,23 @@ export async function POST(req: Request) {
         // 2. Prepare Emails
         firestoreUsers.forEach(u => {
             const e = (u.email || '').toString().trim().toLowerCase();
-            if (e.includes('@')) emailSet.add(e);
+            if (e.includes('@')) {
+                const isComplete = u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved';
+                if (onlyIncompleteOnboarding && isComplete) return; // Skip complete ones
+                emailSet.add(e);
+            }
         });
 
         if (includeAllAuthUsers) {
             try {
-                console.log("Fetching users from Firebase Auth...");
                 let nextPageToken;
                 do {
                     const listUsersResult = await adminAuth.listUsers(1000, nextPageToken);
                     listUsersResult.users.forEach((userRecord) => {
                         if (userRecord.email) {
-                            emailSet.add(userRecord.email.toLowerCase().trim());
+                            const email = userRecord.email.toLowerCase().trim();
+                            if (onlyIncompleteOnboarding && completedEmailSet.has(email)) return; // Skip those who completed in Firestore
+                            emailSet.add(email);
                         }
                     });
                     nextPageToken = listUsersResult.pageToken;

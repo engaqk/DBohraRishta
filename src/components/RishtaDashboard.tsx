@@ -867,9 +867,12 @@ export default function RishtaDashboard() {
                                 // Proactively copy message to clipboard so user can "Paste" if text is missing
                                 if (navigator.clipboard) await navigator.clipboard.writeText(shareText).catch(() => {});
                                 
+                                const messageSnippet = `Assalamu Alaiykum! 🤝\n\nI am sharing my Official Digital Biodata from the 53DBohraRishta Community Platform. I have attached my verified PDF biodata for your review. Jazak'Allah!`;
+
                                 await navigator.share({
                                     files: [pdfFile],
-                                    text: shareText,
+                                    text: messageSnippet,
+                                    url: shareUrl,
                                     title: `Biodata - ${myProfile.name}`
                                 });
                             } catch (shareErr) {

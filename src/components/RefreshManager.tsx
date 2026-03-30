@@ -18,19 +18,16 @@ export default function RefreshManager() {
                 if (currentVersionRef.current === null) {
                     currentVersionRef.current = currentServerVersion;
                 } else if (currentVersionRef.current !== currentServerVersion && currentServerVersion !== 'development') {
-                    console.log("New version detected. Marking for background update on next navigation...");
+                    console.log("New version detected. Silently marking for update on next navigation.");
                     sessionStorage.setItem('pendingUpdate', 'true');
                 }
             } catch (e) {}
         };
 
-        // 1. Check once on mount (with short delay)
+        // Check initially and periodically (silently)
         const initialTimer = setTimeout(checkVersion, 3000);
+        const intervalTimer = setInterval(checkVersion, 5 * 60 * 1000); // Check every 5 mins
 
-        // 2. Check periodically in the background (silent & non-disruptive)
-        const intervalTimer = setInterval(checkVersion, 10 * 60 * 1000); // Every 10 mins
-
-        // 3. Check when user returns to the tab
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') checkVersion();
         };
@@ -43,16 +40,12 @@ export default function RefreshManager() {
         };
     }, []);
 
-    // 4. NAVIGATION INTERCEPTOR:
-    // When the user navigates to a new page, if there's a pending update,
-    // we force a full page reload to swap in the new version.
+    // SILENT NAVIGATION REFRESH:
+    // When the user moves between pages/tabs, we refresh if an update was found.
     useEffect(() => {
         if (sessionStorage.getItem('pendingUpdate') === 'true') {
-            console.log("Swapping to new version on navigation...");
+            console.log("Applying pending update silently on navigation...");
             sessionStorage.removeItem('pendingUpdate');
-            sessionStorage.setItem('app_just_updated', 'true');
-            
-            // Forces the next page to be a full, fresh server load
             window.location.reload();
         }
     }, [pathname]);

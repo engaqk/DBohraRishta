@@ -838,18 +838,35 @@ export default function RishtaDashboard() {
                         const shareText = `Assalamu Alaiykum! 🤝\n\nI am sharing my Official Digital Biodata from the 53DBohraRishta Community Platform. I have attached my verified PDF biodata for your review.\n\n🔗 Click here to view my full interactive profile, verified ITS card, and to express interest:\n${shareUrl}\n\nJazak'Allah!`;
 
                         const triggerFallback = () => {
+                            // Copy to clipboard first as backup
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(shareText).catch(console.error);
+                            }
+
                             const link = document.createElement('a');
                             link.href = URL.createObjectURL(pdfBlob);
                             link.download = fileName;
                             link.click();
                             
-                            const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-                            window.open(waUrl, '_blank');
-                            toast.success("Ready to share! (PDF saved to gallery)");
+                            setTimeout(() => {
+                                const waUrl = `whatsapp://send?text=${encodeURIComponent(shareText)}`;
+                                const fallbackWaUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+                                
+                                // Try direct protocol first, then web link
+                                window.location.href = waUrl;
+                                setTimeout(() => {
+                                    if (document.hasFocus()) window.open(fallbackWaUrl, '_blank');
+                                }, 500);
+                            }, 300);
+                            
+                            toast.success("Biodata Ready! Message copied to clipboard.", { icon: '👏' });
                         };
 
                         if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
                             try {
+                                // Proactively copy message to clipboard so user can "Paste" if text is missing
+                                if (navigator.clipboard) await navigator.clipboard.writeText(shareText).catch(() => {});
+                                
                                 await navigator.share({
                                     files: [pdfFile],
                                     text: shareText,
@@ -857,7 +874,10 @@ export default function RishtaDashboard() {
                                 });
                             } catch (shareErr) {
                                 console.warn('Native share failed, using fallback:', shareErr);
-                                triggerFallback();
+                                // If user cancelled, don't necessarily fallback to WhatsApp unless it's a real error
+                                if ((shareErr as any).name !== 'AbortError') {
+                                    triggerFallback();
+                                }
                             }
                         } else {
                             triggerFallback();

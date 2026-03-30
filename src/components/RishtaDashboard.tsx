@@ -766,7 +766,7 @@ export default function RishtaDashboard() {
             const imageFile = new File([blob], fileName, { type: 'image/png' });
 
             const shareUrl = `${window.location.origin}/profile?id=${user.uid}`;
-            const shareText = `Assalamu Alaiykum! Check out my official Digital Biodata on 53DBohraRishta.in Platform:\n\n🔗 View Online: ${shareUrl}`;
+            const shareText = `Assalamu Alaiykum! 🤝\n\nI am sharing my Official Digital Biodata from the 53DBohraRishta Community Platform. I have attached my verified Image biodata for your review.\n\n🔗 Click here to view my full interactive profile, verified ITS card, and to express interest:\n${shareUrl}\n\nJazak'Allah!`;
 
             // Check if native sharing with files is supported
             if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
@@ -835,7 +835,7 @@ export default function RishtaDashboard() {
                         const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
                         const shareUrl = `${window.location.origin}/profile?id=${user.uid}`;
-                        const shareText = `Assalamu Alaiykum! Check out my official Digital Biodata on 53DBohraRishta.in Platform:\n\n🔗 View Online: ${shareUrl}`;
+                        const shareText = `Assalamu Alaiykum! 🤝\n\nI am sharing my Official Digital Biodata from the 53DBohraRishta Community Platform. I have attached my verified PDF biodata for your review.\n\n🔗 Click here to view my full interactive profile, verified ITS card, and to express interest:\n${shareUrl}\n\nJazak'Allah!`;
 
                         const triggerFallback = () => {
                             const link = document.createElement('a');

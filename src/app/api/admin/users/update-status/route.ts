@@ -106,8 +106,9 @@ export async function POST(request: Request) {
                 });
             }
 
-            // 6. Broadcast to all verified candidates if NEWLY VERIFIED
-            const isNewlyVerified = newStatus === 'verified' || newStatus === 'approved';
+            // 6. Broadcast to all verified candidates if NEWLY VERIFIED (prevents double broadcast)
+            const isNewlyVerified = (newStatus === 'verified' || newStatus === 'approved') && 
+                                   (userData?.status !== 'verified' && userData?.status !== 'approved');
             if (isNewlyVerified) {
                 console.log(`[update-status] Broadcasting new verified candidate to all existing verified members...`);
                 const verifiedUsersSnap = await adminDb.collection('users')

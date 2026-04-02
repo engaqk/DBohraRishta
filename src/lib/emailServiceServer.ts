@@ -63,7 +63,9 @@ export async function notifyStatusUpdate(opts: {
         verified: "Verified & Approved",
         approved: "Approved",
         rejected: "Action Required / Profile Rejected",
-        hold: "Profile Put On Hold"
+        hold: "Profile Put On Hold",
+        photo_verified: "Profile Verified (Photo Identity Approved)",
+        selfie_verified: "Profile Verified (Selfie Approved)"
     };
     const statusLabel = statusLabels[opts.newStatus] || opts.newStatus;
 

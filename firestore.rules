@@ -53,7 +53,13 @@ service cloud.firestore {
            
           // 5. Protected Privileges: Role and Contributor status cannot be self-modified
           (request.resource.data.get('role', 'user') == resource.data.get('role', 'user')) &&
-          (request.resource.data.get('isCommunityContributor', false) == resource.data.get('isCommunityContributor', false))
+          (request.resource.data.get('isCommunityContributor', false) == resource.data.get('isCommunityContributor', false)) &&
+           
+          // 6. ITS Consistency: Prevent changing ITS number once verified
+          (resource.data.get('isItsVerified', false) == false || (
+              request.resource.data.get('itsNumber', '') == resource.data.get('itsNumber', '') &&
+              request.resource.data.get('ejamaatId', '') == resource.data.get('ejamaatId', '')
+          ))
         )) ||
         // Referral/Stats Logic: Allow targeted update of counters by others
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralCount', 'interestsCount', 'viewsCount']))

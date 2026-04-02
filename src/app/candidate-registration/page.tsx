@@ -355,6 +355,39 @@ export default function CandidateRegistrationPage() {
 
         setLoading(true);
         try {
+            // Check for Duplicate ITS Number logic (Requirement: Only one verified profile per ITS)
+            if (formData.ejamaatId) {
+                const usersRef = collection(db, "users");
+                const itsQuery = query(usersRef, where("ejamaatId", "==", formData.ejamaatId));
+                const itsSnapshot = await getDocs(itsQuery);
+
+                if (!itsSnapshot.empty) {
+                    let isDuplicateFound = false;
+                    itsSnapshot.forEach(d => {
+                        const data = d.data();
+                        // Block if another user already has this ITS and is either verified, approved, or pending
+                        if (user && d.id !== user.uid && (data.status === 'verified' || data.status === 'approved' || data.status === 'pending_verification')) {
+                            isDuplicateFound = true;
+                        }
+                    });
+
+                    if (isDuplicateFound) {
+                        setSubmitError(`ITS Number ${formData.ejamaatId} is already registered with another account. Multiple registrations with the same ITS are not permitted.`);
+                        setLoading(false);
+                        // Send automated notification to the user about the duplicate attempt
+                        if (formData.email) {
+                            const { notifyDuplicateRegistration } = await import("@/lib/emailService");
+                            notifyDuplicateRegistration({
+                                candidateName: `${formData.firstName} ${formData.lastName}`.trim(),
+                                candidateEmail: formData.email,
+                                itsNumber: formData.ejamaatId
+                            }).catch(() => {});
+                        }
+                        return;
+                    }
+                }
+            }
+
             // Check for Duplicate Profile logic based on First Name, Last Name, and DOB
             if (formData.firstName && formData.lastName && formData.dob) {
                 const usersRef = collection(db, "users");

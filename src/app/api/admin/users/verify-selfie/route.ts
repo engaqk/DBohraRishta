@@ -60,6 +60,24 @@ export async function POST(request: Request) {
 
         await batch.commit();
 
+        // 4. Send Email Notification for candidate whose selfie was verified
+        try {
+            const userEmail = userData?.notificationEmail || userData?.email || userData?.mobileEmail;
+            const hasRealEmail = userEmail && userEmail.includes('@') && !userEmail.endsWith('@dbohrarishta.local');
+
+            if (hasRealEmail && isApproved) {
+                const { notifyStatusUpdate } = await import('@/lib/emailServiceServer');
+                await notifyStatusUpdate({
+                    candidateName: userData?.name || 'Candidate',
+                    candidateEmail: userEmail,
+                    newStatus: 'selfie_verified',
+                    adminMessage: 'Congratulations! Your photo identity has been verified by the admin.'
+                });
+            }
+        } catch (emailError: any) {
+            console.error('[verify-selfie] Email notification failed:', emailError.message);
+        }
+
         return NextResponse.json({ success: true });
 
     } catch (error: any) {

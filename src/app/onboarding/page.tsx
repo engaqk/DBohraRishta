@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, ShieldCheck, Camera, UploadCloud, CheckCircle2, Loader2, Clock, AlertCircle, LogOut, Info } from "lucide-react";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { doc, setDoc, addDoc, collection, serverTimestamp, getDoc } from "firebase/firestore";
+import { doc, setDoc, addDoc, collection, serverTimestamp, getDoc, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import toast from "react-hot-toast";
 import { notifyDuplicateRegistration, notifyAdminNewRegistration, notifyWelcomeOnboarding } from "@/lib/emailService";
@@ -281,11 +281,43 @@ export default function OnboardingPage() {
         setLoading(true);
         let itsImageUrl = null;
         let libasImageUrl = null;
-        const userId = user?.uid || `guest_${Date.now()}`;
-        const rawPhone = sessionStorage.getItem('verifiedPhone') || formData.mobile;
-        const verifiedPhone = rawPhone ? (normalizePhone(rawPhone) || rawPhone) : null;
 
         try {
+            // Check for Duplicate ITS Number logic (Requirement: Only one verified profile per ITS)
+            if (formData.itsNumber) {
+                const usersRef = collection(db, "users");
+                const itsQuery = query(usersRef, where("itsNumber", "==", formData.itsNumber));
+                const itsSnapshot = await getDocs(itsQuery);
+
+                if (!itsSnapshot.empty) {
+                    let isDuplicateFound = false;
+                    itsSnapshot.forEach(d => {
+                        const data = d.data();
+                        // Block if another user already has this ITS and is either verified, approved, or pending
+                        if (user && d.id !== user.uid && (data.status === 'verified' || data.status === 'approved' || data.status === 'pending_verification')) {
+                            isDuplicateFound = true;
+                        }
+                    });
+
+                    if (isDuplicateFound) {
+                        toast.error(`ITS Number ${formData.itsNumber} is already registered. Only one profile per verified ITS is allowed.`);
+                        setLoading(false);
+                        // Send automated notification to the user about the duplicate attempt
+                        if (formData.email) {
+                            notifyDuplicateRegistration({
+                                candidateName: formData.name,
+                                candidateEmail: formData.email,
+                                itsNumber: formData.itsNumber
+                            }).catch(() => {});
+                        }
+                        return;
+                    }
+                }
+            }
+
+            const userId = user?.uid || `guest_${Date.now()}`;
+            const rawPhone = sessionStorage.getItem('verifiedPhone') || formData.mobile;
+            const verifiedPhone = rawPhone ? (normalizePhone(rawPhone) || rawPhone) : null;
             if (itsImage) itsImageUrl = await compressImage(itsImage);
             if (libasImage) libasImageUrl = await compressImage(libasImage);
 

@@ -146,10 +146,31 @@ export default function CandidateRegistrationPage() {
 
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        if (errors[e.target.name]) {
-            setErrors({ ...errors, [e.target.name]: "" });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        
+        let newErrorMessage = "";
+        if (name === 'bio' || name === 'partnerQualities') {
+            const fieldLabel = name === 'bio' ? 'About Me (Bio)' : 'Partner Preferences';
+            if (value.includes('@')) {
+                newErrorMessage = `Email addresses are not allowed in ${fieldLabel} for security`;
+            } else {
+                const digits = value.replace(/\D/g, '');
+                if (digits.length >= 8) {
+                    newErrorMessage = `Phone numbers/Contact info not allowed in ${fieldLabel}`;
+                } else {
+                    const linkPattern = /(?:www\.|https?:\/\/|[a-z0-9]+\.[a-z]{2,})/i;
+                    if (linkPattern.test(value)) {
+                        newErrorMessage = `Website links are not allowed in ${fieldLabel}`;
+                    }
+                }
+            }
         }
+
+        setErrors(prev => ({ 
+            ...prev, 
+            [name]: newErrorMessage ? newErrorMessage : (prev[name] ? "" : prev[name])
+        }));
     };
 
     const handleLibasImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -340,6 +361,23 @@ export default function CandidateRegistrationPage() {
         if (!libasImageUrl) {
             newErrors.photo = "Biodata Photo (Kaumi Libas) is required";
         }
+
+        // --- 🛡️ Contact Leakage Prevention (Bio & Partner Qualities) ---
+        const contactCheck = (text: string, fieldName: string) => {
+            if (!text) return null;
+            if (text.includes('@')) return `Email addresses are not allowed in ${fieldName} for security`;
+            const digits = text.replace(/\D/g, '');
+            if (digits.length >= 8) return `Phone numbers/Contact info not allowed in ${fieldName}`;
+            const linkPattern = /(?:www\.|https?:\/\/|[a-z0-9]+\.[a-z]{2,})/i;
+            if (linkPattern.test(text)) return `Website links are not allowed in ${fieldName}`;
+            return null;
+        };
+
+        const bioError = contactCheck(formData.bio, 'About Me (Bio)');
+        if (bioError) newErrors.bio = bioError;
+
+        const pqError = contactCheck(formData.partnerQualities, 'Partner Preferences');
+        if (pqError) newErrors.partnerQualities = pqError;
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -893,7 +931,14 @@ export default function CandidateRegistrationPage() {
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Tell us something about yourself</label>
-                                    <textarea name="bio" onChange={handleChange} value={formData.bio} rows={3} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none resize-none focus:ring-2 focus:ring-[#881337]" />
+                                    <textarea 
+                                        name="bio" 
+                                        onChange={handleChange} 
+                                        value={formData.bio} 
+                                        rows={3} 
+                                        className={`w-full bg-gray-50 border ${errors.bio ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 outline-none resize-none focus:ring-2`} 
+                                    />
+                                    <ErrorMsg msg={errors.bio} />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Your 3 Main Hobbies</label>
@@ -901,7 +946,14 @@ export default function CandidateRegistrationPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Qualities you want in your life partner</label>
-                                    <textarea name="partnerQualities" onChange={handleChange} value={formData.partnerQualities} rows={2} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none resize-none focus:ring-2 focus:ring-[#881337]" />
+                                    <textarea 
+                                        name="partnerQualities" 
+                                        onChange={handleChange} 
+                                        value={formData.partnerQualities} 
+                                        rows={2} 
+                                        className={`w-full bg-gray-50 border ${errors.partnerQualities ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-[#881337]'} rounded-xl px-4 py-3 outline-none resize-none focus:ring-2`} 
+                                    />
+                                    <ErrorMsg msg={errors.partnerQualities} />
                                 </div>
                                 <div className="p-5 bg-rose-50/30 border border-rose-100 rounded-2xl">
                                     <label className="block text-sm font-bold text-[#881337] mb-2 leading-tight">Rishta Guardian Mode</label>

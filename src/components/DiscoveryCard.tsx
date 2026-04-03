@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, Lock, PauseCircle } from 'lucide-react';
 import { notifyInterestSent } from '@/lib/emailService';
@@ -142,6 +142,16 @@ export default function DiscoveryCard({
         return () => unsub();
     }, [user, id]);
  
+    const icebreakerError = useMemo(() => {
+        if (!icebreakerText) return null;
+        if (icebreakerText.includes('@')) return "Email addresses are not allowed for security";
+        const digits = icebreakerText.replace(/\D/g, '');
+        if (digits.length >= 8) return "Phone numbers/Contact info not allowed in message";
+        const linkPattern = /(?:www\.|https?:\/\/|[a-z0-9]+\.[a-z]{2,})/i;
+        if (linkPattern.test(icebreakerText)) return "Website links are not allowed in message";
+        return null;
+    }, [icebreakerText]);
+ 
     const handleToggleBookmark = async (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!user) { toast.error('Log in to bookmark'); return; }
@@ -174,6 +184,23 @@ export default function DiscoveryCard({
         if (!user) { toast.error('You must be logged in'); return; }
         if (!isMyProfileVerified) { toast.error('Your ITS must be verified by Admin before sending requests'); return; }
 
+        // --- 🛡️ Contact Leakage Prevention (Icebreaker) ---
+        if (icebreakerText) {
+            if (icebreakerText.includes('@')) {
+                toast.error("Email addresses are not allowed for security");
+                return;
+            }
+            const digits = icebreakerText.replace(/\D/g, '');
+            if (digits.length >= 8) {
+                toast.error("Phone numbers/Contact info not allowed in message");
+                return;
+            }
+            const linkPattern = /(?:www\.|https?:\/\/|[a-z0-9]+\.[a-z]{2,})/i;
+            if (linkPattern.test(icebreakerText)) {
+                toast.error("Website links are not allowed in message");
+                return;
+            }
+        }
 
         try {
             setLoading(true);
@@ -575,12 +602,17 @@ export default function DiscoveryCard({
                                 value={icebreakerText}
                                 onChange={e => setIcebreakerText(e.target.value)}
                                 placeholder="e.g. I see we both value our Deeni & Dunyawi balance..."
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none resize-none focus:ring-2 focus:ring-[#D4AF37] text-sm mb-4 h-24"
+                                className={`w-full bg-gray-50 border ${icebreakerError ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 focus:ring-[#D4AF37]'} rounded-xl px-4 py-3 outline-none resize-none focus:ring-2 text-sm mb-2 h-24`}
                                 maxLength={120}
                             />
+                            {icebreakerError && <p className="text-red-500 text-[10px] font-black uppercase tracking-tight mb-3 ml-1 animate-in fade-in">{icebreakerError}</p>}
                             <div className="flex gap-3">
                                 <button onClick={() => setShowIcebreakerModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 text-sm">Cancel</button>
-                                <button onClick={handleSendRequest} className="flex-1 py-3 bg-[#D4AF37] text-white rounded-xl font-bold hover:bg-[#c29e2f] text-sm flex items-center justify-center gap-2">
+                                <button 
+                                    onClick={handleSendRequest} 
+                                    disabled={!!icebreakerError}
+                                    className={`flex-1 py-3 ${!!icebreakerError ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#D4AF37] text-white hover:bg-[#c29e2f]'} rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all`}
+                                >
                                     {loading && <Loader2 className="w-4 h-4 animate-spin" />} Send
                                 </button>
                             </div>

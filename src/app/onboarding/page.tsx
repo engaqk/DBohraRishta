@@ -117,11 +117,31 @@ export default function OnboardingPage() {
     const libasFileInputRef = useRef<HTMLInputElement>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        // Clear error when user starts typing
-        if (errors[e.target.name]) {
-            setErrors({ ...errors, [e.target.name]: "" });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        
+        let newErrorMessage = "";
+        if (name === 'bio') {
+            if (value.includes('@')) {
+                newErrorMessage = "Email addresses are not allowed for security";
+            } else {
+                const digits = value.replace(/\D/g, '');
+                if (digits.length >= 8) {
+                    newErrorMessage = "Phone numbers/Contact info not allowed in bio";
+                } else {
+                    const linkPattern = /(?:www\.|https?:\/\/|[a-z0-9]+\.[a-z]{2,})/i;
+                    if (linkPattern.test(value)) {
+                        newErrorMessage = "Website links are not allowed in bio";
+                    }
+                }
+            }
         }
+
+        // Clear existing unrelated errors or show new bio error
+        setErrors(prev => ({ 
+            ...prev, 
+            [name]: newErrorMessage ? newErrorMessage : (prev[name] ? "" : prev[name])
+        }));
     };
 
     const handleImageCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -267,6 +287,23 @@ export default function OnboardingPage() {
         if (!formData.fatherName) newErrors.fatherName = "Father's name is required.";
         if (!formData.motherName) newErrors.motherName = "Mother's name is required.";
         if (!formData.ancestralWatan) newErrors.ancestralWatan = "Ancestral Watan is required.";
+
+        // --- 🛡️ Contact Leakage Prevention (Bio) ---
+        if (formData.bio) {
+            if (formData.bio.includes('@')) { 
+                newErrors.bio = "Email addresses are not allowed for security";
+            } else {
+                const digits = formData.bio.replace(/\D/g, '');
+                if (digits.length >= 8) { 
+                    newErrors.bio = "Phone numbers/Contact info not allowed";
+                } else {
+                    const linkPattern = /(?:www\.|https?:\/\/|[a-z0-9]+\.[a-z]{2,})/i;
+                    if (linkPattern.test(formData.bio)) { 
+                        newErrors.bio = "Website links are not allowed";
+                    }
+                }
+            }
+        }
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -640,6 +677,7 @@ export default function OnboardingPage() {
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">About Me / My Expectations</label>
                                         <textarea name="bio" onChange={handleChange} value={formData.bio} rows={4} className={`w-full bg-gray-50 border ${errors.bio ? 'border-red-500' : 'border-gray-200'} rounded-2xl px-5 py-4 font-semibold shadow-sm resize-none`} placeholder="Share your values and what you look for in a partner..." />
+                                        {errors.bio && <p className="text-red-500 text-[10px] font-black uppercase tracking-tight mt-2 ml-1 animate-in fade-in">{errors.bio}</p>}
                                     </div>
                                 </div>
                             </div>

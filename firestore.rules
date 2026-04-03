@@ -20,12 +20,24 @@ service cloud.firestore {
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
+
+    // --- 🛡️ Contact Leakage Prevention Helper ---
+    function isClean(text) {
+      let lower = text.toLower();
+      // Block @ (email), 8+ digits (phone), and common web patterns
+      return !(lower.matches('.*@.*')) && 
+             !(lower.matches('.*[0-9]{8,}.*')) && 
+             !(lower.matches('.*www\\..*')) && 
+             !(lower.matches('.*http.*'));
+    }
     
     // Users collection: get is public, list/write restricted
     match /users/{userId} {
       allow get: if true;
       allow list: if signedIn();
       allow create: if signedIn() && isOwner(userId) && 
+        isClean(request.resource.data.get('bio', '')) &&
+        isClean(request.resource.data.get('partnerQualities', '')) &&
         !(request.resource.data.get('status', '') in ['verified', 'approved', 'archived', 'premium']) &&
         request.resource.data.get('isPhotoVerified', false) == false &&
         request.resource.data.get('isItsVerified', false) == false &&
@@ -59,7 +71,11 @@ service cloud.firestore {
           (resource.data.get('isItsVerified', false) == false || (
               request.resource.data.get('itsNumber', '') == resource.data.get('itsNumber', '') &&
               request.resource.data.get('ejamaatId', '') == resource.data.get('ejamaatId', '')
-          ))
+          )) &&
+          
+          // 7. Contact Leakage Protection (Bio & Partner Qualities)
+          isClean(request.resource.data.get('bio', '')) &&
+          isClean(request.resource.data.get('partnerQualities', ''))
         )) ||
         // Referral/Stats Logic: Allow targeted update of counters by others
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralCount', 'interestsCount', 'viewsCount']))
@@ -80,7 +96,9 @@ service cloud.firestore {
         resource.data.from == request.auth.uid ||
         resource.data.to == request.auth.uid
       );
-      allow create: if signedIn() && request.resource.data.from == request.auth.uid;
+      allow create: if signedIn() && 
+        request.resource.data.from == request.auth.uid &&
+        isClean(request.resource.data.get('icebreaker', ''));
       allow update: if signedIn() && (
         isAdmin() ||
         (resource.data.from == request.auth.uid && (

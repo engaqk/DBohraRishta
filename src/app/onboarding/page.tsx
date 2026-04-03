@@ -130,8 +130,11 @@ export default function OnboardingPage() {
                     newErrorMessage = "Phone numbers/Contact info not allowed in bio";
                 } else {
                     const linkPattern = /(?:www\.|https?:\/\/|[a-z0-9]+\.[a-z]{2,})/i;
+                    const socialPattern = /\b(insta|fb|facebook|instagram|snapchat|snap|telegram|linkedin)\b/i;
                     if (linkPattern.test(value)) {
                         newErrorMessage = "Website links are not allowed in bio";
+                    } else if (socialPattern.test(value)) {
+                        newErrorMessage = "Social handles/links are not allowed in bio";
                     }
                 }
             }

@@ -148,7 +148,9 @@ export default function DiscoveryCard({
         const digits = icebreakerText.replace(/\D/g, '');
         if (digits.length >= 8) return "Phone numbers/Contact info not allowed in message";
         const linkPattern = /(?:www\.|https?:\/\/|[a-z0-9]+\.[a-z]{2,})/i;
+        const socialPattern = /\b(insta|fb|facebook|instagram|snapchat|snap|telegram|linkedin)\b/i;
         if (linkPattern.test(icebreakerText)) return "Website links are not allowed in message";
+        if (socialPattern.test(icebreakerText)) return "Social handles/links are not allowed in message";
         return null;
     }, [icebreakerText]);
  

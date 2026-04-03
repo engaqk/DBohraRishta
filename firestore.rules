@@ -28,7 +28,8 @@ service cloud.firestore {
       return !(lower.matches('.*@.*')) && 
              !(lower.matches('.*[0-9]{8,}.*')) && 
              !(lower.matches('.*www\\..*')) && 
-             !(lower.matches('.*http.*'));
+             !(lower.matches('.*http.*')) &&
+             !(lower.matches('.*\\b(insta|fb|facebook|instagram|snapchat|snap|telegram|linkedin)\\b.*'));
     }
     
     // Users collection: get is public, list/write restricted

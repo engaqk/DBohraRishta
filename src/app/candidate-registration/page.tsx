@@ -160,7 +160,7 @@ export default function CandidateRegistrationPage() {
                     newErrorMessage = `Phone numbers/Contact info not allowed in ${fieldLabel}`;
                 } else {
                     const linkPattern = /(?:www\.|https?:\/\/|[a-z0-9]+\.[a-z]{2,})/i;
-                    const socialPattern = /\b(insta|fb|facebook|instagram|snapchat|snap|telegram|linkedin|li)\b/i;
+                    const socialPattern = /\b(insta|fb|facebook|instagram|snapchat|snap|telegram|linkedin|whatsapp|wa)\b/i;
                     if (linkPattern.test(value)) {
                         newErrorMessage = `Website links are not allowed in ${fieldLabel}`;
                     } else if (socialPattern.test(value)) {

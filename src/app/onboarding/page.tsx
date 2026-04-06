@@ -285,6 +285,10 @@ export default function OnboardingPage() {
     };
 
     const handleSubmit = async () => {
+        if (!user) {
+            toast.error("Please log in to submit your profile.");
+            return;
+        }
         let newErrors: { [key: string]: string } = {};
 
         // Validation for Step 2 fields

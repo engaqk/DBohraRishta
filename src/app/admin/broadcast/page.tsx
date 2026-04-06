@@ -35,7 +35,9 @@ export default function AdminBroadcastPage() {
         onlyIncompleteOnboarding: false,
     });
 
-    const [targetStats, setTargetStats] = useState({ emails: 0, loading: false });
+    const [targetStats, setTargetStats] = useState({ emails: 0, emailsList: [] as string[], loading: false });
+    const [selectedRecipientEmails, setSelectedRecipientEmails] = useState<string[]>([]);
+    const [showEmails, setShowEmails] = useState(false);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -53,7 +55,10 @@ export default function AdminBroadcastPage() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    setTargetStats({ emails: data.activeEmails, loading: false });
+                    const list = data.emails || [];
+                    setTargetStats({ emails: data.activeEmails, emailsList: list, loading: false });
+                    // Default select all when list updates
+                    setSelectedRecipientEmails(list);
                 }
             } catch (e) {
                 console.error('Stats error:', e);
@@ -112,6 +117,7 @@ export default function AdminBroadcastPage() {
                     sendEmail: formData.sendEmail,
                     includeAllAuthUsers: formData.includeAllAuthUsers,
                     onlyIncompleteOnboarding: formData.onlyIncompleteOnboarding,
+                    recipients: selectedRecipientEmails, // Send final selection
                     adminId: user?.uid || 'admin'
                 }),
             });
@@ -240,46 +246,127 @@ export default function AdminBroadcastPage() {
                                     </button>
                                 </div>
 
-                                <div className="flex flex-col gap-2 p-2 border-t border-gray-50 mt-2">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            id="includeAllAuthUsers"
-                                            checked={formData.includeAllAuthUsers}
-                                            onChange={e => setFormData({ ...formData, includeAllAuthUsers: e.target.checked })}
-                                            className="w-4 h-4 text-[#881337] rounded border-gray-300 focus:ring-[#881337]"
-                                        />
-                                        <label htmlFor="includeAllAuthUsers" className="text-xs font-bold text-gray-600 cursor-pointer">
-                                            Include all registered users (including those with incomplete profiles)
-                                        </label>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            id="onlyIncompleteOnboarding"
-                                            checked={formData.onlyIncompleteOnboarding}
-                                            onChange={e => setFormData({ ...formData, onlyIncompleteOnboarding: e.target.checked })}
-                                            className="w-4 h-4 text-[#881337] rounded border-gray-300 focus:ring-[#881337]"
-                                        />
-                                        <label htmlFor="onlyIncompleteOnboarding" className="text-xs font-bold text-rose-600 cursor-pointer">
-                                            ONLY send to users with INCOMPLETE onboarding/biodata
-                                        </label>
-                                    </div>
+                                 <div className="flex flex-col gap-2 p-2 border-t border-gray-50 mt-2">
+                                     <div className="flex items-center gap-2">
+                                         <input
+                                             type="checkbox"
+                                             id="includeAllAuthUsers"
+                                             checked={formData.includeAllAuthUsers}
+                                             onChange={e => {
+                                                 const checked = e.target.checked;
+                                                 setFormData({ 
+                                                     ...formData, 
+                                                     includeAllAuthUsers: checked,
+                                                     sendEmail: checked ? true : formData.sendEmail,
+                                                     sendPush: checked ? true : formData.sendPush
+                                                 });
+                                             }}
+                                             className="w-4 h-4 text-[#881337] rounded border-gray-300 focus:ring-[#881337]"
+                                         />
+                                         <label htmlFor="includeAllAuthUsers" className="text-xs font-bold text-gray-600 cursor-pointer">
+                                             Include all registered users (including those with incomplete profiles)
+                                         </label>
+                                     </div>
+                                     <div className="flex flex-col gap-1">
+                                         <div className="flex items-center gap-2">
+                                             <input
+                                                 type="checkbox"
+                                                 id="onlyIncompleteOnboarding"
+                                                 checked={formData.onlyIncompleteOnboarding}
+                                                 onChange={e => {
+                                                     const checked = e.target.checked;
+                                                     setFormData({ 
+                                                         ...formData, 
+                                                         onlyIncompleteOnboarding: checked,
+                                                         includeAllAuthUsers: checked ? true : formData.includeAllAuthUsers,
+                                                         sendEmail: checked ? true : formData.sendEmail,
+                                                         sendPush: checked ? true : formData.sendPush
+                                                     });
+                                                 }}
+                                                 className="w-4 h-4 text-[#881337] rounded border-gray-300 focus:ring-[#881337]"
+                                             />
+                                             <label htmlFor="onlyIncompleteOnboarding" className="text-xs font-black text-rose-600 cursor-pointer">
+                                                 ONLY send to users with INCOMPLETE onboarding/biodata
+                                             </label>
+                                         </div>
+                                         {formData.onlyIncompleteOnboarding && (
+                                             <span className="text-[9px] font-bold text-rose-400 ml-6 italic animate-pulse">
+                                                 * Recommended: This will automatically target users who haven't finished their profile.
+                                             </span>
+                                         )}
+                                     </div>
 
-                                    <div className="flex items-center justify-between p-3 bg-[#881337]/5 rounded-2xl border border-[#881337]/10 mt-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-[#881337] animate-pulse" />
-                                            <span className="text-[10px] font-black uppercase text-[#881337]/70">Target Audience Result</span>
+                                     <div className="mt-4 space-y-2">
+                                        <div 
+                                            onClick={() => setShowEmails(!showEmails)}
+                                            className="flex items-center justify-between p-3 bg-[#881337]/5 rounded-2xl border border-[#881337]/10 cursor-pointer hover:bg-[#881337]/10 transition-all shadow-sm"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-[#881337] animate-pulse" />
+                                                <span className="text-[10px] font-black uppercase text-[#881337]/70 tracking-widest leading-none">Recipient Preview</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {targetStats.loading ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin text-[#881337]" />
+                                                ) : (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-black text-[#881337] pr-2 border-r border-[#881337]/20">
+                                                            {targetStats.emails} recipients
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-[#881337]/60 underline">
+                                                            {showEmails ? 'Hide List' : 'View List'}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            {targetStats.loading ? (
-                                                <Loader2 className="w-3 h-3 animate-spin text-[#881337]" />
-                                            ) : (
-                                                <span className="text-xs font-black text-[#881337]">
-                                                    {targetStats.emails} Potential Recipients
-                                                </span>
-                                            )}
-                                        </div>
+
+                                        {showEmails && targetStats.emailsList.length > 0 && (
+                                            <div className="bg-white border-2 border-gray-100 rounded-2xl p-4 max-h-56 overflow-y-auto shadow-inner scrollbar-thin scrollbar-thumb-rose-200">
+                                                <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-50 flex-wrap gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={selectedRecipientEmails.length === targetStats.emailsList.length}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) setSelectedRecipientEmails([...targetStats.emailsList]);
+                                                                else setSelectedRecipientEmails([]);
+                                                            }}
+                                                            className="w-3.5 h-3.5 rounded border-gray-300 text-[#881337] focus:ring-[#881337]"
+                                                        />
+                                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">Toggle All fetched Accounts</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 bg-rose-50 px-2 py-0.5 rounded-full ring-1 ring-rose-200 shadow-sm ml-auto">
+                                                        <CheckCircle2 className="w-2.5 h-2.5 text-rose-500" />
+                                                        <span className="text-[8px] font-black text-rose-600 uppercase italic">
+                                                            {selectedRecipientEmails.length} Selected for Delivery
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-1.5 pt-1">
+                                                    {targetStats.emailsList.map((email, idx) => (
+                                                        <div key={idx} className="flex items-center gap-3 p-2 bg-gray-50/50 hover:bg-rose-50 rounded-xl transition-all border border-transparent hover:border-rose-100 group">
+                                                            <input 
+                                                                type="checkbox"
+                                                                checked={selectedRecipientEmails.includes(email)}
+                                                                onChange={() => {
+                                                                    if (selectedRecipientEmails.includes(email)) {
+                                                                        setSelectedRecipientEmails(selectedRecipientEmails.filter(e => e !== email));
+                                                                    } else {
+                                                                        setSelectedRecipientEmails([...selectedRecipientEmails, email]);
+                                                                    }
+                                                                }}
+                                                                className="w-3.5 h-3.5 rounded-md border-gray-300 text-[#881337] focus:ring-[#881337]"
+                                                            />
+                                                            <div className="flex flex-col gap-0.5 overflow-hidden">
+                                                                <span className="text-[11px] font-bold text-gray-600 group-hover:text-rose-800 truncate leading-none">{email}</span>
+                                                                <span className="text-[8px] text-gray-400 font-medium">Ready for Transmission</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

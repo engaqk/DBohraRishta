@@ -26,7 +26,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { title, message, sendPush, sendInApp, sendEmail, includeAllAuthUsers, onlyIncompleteOnboarding, adminId, preview } = body;
+        const { title, message, sendPush, sendInApp, sendEmail, includeAllAuthUsers, onlyIncompleteOnboarding, adminId, preview, recipients } = body;
 
         // ... (Later in the route, we'll return early if preview is true)
         const broadcastData = {
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
             }
         }
 
-        const allEmails = Array.from(emailSet);
+        const allEmails = (recipients && Array.from(recipients).length > 0 ? Array.from(recipients) : Array.from(emailSet)) as string[];
         const emailsFound = allEmails.length;
         console.log(`Found ${emailsFound} total unique emails for broadcast. Filtering blocked...`);
 
@@ -152,6 +152,7 @@ export async function POST(req: Request) {
                 preview: true,
                 emailsFound: emailsFound,
                 activeEmails: emails.length,
+                emails: emails // Return the actual list for preview
             });
         }
 

@@ -69,10 +69,14 @@ service cloud.firestore {
         isAdmin() ||
         (resource.data.from == request.auth.uid && (
             // Sender can ONLY update to 'withdrawn' or same status
+            request.resource.data.get('from', '') == resource.data.get('from', '') &&
+            request.resource.data.get('to', '') == resource.data.get('to', '') &&
             request.resource.data.status in [resource.data.status, 'withdrawn']
         )) ||
         (resource.data.to == request.auth.uid && (
             // Receiver can ONLY update to 'accepted' or 'declined' or 'read'
+            request.resource.data.get('from', '') == resource.data.get('from', '') &&
+            request.resource.data.get('to', '') == resource.data.get('to', '') &&
             request.resource.data.status in ['accepted', 'declined', 'read', resource.data.status]
         ))
       )

@@ -23,12 +23,9 @@ service cloud.firestore {
 
     // --- 🛡️ Contact Leakage Prevention Helper ---
     function isClean(text) {
-      return (string(text) == "" || string(text) == "null" || string(text) == "undefined") || (
+      return string(text) == "" || (
         !(string(text).toLower().matches('.*@.*')) && 
-        !(string(text).toLower().matches('.*[0-9]{10,}.*')) && 
-        !(string(text).toLower().matches('.*www\\..*')) && 
-        !(string(text).toLower().matches('.*http.*')) &&
-        !(string(text).toLower().matches('.*\\b(insta|fb|facebook|instagram|snapchat|snap|telegram|linkedin|whatsapp|wa|contact|call|number)\\b.*'))
+        !(string(text).toLower().matches('.*[0-9]{10,}.*'))
       )
     }
     

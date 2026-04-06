@@ -46,6 +46,12 @@ export default function OnboardingPage() {
         informationProvidedBy: "Myself (Candidate)",
         isBlurSecurityEnabled: true,
         partnerQualities: "",
+        // Initialize protected fields to satisfy security rules early
+        role: "user",
+        status: "",
+        isPhotoVerified: false,
+        isItsVerified: false,
+        isCommunityContributor: false
     });
 
     // Pre-fill from Firestore if user has partial data, or from sessionStorage
@@ -222,6 +228,11 @@ export default function OnboardingPage() {
                         userId: user.uid,
                         isCandidateFormComplete: false,
                         updatedAt: serverTimestamp(),
+                        // Explicitly set for Stage 1 consistency
+                        role: "user",
+                        isPhotoVerified: false,
+                        isItsVerified: false,
+                        isCommunityContributor: false
                     }, { merge: true });
 
                     // Notify Admin that onboarding has started (Pending state)
@@ -531,11 +542,15 @@ export default function OnboardingPage() {
                                     <div>
                                         <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Mobile Number</label>
                                         <input 
-                                            type="tel" 
+                                            type="number" 
                                             name="mobile" 
                                             onChange={handleChange} 
                                             value={formData.mobile} 
-                                            placeholder="+918888888888"
+                                            placeholder="918888888888"
+                                            onInput={(e) => {
+                                                const val = e.currentTarget.value;
+                                                if (val.length > 14) e.currentTarget.value = val.slice(0, 14);
+                                            }}
                                             className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-semibold shadow-sm focus:ring-2 focus:ring-[#881337] outline-none" 
                                             readOnly={loginMethod === 'mobile'} 
                                         />
@@ -568,10 +583,14 @@ export default function OnboardingPage() {
                                 <div>
                                     <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">ITS Number</label>
                                     <input 
-                                        type="tel" 
+                                        type="number" 
                                         name="itsNumber" 
                                         onChange={handleChange} 
                                         value={formData.itsNumber} 
+                                        onInput={(e) => {
+                                            const val = e.currentTarget.value;
+                                            if (val.length > 8) e.currentTarget.value = val.slice(0, 8);
+                                        }}
                                         className={`w-full bg-gray-50 border ${errors.itsNumber ? 'border-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-2xl px-5 py-4 focus:ring-2 outline-none font-semibold shadow-sm`} 
                                         placeholder="8-digit ITS" 
                                     />

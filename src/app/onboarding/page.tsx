@@ -370,7 +370,7 @@ export default function OnboardingPage() {
                 isItsVerified: false,
                 isCandidateFormComplete: true,
                 status: "pending_verification",
-                createdAt: new Date().toISOString(),
+                createdAt: serverTimestamp(),
                 loginMethod: loginMethod || 'google',
                 verifiedPhone: verifiedPhone || formData.mobile || null,
                 notificationEmail: formData.email || null,
@@ -378,7 +378,7 @@ export default function OnboardingPage() {
                 lastActive: serverTimestamp(),
                 isEmailVerified: !!(formData.email && !formData.email.endsWith('@dbohrarishta.local')),
                 welcomeEmailSent: !!(formData.email && !formData.email.endsWith('@dbohrarishta.local')),
-            });
+            }, { merge: true });
 
             // Automated Admin Welcome
             try {

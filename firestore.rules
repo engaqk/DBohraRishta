@@ -17,7 +17,7 @@ service cloud.firestore {
         request.auth.token.email == '53dbohrarishta@gmail.com' ||
         request.auth.uid == 'admin-panel-service-account' ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin')
       )
     }
 
@@ -46,8 +46,7 @@ service cloud.firestore {
         request.resource.data.get('isCommunityContributor', false) == false
 
       allow update: if signedIn() && (
-        isAdmin() || 
-        (isOwner(userId) && (
+        isOwner(userId) && (
           // 1. Photo Identity: Must be same as before OR set to false
           (request.resource.data.get('isPhotoVerified', false) == resource.data.get('isPhotoVerified', false) || 
            request.resource.data.get('isPhotoVerified', false) == false) &&
@@ -72,12 +71,10 @@ service cloud.firestore {
           (resource.data.get('isItsVerified', false) == false || (
               request.resource.data.get('itsNumber', '') == resource.data.get('itsNumber', '') &&
               request.resource.data.get('ejamaatId', '') == resource.data.get('ejamaatId', '')
-          )) &&
-          
-          // 7. Contact Leakage Protection (Bio & Partner Qualities)
+          )) &&          
           isClean(request.resource.data.get('bio', '')) &&
           isClean(request.resource.data.get('partnerQualities', ''))
-        )) ||
+        ) || isAdmin() ||
         // Referral/Stats Logic: Allow targeted update of counters by others
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralCount', 'interestsCount', 'viewsCount']))
       )

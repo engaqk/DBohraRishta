@@ -4,11 +4,11 @@ service cloud.firestore {
 
     // Helper functions
     function signedIn() {
-      return request.auth != null;
+      return request.auth != null
     }
     
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return request.auth.uid == userId
     }
 
     function isAdmin() {
@@ -18,24 +18,24 @@ service cloud.firestore {
         request.auth.uid == 'admin-panel-service-account' ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
-      );
+      )
     }
 
     // --- 🛡️ Contact Leakage Prevention Helper ---
     function isClean(text) {
-      let lower = text.toLower();
-      // Block @ (email), 8+ digits (phone), and common web patterns
-      return !(lower.matches('.*@.*')) && 
-             !(lower.matches('.*[0-9]{8,}.*')) && 
-             !(lower.matches('.*www\\..*')) && 
-             !(lower.matches('.*http.*')) &&
-             !(lower.matches('.*\\b(insta|fb|facebook|instagram|snapchat|snap|telegram|linkedin|whatsapp|wa)\\b.*'));
+      return (string(text) == "" || string(text) == "null" || string(text) == "undefined") || (
+        !(string(text).toLower().matches('.*@.*')) && 
+        !(string(text).toLower().matches('.*[0-9]{10,}.*')) && 
+        !(string(text).toLower().matches('.*www\\..*')) && 
+        !(string(text).toLower().matches('.*http.*')) &&
+        !(string(text).toLower().matches('.*\\b(insta|fb|facebook|instagram|snapchat|snap|telegram|linkedin|whatsapp|wa|contact|call|number)\\b.*'))
+      )
     }
     
     // Users collection: get is public, list/write restricted
     match /users/{userId} {
-      allow get: if true;
-      allow list: if signedIn();
+      allow get: if true
+      allow list: if signedIn()
       allow create: if signedIn() && isOwner(userId) && 
         isClean(request.resource.data.get('bio', '')) &&
         isClean(request.resource.data.get('partnerQualities', '')) &&
@@ -43,7 +43,7 @@ service cloud.firestore {
         request.resource.data.get('isPhotoVerified', false) == false &&
         request.resource.data.get('isItsVerified', false) == false &&
         request.resource.data.get('role', 'user') == 'user' &&
-        request.resource.data.get('isCommunityContributor', false) == false;
+        request.resource.data.get('isCommunityContributor', false) == false
 
       allow update: if signedIn() && (
         isAdmin() || 
@@ -80,13 +80,13 @@ service cloud.firestore {
         )) ||
         // Referral/Stats Logic: Allow targeted update of counters by others
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['referralCount', 'interestsCount', 'viewsCount']))
-      );
-      allow delete: if isAdmin();
+      )
+      allow delete: if isAdmin()
 
       // Notifications: Only owner/admin reads
       match /notifications/{notifId} {
-        allow read, update, delete: if signedIn() && (isOwner(userId) || isAdmin());
-        allow create: if signedIn();
+        allow read, update, delete: if signedIn() && (isOwner(userId) || isAdmin())
+        allow create: if signedIn()
       }
     }
 
@@ -96,10 +96,10 @@ service cloud.firestore {
         isAdmin() ||
         resource.data.from == request.auth.uid ||
         resource.data.to == request.auth.uid
-      );
+      )
       allow create: if signedIn() && 
         request.resource.data.from == request.auth.uid &&
-        isClean(request.resource.data.get('icebreaker', ''));
+        isClean(request.resource.data.get('icebreaker', ''))
       allow update: if signedIn() && (
         isAdmin() ||
         (resource.data.from == request.auth.uid && (
@@ -110,8 +110,8 @@ service cloud.firestore {
             // Receiver can ONLY update to 'accepted' or 'declined' or 'read'
             request.resource.data.status in ['accepted', 'declined', 'read', resource.data.status]
         ))
-      );
-      allow delete: if isAdmin();
+      )
+      allow delete: if isAdmin()
 
       // Chat messages subcollection
       match /messages/{messageId} {
@@ -119,57 +119,57 @@ service cloud.firestore {
           isAdmin() ||
           get(/databases/$(database)/documents/rishta_requests/$(requestId)).data.from == request.auth.uid ||
           get(/databases/$(database)/documents/rishta_requests/$(requestId)).data.to == request.auth.uid
-        );
+        )
       }
     }
 
     // OTP tracking
     match /sys_otp_usage/{dateId} {
-      allow read, write: if signedIn();
+      allow read, write: if signedIn()
     }
 
     // Admin Messages & Support Threads
     match /admin_messages/{userId} {
-      allow read, write: if signedIn() && (isOwner(userId) || isAdmin());
+      allow read, write: if signedIn() && (isOwner(userId) || isAdmin())
       
       match /thread/{msgId} {
-        allow read, write: if signedIn() && (isOwner(userId) || isAdmin());
+        allow read, write: if signedIn() && (isOwner(userId) || isAdmin())
       }
     }
 
     // Official announcements: All read, Admin write
     match /broadcasts/{broadcastId} {
-      allow read: if signedIn();
-      allow write: if isAdmin();
+      allow read: if signedIn()
+      allow write: if isAdmin()
     }
 
     // Audit logs: Admin only
     match /admin_audit_logs/{logId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAdmin()
     }
 
     // SMS Broadcasts: Admin only
     match /sms_broadcasts/{broadcastId} {
-      allow read: if isAdmin();
-      allow write: if false; // Strictly via Server SDK
+      allow read: if isAdmin()
+      allow write: if false // Strictly via Server SDK
     }
 
     // SMS delivery logs: Admin only
     match /sms_logs/{logId} {
-      allow read: if isAdmin();
-      allow write: if false; // Strictly via Server SDK
+      allow read: if isAdmin()
+      allow write: if false // Strictly via Server SDK
     }
 
     // Bookmarks: Private to user OR Admin
     match /bookmarks/{bookmarkId} {
-      allow read, delete: if signedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, delete: if signedIn() && (isAdmin() || resource.data.userId == request.auth.uid)
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid
     }
 
     // Unblur Requests: Involved parties
     match /unblur_requests/{requestId} {
-      allow read: if signedIn() && (isAdmin() || resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.from == request.auth.uid;
+      allow read: if signedIn() && (isAdmin() || resource.data.from == request.auth.uid || resource.data.to == request.auth.uid)
+      allow create: if signedIn() && request.resource.data.from == request.auth.uid
       allow update: if signedIn() && (
         isAdmin() ||
         (resource.data.from == request.auth.uid && (
@@ -180,14 +180,14 @@ service cloud.firestore {
             // Receiver can only accept/decline
             request.resource.data.status in ['accepted', 'declined', resource.data.status]
         ))
-      );
-      allow delete: if isAdmin();
+      )
+      allow delete: if isAdmin()
     }
 
     // Profile Views: Owner or Admin
     match /profile_views/{viewId} {
-      allow read: if signedIn() && (isAdmin() || resource.data.profileId == request.auth.uid);
-      allow create: if signedIn() && (isAdmin() || request.resource.data.viewerId == request.auth.uid);
+      allow read: if signedIn() && (isAdmin() || resource.data.profileId == request.auth.uid)
+      allow create: if signedIn() && (isAdmin() || request.resource.data.viewerId == request.auth.uid)
     }
   }
 }

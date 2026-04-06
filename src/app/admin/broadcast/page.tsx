@@ -35,6 +35,34 @@ export default function AdminBroadcastPage() {
         onlyIncompleteOnboarding: false,
     });
 
+    const [targetStats, setTargetStats] = useState({ emails: 0, loading: false });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            setTargetStats(prev => ({ ...prev, loading: true }));
+            try {
+                const token = localStorage.getItem('admin_auth_token');
+                const res = await fetch('/api/broadcast/send', {
+                    method: 'POST',
+                    headers: { 'Authorization': token || '', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        includeAllAuthUsers: formData.includeAllAuthUsers,
+                        onlyIncompleteOnboarding: formData.onlyIncompleteOnboarding,
+                        preview: true
+                    }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setTargetStats({ emails: data.activeEmails, loading: false });
+                }
+            } catch (e) {
+                console.error('Stats error:', e);
+                setTargetStats(prev => ({ ...prev, loading: false }));
+            }
+        };
+        fetchStats();
+    }, [formData.includeAllAuthUsers, formData.onlyIncompleteOnboarding]);
+
     useEffect(() => {
         fetchHistory();
     }, []);
@@ -236,6 +264,22 @@ export default function AdminBroadcastPage() {
                                         <label htmlFor="onlyIncompleteOnboarding" className="text-xs font-bold text-rose-600 cursor-pointer">
                                             ONLY send to users with INCOMPLETE onboarding/biodata
                                         </label>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-3 bg-[#881337]/5 rounded-2xl border border-[#881337]/10 mt-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-[#881337] animate-pulse" />
+                                            <span className="text-[10px] font-black uppercase text-[#881337]/70">Target Audience Result</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {targetStats.loading ? (
+                                                <Loader2 className="w-3 h-3 animate-spin text-[#881337]" />
+                                            ) : (
+                                                <span className="text-xs font-black text-[#881337]">
+                                                    {targetStats.emails} Potential Recipients
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

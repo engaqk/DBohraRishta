@@ -26,9 +26,9 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { title, message, sendPush, sendInApp, sendEmail, includeAllAuthUsers, onlyIncompleteOnboarding, adminId } = body;
+        const { title, message, sendPush, sendInApp, sendEmail, includeAllAuthUsers, onlyIncompleteOnboarding, adminId, preview } = body;
 
-        // ... (Save broadcast record remains same)
+        // ... (Later in the route, we'll return early if preview is true)
         const broadcastData = {
             title: title || "Platform Update",
             message: message,
@@ -44,9 +44,13 @@ export async function POST(req: Request) {
                 onlyIncomplete: !!onlyIncompleteOnboarding
             }
         };
-        const broadcastRef = await adminDb.collection('broadcasts').add(broadcastData);
 
-        console.log(`Starting broadcast record=${broadcastRef.id}: Title="${title}", OnlyIncomplete=${onlyIncompleteOnboarding}`);
+        if (preview) {
+            console.log(`PREVIEWING target counts (OnlyIncomplete=${onlyIncompleteOnboarding})...`);
+        } else {
+            const broadcastRef = await adminDb.collection('broadcasts').add(broadcastData);
+            console.log(`Starting broadcast record=${broadcastRef.id}: Title="${title}", OnlyIncomplete=${onlyIncompleteOnboarding}`);
+        }
 
         let pushSuccessCount = 0;
         let pFailCount = 0;
@@ -108,7 +112,7 @@ export async function POST(req: Request) {
             }
         });
 
-        if (includeAllAuthUsers) {
+        if (includeAllAuthUsers || onlyIncompleteOnboarding) {
             try {
                 let nextPageToken;
                 do {
@@ -116,7 +120,8 @@ export async function POST(req: Request) {
                     listUsersResult.users.forEach((userRecord) => {
                         if (userRecord.email) {
                             const email = userRecord.email.toLowerCase().trim();
-                            if (onlyIncompleteOnboarding && completedEmailSet.has(email)) return; // Skip those who completed in Firestore
+                            // If targeting ONLY incomplete, skip those who have completed in Firestore
+                            if (onlyIncompleteOnboarding && completedEmailSet.has(email)) return;
                             emailSet.add(email);
                         }
                     });
@@ -140,6 +145,15 @@ export async function POST(req: Request) {
         }
         
         console.log(`Sending to ${emails.length} active (non-blocked) emails.`);
+
+        if (preview) {
+            return NextResponse.json({
+                success: true,
+                preview: true,
+                emailsFound: emailsFound,
+                activeEmails: emails.length,
+            });
+        }
 
         // 3. Send Emails
         if (sendEmail) {

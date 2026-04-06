@@ -45,6 +45,7 @@ export default function OnboardingPage() {
         professionType: "",
         informationProvidedBy: "Myself (Candidate)",
         isBlurSecurityEnabled: true,
+        partnerQualities: "",
     });
 
     // Pre-fill from Firestore if user has partial data, or from sessionStorage
@@ -530,15 +531,11 @@ export default function OnboardingPage() {
                                     <div>
                                         <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Mobile Number</label>
                                         <input 
-                                            type="number" 
+                                            type="tel" 
                                             name="mobile" 
                                             onChange={handleChange} 
                                             value={formData.mobile} 
-                                            placeholder="918888888888"
-                                            onInput={(e) => {
-                                                const val = e.currentTarget.value;
-                                                if (val.length > 14) e.currentTarget.value = val.slice(0, 14);
-                                            }}
+                                            placeholder="+918888888888"
                                             className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-semibold shadow-sm focus:ring-2 focus:ring-[#881337] outline-none" 
                                             readOnly={loginMethod === 'mobile'} 
                                         />
@@ -571,14 +568,10 @@ export default function OnboardingPage() {
                                 <div>
                                     <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">ITS Number</label>
                                     <input 
-                                        type="number" 
+                                        type="tel" 
                                         name="itsNumber" 
                                         onChange={handleChange} 
                                         value={formData.itsNumber} 
-                                        onInput={(e) => {
-                                            const val = e.currentTarget.value;
-                                            if (val.length > 8) e.currentTarget.value = val.slice(0, 8);
-                                        }}
                                         className={`w-full bg-gray-50 border ${errors.itsNumber ? 'border-red-500' : 'border-gray-200 focus:ring-[#881337]'} rounded-2xl px-5 py-4 focus:ring-2 outline-none font-semibold shadow-sm`} 
                                         placeholder="8-digit ITS" 
                                     />

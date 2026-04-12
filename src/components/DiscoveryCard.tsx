@@ -7,6 +7,7 @@ import { collection, addDoc, query, where, getDocs, serverTimestamp, deleteDoc, 
 import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { triggerHaptic, HapticPatterns } from '@/lib/uiUtils';
 
 interface DiscoveryCardProps {
     id: string;
@@ -175,6 +176,7 @@ export default function DiscoveryCard({
                     timestamp: serverTimestamp()
                 });
                 setIsBookmarked(true);
+                triggerHaptic(HapticPatterns.LIGHT);
                 toast.success('Profile bookmarked!');
             }
         } catch (e: any) {
@@ -243,6 +245,7 @@ export default function DiscoveryCard({
                 await updateDoc(doc(db, 'users', id), {
                     interestsCount: increment(1)
                 }).catch(() => {});
+                triggerHaptic(HapticPatterns.SUCCESS);
             }
 
             // Email notification via Gmail SMTP API

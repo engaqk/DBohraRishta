@@ -2,15 +2,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { Send, ArrowLeft, Loader2 } from 'lucide-react';
+import { Send, ArrowLeft, Loader2, Phone } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface ChatWindowProps {
-    connectionId: string; // The requestId acts as the chat room
+    connectionId: string;
     otherUserId: string;
     otherUserName: string;
     otherUserImageUrl?: string;
     onClose: () => void;
+    onStartCall?: () => void;
 }
 
 interface ChatMessage {
@@ -20,7 +21,7 @@ interface ChatMessage {
     timestamp: any;
 }
 
-export default function ChatWindow({ connectionId, otherUserId, otherUserName, otherUserImageUrl, onClose }: ChatWindowProps) {
+export default function ChatWindow({ connectionId, otherUserId, otherUserName, otherUserImageUrl, onClose, onStartCall }: ChatWindowProps) {
     const { user } = useAuth();
     const [otherUserStatus, setOtherUserStatus] = useState<{ isOnline: boolean; lastActive: any } | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -181,6 +182,13 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                         </p>
                     </div>
                 </div>
+                <button 
+                    onClick={onStartCall}
+                    className="p-3 bg-[#D4AF37] text-white rounded-2xl hover:bg-[#c29e2f] transition-all active:scale-95 shadow-lg border border-white/20"
+                    title="Start Secure VoIP Call"
+                >
+                    <Phone className="w-5 h-5" />
+                </button>
             </div>
 
             {/* Messages Area */}

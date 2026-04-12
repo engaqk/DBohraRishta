@@ -160,6 +160,39 @@ function ProfileContent() {
         }
     };
 
+    // 🔊 Liquid Voice Intro - Autoplay with Gentle Delay
+    useEffect(() => {
+        if (profile?.voiceIntroUrl && !loading) {
+            const timer = setTimeout(() => {
+                // Only autoplay if nothing is playing already
+                if (!audioInstance) {
+                    const audio = new Audio(profile.voiceIntroUrl);
+                    audio.onended = () => setIsPlayingVoice(false);
+                    audio.play()
+                        .then(() => {
+                            setAudioInstance(audio);
+                            setIsPlayingVoice(true);
+                        })
+                        .catch(e => {
+                            console.log("Autoplay blocked by browser policy - user interaction required");
+                            // Fallback: the play button is already visible and functional
+                        });
+                }
+            }, 1200); // 1.2s delay for visual immersion first
+            return () => clearTimeout(timer);
+        }
+    }, [profile?.voiceIntroUrl, loading]);
+
+    // Cleanup audio on unmount
+    useEffect(() => {
+        return () => {
+            if (audioInstance) {
+                audioInstance.pause();
+                audioInstance.src = "";
+            }
+        };
+    }, [audioInstance]);
+
     const handleSendRequest = () => {
         if (!user || !id) return;
         if (!isMyProfileVerified) { toast.error('Your ITS must be verified before sending requests'); return; }

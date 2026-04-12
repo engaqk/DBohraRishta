@@ -12,10 +12,13 @@ import { db, messaging, storage } from '@/lib/firebase/config';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { requestNotificationPermission } from '@/lib/firebase/messaging';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import { triggerHaptic, HapticPatterns } from '@/lib/uiUtils';
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 // Deep imports are moved to dynamic imports inside the specific handler function
 import { QRCodeCanvas } from 'qrcode.react';
+import VoIPCallModal from './JitsiCallModal';
 interface UserProfile {
     id: string;
     name: string;
@@ -242,6 +245,20 @@ export default function RishtaDashboard() {
     // Mobile Verification State
     const [showMobileVerifyModal, setShowMobileVerifyModal] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+    // VoIP Call States
+    const [isVoIPCallOpen, setIsVoIPCallOpen] = useState(false);
+    const [voipRoomName, setVoipRoomName] = useState("");
+    const [voipOtherUserName, setVoipOtherUserName] = useState("");
+
+    const handleStartVoIPCall = (connectionId: string, otherName: string) => {
+        // Create a unique room name based on connectionId
+        const room = `DBohraRishta_Call_${connectionId.substring(0, 12)}_${Date.now().toString().slice(-4)}`;
+        setVoipRoomName(room);
+        setVoipOtherUserName(otherName);
+        setIsVoIPCallOpen(true);
+        triggerHaptic(HapticPatterns.SUCCESS);
+    };
 
     useEffect(() => {
         const handleOpenMenu = () => setShowMobileMenu(true);
@@ -1457,6 +1474,7 @@ export default function RishtaDashboard() {
                                 otherUserName={activeChat.name}
                                 otherUserImageUrl={activeChat.imageUrl}
                                 onClose={() => setActiveChat(null)}
+                                onStartCall={() => handleStartVoIPCall(activeChat.id, activeChat.name)}
                             />
                         </section>
                     );
@@ -2075,10 +2093,19 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
 
             <main className="max-w-7xl mx-auto">
 
-                {/* MY BIODATA TAB */}
-                {activeTab === 'mybiodata' && myProfile && (
-                    <div className="max-w-lg mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div id="profile-completeness-section" className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
+                <AnimatePresence mode="wait">
+                    {/* MY BIODATA TAB */}
+                    {activeTab === 'mybiodata' && myProfile && (
+                        <motion.div
+                            key="mybiodata"
+                            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.98, y: -10 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                            className="max-w-lg mx-auto pb-12"
+                        >
+                            <div id="profile-completeness-section" className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center">
+                                {/* ... content starts ... */}
 
                             <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-rose-50 mb-4 shadow-md relative">
                                 {myProfile.isPhotoVerified && myProfile.selfieImageUrl ? (
@@ -2400,12 +2427,20 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 </div>
                             )}
                         </div>
-                    </div>
-                )}
+                        </motion.div>
+                    )}
 
                 {/* NOTIFICATIONS TAB */}
                 {activeTab === 'notifications' && (
-                    <div className="max-w-2xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+                    <motion.div
+                        key="notifications"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2 }}
+                        className="max-w-2xl mx-auto pb-12"
+                    >
+                        <div className="space-y-4">
                         <h2 className="text-lg font-black text-[#881337] uppercase tracking-widest mb-2 flex items-center justify-between">
                             <span>🔔 Notifications</span>
                             {notifications.length > 0 && <span className="text-[10px] bg-rose-50 text-[#881337] px-2 py-0.5 rounded-full lowercase tracking-normal">showing latest {notifications.length}</span>}
@@ -2493,31 +2528,40 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 </div>
                             </div>
                         )}
-                    </div>
-                )}
+                        </div>
+                        </motion.div>
+                    )}
 
                 {/* Discovery / Requests / Messages */}
                 {activeTab !== 'mybiodata' && activeTab !== 'notifications' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    <motion.div
+                        key="tabs"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="grid grid-cols-1 lg:grid-cols-4 gap-8"
+                    >
                         {renderTabContent()}
-                    </div>
+                    </motion.div>
                 )}
+            </AnimatePresence>
 
             </main>
 
 
             {/* Mobile Bottom Nav */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2 pb-safe flex justify-around items-center z-50 shadow-2xl">
-                <button onClick={() => setActiveTab('mybiodata')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'mybiodata' ? 'text-[#881337]' : 'text-gray-400'}`}>
+                <button onClick={() => { setActiveTab('mybiodata'); triggerHaptic(HapticPatterns.LIGHT); }} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'mybiodata' ? 'text-[#881337]' : 'text-gray-400'}`}>
                     <ShieldCheck className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Biodata</span>
                 </button>
-                <button onClick={() => setActiveTab('discovery')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'discovery' ? 'text-[#881337]' : 'text-gray-400'}`}>
+                <button onClick={() => { setActiveTab('discovery'); triggerHaptic(HapticPatterns.LIGHT); }} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'discovery' ? 'text-[#881337]' : 'text-gray-400'}`}>
                     <Search className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Search</span>
                 </button>
-                <button onClick={() => setActiveTab('requests')} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'requests' ? 'text-[#881337]' : 'text-gray-400'}`}>
+                <button onClick={() => { setActiveTab('requests'); triggerHaptic(HapticPatterns.LIGHT); }} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'requests' ? 'text-[#881337]' : 'text-gray-400'}`}>
                     <ShieldCheck className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Requests</span>
                 </button>
-                <button onClick={() => setActiveTab('messages')} className={`flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'messages' ? 'text-[#881337]' : 'text-gray-400'}`}>
+                <button onClick={() => { setActiveTab('messages'); triggerHaptic(HapticPatterns.LIGHT); }} className={`flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'messages' ? 'text-[#881337]' : 'text-gray-400'}`}>
                     <MessageCircle className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Accepted (Chat Now)</span>
                     {allRequests.filter(r => r.status === 'accepted' && r.isIncoming).length > 0 && <span className="absolute -top-0.5 right-3 w-1.5 h-1.5 bg-red-500 rounded-full" />}
                 </button>
@@ -3418,6 +3462,16 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                     </div>
                 </div>
             )}
+
+            {/* VoIP Call Overlay */}
+            <VoIPCallModal 
+                isOpen={isVoIPCallOpen}
+                onClose={() => setIsVoIPCallOpen(false)}
+                roomName={voipRoomName}
+                otherUserName={voipOtherUserName}
+                userName={myProfile?.name || "User"}
+                userEmail={user?.email || myProfile?.email || ""}
+            />
         </div>
     );
 }

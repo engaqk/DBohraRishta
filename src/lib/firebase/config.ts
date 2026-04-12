@@ -27,4 +27,16 @@ if (typeof window !== 'undefined') {
 
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
+// Initialize Messaging safely
+let messagingInternal = null;
+if (typeof window !== 'undefined') {
+  try {
+    // We check if it's supported before even trying to initialize
+    // Although isSupported() is async, getMessaging() often throws synchronously if Push API is missing
+    messagingInternal = getMessaging(app);
+  } catch (e) {
+    console.warn('[Firebase] Messaging is not supported in this browser environment:', e);
+  }
+}
+
+export const messaging = messagingInternal;

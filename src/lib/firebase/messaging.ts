@@ -1,4 +1,4 @@
-import { getToken, onMessage } from 'firebase/messaging';
+import { getToken, onMessage, isSupported } from 'firebase/messaging';
 import { messaging, db } from './config';
 import { doc, updateDoc, setDoc, arrayUnion } from 'firebase/firestore';
 
@@ -13,9 +13,14 @@ import { doc, updateDoc, setDoc, arrayUnion } from 'firebase/firestore';
 const VAPID_KEY = 'BIxYKJCTw4FWuOzFcbcGcm8JnileE2bsJtE_F0PJVILaqGmhzL5wUifgCFMFLB1RRpJsaIdCmQnmrXTiXh52om8'; // <-- PASTE YOUR FIREBASE VAPID KEY HERE
 
 export async function requestNotificationPermission(userId: string) {
+    if (!userId) return;
+
+    // Check if messaging is initialized and supported
+    const supported = typeof window !== 'undefined' && await isSupported();
     const m = messaging;
-    if (!m) {
-        console.warn('[Messaging] Messaging not supported in this browser environment.');
+
+    if (!m || !supported) {
+        console.warn('[Messaging] Messaging not supported or not initialized in this browser environment.');
         return;
     }
 
@@ -49,9 +54,11 @@ export async function requestNotificationPermission(userId: string) {
     }
 }
 
-export function onMessageListener() {
+export async function onMessageListener() {
+    const supported = typeof window !== 'undefined' && await isSupported();
     const m = messaging;
-    if (!m) return null;
+    if (!m || !supported) return null;
+    
     return new Promise((resolve) => {
         onMessage(m, (payload) => {
             console.log('[Messaging] Foreground message received:', payload);

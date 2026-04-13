@@ -1903,11 +1903,19 @@ export default function RishtaDashboard() {
                 const sortedWithPicks = searchQuery || filters.education || filters.location || filters.maritalStatus || showOnlyBookmarked 
                     ? filteredProfiles 
                     : (() => {
+                        const incomingPendingIds = new Set(allRequests.filter(r => r.to === user?.uid && r.status?.includes('pending')).map(r => r.from));
+                        
+                        // 1. Members who sent you interest (Absolute Top)
+                        const priorityIncoming = filteredProfiles.filter(p => incomingPendingIds.has(p.id));
+                        
+                        // 2. Daily Picks (Curated matches who haven't sent interest yet)
                         const pickIds = new Set(dailyPicks.map(p => p.id));
-                        const remaining = filteredProfiles.filter(p => !pickIds.has(p.id));
-                        // Re-filter picks through same logic for consistency
-                        const validPicks = dailyPicks.filter(p => !hiddenProfileIds.has(p.id));
-                        return [...validPicks, ...remaining];
+                        const validPicks = dailyPicks.filter(p => !hiddenProfileIds.has(p.id) && !incomingPendingIds.has(p.id));
+                        
+                        // 3. The rest of the sorted feed
+                        const remaining = filteredProfiles.filter(p => !pickIds.has(p.id) && !incomingPendingIds.has(p.id));
+                        
+                        return [...priorityIncoming, ...validPicks, ...remaining];
                     })();
 
                 return (

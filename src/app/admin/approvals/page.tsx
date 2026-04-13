@@ -5,7 +5,7 @@ import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverT
 import { db } from "@/lib/firebase/config";
 import { auth } from "@/lib/firebase/config";
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
-import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2, ShieldCheck, Camera } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2, ShieldCheck, Camera, Video } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -191,6 +191,35 @@ export default function AdminVerificationPage() {
             }
         } catch (e: any) {
             toast.error('Failed to update selfie status');
+        }
+    };
+
+    const handleVerifyVideoHandshake = async (userId: string, isApproved: boolean) => {
+        const rejectionReason = !isApproved ? window.prompt("Enter rejection reason (optional):") : null;
+        if (!isApproved && rejectionReason === null) return; // Cancelled prompt
+
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/users/verify-video', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': token || '',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, adminId: user?.uid, isApproved, rejectionReason })
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(isApproved ? 'Video Handshake Verified!' : 'Video Rejected');
+                fetchDashboardData();
+                if (selectedUser?.id === userId) {
+                    setSelectedUser(prev => prev ? { ...prev, videoStatus: isApproved ? 'verified' : 'rejected' } : null);
+                }
+            } else {
+                toast.error(data.error);
+            }
+        } catch (e: any) {
+            toast.error('Failed to update video status');
         }
     };
 
@@ -546,7 +575,7 @@ export default function AdminVerificationPage() {
 
                                     {/* Selfie Action Button */}
                                     {(selectedUser.selfieImageUrl || selectedUser.selfieUrl) && !selectedUser.isPhotoVerified && (
-                                        <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                                        <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl mb-4 flex flex-col md:flex-row items-center justify-between gap-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
                                                     <Camera size={20} />
@@ -570,6 +599,49 @@ export default function AdminVerificationPage() {
                                                     <ShieldCheck size={14} /> Verify Selfie
                                                 </button>
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {/* Video Handshake Section */}
+                                    {selectedUser.videoIntroUrl && (
+                                        <div className="bg-amber-50 border border-amber-100 p-6 rounded-2xl mb-6 flex flex-col gap-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
+                                                        <Video size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-black text-amber-900 uppercase">Video Handshake (Digital Greeting)</p>
+                                                        <p className="text-[10px] text-amber-600">Check for face clarity, respectful content, and community tone.</p>
+                                                    </div>
+                                                </div>
+                                                {selectedUser.videoStatus && (
+                                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${selectedUser.videoStatus === 'verified' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200'}`}>
+                                                        {selectedUser.videoStatus}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="max-w-md mx-auto w-full aspect-video rounded-xl overflow-hidden shadow-2xl border-4 border-white">
+                                                <video src={selectedUser.videoIntroUrl} controls className="w-full h-full object-cover" />
+                                            </div>
+
+                                            {selectedUser.videoStatus !== 'verified' && (
+                                                <div className="flex gap-3 justify-center mt-2">
+                                                    <button 
+                                                        onClick={() => handleVerifyVideoHandshake(selectedUser.id, false)}
+                                                        className="px-6 py-2.5 bg-white text-rose-600 border border-rose-200 font-black text-[10px] uppercase tracking-wider rounded-xl hover:bg-rose-50 transition-all"
+                                                    >
+                                                        Reject Video
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleVerifyVideoHandshake(selectedUser.id, true)}
+                                                        className="px-6 py-2.5 bg-amber-500 text-white font-black text-[10px] uppercase tracking-wider rounded-xl hover:bg-amber-600 shadow-lg shadow-amber-900/20 flex items-center gap-2 transition-all active:scale-95"
+                                                    >
+                                                        <ShieldCheck size={14} /> Approve Handshake
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 

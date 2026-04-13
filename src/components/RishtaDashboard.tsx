@@ -228,7 +228,12 @@ export default function RishtaDashboard() {
     const startVideoRecording = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 568 }, audio: true });
-            if (videoPreviewRef.current) videoPreviewRef.current.srcObject = stream;
+            if (videoPreviewRef.current) {
+                videoPreviewRef.current.srcObject = stream;
+                // Double check for mobile
+                videoPreviewRef.current.setAttribute('playsinline', 'true');
+                videoPreviewRef.current.setAttribute('webkit-playsinline', 'true');
+            }
             
             const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
             videoRecorderRef.current = mediaRecorder;
@@ -239,7 +244,11 @@ export default function RishtaDashboard() {
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 setVideoBlob(blob);
                 setVideoPreviewUrl(URL.createObjectURL(blob));
-                if (videoPreviewRef.current) videoPreviewRef.current.srcObject = null;
+                if (videoPreviewRef.current) {
+                    videoPreviewRef.current.srcObject = null;
+                }
+                // Stop all tracks to release camera
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
             };
 
             mediaRecorder.start();
@@ -282,9 +291,10 @@ export default function RishtaDashboard() {
                     return;
                 }
                 await updateDoc(doc(db, 'users', user.uid), {
-                    videoIntroUrl: base64Video
+                    videoIntroUrl: base64Video,
+                    videoStatus: 'pending'
                 });
-                toast.success("Video Handshake saved! 🎥");
+                toast.success("Video Handshake submitted for verification! 🎥");
                 setVideoBlob(null);
                 setVideoPreviewUrl(null);
                 refreshUser();
@@ -2481,8 +2491,97 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                 )}
                                             </div>
 
+                                            {/* 🎥 Video Handshake (Digital Handshake) Section */}
+                                            <div id="video-handshake-section" className="p-4 rounded-xl border border-amber-100 bg-amber-50/30 flex flex-col gap-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.videoIntroUrl ? (myProfile.videoStatus === 'verified' ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white') : 'border-2 border-gray-200 text-gray-400'}`}>
+                                                            {myProfile.videoStatus === 'verified' ? <Check className="w-3 h-3" /> : (myProfile.videoStatus === 'pending' ? <Clock className="w-3 h-3" /> : <Video className="w-3 h-3" />)}
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-700">Video Handshake (15s) {myProfile.videoStatus === 'pending' && <span className="text-[8px] text-amber-600 ml-1 font-black uppercase">Pending Approval</span>}</span>
+                                                    </div>
+                                                    {myProfile.videoIntroUrl && !isRecordingVideo && !videoBlob && (
+                                                        <button onClick={handleDeleteVideo} className="text-[10px] font-black text-rose-600 uppercase hover:underline">Delete</button>
+                                                    )}
+                                                </div>
+
+                                                <p className="text-[10px] text-gray-500 leading-relaxed italic">
+                                                    The "Gold Standard" of trust. A short 15-sec video greeting makes you 5x more likely to get accepted.
+                                                </p>
+
+                                                {!isRecordingVideo && !videoBlob && !myProfile.videoIntroUrl && (
+                                                    <button
+                                                        onClick={startVideoRecording}
+                                                        className="flex items-center justify-center gap-2 py-2 bg-white border border-amber-200 rounded-xl text-xs font-bold text-[#D4AF37] hover:bg-amber-50 transition-all active:scale-95"
+                                                    >
+                                                        <Video className="w-4 h-4" /> Start Video Handshake
+                                                    </button>
+                                                )}
+
+                                                {!isRecordingVideo && !videoBlob && myProfile.videoIntroUrl && (
+                                                    <div className="flex flex-col gap-2">
+                                                        <video src={myProfile.videoIntroUrl} controls playsInline className="w-full rounded-xl border border-white shadow-sm aspect-video object-cover" />
+                                                        <button
+                                                            onClick={startVideoRecording}
+                                                            className="flex items-center justify-center gap-2 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#D4AF37] hover:bg-amber-50"
+                                                        >
+                                                            <RefreshCw className="w-4 h-4" /> Re-record Handshake
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {isRecordingVideo && (
+                                                    <div className="flex flex-col items-center gap-3 py-4 bg-amber-100 rounded-xl">
+                                                        <video 
+                                                            ref={(el) => {
+                                                                if (el && videoPreviewRef.current?.srcObject) {
+                                                                    el.srcObject = videoPreviewRef.current.srcObject;
+                                                                }
+                                                            }} 
+                                                            autoPlay 
+                                                            muted 
+                                                            playsInline
+                                                            className="w-2/3 aspect-[9/16] bg-black rounded-xl border-2 border-[#D4AF37] shadow-xl object-cover scale-x-[-1]" 
+                                                        />
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <div className="flex items-center gap-2 text-[#881337] font-black animate-pulse">
+                                                                <div className="w-2 h-2 bg-red-600 rounded-full" />
+                                                                RECORDING... {recordingTime}s / 15s
+                                                            </div>
+                                                            <button
+                                                                onClick={stopVideoRecording}
+                                                                className="px-8 py-2 bg-[#881337] text-white rounded-full text-xs font-black shadow-lg uppercase tracking-wider scale-110"
+                                                            >
+                                                                FINISH & SAVE
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {videoBlob && !isRecordingVideo && (
+                                                    <div className="flex flex-col gap-3 py-2 animate-in slide-in-from-top-4">
+                                                        <video src={videoPreviewUrl!} controls playsInline className="w-full rounded-xl shadow-lg aspect-video object-cover border-2 border-amber-300" />
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <button
+                                                                onClick={() => { setVideoBlob(null); setVideoPreviewUrl(null); }}
+                                                                className="py-2.5 bg-gray-100 text-gray-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200"
+                                                            >
+                                                                Discard
+                                                            </button>
+                                                            <button
+                                                                onClick={handleUploadVideo}
+                                                                disabled={isUploadingVoice}
+                                                                className="py-2.5 bg-[#D4AF37] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#B38F00] shadow-md flex items-center justify-center gap-2"
+                                                            >
+                                                                {isUploadingVoice ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save to Profile"}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
                                             {/* 🔊 Voice Intro Section */}
-                                            <div className="p-4 rounded-xl border border-rose-100 bg-rose-50/30 flex flex-col gap-3">
+                                            <div id="voice-intro-section" className="p-4 rounded-xl border border-rose-100 bg-rose-50/30 flex flex-col gap-3">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2.5">
                                                         <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.voiceIntroUrl ? 'bg-[#881337] text-white' : 'border-2 border-gray-200 text-gray-400'}`}>
@@ -2561,85 +2660,6 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                             >
                                                                 {isUploadingVoice ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                                                                 Upload Intro
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* 🎥 Video Handshake (Digital Handshake) Section */}
-                                            <div className="p-4 rounded-xl border border-amber-100 bg-amber-50/30 flex flex-col gap-3">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2.5">
-                                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.videoIntroUrl ? 'bg-[#D4AF37] text-white' : 'border-2 border-gray-200 text-gray-400'}`}>
-                                                            {myProfile.videoIntroUrl ? <Check className="w-3 h-3" /> : <Video className="w-3 h-3" />}
-                                                        </div>
-                                                        <span className="text-xs font-bold text-gray-700">Video Handshake (15s)</span>
-                                                    </div>
-                                                    {myProfile.videoIntroUrl && !isRecordingVideo && !videoBlob && (
-                                                        <button onClick={handleDeleteVideo} className="text-[10px] font-black text-rose-600 uppercase hover:underline">Delete</button>
-                                                    )}
-                                                </div>
-
-                                                <p className="text-[10px] text-gray-500 leading-relaxed italic">
-                                                    The "Gold Standard" of trust. A short 15-sec video greeting makes you 5x more likely to get accepted.
-                                                </p>
-
-                                                {!isRecordingVideo && !videoBlob && !myProfile.videoIntroUrl && (
-                                                    <button
-                                                        onClick={startVideoRecording}
-                                                        className="flex items-center justify-center gap-2 py-2 bg-white border border-amber-200 rounded-xl text-xs font-bold text-[#D4AF37] hover:bg-amber-50 transition-all active:scale-95"
-                                                    >
-                                                        <Video className="w-4 h-4" /> Start Video Handshake
-                                                    </button>
-                                                )}
-
-                                                {!isRecordingVideo && !videoBlob && myProfile.videoIntroUrl && (
-                                                    <div className="flex flex-col gap-2">
-                                                        <video src={myProfile.videoIntroUrl} controls className="w-full rounded-xl border border-white shadow-sm aspect-video object-cover" />
-                                                        <button
-                                                            onClick={startVideoRecording}
-                                                            className="flex items-center justify-center gap-2 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#D4AF37] hover:bg-amber-50"
-                                                        >
-                                                            <RefreshCw className="w-4 h-4" /> Re-record Handshake
-                                                        </button>
-                                                    </div>
-                                                )}
-
-                                                {isRecordingVideo && (
-                                                    <div className="flex flex-col items-center gap-3 py-4 bg-amber-100 rounded-xl">
-                                                        <video ref={videoPreviewRef} autoPlay muted className="w-2/3 aspect-[9/16] rounded-xl border-2 border-[#D4AF37] shadow-xl object-cover scale-x-[-1]" />
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            <div className="flex items-center gap-2 text-[#881337] font-black animate-pulse">
-                                                                <div className="w-2 h-2 bg-red-600 rounded-full" />
-                                                                RECORDING... {recordingTime}s / 15s
-                                                            </div>
-                                                            <button
-                                                                onClick={stopVideoRecording}
-                                                                className="px-8 py-2 bg-[#881337] text-white rounded-full text-xs font-black shadow-lg uppercase tracking-wider scale-110"
-                                                            >
-                                                                FINISH & SAVE
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {videoBlob && !isRecordingVideo && (
-                                                    <div className="flex flex-col gap-3 py-2 animate-in slide-in-from-top-4">
-                                                        <video src={videoPreviewUrl!} controls className="w-full rounded-xl shadow-lg aspect-video object-cover border-2 border-amber-300" />
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            <button
-                                                                onClick={() => { setVideoBlob(null); setVideoPreviewUrl(null); }}
-                                                                className="py-2.5 bg-gray-100 text-gray-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200"
-                                                            >
-                                                                Discard
-                                                            </button>
-                                                            <button
-                                                                onClick={handleUploadVideo}
-                                                                disabled={isUploadingVoice}
-                                                                className="py-2.5 bg-[#D4AF37] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#B38F00] shadow-md flex items-center justify-center gap-2"
-                                                            >
-                                                                {isUploadingVoice ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save to Profile"}
                                                             </button>
                                                         </div>
                                                     </div>

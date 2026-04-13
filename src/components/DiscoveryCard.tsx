@@ -102,11 +102,13 @@ export default function DiscoveryCard({
     const [profileData, setProfileData] = useState<any>(null);
 
     const photos = [
+        videoIntroUrl,
         profileData?.libasImageUrl || libasImageUrl,
         profileData?.extraImageUrl || extraImageUrl,
         (profileData?.isPhotoVerified || profileData?.selfieStatus === 'verified' ? profileData?.selfieImageUrl : null)
     ].filter(Boolean) as string[];
-    const currentPhoto = photos[activePhotoIdx] || libasImageUrl;
+    const currentPhoto = photos[activePhotoIdx];
+    const isVideo = currentPhoto?.startsWith('data:video') || currentPhoto?.endsWith('.mp4') || currentPhoto?.endsWith('.webm');
     const age = dob ? Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000) : 25;
     const isFemale = gender === 'female';
     const canZoom = !isBlurSecurityEnabled || requestStatus === 'accepted' || !isFemale;
@@ -337,11 +339,22 @@ export default function DiscoveryCard({
                                 <div className="absolute top-1.5 right-1.5 w-full h-full border-2 border-white/10 rounded-2xl translate-x-1.5 translate-y-1.5 -z-10 bg-gray-200/50" />
                             )}
 
-                            <img
-                                src={currentPhoto}
-                                alt={displayName}
-                                className={`w-full h-full object-cover transition-all duration-700 group-hover/image:scale-110 ${!canZoom ? 'blur-[3px] scale-105' : ''}`}
-                            />
+                            {isVideo ? (
+                                <video
+                                    src={currentPhoto}
+                                    autoPlay
+                                    muted
+                                    loop
+                                    playsInline
+                                    className={`w-full h-full object-cover transition-all duration-700 ${!canZoom ? 'blur-[8px] scale-105 opacity-60' : ''}`}
+                                />
+                            ) : (
+                                <img
+                                    src={currentPhoto}
+                                    alt={displayName}
+                                    className={`w-full h-full object-cover transition-all duration-700 group-hover/image:scale-110 ${!canZoom ? 'blur-[3px] scale-105' : ''}`}
+                                />
+                            )}
 
                             {/* Center Expand Hint */}
                             {canZoom && (

@@ -214,5 +214,21 @@ export async function notifyNewAdminMessage(opts: {
     });
 }
 
+export async function notifyVideoHandshakeStatus(opts: {
+    candidateName: string;
+    candidateEmail: string;
+    status: 'verified' | 'rejected';
+    reason?: string;
+}) {
+    const isApproved = opts.status === 'verified';
+    await sendEmail({
+        toEmail: opts.candidateEmail,
+        subject: isApproved ? `🎥 Video Handshake Verified! – 53DBohraRishta` : `⚠️ Update on your Video Handshake – 53DBohraRishta`,
+        htmlBody: isApproved 
+            ? templates.getVideoApprovedTemplate({ candidateName: opts.candidateName })
+            : templates.getVideoRejectedTemplate({ candidateName: opts.candidateName, reason: opts.reason }),
+    });
+}
+
 export { ADMIN_EMAIL };
 export type { EmailPayload };

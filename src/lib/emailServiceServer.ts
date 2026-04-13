@@ -76,3 +76,19 @@ export async function notifyStatusUpdate(opts: {
         htmlBody: templates.getStatusUpdateTemplate({ ...opts, statusLabel }),
     });
 }
+
+export async function notifyVideoHandshakeStatusServer(opts: {
+    candidateName: string;
+    candidateEmail: string;
+    status: 'verified' | 'rejected';
+    reason?: string;
+}) {
+    const isApproved = opts.status === 'verified';
+    await sendEmailDirect({
+        toEmail: opts.candidateEmail,
+        subject: isApproved ? `🎥 Video Handshake Verified! – 53DBohraRishta` : `⚠️ Update on your Video Handshake – 53DBohraRishta`,
+        htmlBody: isApproved 
+            ? templates.getVideoApprovedTemplate({ candidateName: opts.candidateName })
+            : templates.getVideoRejectedTemplate({ candidateName: opts.candidateName, reason: opts.reason }),
+    });
+}

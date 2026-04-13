@@ -131,7 +131,7 @@ export function getWelcomeOnboardingTemplate(opts: { candidateName: string; isRe
         <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
             <h2 style="color:#881337;margin-bottom:8px">Welcome to 53DBohraRishta ✨</h2>
             <p>As-salaamu alaykum <strong>${opts.candidateName || 'Candidate'}</strong>,</p>
-            <p>Khushamadeed! You recently joined our platform but haven't completed your onboarding yet.</p>
+            <p>Congratulations! You recently joined our platform but haven't completed your onboarding yet.</p>
             <div style="background:#f9f9f9;border-left:5px solid #D4AF37;padding:20px;border-radius:8px;margin:20px 0">
                 <p style="margin:0;font-size:15px;color:#333">Complete your profile today to start discovering matches within our community <strong>free of cost</strong>. Get benefited from all our premium features including photo privacy and direct interest requests.</p>
             </div>
@@ -210,7 +210,7 @@ export function getNewCandidateVerifiedTemplate(opts: { newCandidateGender: stri
         <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px;background:#fffafb">
             <h2 style="color:#881337;margin-bottom:8px">✨ New Profile Verified!</h2>
             <p>As-salaamu alaykum,</p>
-            <p>Khushamadeed! We are pleased to inform you that a new profile from <strong>${opts.newCandidateCity || 'our community'}</strong> has just been verified on <strong>53DBohraRishta</strong>.</p>
+            <p>Congratulations! We are pleased to inform you that a new profile from <strong>${opts.newCandidateCity || 'our community'}</strong> has just been verified on <strong>53DBohraRishta</strong>.</p>
             <div style="background:#fff;border:1px dashed #D4AF37;padding:22px;border-radius:16px;margin:24px 0;text-align:center;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05)">
                 <p style="margin:0 0 10px;font-weight:bold;color:#881337;font-size:18px">Matches are waiting for you!</p>
                 <p style="margin:0;color:#666;font-size:14px italic">"May Allah grant success to all seekers. Ameen."</p>
@@ -223,5 +223,42 @@ export function getNewCandidateVerifiedTemplate(opts: { newCandidateGender: stri
             </div>
             <hr style="border:0;border-top:1px solid #eee;margin:32px 0"/>
             <p style="font-size:10px;color:#bbb;text-align:center;line-height:1.5">You are receiving this because your profile is verified on 53DBohraRishta.<br/>&copy; 2026 DBohraRishta Team</p>
+        </div>`;
+}
+
+export function getVideoApprovedTemplate(opts: { candidateName: string }) {
+    return `
+        <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
+            <h2 style="color:#059669">Video Handshake Verified! 🎥✨</h2>
+            <p>As-salaamu alaykum <strong>${opts.candidateName}</strong>,</p>
+            <p>Your <strong>Digital Handshake (Video Intro)</strong> has been approved by the administration!</p>
+            <div style="background:#f0fdf4;border-left:5px solid #059669;padding:20px;border-radius:8px;margin:20px 0">
+                <p style="margin:0;font-size:15px;color:#065f46">Profiles with verified video intros see 5x higher engagement. Your video is now live on your discovery card!</p>
+            </div>
+            <p>Keep your profile updated for the best results.</p>
+            <a href="https://53dbohrarishta.in" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
+                Open Dashboard
+            </a>
+            <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
+            <p style="font-size:11px;color:#999">53DBohraRishta Official Notification</p>
+        </div>`;
+}
+
+export function getVideoRejectedTemplate(opts: { candidateName: string; reason?: string }) {
+    return `
+        <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
+            <h2 style="color:#dc2626">Update on Video Handshake ⚠️</h2>
+            <p>As-salaamu alaykum <strong>${opts.candidateName}</strong>,</p>
+            <p>Your <strong>Digital Handshake (Video Intro)</strong> was not approved at this time.</p>
+            <div style="background:#fef2f2;border-left:5px solid #dc2626;padding:20px;border-radius:8px;margin:20px 0">
+                <p style="margin:0;font-weight:bold;color:#991b1b">Reason for Rejection:</p>
+                <p style="margin:8px 0 0;color:#991b1b;font-style:italic">"${opts.reason || 'Video does not meet community guidelines (clear face, appropriate lighting, or respectful content).'}"</p>
+            </div>
+            <p>Don't worry! You can record and upload a new video anytime from your dashboard.</p>
+            <a href="https://53dbohrarishta.in" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
+                Re-record Video
+            </a>
+            <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
+            <p style="font-size:11px;color:#999">53DBohraRishta Official Notification</p>
         </div>`;
 }

@@ -473,8 +473,20 @@ export default function RishtaDashboard() {
         if (!me || !them) return 50;
         let score = 70;
 
-        const myAge = me.dob ? new Date().getFullYear() - new Date(me.dob).getFullYear() : 25;
-        const theirAge = them.dob ? new Date().getFullYear() - new Date(them.dob).getFullYear() : 25;
+        const calculateAge = (dobString: string) => {
+            if (!dobString) return 25;
+            const birthDate = new Date(dobString);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        };
+
+        const myAge = calculateAge(me.dob);
+        const theirAge = calculateAge(them.dob);
         const ageDiff = Math.abs(myAge - theirAge);
 
         // Strict Age Compatibility (Premium Matching)
@@ -548,21 +560,22 @@ export default function RishtaDashboard() {
         const pool = [...discoveryProfiles].filter(p => {
             if (p.id === user.uid) return false;
             const score = computeMatchScore(myProfile, p);
-            return score >= 60; // Ensure we don't pick 46yo for 23yo
+            return score >= 60; // Strictly filter out unsuitable curated matches (e.g., 44yo for 23yo)
         });
 
-        const finalPool = pool.length >= 4 ? pool : [...discoveryProfiles].filter(p => p.id !== user.uid);
-        
-        if (finalPool.length <= 4) return finalPool;
+        if (pool.length === 0) return [];
 
         const picks: UserProfile[] = [];
-        const poolCopy = [...finalPool];
-        for (let i = 0; i < 4; i++) {
+        const poolCopy = [...pool];
+        const numToPick = Math.min(4, poolCopy.length);
+        
+        for (let i = 0; i < numToPick; i++) {
             const idx = Math.floor(seededRandom() * poolCopy.length);
-            picks.push(poolCopy.splice(idx, 1)[0]);
+            const picked = poolCopy.splice(idx, 1)[0];
+            if (picked) picks.push(picked);
         }
         return picks;
-    }, [user, discoveryProfiles, myProfile]); // Added myProfile dependency
+    }, [user, discoveryProfiles, myProfile]);
 
     // Compress the selfie on selection (same pattern as libasImageUrl)
     const handleSelfieFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

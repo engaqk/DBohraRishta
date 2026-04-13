@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, Lock, PauseCircle } from 'lucide-react';
+import { ShieldCheck, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, Lock, PauseCircle, X } from 'lucide-react';
 import { notifyInterestSent } from '@/lib/emailService';
 import { collection, addDoc, query, where, getDocs, serverTimestamp, deleteDoc, doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -49,6 +49,8 @@ interface DiscoveryCardProps {
     selfieImageUrl?: string;
     selfieStatus?: string;
     voiceIntroUrl?: string;
+    videoIntroUrl?: string;
+    lastActive?: any;
 }
 
 export default function DiscoveryCard({
@@ -58,7 +60,7 @@ export default function DiscoveryCard({
     isOnline = false, viewerItsNumber = '', extraImageUrl,
     ejamaatId, itsNumber, maritalStatus, mobile, mobileCode, email,
     fatherName, motherName, professionType, educationDetails,
-    city, state, gender, createdAt, selfieImageUrl, selfieStatus, voiceIntroUrl,
+    city, state, gender, createdAt, selfieImageUrl, selfieStatus, voiceIntroUrl, videoIntroUrl, lastActive
 }: DiscoveryCardProps) {
     const { user } = useAuth();
     const router = useRouter();
@@ -73,6 +75,7 @@ export default function DiscoveryCard({
     const [showLightbox, setShowLightbox] = useState(false);
     const [isPlayingVoice, setIsPlayingVoice] = useState(false);
     const [audioInstance, setAudioInstance] = useState<HTMLAudioElement | null>(null);
+    const [showVideoIntro, setShowVideoIntro] = useState(false);
 
     // Voice Playback Handler
     const toggleVoicePlay = (e: React.MouseEvent) => {
@@ -111,6 +114,44 @@ export default function DiscoveryCard({
     const firstName = name?.split(' ')[0] || 'Member';
     const displaySurname = (gender === 'female' && requestStatus !== 'accepted') ? '●●●●' : name?.split(' ').slice(1).join(' ');
     const displayName = `${firstName} ${displaySurname}`.trim();
+
+    // Activity Ribbon Logic
+    const isNewMember = useMemo(() => {
+        if (!createdAt) return false;
+        const createdDate = createdAt?.toDate ? createdAt.toDate() : new Date(createdAt);
+        return (Date.now() - createdDate.getTime()) < 172800000; // 48 Hours
+    }, [createdAt]);
+
+    const isHighlyResponsive = useMemo(() => {
+        if (isOnline) return true;
+        if (!lastActive) return false;
+        const activeDate = lastActive?.toDate ? lastActive.toDate() : new Date(lastActive);
+        return (Date.now() - activeDate.getTime()) < 3600000; // Active within 1 hour
+    }, [isOnline, lastActive]);
+
+    const profileStrength = useMemo(() => {
+        if (!profileData) return 0;
+        let score = 0;
+        if (profileData.name) score += 5;
+        if (profileData.gender) score += 5;
+        if (profileData.dob) score += 5;
+        if (profileData.jamaat) score += 5;
+        if (profileData.mobile || profileData.verifiedPhone) score += 5;
+        if (profileData.isEmailVerified) score += 5;
+        if (profileData.isItsVerified) score += 5;
+        if (profileData.education || profileData.educationDetails) score += 10;
+        if (profileData.professionType || profileData.profession) score += 10;
+        if (profileData.maritalStatus) score += 5;
+        if (profileData.heightFeet) score += 5;
+        if (profileData.bio) score += 5;
+        if (profileData.libasImageUrl) score += 15;
+        if (profileData.extraImageUrl) score += 5;
+        if (profileData.isPhotoVerified || profileData.selfieStatus === 'verified') score += 5;
+        if (profileData.voiceIntroUrl || profileData.videoIntroUrl) score += 5;
+        return Math.min(100, score);
+    }, [profileData]);
+
+    const isVerifiedContributor = profileStrength >= 95;
 
     useEffect(() => {
         const check = async () => {
@@ -327,21 +368,41 @@ export default function DiscoveryCard({
                     {/* Top badges */}
                     <div className="absolute top-3 left-3 right-3 z-30 flex items-start justify-between">
                         <div className="flex flex-col gap-1.5 items-start">
-                            {(profileData?.isOnline || isOnline) ? (
-                                <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-                                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />Active Now
-                                </span>
-                            ) : profileData?.lastActive && (
-                                <span className="bg-gray-800/60 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-                                    {(() => {
-                                        const last = profileData.lastActive?.toDate ? profileData.lastActive.toDate() : new Date(profileData.lastActive);
-                                        const diff = Math.floor((Date.now() - last.getTime()) / 60000);
-                                        if (diff < 60) return `${diff}m ago`;
-                                        if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
-                                        return `${Math.floor(diff / 1440)}d ago`;
-                                    })()}
-                                </span>
-                            )}
+                            <div className="flex flex-wrap gap-1.5">
+                                {(profileData?.isOnline || isOnline) ? (
+                                    <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />Active Now
+                                    </span>
+                                ) : profileData?.lastActive && (
+                                    <span className="bg-gray-800/60 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                                        {(() => {
+                                            const last = profileData.lastActive?.toDate ? profileData.lastActive.toDate() : new Date(profileData.lastActive);
+                                            const diff = Math.floor((Date.now() - last.getTime()) / 60000);
+                                            if (diff < 60) return `${diff}m ago`;
+                                            if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
+                                            return `${Math.floor(diff / 1440)}d ago`;
+                                        })()}
+                                    </span>
+                                )}
+
+                                {/* Premium Activity Ribbons */}
+                                {isNewMember && (
+                                    <span className="bg-emerald-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow border border-white/20">
+                                        <Sparkles className="w-2.5 h-2.5" /> NEW
+                                    </span>
+                                )}
+                                {isHighlyResponsive && (
+                                    <span className="bg-amber-500/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow border border-white/20">
+                                        <Clock className="w-2.5 h-2.5" /> RESPONSIVE
+                                    </span>
+                                )}
+                                {isVerifiedContributor && (
+                                    <span className="bg-rose-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow border border-white/20">
+                                        <ShieldCheck className="w-2.5 h-2.5" /> 100% COMPLETE
+                                    </span>
+                                )}
+                            </div>
+
                             {!canZoom && (
                                 <div className="bg-black/60 backdrop-blur-md rounded-full px-2.5 py-1 flex items-center gap-1.5 shadow border border-white/20">
                                     <Lock className="w-3 h-3 text-white/90" />
@@ -363,6 +424,46 @@ export default function DiscoveryCard({
                             </button>
                         </div>
                     </div>
+
+                    {/* Video Intro Play Button */}
+                    {videoIntroUrl && !showVideoIntro && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setShowVideoIntro(true); }}
+                            className="absolute bottom-24 right-4 z-40 bg-black/40 backdrop-blur-xl border border-white/20 p-4 rounded-full text-white shadow-2xl hover:scale-110 active:scale-95 transition-all group overflow-hidden"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-br from-[#881337]/40 to-[#D4AF37]/40 opacity-100 group-hover:opacity-70 transition-opacity" />
+                            <PauseCircle className="w-6 h-6 relative z-10 rotate-90" />
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500 border border-white"></span>
+                            </span>
+                        </button>
+                    )}
+
+                    {/* Video Intro Modal Overlay */}
+                    {showVideoIntro && (
+                        <div className="absolute inset-0 z-[100] bg-black flex flex-col items-center justify-center animate-in fade-in duration-300">
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); setShowVideoIntro(false); }} 
+                                className="absolute top-6 right-6 p-4 bg-white/10 hover:bg-white/20 rounded-full text-white backdrop-blur-md z-[110]"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                            <div className="w-full h-full relative">
+                                <video 
+                                    src={videoIntroUrl} 
+                                    autoPlay 
+                                    loop 
+                                    className="w-full h-full object-cover"
+                                    playsInline
+                                />
+                                <div className="absolute bottom-24 left-8 right-8 pointer-events-none">
+                                    <p className="text-white font-black text-2xl drop-shadow-lg mb-2">{firstName}'s Digital Handshake</p>
+                                    <p className="text-white/80 text-sm drop-shadow-md">Video Intro • 15 Secs</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="absolute bottom-0 left-0 right-0 z-30 px-4 pb-3 pt-8">
                         <div className="flex items-end justify-between gap-2">

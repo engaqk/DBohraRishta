@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, Mic, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart } from 'lucide-react';
+import { Sparkles, Mic, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart, Video } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment, setDoc } from 'firebase/firestore';
@@ -43,7 +43,7 @@ const calculateProfileStrength = (profile: any) => {
     if (profile.libasImageUrl) score += 15;
     if (profile.extraImageUrl) score += 5;
     if (profile.isPhotoVerified) score += 5;
-    if (profile.voiceIntroUrl) score += 5;
+    if (profile.voiceIntroUrl || profile.videoIntroUrl) score += 5;
     
     return Math.min(100, score);
 };
@@ -136,6 +136,13 @@ export default function RishtaDashboard() {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Video Intro States
+    const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+    const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+    const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+    const videoRecorderRef = useRef<MediaRecorder | null>(null);
+    const videoPreviewRef = useRef<HTMLVideoElement>(null);
+
     // Voice Intro Handlers
     const startRecording = async () => {
         try {
@@ -211,6 +218,91 @@ export default function RishtaDashboard() {
                 voiceIntroUrl: null
             });
             toast.success("Voice Intro removed.");
+            refreshUser();
+        } catch (err) {
+            toast.error("Failed to delete.");
+        }
+    };
+
+    // --- VIDEO INTRO HANDLERS ---
+    const startVideoRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 568 }, audio: true });
+            if (videoPreviewRef.current) videoPreviewRef.current.srcObject = stream;
+            
+            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+            videoRecorderRef.current = mediaRecorder;
+            const chunks: Blob[] = [];
+
+            mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                setVideoBlob(blob);
+                setVideoPreviewUrl(URL.createObjectURL(blob));
+                if (videoPreviewRef.current) videoPreviewRef.current.srcObject = null;
+            };
+
+            mediaRecorder.start();
+            setIsRecordingVideo(true);
+            setRecordingTime(0);
+            timerRef.current = setInterval(() => {
+                setRecordingTime((prev) => {
+                    if (prev >= 15) {
+                        stopVideoRecording();
+                        return 15;
+                    }
+                    return prev + 1;
+                });
+            }, 1000);
+        } catch (err) {
+            toast.error("Camera access denied.");
+        }
+    };
+
+    const stopVideoRecording = () => {
+        if (videoRecorderRef.current && videoRecorderRef.current.state !== 'inactive') {
+            videoRecorderRef.current.stop();
+            videoRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        }
+        setIsRecordingVideo(false);
+        if (timerRef.current) clearInterval(timerRef.current);
+    };
+
+    const handleUploadVideo = async () => {
+        if (!videoBlob || !user) return;
+        setIsUploadingVoice(true); // Reusing uploading state
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(videoBlob);
+            reader.onloadend = async () => {
+                const base64Video = reader.result as string;
+                if (base64Video.length > 1048487) { // 1MB Firestore limit
+                    toast.error("Video is too large. Please record a shorter or lower quality video.");
+                    setIsUploadingVoice(false);
+                    return;
+                }
+                await updateDoc(doc(db, 'users', user.uid), {
+                    videoIntroUrl: base64Video
+                });
+                toast.success("Video Handshake saved! 🎥");
+                setVideoBlob(null);
+                setVideoPreviewUrl(null);
+                refreshUser();
+                setIsUploadingVoice(false);
+            };
+        } catch (err) {
+            toast.error("Failed to save video.");
+            setIsUploadingVoice(false);
+        }
+    };
+
+    const handleDeleteVideo = async () => {
+        if (!user || !window.confirm("Delete your video handshake intro?")) return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), {
+                videoIntroUrl: null
+            });
+            toast.success("Video Handshake removed.");
             refreshUser();
         } catch (err) {
             toast.error("Failed to delete.");
@@ -2285,11 +2377,13 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
 
                             {/* Profile Completeness */}
                             {(() => {
-                                const fields = ['name', 'itsNumber', 'gender', 'dob', 'jamaat', 'education', 'location', 'libasImageUrl', 'fatherName', 'motherName', 'maritalStatus', 'mobile', 'verifiedPhone', 'address', 'professionType'];
+                                const fields = ['name', 'itsNumber', 'gender', 'dob', 'jamaat', 'education', 'location', 'libasImageUrl', 'fatherName', 'motherName', 'maritalStatus', 'mobile', 'verifiedPhone', 'address', 'professionType', 'voiceIntroUrl', 'videoIntroUrl'];
                                 let filled = 0;
                                 fields.forEach(f => { if (myProfile[f] || (f === 'professionType' && myProfile['profession']) || (f === 'education' && myProfile['educationDetails'])) filled++; });
                                 let pct = Math.floor((filled / fields.length) * 100);
-                                if (myProfile.isCandidateFormComplete) pct = 100;
+                                if (myProfile.isCandidateFormComplete && myProfile.libasImageUrl && myProfile.verifiedPhone) {
+                                    // Logic for health bar
+                                }
                                 return (
                                     <div id="profile-completeness-section" className="w-full bg-gray-50 p-4 border border-gray-100 rounded-xl flex flex-col items-center">
                                         <div className="w-full flex justify-between text-xs font-bold text-gray-500 mb-2">
@@ -2341,6 +2435,16 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                     <span className="text-xs font-bold">Upload Photos</span>
                                                 </div>
                                                 {!myProfile.libasImageUrl && <ArrowRight className="w-3.5 h-3.5 text-gray-300" />}
+                                            </div>
+
+                                            <div className={`p-3 rounded-xl border flex items-center justify-between transition-all ${myProfile.videoIntroUrl ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-white border-gray-100 text-gray-700'}`}>
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.videoIntroUrl ? 'bg-emerald-500 text-white' : 'border-2 border-gray-200'}`}>
+                                                        {myProfile.videoIntroUrl && <Check className="w-3 h-3" />}
+                                                    </div>
+                                                    <span className="text-xs font-bold">Video Handshake</span>
+                                                </div>
+                                                {!myProfile.videoIntroUrl && <ArrowRight className="w-3.5 h-3.5 text-gray-300" />}
                                             </div>
 
                                             {/* Selfie Verification Item */}
@@ -2444,6 +2548,85 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                             >
                                                                 {isUploadingVoice ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                                                                 Upload Intro
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* 🎥 Video Handshake (Digital Handshake) Section */}
+                                            <div className="p-4 rounded-xl border border-amber-100 bg-amber-50/30 flex flex-col gap-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.videoIntroUrl ? 'bg-[#D4AF37] text-white' : 'border-2 border-gray-200 text-gray-400'}`}>
+                                                            {myProfile.videoIntroUrl ? <Check className="w-3 h-3" /> : <Video className="w-3 h-3" />}
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-700">Video Handshake (15s)</span>
+                                                    </div>
+                                                    {myProfile.videoIntroUrl && !isRecordingVideo && !videoBlob && (
+                                                        <button onClick={handleDeleteVideo} className="text-[10px] font-black text-rose-600 uppercase hover:underline">Delete</button>
+                                                    )}
+                                                </div>
+
+                                                <p className="text-[10px] text-gray-500 leading-relaxed italic">
+                                                    The "Gold Standard" of trust. A short 15-sec video greeting makes you 5x more likely to get accepted.
+                                                </p>
+
+                                                {!isRecordingVideo && !videoBlob && !myProfile.videoIntroUrl && (
+                                                    <button
+                                                        onClick={startVideoRecording}
+                                                        className="flex items-center justify-center gap-2 py-2 bg-white border border-amber-200 rounded-xl text-xs font-bold text-[#D4AF37] hover:bg-amber-50 transition-all active:scale-95"
+                                                    >
+                                                        <Video className="w-4 h-4" /> Start Video Handshake
+                                                    </button>
+                                                )}
+
+                                                {!isRecordingVideo && !videoBlob && myProfile.videoIntroUrl && (
+                                                    <div className="flex flex-col gap-2">
+                                                        <video src={myProfile.videoIntroUrl} controls className="w-full rounded-xl border border-white shadow-sm aspect-video object-cover" />
+                                                        <button
+                                                            onClick={startVideoRecording}
+                                                            className="flex items-center justify-center gap-2 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#D4AF37] hover:bg-amber-50"
+                                                        >
+                                                            <RefreshCw className="w-4 h-4" /> Re-record Handshake
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {isRecordingVideo && (
+                                                    <div className="flex flex-col items-center gap-3 py-4 bg-amber-100 rounded-xl">
+                                                        <video ref={videoPreviewRef} autoPlay muted className="w-2/3 aspect-[9/16] rounded-xl border-2 border-[#D4AF37] shadow-xl object-cover scale-x-[-1]" />
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <div className="flex items-center gap-2 text-[#881337] font-black animate-pulse">
+                                                                <div className="w-2 h-2 bg-red-600 rounded-full" />
+                                                                RECORDING... {recordingTime}s / 15s
+                                                            </div>
+                                                            <button
+                                                                onClick={stopVideoRecording}
+                                                                className="px-8 py-2 bg-[#881337] text-white rounded-full text-xs font-black shadow-lg uppercase tracking-wider scale-110"
+                                                            >
+                                                                FINISH & SAVE
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {videoBlob && !isRecordingVideo && (
+                                                    <div className="flex flex-col gap-3 py-2 animate-in slide-in-from-top-4">
+                                                        <video src={videoPreviewUrl!} controls className="w-full rounded-xl shadow-lg aspect-video object-cover border-2 border-amber-300" />
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <button
+                                                                onClick={() => { setVideoBlob(null); setVideoPreviewUrl(null); }}
+                                                                className="py-2.5 bg-gray-100 text-gray-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200"
+                                                            >
+                                                                Discard
+                                                            </button>
+                                                            <button
+                                                                onClick={handleUploadVideo}
+                                                                disabled={isUploadingVoice}
+                                                                className="py-2.5 bg-[#D4AF37] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#B38F00] shadow-md flex items-center justify-center gap-2"
+                                                            >
+                                                                {isUploadingVoice ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save to Profile"}
                                                             </button>
                                                         </div>
                                                     </div>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { Send, ArrowLeft, Loader2, Phone } from 'lucide-react';
+import { Send, ArrowLeft, Loader2, Phone, Mic, Square, Trash2, Play, Pause } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface ChatWindowProps {
@@ -16,7 +16,9 @@ interface ChatWindowProps {
 
 interface ChatMessage {
     id: string;
-    text: string;
+    text?: string;
+    audioUrl?: string;
+    type?: 'text' | 'audio';
     senderId: string;
     timestamp: any;
 }
@@ -28,6 +30,13 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
     const [newMessage, setNewMessage] = useState("");
     const [loading, setLoading] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Recording State
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingTime, setRecordingTime] = useState(0);
+    const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
 
     // Helpers for Date Formatting
     const formatMessageTime = (timestamp: any) => {
@@ -154,9 +163,76 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
 
         await addDoc(collection(db, `rishta_requests/${connectionId}/messages`), {
             text,
+            type: 'text',
             senderId: user.uid,
             timestamp: serverTimestamp()
         });
+    };
+
+    // --- VOICE RECORDING LOGIC ---
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream);
+            audioChunksRef.current = [];
+
+            recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunksRef.current.push(e.data);
+            };
+
+            recorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                if (audioBlob.size > 1000) { // Min size check
+                    await uploadVoiceNote(audioBlob);
+                }
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            recorder.start();
+            setMediaRecorder(recorder);
+            setIsRecording(true);
+            setRecordingTime(0);
+            timerRef.current = setInterval(() => {
+                setRecordingTime(prev => prev + 1);
+            }, 1000);
+        } catch (err) {
+            console.error("Recording error:", err);
+            setMsgError("Microphone access denied. Please enable mic.");
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            setIsRecording(false);
+            if (timerRef.current) clearInterval(timerRef.current);
+        }
+    };
+
+    const uploadVoiceNote = async (blob: Blob) => {
+        if (!user) return;
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                const base64Audio = reader.result as string;
+                await addDoc(collection(db, `rishta_requests/${connectionId}/messages`), {
+                    audioUrl: base64Audio,
+                    type: 'audio',
+                    senderId: user.uid,
+                    timestamp: serverTimestamp()
+                });
+            };
+        } catch (error) {
+            console.error("Voice encoding error:", error);
+            setMsgError("Failed to encode voice note.");
+        }
+    };
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
     return (
@@ -214,7 +290,13 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                             const isMe = msg.senderId === user?.uid;
                             return (
                                 <div key={msg.id} className={`max-w-[80%] rounded-2xl px-3 py-2 text-[15px] shadow-sm relative z-10 flex flex-col gap-1 ${isMe ? 'bg-[#dcf8c6] text-gray-900 self-end rounded-br-sm' : 'bg-white border border-rose-100 text-gray-900 self-start rounded-bl-sm'}`}>
-                                    <span style={{ wordBreak: 'break-word' }} className="pr-6">{msg.text}</span>
+                                    {msg.type === 'audio' ? (
+                                        <div className="flex items-center gap-3 py-1 min-w-[200px]">
+                                            <audio src={msg.audioUrl} controls className="h-8 max-w-[180px] accent-[#881337]" />
+                                        </div>
+                                    ) : (
+                                        <span style={{ wordBreak: 'break-word' }} className="pr-6">{msg.text}</span>
+                                    )}
                                     <span className={`text-[10px] self-end mt-[-4px] mb-[-2px] ${isMe ? 'text-green-800/60' : 'text-gray-400'}`}>
                                         {formatMessageTime(msg.timestamp)}
                                     </span>
@@ -245,16 +327,46 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                     </div>
                 )}
                 <form onSubmit={handleSendMessage} className="p-3 flex gap-2 items-center">
-                    <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type a message..."
-                        className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#881337] focus:border-transparent transition-shadow"
-                    />
-                    <button type="submit" disabled={!newMessage.trim()} className="p-3 bg-[#D4AF37] text-white rounded-full hover:bg-[#c29e2f] shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed">
-                        <Send className="w-4 h-4" />
-                    </button>
+                    {isRecording ? (
+                        <div className="flex-1 bg-rose-50 border border-rose-200 rounded-full px-4 py-2.5 flex items-center justify-between animate-pulse">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                                <span className="text-sm font-bold text-red-600">Recording {formatTime(recordingTime)}</span>
+                            </div>
+                            <button 
+                                type="button"
+                                onMouseUp={stopRecording}
+                                onTouchEnd={stopRecording}
+                                className="text-rose-800 text-xs font-black uppercase tracking-widest"
+                            >
+                                Release to Send
+                            </button>
+                        </div>
+                    ) : (
+                        <input
+                            type="text"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            placeholder="Type a message..."
+                            className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#881337] focus:border-transparent transition-shadow"
+                        />
+                    )}
+                    
+                    {!newMessage.trim() && !isRecording ? (
+                        <button 
+                            type="button" 
+                            onMouseDown={startRecording}
+                            onTouchStart={startRecording}
+                            className="p-3 bg-rose-100 text-[#881337] rounded-full hover:bg-rose-200 shadow-sm transition-all active:scale-90"
+                            title="Hold to Record Voice Note"
+                        >
+                            <Mic className="w-4 h-4" />
+                        </button>
+                    ) : (
+                        <button type="submit" disabled={!newMessage.trim() && !isRecording} className="p-3 bg-[#D4AF37] text-white rounded-full hover:bg-[#c29e2f] shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed">
+                            <Send className="w-4 h-4" />
+                        </button>
+                    )}
                 </form>
             </div>
         </div>

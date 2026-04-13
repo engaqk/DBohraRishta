@@ -99,6 +99,11 @@ interface UserProfile {
     createdAt?: any;
     verifiedPhone?: string;
     voiceIntroUrl?: string;
+    videoIntroUrl?: string;
+    interestsCount?: number;
+    videoStatus?: string;
+    selfieStatus?: string;
+    selfieImageUrl?: string;
 }
 
 interface RishtaRequest {
@@ -1839,13 +1844,6 @@ export default function RishtaDashboard() {
                     }
                     return matchesSearch && matchesEducation && matchesLocation && matchesMarital;
                 }).sort((a, b) => {
-                    // Priority 1: Online Status
-                    const onlineA = a.isOnline || false;
-                    const onlineB = b.isOnline || false;
-                    if (onlineA && !onlineB) return -1;
-                    if (!onlineA && onlineB) return 1;
-
-                    // Priority 2: New Member Spike (Joined last 7 days)
                     const getTime = (val: any) => {
                         if (!val) return 0;
                         if (typeof val.toMillis === 'function') return val.toMillis();
@@ -1853,24 +1851,52 @@ export default function RishtaDashboard() {
                         const d = new Date(val);
                         return isNaN(d.getTime()) ? 0 : d.getTime();
                     };
-                    const isNewA = (Date.now() - getTime(a.createdAt)) < 604800000;
-                    const isNewB = (Date.now() - getTime(b.createdAt)) < 604800000;
+
+                    // --- 🚀 STRATEGY 1: Dopamine-First (Interests Received) ---
+                    if (user) {
+                        const hasIncomingA = allRequests.some(r => r.from === a.id && r.to === user.uid && r.status?.includes('pending'));
+                        const hasIncomingB = allRequests.some(r => r.from === b.id && r.to === user.uid && r.status?.includes('pending'));
+                        if (hasIncomingA && !hasIncomingB) return -1;
+                        if (!hasIncomingA && hasIncomingB) return 1;
+                    }
+
+                    // --- 💓 STRATEGY 2: Activity Recency (The Heartbeat) ---
+                    const onlineA = a.isOnline || (Date.now() - getTime(a.lastActive)) < 3600000;
+                    const onlineB = b.isOnline || (Date.now() - getTime(b.lastActive)) < 3600000;
+                    if (onlineA && !onlineB) return -1;
+                    if (!onlineA && onlineB) return 1;
+
+                    // --- 💎 STRATEGY 3: Verified Trust Premium ---
+                    const getTrustScore = (p: any) => {
+                        let score = 0;
+                        if (p.isItsVerified) score += 3;
+                        if (p.videoStatus === 'verified' || p.videoIntroUrl) score += 2;
+                        if (p.selfieStatus === 'verified' || p.selfieImageUrl) score += 1;
+                        return score;
+                    };
+                    const trustA = getTrustScore(a);
+                    const trustB = getTrustScore(b);
+                    if (trustA !== trustB) return trustB - trustA;
+
+                    // --- ⚡ STRATEGY 4: Response Rate / Engagement Algorithm ---
+                    // Using interestsCount and verification as a proxy for engagement
+                    const engA = (a.interestsCount || 0) + (a.loginStreak || 0);
+                    const engB = (b.interestsCount || 0) + (b.loginStreak || 0);
+                    if (engA !== engB) return engB - engA;
+
+                    // --- 🌟 STRATEGY 5: Freshness Pulse (Last 48 Hours) ---
+                    const isNewA = (Date.now() - getTime(a.createdAt)) < 172800000;
+                    const isNewB = (Date.now() - getTime(b.createdAt)) < 172800000;
                     if (isNewA && !isNewB) return -1;
                     if (!isNewA && isNewB) return 1;
 
-                    // Priority 3: Login Streak Boost (Daily Presence)
-                    const streakA = (a as any).loginStreak || 0;
-                    const streakB = (b as any).loginStreak || 0;
-                    if (streakA !== streakB) return streakB - streakA;
-
-                    // Priority 4: Match Score (for logged-in users)
+                    // Final Fallback: Match Score
                     if (myProfile) {
                         const scoreA = computeMatchScore(myProfile, a);
                         const scoreB = computeMatchScore(myProfile, b);
                         if (scoreA !== scoreB) return scoreB - scoreA;
                     }
 
-                    // Priority 5: Last Active Time
                     return getTime(b.lastActive) - getTime(a.lastActive);
                 });
 

@@ -749,9 +749,9 @@ export default function DiscoveryCard({
                                         <button
                                             onClick={handleDeclineClick}
                                             disabled={loading}
-                                            className="flex-1 py-3.5 rounded-xl font-black text-xs bg-gray-50 text-gray-400 border border-gray-100 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100 transition-all flex items-center justify-center"
+                                            className="flex-1 py-3.5 rounded-xl font-black text-xs bg-slate-50 text-slate-500 border border-slate-100 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all flex items-center justify-center gap-1.5"
                                         >
-                                            {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Decline'}
+                                            {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <>Reject</>}
                                         </button>
                                     </>
                                 ) : (

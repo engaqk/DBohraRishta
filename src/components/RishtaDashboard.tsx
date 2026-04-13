@@ -1639,9 +1639,18 @@ export default function RishtaDashboard() {
                     const theirAge = them.dob ? new Date().getFullYear() - new Date(them.dob).getFullYear() : 25;
                     const ageDiff = Math.abs(myAge - theirAge);
 
-                    if (me.gender === 'male' && theirAge <= myAge && theirAge >= myAge - 6) score += 15;
-                    else if (me.gender === 'female' && myAge <= theirAge && myAge >= theirAge - 6) score += 15;
-                    else score -= Math.max(0, (ageDiff - 6) * 2);
+                    // Strict Age Compatibility (Premium Matching)
+                    if (me.gender === 'male') {
+                        // Males usually seek same age or younger
+                        if (theirAge <= myAge && theirAge >= myAge - 8) score += 15;
+                        else if (ageDiff > 12) score -= 40; // Heavy penalty for large gaps
+                        else score -= ageDiff * 2;
+                    } else if (me.gender === 'female') {
+                        // Females usually seek same age or older
+                        if (theirAge >= myAge && theirAge <= myAge + 8) score += 15;
+                        else if (ageDiff > 12) score -= 40; // Heavy penalty for large gaps
+                        else score -= ageDiff * 2;
+                    }
 
                     const myHobbies = (me.hobbies || '').toLowerCase();
                     const theirHobbies = (them.hobbies || '').toLowerCase();
@@ -1666,7 +1675,7 @@ export default function RishtaDashboard() {
                         if (matched) score += 10;
                     }
 
-                    return Math.min(99, Math.max(30, score));
+                    return Math.min(99, Math.max(0, score));
                 };
 
                 const availableProfiles = discoveryProfiles.filter(p => !hiddenProfileIds.has(p.id));
@@ -1723,6 +1732,16 @@ export default function RishtaDashboard() {
                     return getTime(b.lastActive) - getTime(a.lastActive);
                 });
 
+                const sortedWithPicks = searchQuery || filters.education || filters.location || filters.maritalStatus || showOnlyBookmarked 
+                    ? filteredProfiles 
+                    : (() => {
+                        const pickIds = new Set(dailyPicks.map(p => p.id));
+                        const remaining = filteredProfiles.filter(p => !pickIds.has(p.id));
+                        // Re-filter picks through same logic for consistency
+                        const validPicks = dailyPicks.filter(p => !hiddenProfileIds.has(p.id));
+                        return [...validPicks, ...remaining];
+                    })();
+
                 return (
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="mb-6">
@@ -1764,43 +1783,6 @@ export default function RishtaDashboard() {
                                         >
                                             Complete Now
                                         </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* 💎 SMART MATCHES: DAILY PICKS SECTION */}
-                            {dailyPicks.length > 0 && !searchQuery && !showOnlyBookmarked && (
-                                <div className="mb-10 bg-rose-50/50 rounded-[3rem] p-6 md:p-8 border border-rose-100/50">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-[#D4AF37] text-white rounded-2xl flex items-center justify-center shadow-lg transform rotate-6">
-                                                <Sparkles className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest leading-none">Curated for You</h3>
-                                                <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">Smart Daily Picks based on your profile</p>
-                                            </div>
-                                        </div>
-                                        <div className="hidden sm:flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
-                                            <Clock className="w-3 h-3 text-[#D4AF37]" />
-                                            <span className="text-[9px] font-black uppercase text-gray-400">Refreshes in 12h</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 no-scrollbar scroll-smooth">
-                                        {dailyPicks.map((p: UserProfile) => (
-                                            <div key={`daily-${p.id}`} className="min-w-[240px] md:min-w-[280px]">
-                                                <DiscoveryCard
-                                                    {...p}
-                                                    matchScore={computeMatchScore(myProfile, p)}
-                                                    isMyProfileVerified={myProfile?.isItsVerified === true}
-                                                    bio={p.bio}
-                                                    isBlurSecurityEnabled={p.isBlurSecurityEnabled !== false}
-                                                    viewerItsNumber={myProfile?.itsNumber || ''}
-                                                    createdAt={p.createdAt}
-                                                />
-                                            </div>
-                                        ))}
                                     </div>
                                 </div>
                             )}
@@ -1870,7 +1852,7 @@ export default function RishtaDashboard() {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
-                                {filteredProfiles.map((p) => {
+                                {sortedWithPicks.map((p: UserProfile) => {
                                     // Check if this profile has a pending or accepted request from/to the current user
                                     const relatedReq = allRequests.find(r => {
                                         const otherId = r.isIncoming ? r.from : r.to;
@@ -1878,18 +1860,26 @@ export default function RishtaDashboard() {
                                     });
                                     const isAccepted = relatedReq?.status === 'accepted';
                                     const blurEnabled = isAccepted ? false : (p.isBlurSecurityEnabled !== false);
+                                    
+                                    const isPick = dailyPicks.some(dp => dp.id === p.id);
 
                                     return (
-                                        <DiscoveryCard
-                                            key={p.id}
-                                            {...p}
-                                            matchScore={computeMatchScore(myProfile, p)}
-                                            isMyProfileVerified={myProfile?.isItsVerified === true}
-                                            bio={p.bio}
-                                            isBlurSecurityEnabled={blurEnabled}
-                                            viewerItsNumber={myProfile?.itsNumber || ''}
-                                            createdAt={p.createdAt}
-                                        />
+                                        <div key={p.id} className="relative">
+                                            {isPick && !searchQuery && !showOnlyBookmarked && (
+                                                <div className="absolute -top-3 left-4 z-20 bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1.5 border border-white/20">
+                                                    <Sparkles className="w-2.5 h-2.5" /> CURATED MATCH
+                                                </div>
+                                            )}
+                                            <DiscoveryCard
+                                                {...p}
+                                                matchScore={computeMatchScore(myProfile, p)}
+                                                isMyProfileVerified={myProfile?.isItsVerified === true}
+                                                bio={p.bio}
+                                                isBlurSecurityEnabled={blurEnabled}
+                                                viewerItsNumber={myProfile?.itsNumber || ''}
+                                                createdAt={p.createdAt}
+                                            />
+                                        </div>
                                     );
                                 })}
                             </div>

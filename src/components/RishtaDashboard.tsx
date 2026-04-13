@@ -377,8 +377,55 @@ export default function RishtaDashboard() {
     const [uploadingSelfie, setUploadingSelfie] = useState(false);
     const selfieInputRef = useRef<HTMLInputElement>(null);
 
+    const computeMatchScore = (me: any, them: any) => {
+        if (!me || !them) return 50;
+        let score = 70;
+
+        const myAge = me.dob ? new Date().getFullYear() - new Date(me.dob).getFullYear() : 25;
+        const theirAge = them.dob ? new Date().getFullYear() - new Date(them.dob).getFullYear() : 25;
+        const ageDiff = Math.abs(myAge - theirAge);
+
+        // Strict Age Compatibility (Premium Matching)
+        if (me.gender === 'male') {
+            // Males usually seek same age or younger
+            if (theirAge <= myAge && theirAge >= myAge - 8) score += 15;
+            else if (ageDiff > 12) score -= 40; // Heavy penalty for large gaps
+            else score -= ageDiff * 2;
+        } else if (me.gender === 'female') {
+            // Females usually seek same age or older
+            if (theirAge >= myAge && theirAge <= myAge + 8) score += 15;
+            else if (ageDiff > 12) score -= 40; // Heavy penalty for large gaps
+            else score -= ageDiff * 2;
+        }
+
+        const myHobbies = (me.hobbies || '').toLowerCase();
+        const theirHobbies = (them.hobbies || '').toLowerCase();
+        const myReqs = (me.partnerQualities || '').toLowerCase();
+        const theirReqs = (them.partnerQualities || '').toLowerCase();
+
+        if (myHobbies && theirHobbies) {
+            const hWords = myHobbies.split(/[,\s]+/).filter((w: string) => w.length > 3);
+            hWords.forEach((w: string) => {
+                if (theirHobbies.includes(w)) score += 5;
+            });
+        }
+
+        if (myReqs && (them.education || them.profession)) {
+            const rWords = myReqs.split(/[,\s]+/).filter((w: string) => w.length > 3);
+            let matched = false;
+            rWords.forEach((w: string) => {
+                if ((them.education || '').toLowerCase().includes(w) || (them.profession || '').toLowerCase().includes(w) || theirHobbies.includes(w)) {
+                    matched = true;
+                }
+            });
+            if (matched) score += 10;
+        }
+
+        return Math.min(99, Math.max(0, score));
+    };
+
     const dailyPicks = useMemo(() => {
-        if (!user || discoveryProfiles.length === 0) return [];
+        if (!user || discoveryProfiles.length === 0 || !myProfile) return [];
         
         // Stable random seed based on uid + date
         const today = new Date().toISOString().split('T')[0];
@@ -391,17 +438,25 @@ export default function RishtaDashboard() {
             return seed / 233280;
         };
 
-        const pool = [...discoveryProfiles].filter(p => p.id !== user.uid);
-        if (pool.length <= 4) return pool;
+        // Filter for "High Quality" matches (Respecting Age Expectations)
+        const pool = [...discoveryProfiles].filter(p => {
+            if (p.id === user.uid) return false;
+            const score = computeMatchScore(myProfile, p);
+            return score >= 60; // Ensure we don't pick 46yo for 23yo
+        });
+
+        const finalPool = pool.length >= 4 ? pool : [...discoveryProfiles].filter(p => p.id !== user.uid);
+        
+        if (finalPool.length <= 4) return finalPool;
 
         const picks: UserProfile[] = [];
-        const poolCopy = [...pool];
+        const poolCopy = [...finalPool];
         for (let i = 0; i < 4; i++) {
             const idx = Math.floor(seededRandom() * poolCopy.length);
             picks.push(poolCopy.splice(idx, 1)[0]);
         }
         return picks;
-    }, [user, discoveryProfiles]);
+    }, [user, discoveryProfiles, myProfile]); // Added myProfile dependency
 
     // Compress the selfie on selection (same pattern as libasImageUrl)
     const handleSelfieFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1627,59 +1682,7 @@ export default function RishtaDashboard() {
                     }
                 });
 
-                const computeMatchScore = (me: any, them: any) => {
-                    let score = 50;
-                    if (!me || !them) return score;
-
-                    if (me.country && them.country && me.country.toLowerCase() === them.country.toLowerCase()) score += 10;
-                    if (me.state && them.state && me.state.toLowerCase() === them.state.toLowerCase()) score += 10;
-                    if (me.city && them.city && me.city.toLowerCase() === them.city.toLowerCase()) score += 10;
-
-                    const myAge = me.dob ? new Date().getFullYear() - new Date(me.dob).getFullYear() : 25;
-                    const theirAge = them.dob ? new Date().getFullYear() - new Date(them.dob).getFullYear() : 25;
-                    const ageDiff = Math.abs(myAge - theirAge);
-
-                    // Strict Age Compatibility (Premium Matching)
-                    if (me.gender === 'male') {
-                        // Males usually seek same age or younger
-                        if (theirAge <= myAge && theirAge >= myAge - 8) score += 15;
-                        else if (ageDiff > 12) score -= 40; // Heavy penalty for large gaps
-                        else score -= ageDiff * 2;
-                    } else if (me.gender === 'female') {
-                        // Females usually seek same age or older
-                        if (theirAge >= myAge && theirAge <= myAge + 8) score += 15;
-                        else if (ageDiff > 12) score -= 40; // Heavy penalty for large gaps
-                        else score -= ageDiff * 2;
-                    }
-
-                    const myHobbies = (me.hobbies || '').toLowerCase();
-                    const theirHobbies = (them.hobbies || '').toLowerCase();
-                    const myReqs = (me.partnerQualities || '').toLowerCase();
-                    const theirReqs = (them.partnerQualities || '').toLowerCase();
-
-                    if (myHobbies && theirHobbies) {
-                        const hWords = myHobbies.split(/[,\s]+/).filter((w: string) => w.length > 3);
-                        hWords.forEach((w: string) => {
-                            if (theirHobbies.includes(w)) score += 5;
-                        });
-                    }
-
-                    if (myReqs && (them.education || them.profession)) {
-                        const rWords = myReqs.split(/[,\s]+/).filter((w: string) => w.length > 3);
-                        let matched = false;
-                        rWords.forEach((w: string) => {
-                            if ((them.education || '').toLowerCase().includes(w) || (them.profession || '').toLowerCase().includes(w) || theirHobbies.includes(w)) {
-                                matched = true;
-                            }
-                        });
-                        if (matched) score += 10;
-                    }
-
-                    return Math.min(99, Math.max(0, score));
-                };
-
                 const availableProfiles = discoveryProfiles.filter(p => !hiddenProfileIds.has(p.id));
-
                 const filteredProfiles = availableProfiles.filter(p => {
                     const matchesSearch = !searchQuery ||
                         p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||

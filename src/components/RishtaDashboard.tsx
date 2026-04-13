@@ -2020,6 +2020,13 @@ export default function RishtaDashboard() {
                                                 isBlurSecurityEnabled={blurEnabled}
                                                 viewerItsNumber={myProfile?.itsNumber || ''}
                                                 createdAt={p.createdAt}
+                                                requestId={relatedReq?.id}
+                                                initialRequestStatus={relatedReq?.status}
+                                                isIncomingRequest={relatedReq?.isIncoming}
+                                                onAcceptInterest={(reqId) => {
+                                                    const reqObj = allRequests.find(r => r.id === reqId);
+                                                    if (reqObj) handleAcceptClick(reqObj);
+                                                }}
                                             />
                                         </div>
                                     );

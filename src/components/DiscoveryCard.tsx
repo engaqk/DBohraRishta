@@ -52,6 +52,10 @@ interface DiscoveryCardProps {
     videoIntroUrl?: string;
     videoStatus?: string;
     lastActive?: any;
+    requestId?: string;
+    initialRequestStatus?: string;
+    isIncomingRequest?: boolean;
+    onAcceptInterest?: (requestId: string) => void;
 }
 
 export default function DiscoveryCard({
@@ -61,7 +65,8 @@ export default function DiscoveryCard({
     isOnline = false, viewerItsNumber = '', extraImageUrl,
     ejamaatId, itsNumber, maritalStatus, mobile, mobileCode, email,
     fatherName, motherName, professionType, educationDetails,
-    city, state, gender, createdAt, selfieImageUrl, selfieStatus, voiceIntroUrl, videoIntroUrl, videoStatus, lastActive
+    city, state, gender, createdAt, selfieImageUrl, selfieStatus, voiceIntroUrl, videoIntroUrl, videoStatus, lastActive,
+    requestId, initialRequestStatus, isIncomingRequest, onAcceptInterest
 }: DiscoveryCardProps) {
     const { user } = useAuth();
     const router = useRouter();
@@ -159,16 +164,31 @@ export default function DiscoveryCard({
     useEffect(() => {
         const check = async () => {
             if (!user) return;
-            const qOut = query(collection(db, 'rishta_requests'), where('from', '==', user.uid), where('to', '==', id));
-            const qIn = query(collection(db, 'rishta_requests'), where('from', '==', id), where('to', '==', user.uid));
-            const [sOut, sIn] = await Promise.all([getDocs(qOut), getDocs(qIn)]);
             let active = false; let rejects = 0;
-            const process = (d: any) => {
-                const s = d.data().status;
-                if (s === 'rejected' || s === 'ended') { rejects++; } else { active = true; setRequestStatus(s); }
-            };
-            sOut.forEach(process); sIn.forEach(process);
-            setRequestSent(active); setRejectCount(rejects);
+            let currentS = '';
+
+            // Use props if available
+            if (initialRequestStatus) {
+                if (initialRequestStatus === 'rejected' || initialRequestStatus === 'ended') {
+                    rejects++;
+                } else {
+                    active = true;
+                    currentS = initialRequestStatus;
+                }
+            } else {
+                const qOut = query(collection(db, 'rishta_requests'), where('from', '==', user.uid), where('to', '==', id));
+                const qIn = query(collection(db, 'rishta_requests'), where('from', '==', id), where('to', '==', user.uid));
+                const [sOut, sIn] = await Promise.all([getDocs(qOut), getDocs(qIn)]);
+                const process = (d: any) => {
+                    const s = d.data().status;
+                    if (s === 'rejected' || s === 'ended') { rejects++; } else { active = true; currentS = s; }
+                };
+                sOut.forEach(process); sIn.forEach(process);
+            }
+            
+            setRequestStatus(currentS);
+            setRequestSent(active); 
+            setRejectCount(rejects);
 
             // Fetch Bookmark Status
             const qB = query(collection(db, 'bookmarks'), where('userId', '==', user.uid), where('profileId', '==', id));
@@ -692,25 +712,32 @@ export default function DiscoveryCard({
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (isMyProfileVerified && !requestSent) {
+                                    if (isIncomingRequest && requestStatus === 'pending' && onAcceptInterest && requestId) {
+                                        onAcceptInterest(requestId);
+                                    } else if (isMyProfileVerified && !requestSent) {
                                         setShowIcebreakerModal(true);
-                                    } else {
+                                    } else if (!requestSent) {
                                         handleSendRequest();
                                     }
                                 }}
-                                disabled={requestSent || loading}
+                                disabled={(requestSent && requestStatus !== 'accepted') || loading || (requestStatus === 'accepted')}
                                 className={`w-full py-3.5 rounded-xl font-black text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
                                 ${requestStatus === 'accepted'
-                                        ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed border border-emerald-200 shadow-none'
+                                    ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-white border-none shadow-lg'
+                                    : (isIncomingRequest && requestStatus === 'pending')
+                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:shadow-lg animate-pulse'
                                         : requestSent
-                                            ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200 shadow-none'
-                                            : 'bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white hover:shadow-lg'}`}
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 shadow-none'
+                                            : rejectCount > 0
+                                                ? 'bg-gradient-to-r from-indigo-500 to-blue-600 text-white hover:shadow-lg'
+                                                : 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white hover:shadow-lg'}`}
                             >
                                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {requestStatus === 'accepted' ? '✓ Interest Accepted'
-                                    : requestSent ? '✓ Request Sent'
-                                        : rejectCount === 1 ? '↩ Retry Request'
-                                            : 'Send Interest'}
+                                {requestStatus === 'accepted' ? '✓ Connected & Chatting'
+                                    : (isIncomingRequest && requestStatus === 'pending') ? 'Accept Interest'
+                                        : requestSent ? '✓ Interest Sent'
+                                            : rejectCount > 0 ? '↩ Retry Request'
+                                                : 'Send Interest'}
                             </button>
                         )}
                 </div>

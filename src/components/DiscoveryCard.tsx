@@ -72,6 +72,7 @@ export default function DiscoveryCard({
     const router = useRouter();
     const [requestSent, setRequestSent] = useState(false);
     const [requestStatus, setRequestStatus] = useState<string | null>(null);
+    const [isRejectedRecipient, setIsRejectedRecipient] = useState(false);
     const [loading, setLoading] = useState(false);
     const [rejectCount, setRejectCount] = useState(0);
     const [isBookmarked, setIsBookmarked] = useState(false);
@@ -164,31 +165,38 @@ export default function DiscoveryCard({
     useEffect(() => {
         const check = async () => {
             if (!user) return;
-            let active = false; let rejects = 0;
+            let active = false; let rejects = 0; let wasRejectedRecipient = false;
             let currentS = '';
 
             // Use props if available
             if (initialRequestStatus) {
+                currentS = initialRequestStatus;
                 if (initialRequestStatus === 'rejected' || initialRequestStatus === 'ended') {
-                    rejects++;
+                    if (isIncomingRequest) {
+                        wasRejectedRecipient = true;
+                    } else {
+                        rejects++;
+                    }
                 } else {
                     active = true;
-                    currentS = initialRequestStatus;
                 }
             } else {
                 const qOut = query(collection(db, 'rishta_requests'), where('from', '==', user.uid), where('to', '==', id));
                 const qIn = query(collection(db, 'rishta_requests'), where('from', '==', id), where('to', '==', user.uid));
                 const [sOut, sIn] = await Promise.all([getDocs(qOut), getDocs(qIn)]);
-                const process = (d: any) => {
+                const process = (d: any, incoming: boolean) => {
                     const s = d.data().status;
-                    if (s === 'rejected' || s === 'ended') { rejects++; } else { active = true; currentS = s; }
+                    if (s === 'rejected' || s === 'ended') { 
+                        if (incoming) wasRejectedRecipient = true; else rejects++; 
+                    } else { active = true; currentS = s; }
                 };
-                sOut.forEach(process); sIn.forEach(process);
+                sOut.forEach(d => process(d, false)); sIn.forEach(d => process(d, true));
             }
             
             setRequestStatus(currentS);
             setRequestSent(active); 
             setRejectCount(rejects);
+            setIsRejectedRecipient(wasRejectedRecipient);
 
             // Fetch Bookmark Status
             const qB = query(collection(db, 'bookmarks'), where('userId', '==', user.uid), where('profileId', '==', id));
@@ -720,24 +728,27 @@ export default function DiscoveryCard({
                                         handleSendRequest();
                                     }
                                 }}
-                                disabled={(requestSent && requestStatus !== 'accepted') || loading || (requestStatus === 'accepted')}
+                                disabled={(requestSent && requestStatus !== 'accepted' && requestStatus !== 'rejected') || loading || (requestStatus === 'accepted') || isRejectedRecipient}
                                 className={`w-full py-3.5 rounded-xl font-black text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
                                 ${requestStatus === 'accepted'
                                     ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-white border-none shadow-lg'
                                     : (isIncomingRequest && requestStatus === 'pending')
                                         ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:shadow-lg animate-pulse'
-                                        : requestSent
+                                        : isRejectedRecipient
                                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 shadow-none'
-                                            : rejectCount > 0
-                                                ? 'bg-gradient-to-r from-indigo-500 to-blue-600 text-white hover:shadow-lg'
-                                                : 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white hover:shadow-lg'}`}
+                                            : requestSent
+                                                ? 'bg-amber-50 text-amber-600 border border-amber-200 shadow-none'
+                                                : rejectCount > 0
+                                                    ? 'bg-gradient-to-r from-indigo-500 to-indigo-700 text-white hover:shadow-lg'
+                                                    : 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white hover:shadow-lg'}`}
                             >
                                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                                 {requestStatus === 'accepted' ? '✓ Connected & Chatting'
                                     : (isIncomingRequest && requestStatus === 'pending') ? 'Accept Interest'
-                                        : requestSent ? '✓ Interest Sent'
-                                            : rejectCount > 0 ? '↩ Retry Request'
-                                                : 'Send Interest'}
+                                        : isRejectedRecipient ? 'Not Interested'
+                                            : requestSent ? '✓ Interest Sent'
+                                                : rejectCount > 0 ? '↩ Retry Request'
+                                                    : 'Send Interest'}
                             </button>
                         )}
                 </div>

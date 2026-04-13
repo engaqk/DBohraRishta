@@ -2470,7 +2470,10 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                 {!myProfile.libasImageUrl && <ArrowRight className="w-3.5 h-3.5 text-gray-300" />}
                                             </div>
 
-                                            <div className={`p-3 rounded-xl border flex items-center justify-between transition-all ${myProfile.videoIntroUrl ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-white border-gray-100 text-gray-700'}`}>
+                                            <div 
+                                                onClick={() => document.getElementById('video-handshake-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                                className={`p-3 rounded-xl border flex items-center justify-between transition-all cursor-pointer hover:bg-gray-50 active:scale-[0.98] ${myProfile.videoIntroUrl ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-white border-gray-100 text-gray-700'}`}
+                                            >
                                                 <div className="flex items-center gap-2.5">
                                                     <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.videoIntroUrl ? 'bg-emerald-500 text-white' : 'border-2 border-gray-200'}`}>
                                                         {myProfile.videoIntroUrl && <Check className="w-3 h-3" />}
@@ -2478,6 +2481,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                     <span className="text-xs font-bold">Video Handshake</span>
                                                 </div>
                                                 {!myProfile.videoIntroUrl && <ArrowRight className="w-3.5 h-3.5 text-gray-300" />}
+                                                {myProfile.videoIntroUrl && <ArrowRight className="w-3.5 h-3.5 text-emerald-400" />}
                                             </div>
 
                                             {/* Selfie Verification Item */}
@@ -2508,7 +2512,11 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                         <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.videoIntroUrl ? (myProfile.videoStatus === 'verified' ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white') : 'border-2 border-gray-200 text-gray-400'}`}>
                                                             {myProfile.videoStatus === 'verified' ? <Check className="w-3 h-3" /> : (myProfile.videoStatus === 'pending' ? <Clock className="w-3 h-3" /> : <Video className="w-3 h-3" />)}
                                                         </div>
-                                                        <span className="text-xs font-bold text-gray-700">Video Handshake (15s) {myProfile.videoStatus === 'pending' && <span className="text-[8px] text-amber-600 ml-1 font-black uppercase">Pending Approval</span>}</span>
+                                                        <span className="text-xs font-bold text-gray-700">
+                                                            Video Handshake (15s) 
+                                                            {myProfile.videoStatus === 'pending' && <span className="text-[8px] text-amber-600 ml-1 font-black uppercase tracking-tighter bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">Pending Approval</span>}
+                                                            {myProfile.videoStatus === 'verified' && <span className="text-[8px] text-emerald-600 ml-1 font-black uppercase tracking-tighter bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Verified</span>}
+                                                        </span>
                                                     </div>
                                                     {myProfile.videoIntroUrl && !isRecordingVideo && !videoBlob && (
                                                         <button onClick={handleDeleteVideo} className="text-[10px] font-black text-rose-600 uppercase hover:underline">Delete</button>
@@ -3157,6 +3165,11 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                         {myProfile.isItsVerified && (
                                             <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg border border-white/40">
                                                 <ShieldCheck className="w-3.5 h-3.5" /> ITS VERIFIED
+                                            </div>
+                                        )}
+                                        {myProfile.videoStatus === 'verified' && (
+                                            <div className={`absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg border border-white/40 ${myProfile.isItsVerified ? 'top-12' : 'top-4'}`}>
+                                                <Video className="w-3.5 h-3.5" /> VIDEO VERIFIED
                                             </div>
                                         )}
                                     </div>

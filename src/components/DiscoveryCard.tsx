@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, Lock, PauseCircle, X } from 'lucide-react';
+import { ShieldCheck, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, Lock, PauseCircle, X, Video } from 'lucide-react';
 import { notifyInterestSent } from '@/lib/emailService';
 import { collection, addDoc, query, where, getDocs, serverTimestamp, deleteDoc, doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -50,6 +50,7 @@ interface DiscoveryCardProps {
     selfieStatus?: string;
     voiceIntroUrl?: string;
     videoIntroUrl?: string;
+    videoStatus?: string;
     lastActive?: any;
 }
 
@@ -60,7 +61,7 @@ export default function DiscoveryCard({
     isOnline = false, viewerItsNumber = '', extraImageUrl,
     ejamaatId, itsNumber, maritalStatus, mobile, mobileCode, email,
     fatherName, motherName, professionType, educationDetails,
-    city, state, gender, createdAt, selfieImageUrl, selfieStatus, voiceIntroUrl, videoIntroUrl, lastActive
+    city, state, gender, createdAt, selfieImageUrl, selfieStatus, voiceIntroUrl, videoIntroUrl, videoStatus, lastActive
 }: DiscoveryCardProps) {
     const { user } = useAuth();
     const router = useRouter();
@@ -427,6 +428,11 @@ export default function DiscoveryCard({
                             {isItsVerified && (
                                 <div className="flex items-center gap-1 bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow border border-white/30">
                                     <ShieldCheck className="w-2.5 h-2.5" /> ITS VERIFIED
+                                </div>
+                            )}
+                            {videoStatus === 'verified' && (
+                                <div className="flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow border border-white/30">
+                                    <Video className="w-2.5 h-2.5" /> VIDEO VERIFIED
                                 </div>
                             )}
                             <button

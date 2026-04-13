@@ -56,6 +56,7 @@ interface DiscoveryCardProps {
     initialRequestStatus?: string;
     isIncomingRequest?: boolean;
     onAcceptInterest?: (requestId: string) => void;
+    onDeclineInterest?: (requestId: string) => void;
 }
 
 export default function DiscoveryCard({
@@ -66,7 +67,7 @@ export default function DiscoveryCard({
     ejamaatId, itsNumber, maritalStatus, mobile, mobileCode, email,
     fatherName, motherName, professionType, educationDetails,
     city, state, gender, createdAt, selfieImageUrl, selfieStatus, voiceIntroUrl, videoIntroUrl, videoStatus, lastActive,
-    requestId, initialRequestStatus, isIncomingRequest, onAcceptInterest
+    requestId, initialRequestStatus, isIncomingRequest, onAcceptInterest, onDeclineInterest
 }: DiscoveryCardProps) {
     const { user } = useAuth();
     const router = useRouter();
@@ -347,6 +348,22 @@ export default function DiscoveryCard({
             toast.error('Failed: ' + err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeclineClick = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!requestId || !onDeclineInterest) return;
+        
+        if (window.confirm("Are you sure you want to decline this interest? This action cannot be easily undone.")) {
+            setLoading(true);
+            try {
+                await onDeclineInterest(requestId);
+                setIsRejectedRecipient(true);
+                setRequestStatus('rejected');
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -717,39 +734,57 @@ export default function DiscoveryCard({
                                 <p className="text-amber-600 text-[10px] mt-0.5">Awaiting admin approval</p>
                             </div>
                         ) : (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (isIncomingRequest && requestStatus?.includes('pending') && onAcceptInterest && requestId) {
-                                        onAcceptInterest(requestId);
-                                    } else if (isMyProfileVerified && !requestSent) {
-                                        setShowIcebreakerModal(true);
-                                    } else if (!requestSent) {
-                                        handleSendRequest();
-                                    }
-                                }}
-                                disabled={(requestSent && requestStatus !== 'accepted' && requestStatus !== 'rejected') || loading || (requestStatus === 'accepted') || isRejectedRecipient}
-                                className={`w-full py-3.5 rounded-xl font-black text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
-                                ${requestStatus === 'accepted'
-                                    ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-white border-none shadow-lg'
-                                    : (isIncomingRequest && requestStatus?.includes('pending'))
-                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:shadow-lg animate-pulse'
-                                        : isRejectedRecipient
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 shadow-none'
-                                            : requestSent
-                                                ? 'bg-amber-50 text-amber-600 border border-amber-200 shadow-none'
-                                                : rejectCount > 0
-                                                    ? 'bg-gradient-to-r from-indigo-500 to-indigo-700 text-white hover:shadow-lg'
-                                                    : 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white hover:shadow-lg'}`}
-                            >
-                                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {requestStatus === 'accepted' ? '✓ Connected & Chatting'
-                                    : (isIncomingRequest && requestStatus?.includes('pending')) ? 'Accept Interest'
-                                        : isRejectedRecipient ? 'Not Interested'
-                                            : requestSent ? '✓ Interest Sent'
-                                                : rejectCount > 0 ? '↩ Retry Request'
-                                                    : 'Send Interest'}
-                            </button>
+                            <div className="flex gap-2">
+                                {(isIncomingRequest && requestStatus?.includes('pending')) ? (
+                                    <>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onAcceptInterest && requestId) onAcceptInterest(requestId);
+                                            }}
+                                            className="flex-[2] py-3.5 rounded-xl font-black text-sm bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md active:scale-95 flex items-center justify-center gap-2 animate-pulse hover:shadow-lg transition-all"
+                                        >
+                                            🤝 Accept Interest
+                                        </button>
+                                        <button
+                                            onClick={handleDeclineClick}
+                                            disabled={loading}
+                                            className="flex-1 py-3.5 rounded-xl font-black text-xs bg-gray-50 text-gray-400 border border-gray-100 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100 transition-all flex items-center justify-center"
+                                        >
+                                            {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Decline'}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (isMyProfileVerified && !requestSent) {
+                                                setShowIcebreakerModal(true);
+                                            } else if (!requestSent) {
+                                                handleSendRequest();
+                                            }
+                                        }}
+                                        disabled={(requestSent && requestStatus !== 'accepted' && requestStatus !== 'rejected') || loading || (requestStatus === 'accepted') || isRejectedRecipient}
+                                        className={`w-full py-3.5 rounded-xl font-black text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
+                                        ${requestStatus === 'accepted'
+                                            ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-white border-none shadow-lg'
+                                            : isRejectedRecipient
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 shadow-none'
+                                                : requestSent
+                                                    ? 'bg-amber-50 text-amber-600 border border-amber-200 shadow-none'
+                                                    : rejectCount > 0
+                                                        ? 'bg-gradient-to-r from-indigo-500 to-indigo-700 text-white hover:shadow-lg'
+                                                        : 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white hover:shadow-lg'}`}
+                                    >
+                                        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                        {requestStatus === 'accepted' ? '✓ Connected & Chatting'
+                                            : isRejectedRecipient ? 'Not Interested'
+                                                : requestSent ? '✓ Interest Sent'
+                                                    : rejectCount > 0 ? '↩ Retry Request'
+                                                        : 'Send Interest'}
+                                    </button>
+                                )}
+                            </div>
                         )}
                 </div>
             </div>

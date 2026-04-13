@@ -2027,6 +2027,9 @@ export default function RishtaDashboard() {
                                                     const reqObj = allRequests.find(r => r.id === reqId);
                                                     if (reqObj) handleAcceptClick(reqObj);
                                                 }}
+                                                onDeclineInterest={async (reqId) => {
+                                                    await handleRequestAction(reqId, 'rejected');
+                                                }}
                                             />
                                         </div>
                                     );

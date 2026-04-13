@@ -2471,7 +2471,12 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                             </div>
 
                                             <div 
-                                                onClick={() => document.getElementById('video-handshake-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                                onClick={() => {
+                                                    document.getElementById('video-handshake-section')?.scrollIntoView({ behavior: 'smooth' });
+                                                    if (!isRecordingVideo && !videoBlob && !myProfile.videoIntroUrl) {
+                                                        startVideoRecording();
+                                                    }
+                                                }}
                                                 className={`p-3 rounded-xl border flex items-center justify-between transition-all cursor-pointer hover:bg-gray-50 active:scale-[0.98] ${myProfile.videoIntroUrl ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-white border-gray-100 text-gray-700'}`}
                                             >
                                                 <div className="flex items-center gap-2.5">

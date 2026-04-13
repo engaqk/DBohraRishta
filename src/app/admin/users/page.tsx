@@ -64,6 +64,7 @@ export default function AdminUsersPage() {
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const [visibleCount, setVisibleCount] = useState(50); // Pagination: only show 50 initially
     const [visibleCountAuth, setVisibleCountAuth] = useState(50); // Pagination for Auth tab
+    const [activeCompletionTab, setActiveCompletionTab] = useState<'complete' | 'incomplete'>('complete');
 
 
     // Admin auth guard
@@ -307,7 +308,10 @@ export default function AdminUsersPage() {
                 (filterComplete === 'submitted' && u.isCandidateFormComplete && u.status === 'pending_verification') ||
                 (filterComplete === 'incomplete' && !u.isCandidateFormComplete && u.status !== 'verified' && u.status !== 'approved');
 
-            return matchSearch && matchGender && matchStatus && matchComplete;
+            const isComplete = u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved';
+            const matchCompletion = activeCompletionTab === 'complete' ? isComplete : !isComplete;
+
+            return matchSearch && matchGender && matchStatus && matchComplete && matchCompletion;
         });
 
         return [...filtered].sort((a, b) => {
@@ -326,20 +330,22 @@ export default function AdminUsersPage() {
             if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
-    }, [users, search, filterStatus, filterComplete, sortConfig, filterGender]);
+    }, [users, search, filterStatus, filterComplete, sortConfig, filterGender, activeCompletionTab]);
 
     // Reset visible count when filters change to show only first items again
     useEffect(() => {
         setVisibleCount(50);
-    }, [search, filterStatus, filterComplete, filterGender]);
+    }, [search, filterStatus, filterComplete, filterGender, activeCompletionTab]);
 
     // Pre-calculated counts for gender tabs to optimize render performance
     const genderCounts = useMemo(() => {
+        const isComplete = (u: any) => u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved';
+        const filteredByTab = users.filter(u => activeCompletionTab === 'complete' ? isComplete(u) : !isComplete(u));
         return {
-            male: users.filter(u => u.gender?.toLowerCase() === 'male').length,
-            female: users.filter(u => u.gender?.toLowerCase() === 'female').length
+            male: filteredByTab.filter(u => u.gender?.toLowerCase() === 'male').length,
+            female: filteredByTab.filter(u => u.gender?.toLowerCase() === 'female').length
         };
-    }, [users]);
+    }, [users, activeCompletionTab]);
 
     const stats = useMemo(() => ({
         total: users.length,
@@ -445,6 +451,28 @@ export default function AdminUsersPage() {
                 </div>
             )}
 
+            {/* Completion Sub-tabs */}
+            {activeMainTab === 'firestore' && (
+                <div className="bg-[#881337]/5 border-b border-[#881337]/10">
+                    <div className="max-w-7xl mx-auto px-6 flex items-center gap-6">
+                        <button
+                            onClick={() => setActiveCompletionTab('complete')}
+                            className={`py-3 text-[10px] font-black uppercase tracking-widest transition-all relative ${activeCompletionTab === 'complete' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                            Completed & Verified
+                            {activeCompletionTab === 'complete' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#881337] rounded-full" />}
+                        </button>
+                        <button
+                            onClick={() => setActiveCompletionTab('incomplete')}
+                            className={`py-3 text-[10px] font-black uppercase tracking-widest transition-all relative ${activeCompletionTab === 'incomplete' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                            Incomplete Profiles
+                            {activeCompletionTab === 'incomplete' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#881337] rounded-full" />}
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-7xl mx-auto px-4 py-6">
                 {/* Stats row */}
                 <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
@@ -472,6 +500,57 @@ export default function AdminUsersPage() {
                             <p className="text-[9px] font-black text-gray-500 mt-1 uppercase tracking-tight">{s.label}</p>
                         </div>
                     ))}
+                </div>
+
+                {/* ── LATEST CANDIDATES (ADMIN GRID VIEW) ── */}
+                <div className="mb-10">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-[#881337] text-white rounded-2xl flex items-center justify-center shadow-lg">
+                                <Users className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Recently Registered</h3>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase">Latest members to join the platform</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
+                        {[...users]
+                            .sort((a, b) => {
+                                const dateA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
+                                const dateB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
+                                return dateB - dateA;
+                            })
+                            .slice(0, 10)
+                            .map(u => (
+                                <div 
+                                    key={u.uid} 
+                                    onClick={() => setSelectedUser(selectedUser?.uid === u.uid ? null : u)}
+                                    className="min-w-[190px] bg-white rounded-3xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group shrink-0"
+                                >
+                                    <div className="relative mb-3">
+                                        <div className="w-full h-28 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100">
+                                            <img 
+                                                src={u.libasImageUrl || '/placeholder-profile.png'} 
+                                                alt="" 
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                            />
+                                        </div>
+                                        {u.isOnline && <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />}
+                                    </div>
+                                    <p className="font-black text-[11px] text-gray-900 truncate mb-0.5">{u.name || 'No Name'}</p>
+                                    <p className="text-[9px] text-gray-400 font-bold uppercase truncate">{u.city || u.jamaat || 'No Location'}</p>
+                                    <div className="mt-2.5 pt-2.5 border-t border-gray-50 flex items-center justify-between">
+                                        <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase border ${STATUS_CONFIG[u.status || '']?.color || STATUS_CONFIG['pending_verification'].color}`}>{u.status || 'pending'}</span>
+                                        <span className="text-[8px] font-bold text-gray-300">
+                                            {u.createdAt?.seconds ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : new Date(u.createdAt || 0).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
                 </div>
 
 

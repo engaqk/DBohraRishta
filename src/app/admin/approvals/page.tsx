@@ -47,6 +47,7 @@ export default function AdminVerificationPage() {
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const [filterGender, setFilterGender] = useState<string>('male');
     const [visibleCount, setVisibleCount] = useState(50); // Pagination
+    const [activeMainViewTab, setActiveMainViewTab] = useState<'complete' | 'incomplete'>('complete');
     const { user, impersonateUser } = useAuth();
     const router = useRouter();
 
@@ -62,7 +63,11 @@ export default function AdminVerificationPage() {
                 u.jamaat?.toLowerCase().includes(searchQuery.toLowerCase());
             
             const matchesGender = u.gender?.toLowerCase() === filterGender;
-            return matchesSearch && matchesGender;
+            
+            const isComplete = u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved';
+            const matchesTab = activeMainViewTab === 'complete' ? isComplete : !isComplete;
+
+            return matchesSearch && matchesGender && matchesTab;
         });
 
         const sorted = [...filtered].sort((a, b) => {
@@ -84,17 +89,21 @@ export default function AdminVerificationPage() {
         });
 
         return sorted;
-    }, [allUsers, searchQuery, sortConfig, filterGender]);
+    }, [allUsers, searchQuery, sortConfig, filterGender, activeMainViewTab]);
 
     // Reset pagination when filter/search changes
     useEffect(() => {
         setVisibleCount(50);
     }, [searchQuery, filterGender]);
 
-    const genderCounts = useMemo(() => ({
-        male: allUsers.filter(u => u.gender?.toLowerCase() === 'male').length,
-        female: allUsers.filter(u => u.gender?.toLowerCase() === 'female').length
-    }), [allUsers]);
+    const genderCounts = useMemo(() => {
+        const isComplete = (u: any) => u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved';
+        const filteredByTab = allUsers.filter(u => activeMainViewTab === 'complete' ? isComplete(u) : !isComplete(u));
+        return {
+            male: filteredByTab.filter(u => u.gender?.toLowerCase() === 'male').length,
+            female: filteredByTab.filter(u => u.gender?.toLowerCase() === 'female').length
+        };
+    }, [allUsers, activeMainViewTab]);
 
     const analytics = useMemo(() => {
         return {
@@ -732,6 +741,59 @@ export default function AdminVerificationPage() {
                             </div>
                         </div>
 
+                        {/* ── LATEST CANDIDATES (ADMIN GRID VIEW) ── */}
+                        <div className="mb-10">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-rose-50 text-[#881337] rounded-2xl flex items-center justify-center border border-rose-100 shadow-sm">
+                                        <Users className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Latest Registered Candidates</h3>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase">Newest members joined recently</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => router.push('/admin/users')} className="text-[10px] font-black uppercase text-[#881337] hover:underline">View All →</button>
+                            </div>
+                            
+                            <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
+                                {[...allUsers]
+                                    .sort((a, b) => {
+                                        const dateA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
+                                        const dateB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
+                                        return dateB - dateA;
+                                    })
+                                    .slice(0, 10)
+                                    .map(u => (
+                                        <div 
+                                            key={u.id} 
+                                            onClick={() => openDetails(u)}
+                                            className="min-w-[180px] bg-white rounded-3xl border border-gray-100 p-3 shadow-sm hover:shadow-md transition-all cursor-pointer group shrink-0"
+                                        >
+                                            <div className="relative mb-3">
+                                                <div className="w-full h-24 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100">
+                                                    <img 
+                                                        src={u.libasImageUrl || '/placeholder-profile.png'} 
+                                                        alt="" 
+                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                    />
+                                                </div>
+                                                {u.isOnline && <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />}
+                                                {u.isPhotoVerified && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white p-0.5 rounded-full border-2 border-white"><ShieldCheck className="w-3 h-3" /></div>}
+                                            </div>
+                                            <p className="font-black text-[11px] text-gray-900 truncate mb-0.5">{u.name || 'Anonymous'}</p>
+                                            <p className="text-[9px] text-gray-400 font-bold uppercase truncate">{u.location || u.jamaat || 'No Location'}</p>
+                                            <div className="mt-2 flex items-center justify-between">
+                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase border ${getStatusColor(u.status)}`}>{getStatusLabel(u.status)}</span>
+                                                <span className="text-[8px] font-bold text-gray-300">
+                                                    {u.createdAt?.seconds ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : new Date(u.createdAt || 0).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                            </div>
+                        </div>
+
                         {/* ── SELFIE VERIFICATION PIPELINE ── */}
                         {(() => {
                             const selfieQueue = allUsers.filter(u =>
@@ -811,17 +873,34 @@ export default function AdminVerificationPage() {
                             );
                         })()}
 
-                        <div className="bg-white border-b border-gray-100 mb-6 rounded-2xl overflow-hidden shadow-sm flex items-center px-4">
-                            {(['male', 'female'] as const).map(g => (
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
+                            <div className="flex items-center p-1 bg-gray-50 rounded-xl">
                                 <button
-                                    key={g}
-                                    onClick={() => setFilterGender(g)}
-                                    className={`py-4 px-6 text-[10px] font-black uppercase tracking-widest transition-all relative ${filterGender === g ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                                    onClick={() => setActiveMainViewTab('complete')}
+                                    className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeMainViewTab === 'complete' ? 'bg-[#881337] text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
-                                    {g}s ({g === 'male' ? genderCounts.male : genderCounts.female})
-                                    {filterGender === g && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                                    Completed & Verified
                                 </button>
-                            ))}
+                                <button
+                                    onClick={() => setActiveMainViewTab('incomplete')}
+                                    className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeMainViewTab === 'incomplete' ? 'bg-[#881337] text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    Incomplete Profiles
+                                </button>
+                            </div>
+
+                            <div className="flex items-center px-4">
+                                {(['male', 'female'] as const).map(g => (
+                                    <button
+                                        key={g}
+                                        onClick={() => setFilterGender(g)}
+                                        className={`py-4 px-6 text-[10px] font-black uppercase tracking-widest transition-all relative ${filterGender === g ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        {g}s ({g === 'male' ? genderCounts.male : genderCounts.female})
+                                        {filterGender === g && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                 {/* Results count */}

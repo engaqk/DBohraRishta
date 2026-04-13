@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
@@ -19,6 +19,34 @@ import "driver.js/dist/driver.css";
 // Deep imports are moved to dynamic imports inside the specific handler function
 import { QRCodeCanvas } from 'qrcode.react';
 import VoIPCallModal from './JitsiCallModal';
+
+const calculateProfileStrength = (profile: any) => {
+    if (!profile) return 0;
+    let score = 0;
+    // Basic Identity (20%)
+    if (profile.name) score += 5;
+    if (profile.gender) score += 5;
+    if (profile.dob) score += 5;
+    if (profile.jamaat) score += 5;
+    // Contact & Verification (15%)
+    if (profile.mobile || profile.verifiedPhone) score += 5;
+    if (profile.isEmailVerified) score += 5;
+    if (profile.isItsVerified) score += 5;
+    // Education & Profession (20%)
+    if (profile.education || profile.educationDetails) score += 10;
+    if (profile.professionType || profile.profession) score += 10;
+    // Personal Details (15%)
+    if (profile.maritalStatus) score += 5;
+    if (profile.heightFeet) score += 5;
+    if (profile.bio) score += 5;
+    // Photos & Multimedia (30%)
+    if (profile.libasImageUrl) score += 15;
+    if (profile.extraImageUrl) score += 5;
+    if (profile.isPhotoVerified) score += 5;
+    if (profile.voiceIntroUrl) score += 5;
+    
+    return Math.min(100, score);
+};
 interface UserProfile {
     id: string;
     name: string;
@@ -348,6 +376,32 @@ export default function RishtaDashboard() {
     const [selfieImageUrl, setSelfieImageUrl] = useState<string | null>(null);
     const [uploadingSelfie, setUploadingSelfie] = useState(false);
     const selfieInputRef = useRef<HTMLInputElement>(null);
+
+    const dailyPicks = useMemo(() => {
+        if (!user || discoveryProfiles.length === 0) return [];
+        
+        // Stable random seed based on uid + date
+        const today = new Date().toISOString().split('T')[0];
+        const seedStr = user.uid + today;
+        let seed = 0;
+        for (let i = 0; i < seedStr.length; i++) seed += seedStr.charCodeAt(i);
+        
+        const seededRandom = () => {
+            seed = (seed * 9301 + 49297) % 233280;
+            return seed / 233280;
+        };
+
+        const pool = [...discoveryProfiles].filter(p => p.id !== user.uid);
+        if (pool.length <= 4) return pool;
+
+        const picks: UserProfile[] = [];
+        const poolCopy = [...pool];
+        for (let i = 0; i < 4; i++) {
+            const idx = Math.floor(seededRandom() * poolCopy.length);
+            picks.push(poolCopy.splice(idx, 1)[0]);
+        }
+        return picks;
+    }, [user, discoveryProfiles]);
 
     // Compress the selfie on selection (same pattern as libasImageUrl)
     const handleSelfieFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1672,6 +1726,85 @@ export default function RishtaDashboard() {
                 return (
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="mb-6">
+                            {/* 🌟 PROFILE COMPLETENESS NUDGE SYSTEM */}
+                            {myProfile && calculateProfileStrength(myProfile) < 100 && (
+                                <div className="mb-8 bg-gradient-to-r from-[#881337] to-[#9F1239] p-0.5 rounded-[2.5rem] shadow-xl overflow-hidden group">
+                                    <div className="bg-white rounded-[2.4rem] p-6 flex flex-col md:flex-row items-center gap-6">
+                                        <div className="relative shrink-0">
+                                            <div className="w-20 h-20 rounded-full border-4 border-rose-50 flex items-center justify-center relative overflow-hidden">
+                                                <div className="absolute inset-0 bg-[#881337] opacity-10" />
+                                                <span className="text-xl font-black text-[#881337]">{calculateProfileStrength(myProfile)}%</span>
+                                                <svg className="absolute inset-0 w-full h-full -rotate-90">
+                                                    <circle cx="40" cy="40" r="36" fill="transparent" stroke="#FEE2E2" strokeWidth="4" />
+                                                    <circle 
+                                                        cx="40" cy="40" r="36" fill="transparent" stroke="#881337" strokeWidth="4" 
+                                                        strokeDasharray="226.2" 
+                                                        strokeDashoffset={226.2 - (226.2 * calculateProfileStrength(myProfile)) / 100}
+                                                        className="transition-all duration-1000 ease-out"
+                                                    />
+                                                </svg>
+                                            </div>
+                                            <div className="absolute -bottom-1 -right-1 bg-amber-400 p-1.5 rounded-full shadow-lg animate-bounce">
+                                                <Zap className="w-3 h-3 text-white fill-current" />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 text-center md:text-left">
+                                            <h3 className="text-lg font-black text-gray-900 leading-tight">Boost your Visibility! 🚀</h3>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                {calculateProfileStrength(myProfile) < 50 
+                                                    ? "Incomplete profiles receive 80% fewer interest requests." 
+                                                    : calculateProfileStrength(myProfile) < 80 
+                                                    ? "Almost there! Adding a Voice Intro increases your match rate by 3x." 
+                                                    : "Final touch! Get your Selfie Verified to show the trust badge."}
+                                            </p>
+                                        </div>
+                                        <button 
+                                            onClick={() => setActiveTab('mybiodata')}
+                                            className="px-6 py-3 bg-[#881337] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-rose-900/20 active:scale-95 transition-all"
+                                        >
+                                            Complete Now
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 💎 SMART MATCHES: DAILY PICKS SECTION */}
+                            {dailyPicks.length > 0 && !searchQuery && !showOnlyBookmarked && (
+                                <div className="mb-10 bg-rose-50/50 rounded-[3rem] p-6 md:p-8 border border-rose-100/50">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-[#D4AF37] text-white rounded-2xl flex items-center justify-center shadow-lg transform rotate-6">
+                                                <Sparkles className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest leading-none">Curated for You</h3>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">Smart Daily Picks based on your profile</p>
+                                            </div>
+                                        </div>
+                                        <div className="hidden sm:flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm">
+                                            <Clock className="w-3 h-3 text-[#D4AF37]" />
+                                            <span className="text-[9px] font-black uppercase text-gray-400">Refreshes in 12h</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 no-scrollbar scroll-smooth">
+                                        {dailyPicks.map((p: UserProfile) => (
+                                            <div key={`daily-${p.id}`} className="min-w-[240px] md:min-w-[280px]">
+                                                <DiscoveryCard
+                                                    {...p}
+                                                    matchScore={computeMatchScore(myProfile, p)}
+                                                    isMyProfileVerified={myProfile?.isItsVerified === true}
+                                                    bio={p.bio}
+                                                    isBlurSecurityEnabled={p.isBlurSecurityEnabled !== false}
+                                                    viewerItsNumber={myProfile?.itsNumber || ''}
+                                                    createdAt={p.createdAt}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
                                 <h2 className="text-2xl font-bold font-serif">Community Discovery</h2>
                                 <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1">

@@ -720,7 +720,7 @@ export default function DiscoveryCard({
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (isIncomingRequest && requestStatus === 'pending' && onAcceptInterest && requestId) {
+                                    if (isIncomingRequest && requestStatus?.includes('pending') && onAcceptInterest && requestId) {
                                         onAcceptInterest(requestId);
                                     } else if (isMyProfileVerified && !requestSent) {
                                         setShowIcebreakerModal(true);
@@ -732,7 +732,7 @@ export default function DiscoveryCard({
                                 className={`w-full py-3.5 rounded-xl font-black text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
                                 ${requestStatus === 'accepted'
                                     ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-white border-none shadow-lg'
-                                    : (isIncomingRequest && requestStatus === 'pending')
+                                    : (isIncomingRequest && requestStatus?.includes('pending'))
                                         ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:shadow-lg animate-pulse'
                                         : isRejectedRecipient
                                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 shadow-none'
@@ -744,7 +744,7 @@ export default function DiscoveryCard({
                             >
                                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                                 {requestStatus === 'accepted' ? '✓ Connected & Chatting'
-                                    : (isIncomingRequest && requestStatus === 'pending') ? 'Accept Interest'
+                                    : (isIncomingRequest && requestStatus?.includes('pending')) ? 'Accept Interest'
                                         : isRejectedRecipient ? 'Not Interested'
                                             : requestSent ? '✓ Interest Sent'
                                                 : rejectCount > 0 ? '↩ Retry Request'

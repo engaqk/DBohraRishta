@@ -387,15 +387,29 @@ export default function RishtaDashboard() {
 
         // Strict Age Compatibility (Premium Matching)
         if (me.gender === 'male') {
-            // Males usually seek same age or younger
-            if (theirAge <= myAge && theirAge >= myAge - 8) score += 15;
-            else if (ageDiff > 12) score -= 40; // Heavy penalty for large gaps
-            else score -= ageDiff * 2;
+            // Male Rule: No more than 7 years older, no more than 12 years younger
+            const isOlderThanLimit = theirAge > myAge + 7;
+            const isYoungerThanLimit = theirAge < myAge - 12;
+            
+            if (isOlderThanLimit || isYoungerThanLimit) {
+                score -= 60; // Critical penalty for curated matches
+            } else if (theirAge <= myAge && theirAge >= myAge - 8) {
+                score += 15; // Ideal range
+            } else {
+                score -= ageDiff * 2;
+            }
         } else if (me.gender === 'female') {
-            // Females usually seek same age or older
-            if (theirAge >= myAge && theirAge <= myAge + 8) score += 15;
-            else if (ageDiff > 12) score -= 40; // Heavy penalty for large gaps
-            else score -= ageDiff * 2;
+            // Female Rule: Usually seek same age or older
+            const isTooYoung = theirAge < myAge - 7;
+            const isTooOld = theirAge > myAge + 12;
+            
+            if (isTooYoung || isTooOld) {
+                score -= 60;
+            } else if (theirAge >= myAge && theirAge <= myAge + 8) {
+                score += 15; // Ideal range
+            } else {
+                score -= ageDiff * 2;
+            }
         }
 
         const myHobbies = (me.hobbies || '').toLowerCase();

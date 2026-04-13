@@ -141,7 +141,8 @@ export default function RishtaDashboard() {
     const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
     const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
     const videoRecorderRef = useRef<MediaRecorder | null>(null);
-    const videoPreviewRef = useRef<HTMLVideoElement>(null);
+    const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
+    const videoStreamRef = useRef<MediaStream | null>(null);
 
     // Voice Intro Handlers
     const startRecording = async () => {
@@ -227,13 +228,18 @@ export default function RishtaDashboard() {
     // --- VIDEO INTRO HANDLERS ---
     const startVideoRecording = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 568 }, audio: true });
-            if (videoPreviewRef.current) {
-                videoPreviewRef.current.srcObject = stream;
-                // Double check for mobile
-                videoPreviewRef.current.setAttribute('playsinline', 'true');
-                videoPreviewRef.current.setAttribute('webkit-playsinline', 'true');
-            }
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 480 }, 
+                    height: { ideal: 640 },
+                    facingMode: "user" 
+                }, 
+                audio: true 
+            });
+            videoStreamRef.current = stream;
+            
+            setIsRecordingVideo(true); 
+            // The video element will mount now, and its ref callback will handle srcObject assignment.
             
             const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
             videoRecorderRef.current = mediaRecorder;
@@ -249,6 +255,7 @@ export default function RishtaDashboard() {
                 }
                 // Stop all tracks to release camera
                 mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                videoStreamRef.current = null;
             };
 
             mediaRecorder.start();
@@ -271,7 +278,10 @@ export default function RishtaDashboard() {
     const stopVideoRecording = () => {
         if (videoRecorderRef.current && videoRecorderRef.current.state !== 'inactive') {
             videoRecorderRef.current.stop();
-            videoRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        }
+        if (videoStreamRef.current) {
+            videoStreamRef.current.getTracks().forEach(track => track.stop());
+            videoStreamRef.current = null;
         }
         setIsRecordingVideo(false);
         if (timerRef.current) clearInterval(timerRef.current);
@@ -2534,8 +2544,10 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                     <div className="flex flex-col items-center gap-3 py-4 bg-amber-100 rounded-xl">
                                                         <video 
                                                             ref={(el) => {
-                                                                if (el && videoPreviewRef.current?.srcObject) {
-                                                                    el.srcObject = videoPreviewRef.current.srcObject;
+                                                                if (el && videoStreamRef.current) {
+                                                                    el.srcObject = videoStreamRef.current;
+                                                                    videoPreviewRef.current = el;
+                                                                    el.play().catch(e => console.error("Video play failed", e));
                                                                 }
                                                             }} 
                                                             autoPlay 

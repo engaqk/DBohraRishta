@@ -824,8 +824,7 @@ function ProfileContent() {
                             )}
                         </div>
                     </div>
-                </div>
-            </main>
+                </main>
 
             {/* ── LIGHTBOX ── */}
             {showLightbox && canZoom && currentPhoto && (

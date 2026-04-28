@@ -59,13 +59,18 @@ function ProfileContent() {
                         const qIn = query(collection(db, 'rishta_requests'), where('from', '==', id), where('to', '==', user.uid));
                         const [sOut, sIn] = await Promise.all([getDocs(qOut), getDocs(qIn)]);
                         let active = false; let rejects = 0; let status: string | null = null;
-                        const check = (d: any) => {
+                        let isIncoming = false;
+                        const check = (d: any, incoming: boolean) => {
                             const s = d.data().status;
                             if (s === 'rejected' || s === 'ended') { rejects++; }
-                            else { active = true; status = s; }
+                            else { active = true; status = s; isIncoming = incoming; }
                         };
-                        sOut.forEach(check); sIn.forEach(check);
-                        setRequestSent(active); setRejectCount(rejects); setRequestStatus(status);
+                        sOut.forEach(d => check(d, false)); 
+                        sIn.forEach(d => check(d, true));
+                        
+                        setRequestSent(active && !isIncoming); 
+                        setRejectCount(rejects); 
+                        setRequestStatus(status);
 
                         // 👁️ Record Profile View (if not me and NOT impersonating)
                         const isImpersonating = typeof window !== 'undefined' ? sessionStorage.getItem('impersonate_user_id') : null;
@@ -768,7 +773,7 @@ function ProfileContent() {
                                     {actionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
                                     {isAccepted ? '✓ Interest Accepted'
                                         : requestSent ? '✓ Request Sent'
-                                            : rejectCount === 1 ? '↩ Retry Interest Request'
+                                            : rejectCount >= 1 ? '↩ Retry Interest Request'
                                                 : 'Send Interest Request'}
                                 </button>
                             )}

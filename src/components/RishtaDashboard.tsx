@@ -1328,8 +1328,8 @@ export default function RishtaDashboard() {
 
         const resolveAndSetRequests = async (outSnap: any, inSnap: any) => {
             let requestsRaw: any[] = [];
-            if (outSnap) { outSnap.forEach((d: any) => requestsRaw.push({ id: d.id, isIncoming: false, ...d.data() })); }
-            if (inSnap) { inSnap.forEach((d: any) => requestsRaw.push({ id: d.id, isIncoming: true, ...d.data() })); }
+            if (outSnap) { outSnap.forEach((d: any) => requestsRaw.push({ id: d.id, ...d.data(), isIncoming: false })); }
+            if (inSnap) { inSnap.forEach((d: any) => requestsRaw.push({ id: d.id, ...d.data(), isIncoming: true })); }
 
             // Deduplicate to show only the latest request per target user
             const latestRequests = new Map();
@@ -2981,8 +2981,6 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                         {renderTabContent()}
                     </motion.div>
                 )}
-            </AnimatePresence>
-
             </main>
 
 

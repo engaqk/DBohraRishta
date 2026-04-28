@@ -176,9 +176,9 @@ export default function DiscoveryCard({
                 currentS = initialRequestStatus;
                 incoming = isIncomingRequest;
                 if (initialRequestStatus === 'rejected' || initialRequestStatus === 'ended') {
-                    if (isIncomingRequest) {
+                    if (isIncomingRequest === true) {
                         wasRejectedRecipient = true;
-                    } else {
+                    } else if (isIncomingRequest === false) {
                         rejects++;
                     }
                 } else {

@@ -2981,6 +2981,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                         {renderTabContent()}
                     </motion.div>
                 )}
+                </AnimatePresence>
             </main>
 
 

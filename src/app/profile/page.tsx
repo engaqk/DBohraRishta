@@ -23,6 +23,7 @@ function ProfileContent() {
     const [rejectCount, setRejectCount] = useState(0);
     const [isMyProfileVerified, setIsMyProfileVerified] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
+    const [isIncoming, setIsIncoming] = useState(false);
     const [viewerItsNumber, setViewerItsNumber] = useState('');
     const [viewerProfile, setViewerProfile] = useState<any>(null);
     const [showInterestModal, setShowInterestModal] = useState(false);
@@ -59,16 +60,17 @@ function ProfileContent() {
                         const qIn = query(collection(db, 'rishta_requests'), where('from', '==', id), where('to', '==', user.uid));
                         const [sOut, sIn] = await Promise.all([getDocs(qOut), getDocs(qIn)]);
                         let active = false; let rejects = 0; let status: string | null = null;
-                        let isIncoming = false;
-                        const check = (d: any, incoming: boolean) => {
+                        let incoming = false;
+                        const check = (d: any, isInc: boolean) => {
                             const s = d.data().status;
                             if (s === 'rejected' || s === 'ended') { rejects++; }
-                            else { active = true; status = s; isIncoming = incoming; }
+                            else { active = true; status = s; incoming = isInc; }
                         };
                         sOut.forEach(d => check(d, false)); 
                         sIn.forEach(d => check(d, true));
                         
-                        setRequestSent(active && !isIncoming); 
+                        setIsIncoming(active && incoming);
+                        setRequestSent(active && !incoming); 
                         setRejectCount(rejects); 
                         setRequestStatus(status);
 
@@ -746,11 +748,7 @@ function ProfileContent() {
                                     </p>
                                 </div>
                             </div>
-                        )}
-
-                        {/* ── CTA BUTTON ── */}
-                        <div className="pt-2">
-                            {rejectCount >= 2 && !requestSent ? (
+                        )}                            {rejectCount >= 2 && !requestSent && !isIncoming ? (
                                 <div className="w-full py-4 bg-gray-50 text-gray-400 font-bold rounded-xl border border-gray-100 text-sm text-center">
                                     Request limit reached for this profile
                                 </div>
@@ -760,22 +758,69 @@ function ProfileContent() {
                                     <p className="text-amber-600 text-[10px] mt-0.5">Awaiting admin approval</p>
                                 </div>
                             ) : (
-                                <button
-                                    onClick={handleSendRequest}
-                                    disabled={requestSent || actionLoading}
-                                    className={`w-full py-4 rounded-xl font-black text-base transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
-                                        ${isAccepted
-                                            ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed border border-emerald-200'
-                                            : requestSent
-                                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200'
-                                                : 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white hover:shadow-xl'}`}
-                                >
-                                    {actionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-                                    {isAccepted ? '✓ Interest Accepted'
-                                        : requestSent ? '✓ Request Sent'
-                                            : rejectCount >= 1 ? '↩ Retry Interest Request'
-                                                : 'Send Interest Request'}
-                                </button>
+                                <div className="flex flex-col gap-3">
+                                    {(isIncoming && requestStatus?.toLowerCase().includes('pending')) ? (
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={async () => {
+                                                    const q = query(collection(db, 'rishta_requests'), where('from', '==', id), where('to', '==', user.uid), where('status', '==', 'pending_response'));
+                                                    const snap = await getDocs(q);
+                                                    if (!snap.empty) {
+                                                        const reqId = snap.docs[0].id;
+                                                        // Using the existing dashboard logic implicitly or just updating here
+                                                        setActionLoading(true);
+                                                        try {
+                                                            await updateDoc(doc(db, 'rishta_requests', reqId), { status: 'accepted' });
+                                                            toast.success('Interest Accepted!');
+                                                            setRequestStatus('accepted');
+                                                            setIsIncoming(false);
+                                                        } finally { setActionLoading(false); }
+                                                    }
+                                                }}
+                                                className="flex-[2] py-4 rounded-xl font-black text-base bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md active:scale-95 animate-pulse"
+                                            >
+                                                {actionLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : '🤝 Accept Interest'}
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    const q = query(collection(db, 'rishta_requests'), where('from', '==', id), where('to', '==', user.uid), where('status', '==', 'pending_response'));
+                                                    const snap = await getDocs(q);
+                                                    if (!snap.empty) {
+                                                        const reqId = snap.docs[0].id;
+                                                        setActionLoading(true);
+                                                        try {
+                                                            await updateDoc(doc(db, 'rishta_requests', reqId), { status: 'rejected' });
+                                                            toast.success('Request Declined');
+                                                            setRequestStatus('rejected');
+                                                            setIsIncoming(false);
+                                                        } finally { setActionLoading(false); }
+                                                    }
+                                                }}
+                                                className="flex-1 py-4 rounded-xl font-black text-sm bg-gray-50 text-gray-500 border border-gray-200"
+                                            >
+                                                Reject
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={handleSendRequest}
+                                            disabled={(requestSent || isIncoming) || actionLoading}
+                                            className={`w-full py-4 rounded-xl font-black text-base transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
+                                                ${isAccepted
+                                                    ? 'bg-emerald-50 text-emerald-600 cursor-not-allowed border border-emerald-200'
+                                                    : (requestSent || isIncoming)
+                                                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-200'
+                                                        : 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white hover:shadow-xl'}`}
+                                        >
+                                            {actionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                                            {isAccepted ? '✓ Interest Accepted'
+                                                : isIncoming ? 'Review Interest Request'
+                                                    : requestSent ? '✓ Request Sent'
+                                                        : rejectCount >= 1 ? '↩ Retry Interest Request'
+                                                            : 'Send Interest Request'}
+                                        </button>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>

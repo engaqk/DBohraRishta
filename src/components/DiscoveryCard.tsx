@@ -746,7 +746,7 @@ export default function DiscoveryCard({
                             </div>
                         ) : (
                             <div className="flex gap-2">
-                                {((localIsIncoming ?? isIncomingRequest) && requestStatus?.includes('pending')) ? (
+                                {(((localIsIncoming ?? isIncomingRequest) === true) && (requestStatus?.toLowerCase().includes('pending') || (!requestStatus && (initialRequestStatus?.toLowerCase().includes('pending'))))) ? (
                                     <>
                                         <button
                                             onClick={(e) => {
@@ -790,9 +790,10 @@ export default function DiscoveryCard({
                                         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                                         {requestStatus === 'accepted' ? '✓ Connected & Chatting'
                                             : isRejectedRecipient ? 'Not Interested'
-                                                : (requestSent && (localIsIncoming ?? isIncomingRequest) === false) ? '✓ Interest Sent'
-                                                    : rejectCount > 0 ? '↩ Retry Request'
-                                                        : 'Send Interest'}
+                                                : (requestSent && (localIsIncoming ?? isIncomingRequest) === true) ? 'Review Interest'
+                                                    : (requestSent && (localIsIncoming ?? isIncomingRequest) === false) ? '✓ Interest Sent'
+                                                        : rejectCount > 0 ? '↩ Retry Request'
+                                                            : 'Send Interest'}
                                     </button>
                                 )}
                             </div>

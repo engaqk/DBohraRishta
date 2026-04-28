@@ -75,6 +75,7 @@ export default function DiscoveryCard({
     const [requestStatus, setRequestStatus] = useState<string | null>(null);
     const [isRejectedRecipient, setIsRejectedRecipient] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [localIsIncoming, setLocalIsIncoming] = useState<boolean | undefined>(isIncomingRequest);
     const [rejectCount, setRejectCount] = useState(0);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [showIcebreakerModal, setShowIcebreakerModal] = useState(false);
@@ -168,6 +169,7 @@ export default function DiscoveryCard({
             if (!user) return;
             let active = false; let rejects = 0; let wasRejectedRecipient = false;
             let currentS = '';
+            let incoming = isIncomingRequest;
 
             // Use props if available
             if (initialRequestStatus) {
@@ -185,17 +187,25 @@ export default function DiscoveryCard({
                 const qOut = query(collection(db, 'rishta_requests'), where('from', '==', user.uid), where('to', '==', id));
                 const qIn = query(collection(db, 'rishta_requests'), where('from', '==', id), where('to', '==', user.uid));
                 const [sOut, sIn] = await Promise.all([getDocs(qOut), getDocs(qIn)]);
-                const process = (d: any, incoming: boolean) => {
+                
+                sOut.forEach(d => {
                     const s = d.data().status;
                     if (s === 'rejected' || s === 'ended') { 
-                        if (incoming) wasRejectedRecipient = true; else rejects++; 
-                    } else { active = true; currentS = s; }
-                };
-                sOut.forEach(d => process(d, false)); sIn.forEach(d => process(d, true));
+                        rejects++; 
+                    } else { active = true; currentS = s; incoming = false; }
+                });
+
+                sIn.forEach(d => {
+                    const s = d.data().status;
+                    if (s === 'rejected' || s === 'ended') { 
+                        wasRejectedRecipient = true; 
+                    } else { active = true; currentS = s; incoming = true; }
+                });
             }
             
             setRequestStatus(currentS);
             setRequestSent(active); 
+            setLocalIsIncoming(incoming);
             setRejectCount(rejects);
             setIsRejectedRecipient(wasRejectedRecipient);
 
@@ -214,7 +224,7 @@ export default function DiscoveryCard({
         });
 
         return () => unsub();
-    }, [user, id]);
+    }, [user, id, initialRequestStatus, isIncomingRequest]);
  
     const icebreakerError = useMemo(() => {
         if (!icebreakerText) return null;
@@ -735,7 +745,7 @@ export default function DiscoveryCard({
                             </div>
                         ) : (
                             <div className="flex gap-2">
-                                {(isIncomingRequest && requestStatus?.includes('pending')) ? (
+                                {((localIsIncoming ?? isIncomingRequest) && requestStatus?.includes('pending')) ? (
                                     <>
                                         <button
                                             onClick={(e) => {
@@ -779,7 +789,7 @@ export default function DiscoveryCard({
                                         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                                         {requestStatus === 'accepted' ? '✓ Connected & Chatting'
                                             : isRejectedRecipient ? 'Not Interested'
-                                                : requestSent ? '✓ Interest Sent'
+                                                : (requestSent && !(localIsIncoming ?? isIncomingRequest)) ? '✓ Interest Sent'
                                                     : rejectCount > 0 ? '↩ Retry Request'
                                                         : 'Send Interest'}
                                     </button>

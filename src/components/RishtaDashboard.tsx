@@ -1427,7 +1427,7 @@ export default function RishtaDashboard() {
                 localStorage.setItem(celebKey, 'true');
             }
 
-            if ((profileData.status === 'rejected' || profileData.status === 'hold') && !isImpersonating) {
+            if ((profileData.status === 'rejected' || profileData.status === 'hold' || profileData.status === 'pending_verification') && !isImpersonating) {
                 setDataLoading(false);
                 return;
             }
@@ -1655,14 +1655,23 @@ export default function RishtaDashboard() {
             );
         }
 
-        if (myProfile?.status === 'hold' && !isImpersonating) {
+        if ((myProfile?.status === 'hold' || myProfile?.status === 'pending_verification') && !isImpersonating) {
+            const isPending = myProfile?.status === 'pending_verification';
             return (
                 <section className={`${activeTab === 'discovery' ? 'lg:col-span-3' : 'lg:col-span-4'} flex items-center justify-center p-12`}>
                     <div className="bg-yellow-50 p-12 rounded-3xl shadow-sm text-center border border-yellow-100 flex flex-col items-center">
                         <Clock className="w-16 h-16 text-yellow-500 mb-4" />
-                        <h2 className="text-2xl font-bold text-yellow-700 mb-2">Biodata Verification On Hold</h2>
-                        <p className="text-yellow-600 mb-6 max-w-md">Your biodata is currently on hold by an administrator. Please check your messages from admin for details.</p>
-                        <button onClick={() => router.push('/candidate-registration')} className="bg-yellow-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-yellow-700 transition-all">Review My Biodata</button>
+                        <h2 className="text-2xl font-bold text-yellow-700 mb-2">
+                            {isPending ? "Biodata Verification Pending" : "Biodata Verification On Hold"}
+                        </h2>
+                        <p className="text-yellow-600 mb-6 max-w-md">
+                            {isPending 
+                                ? "Your biodata has been submitted and is currently being reviewed by our administrators. This usually takes less than 24 hours."
+                                : "Your biodata is currently on hold by an administrator. Please check your messages from admin for details."}
+                        </p>
+                        <button onClick={() => router.push('/candidate-registration')} className="bg-yellow-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-yellow-700 transition-all">
+                            {isPending ? "View My Biodata" : "Review My Biodata"}
+                        </button>
                     </div>
                 </section>
             );
@@ -2258,18 +2267,20 @@ export default function RishtaDashboard() {
             )}
 
             {/* ── Admin Notification Banner (shown across all tabs) ── */}
-            {myProfile && (myProfile.status === 'rejected' || myProfile.status === 'hold') && (
+            {myProfile && (myProfile.status === 'rejected' || myProfile.status === 'hold' || myProfile.status === 'pending_verification') && (
                 <div className={`max-w-7xl mx-auto mb-5 rounded-2xl border-2 shadow-sm ${myProfile.status === 'rejected' ? 'bg-rose-50 border-rose-300' : 'bg-yellow-50 border-yellow-300'}`}>
                     <div className="flex items-start justify-between gap-3 p-4 md:p-5">
                         <div className="flex gap-3 flex-1">
                             <div className="shrink-0 text-2xl mt-0.5">{myProfile.status === 'rejected' ? '⚠️' : '⏸️'}</div>
                             <div className="flex-1">
                                 <h3 className={`font-black text-base mb-1 ${myProfile.status === 'rejected' ? 'text-[#881337]' : 'text-yellow-800'}`}>
-                                    {myProfile.status === 'rejected' ? 'Action Required: Profile Needs Updates' : '⏸️ Your Profile is On Hold by Admin'}
+                                    {myProfile.status === 'rejected' ? 'Action Required: Profile Needs Updates' : myProfile.status === 'pending_verification' ? '⏳ Your Profile Verification is Pending' : '⏸️ Your Profile is On Hold by Admin'}
                                 </h3>
                                 <p className="text-gray-700 text-sm mb-2">
                                     {myProfile.status === 'rejected'
                                         ? 'An Admin has reviewed your profile and requested some adjustments. Please fix the issue below and resubmit.'
+                                        : myProfile.status === 'pending_verification'
+                                        ? 'Your biodata is currently under review. Once verified, you will be able to send interest and connect with others. This typically takes less than 24 hours.'
                                         : 'See the message from Administration below to understand what needs to be corrected to get your profile Accepted. You may also send a message to Admin by the below chat option.'}
                                 </p>
                                 {myProfile.adminMessage && (

@@ -72,7 +72,7 @@ export default function DiscoveryCard({
     const { user } = useAuth();
     const router = useRouter();
     const [requestSent, setRequestSent] = useState(false);
-    const [requestStatus, setRequestStatus] = useState<string | null>(null);
+    const [requestStatus, setRequestStatus] = useState<string | null | undefined>(null);
     const [isRejectedRecipient, setIsRejectedRecipient] = useState(false);
     const [loading, setLoading] = useState(false);
     const [localIsIncoming, setLocalIsIncoming] = useState<boolean | undefined>(isIncomingRequest);
@@ -167,65 +167,42 @@ export default function DiscoveryCard({
     useEffect(() => {
         const check = async () => {
             if (!user) return;
-            let active = false; let rejects = 0; let wasRejectedRecipient = false;
-            let currentS = '';
-            let incoming = isIncomingRequest;
-
-            // Use props if available
-            if (initialRequestStatus) {
-                currentS = initialRequestStatus;
-                incoming = isIncomingRequest;
+            
+            // Sync with Dashboard-provided data
+            if (requestId) {
+                setRequestSent(true);
+                if (initialRequestStatus) setRequestStatus(initialRequestStatus);
+                setLocalIsIncoming(isIncomingRequest ?? false);
+                
+                // Handle reject state from initial data
                 if (initialRequestStatus === 'rejected' || initialRequestStatus === 'ended') {
-                    if (isIncomingRequest === true) {
-                        wasRejectedRecipient = true;
-                    } else if (isIncomingRequest === false) {
-                        rejects++;
-                    }
-                } else {
-                    active = true;
+                    if (isIncomingRequest === true) setIsRejectedRecipient(true);
+                    else setRejectCount(1);
                 }
             } else {
-                const qOut = query(collection(db, 'rishta_requests'), where('from', '==', user.uid), where('to', '==', id));
-                const qIn = query(collection(db, 'rishta_requests'), where('from', '==', id), where('to', '==', user.uid));
-                const [sOut, sIn] = await Promise.all([getDocs(qOut), getDocs(qIn)]);
-                
-                sOut.forEach(d => {
-                    const s = d.data().status;
-                    if (s === 'rejected' || s === 'ended') { 
-                        rejects++; 
-                    } else { active = true; currentS = s; incoming = false; }
-                });
-
-                sIn.forEach(d => {
-                    const s = d.data().status;
-                    if (s === 'rejected' || s === 'ended') { 
-                        wasRejectedRecipient = true; 
-                    } else { active = true; currentS = s; incoming = true; }
-                });
+                setRequestSent(false);
+                setRequestStatus(undefined);
+                setLocalIsIncoming(false);
+                setIsRejectedRecipient(false);
+                setRejectCount(0);
             }
-            
-            setRequestStatus(currentS);
-            setRequestSent(active); 
-            setLocalIsIncoming(incoming);
-            setRejectCount(rejects);
-            setIsRejectedRecipient(wasRejectedRecipient);
 
-            // Fetch Bookmark Status
-            const qB = query(collection(db, 'bookmarks'), where('userId', '==', user.uid), where('profileId', '==', id));
-            const sB = await getDocs(qB);
-            setIsBookmarked(!sB.empty);
+            // Fetch Bookmark Status (Keep this local as it's independent)
+            try {
+                const qB = query(collection(db, 'bookmarks'), where('userId', '==', user.uid), where('profileId', '==', id));
+                const sB = await getDocs(qB);
+                setIsBookmarked(!sB.empty);
+            } catch (e) { console.error("Bookmark fetch failed", e); }
         };
         check();
 
-        // Live status listener
+        // Live status listener for profile updates
         const unsub = onSnapshot(doc(db, "users", id), (snap) => {
-            if (snap.exists()) {
-                setProfileData(snap.data());
-            }
+            if (snap.exists()) setProfileData(snap.data());
         });
 
         return () => unsub();
-    }, [user, id, initialRequestStatus, isIncomingRequest]);
+    }, [user, id, initialRequestStatus, requestId, isIncomingRequest]);
  
     const icebreakerError = useMemo(() => {
         if (!icebreakerText) return null;
@@ -746,7 +723,7 @@ export default function DiscoveryCard({
                             </div>
                         ) : (
                             <div className="flex gap-2">
-                                {(((localIsIncoming ?? isIncomingRequest) === true) && (requestStatus?.toLowerCase().includes('pending') || (!requestStatus && (initialRequestStatus?.toLowerCase().includes('pending'))))) ? (
+                                {(((localIsIncoming ?? isIncomingRequest) === true) && (requestStatus?.toLowerCase()?.includes('pending') || (!requestStatus && (initialRequestStatus?.toLowerCase()?.includes('pending'))))) ? (
                                     <>
                                         <button
                                             onClick={(e) => {
@@ -775,22 +752,20 @@ export default function DiscoveryCard({
                                                 handleSendRequest();
                                             }
                                         }}
-                                        disabled={(requestSent && requestStatus !== 'accepted' && requestStatus !== 'rejected') || loading || (requestStatus === 'accepted') || isRejectedRecipient}
+                                        disabled={(requestSent && requestStatus !== 'accepted' && requestStatus !== 'rejected' && (localIsIncoming ?? isIncomingRequest) === false) || loading || (requestStatus === 'accepted') || isRejectedRecipient}
                                         className={`w-full py-3.5 rounded-xl font-black text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
                                         ${requestStatus === 'accepted'
                                             ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-white border-none shadow-lg'
                                             : isRejectedRecipient
                                                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 shadow-none'
-                                                : requestSent
+                                                : (requestSent && (localIsIncoming ?? isIncomingRequest) === false)
                                                     ? 'bg-amber-50 text-amber-600 border border-amber-200 shadow-none'
-                                                    : rejectCount > 0
-                                                        ? 'bg-gradient-to-r from-indigo-500 to-indigo-700 text-white hover:shadow-lg'
-                                                        : 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white hover:shadow-lg'}`}
+                                                    : 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white hover:shadow-lg'}`}
                                     >
                                         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                                         {requestStatus === 'accepted' ? '✓ Connected & Chatting'
                                             : isRejectedRecipient ? 'Not Interested'
-                                                : (requestSent && (localIsIncoming ?? isIncomingRequest) === true) ? 'Review Interest'
+                                                : (requestSent && (localIsIncoming ?? isIncomingRequest) === true) ? 'Respond to Interest'
                                                     : (requestSent && (localIsIncoming ?? isIncomingRequest) === false) ? '✓ Interest Sent'
                                                         : rejectCount > 0 ? '↩ Retry Request'
                                                             : 'Send Interest'}

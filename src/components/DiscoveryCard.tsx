@@ -174,6 +174,7 @@ export default function DiscoveryCard({
             // Use props if available
             if (initialRequestStatus) {
                 currentS = initialRequestStatus;
+                incoming = isIncomingRequest;
                 if (initialRequestStatus === 'rejected' || initialRequestStatus === 'ended') {
                     if (isIncomingRequest) {
                         wasRejectedRecipient = true;
@@ -789,7 +790,7 @@ export default function DiscoveryCard({
                                         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                                         {requestStatus === 'accepted' ? '✓ Connected & Chatting'
                                             : isRejectedRecipient ? 'Not Interested'
-                                                : (requestSent && !(localIsIncoming ?? isIncomingRequest)) ? '✓ Interest Sent'
+                                                : (requestSent && (localIsIncoming ?? isIncomingRequest) === false) ? '✓ Interest Sent'
                                                     : rejectCount > 0 ? '↩ Retry Request'
                                                         : 'Send Interest'}
                                     </button>

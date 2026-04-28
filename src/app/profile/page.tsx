@@ -814,10 +814,9 @@ function ProfileContent() {
                                         >
                                             {actionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
                                             {isAccepted ? '✓ Interest Accepted'
-                                                : isIncoming ? 'Respond to Interest'
-                                                    : requestSent ? '✓ Request Sent'
-                                                        : rejectCount >= 1 ? '↩ Retry Interest Request'
-                                                            : 'Send Interest Request'}
+                                                : requestSent ? '✓ Request Sent'
+                                                    : rejectCount >= 1 ? '↩ Retry Interest Request'
+                                                        : 'Send Interest Request'}
                                         </button>
                                     )}
                                 </div>

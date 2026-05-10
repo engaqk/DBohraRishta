@@ -390,9 +390,10 @@ export default function AdminUsersPage() {
                             className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
+                        <div className="w-9 h-9 bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] rounded-xl flex items-center justify-center font-black text-sm shadow-lg ring-2 ring-white shrink-0">53</div>
                         <div>
                             <h1 className="text-white font-black text-xl flex items-center gap-2">
-                                <Users className="w-5 h-5" /> Registered Users
+                                Registered Users
                             </h1>
                             <p className="text-white/60 text-xs mt-0.5">All Firebase-registered candidate accounts</p>
                         </div>

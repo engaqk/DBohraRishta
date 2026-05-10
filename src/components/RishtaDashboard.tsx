@@ -492,7 +492,7 @@ export default function RishtaDashboard() {
             const timer = setTimeout(() => {
                 localStorage.setItem(`dismissed_broadcast_${latestBroadcast.id}`, 'true');
                 setLatestBroadcast(null);
-            }, 20000);
+            }, 15000);
             return () => clearTimeout(timer);
         }
     }, [latestBroadcast]);

@@ -33,12 +33,12 @@ export default function LoginPage() {
                 // Female profiles (priority)
                 const femaleQ = query(collection(db, 'users'), where('gender', '==', 'female'), where('isItsVerified', '==', true), limit(20));
                 const femaleSnap = await getDocs(femaleQ);
-                let females = femaleSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                let females = femaleSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
 
                 // Male profiles (shuffled)
                 const maleQ = query(collection(db, 'users'), where('gender', '==', 'male'), where('isItsVerified', '==', true), limit(20));
                 const maleSnap = await getDocs(maleQ);
-                let males = maleSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort(() => 0.5 - Math.random());
+                let males = maleSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)).sort(() => 0.5 - Math.random());
 
                 // Interleave: female, male, female, male…
                 let combined: any[] = [];

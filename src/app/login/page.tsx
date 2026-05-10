@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { ShieldCheck, Sparkles, Mail, Lock, Phone, Smartphone, Copy, CheckCircle, Loader2, MessageSquare, ExternalLink } from "lucide-react";
+import { ShieldCheck, Sparkles, Mail, Lock, Phone, Smartphone, Copy, CheckCircle, Loader2, MessageSquare, ExternalLink, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { normalizePhone } from "@/lib/phoneUtils";
@@ -274,7 +274,7 @@ export default function LoginPage() {
                 <div className="p-6 sm:p-8">
                     {/* NEW: Hero Copy */}
                     <h2 className="text-center text-lg font-bold text-[#881337] leading-[1.4] mb-5">
-                        Join now the most secure, ITS-verified rishta platform for Bohra families, where you maintain complete privacy.
+                        Join the most trusted rishta platform for <span className="bg-rose-50 text-[#881337] px-1.5 py-0.5 rounded-md border border-rose-100 whitespace-nowrap shadow-sm">Dawoodi Bohra</span> families and discover meaningful connections among 100% ITS-verified profiles with your privacy fully guaranteed.
                     </h2>
 
                     {/* Returning User Note */}
@@ -304,7 +304,13 @@ export default function LoginPage() {
 
                     {/* NEW: Video Demo */}
                     <div className="w-full mb-6 text-center">
-                        <div className="text-[12px] uppercase tracking-[1px] text-gray-500 mb-2 font-bold">How Female Profile and Photo Privacy Works</div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-50 border border-rose-100 rounded-lg text-[11px] uppercase tracking-widest text-[#881337] mb-3 font-extrabold shadow-sm">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#881337] opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#881337]"></span>
+                            </span>
+                            How Female Profile and Photo Privacy Works
+                        </div>
                         <video className="w-full max-w-[260px] mx-auto rounded-xl border-2 border-rose-100 shadow-[0_4px_12px_rgba(140,28,58,0.08)] block bg-black" src="/login.mp4" autoPlay loop muted playsInline></video>
                     </div>
 
@@ -325,7 +331,9 @@ export default function LoginPage() {
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
-                            <div className="text-[20px] bg-rose-50 w-10 h-10 flex items-center justify-center rounded-md shrink-0">👪</div>
+                            <div className="bg-rose-50 w-10 h-10 flex items-center justify-center rounded-md shrink-0">
+                                <Users className="w-5 h-5 text-[#D4AF37]" />
+                            </div>
                             <div className="text-[12px] text-gray-800 leading-[1.4]">
                                 <strong className="text-[#881337] block text-[13px] mb-0.5">Guardians can manage the profile</strong>
                                 Family-friendly design allows parents to securely control the process.
@@ -336,12 +344,24 @@ export default function LoginPage() {
                     {/* NEW: Professional Showcase */}
                     <div className="mb-6 bg-white border border-rose-100 rounded-xl p-4 shadow-sm relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-rose-50 to-transparent rounded-bl-full pointer-events-none opacity-50"></div>
-                        <div className="flex items-center justify-center gap-2 mb-3">
-                            <div className="relative flex h-3 w-3">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#881337] opacity-40"></span>
-                              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#881337]"></span>
+                        <div className="flex justify-center mb-5 mt-2">
+                            <div className="flex flex-col items-center bg-white border-2 border-rose-100 px-5 py-3 rounded-2xl shadow-[0_4px_12px_rgba(136,19,55,0.06)] relative overflow-hidden w-full max-w-[320px]">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#881337] via-[#D4AF37] to-[#881337]"></div>
+                                
+                                <div className="flex items-center gap-2 mb-1">
+                                    <div className="relative flex h-2.5 w-2.5 shrink-0">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4AF37] opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#D4AF37]"></span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <span className="text-[18px] font-black text-transparent bg-clip-text bg-gradient-to-r from-[#881337] to-[#D4AF37] animate-pulse">46+</span>
+                                        <svg className="w-4 h-4 text-[#D4AF37] ml-0.5 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                                    </div>
+                                </div>
+                                <h3 className="text-[12.5px] font-bold text-[#881337] text-center leading-snug">
+                                    Registered & ITS-Verified Profiles Awaiting You
+                                </h3>
                             </div>
-                            <h3 className="text-[13px] font-bold text-[#881337]">46+ Verified Profiles Awaiting You</h3>
                         </div>
                         <div className="flex flex-wrap justify-center gap-2">
                             <span className="bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#881337]">👨‍💻 Software Engineers</span>
@@ -351,16 +371,7 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    {/* ORIGINAL: Verify Identity and Trust Badges */}
-                    <div className="border-t border-dashed border-gray-200 pt-6 mb-4">
-                        {/* Trust badges */}
-                        <div className="space-y-1.5 mb-2">
-                            <div className="flex items-start text-xs">
-                                <ShieldCheck className="w-4 h-4 text-[#881337] mr-2 mt-0.5 shrink-0" />
-                                <p className="text-gray-600">Exclusive Dawoodi Bohra community Rishta platform with ITS Verification.</p>
-                            </div>
-                        </div>
-                    </div>
+
 
                     {errorMsg && (
                         <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100 mb-4">{errorMsg}</div>

@@ -139,7 +139,15 @@ export default function RishtaDashboard() {
     const [recordingTime, setRecordingTime] = useState(0);
     const [isUploadingVoice, setIsUploadingVoice] = useState(false);
     const [isAutoScrolling, setIsAutoScrolling] = useState(false);
+    const [showBoostWidget, setShowBoostWidget] = useState(true);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setShowBoostWidget(false);
+        }, 60000);
+        return () => clearTimeout(timer);
+    }, []);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Video Intro States
@@ -478,6 +486,17 @@ export default function RishtaDashboard() {
     };
     const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
     const [latestBroadcast, setLatestBroadcast] = useState<{ id: string; title?: string; message: string; type?: string } | null>(null);
+    
+    useEffect(() => {
+        if (latestBroadcast) {
+            const timer = setTimeout(() => {
+                localStorage.setItem(`dismissed_broadcast_${latestBroadcast.id}`, 'true');
+                setLatestBroadcast(null);
+            }, 20000);
+            return () => clearTimeout(timer);
+        }
+    }, [latestBroadcast]);
+
     const [generatingBiodata, setGeneratingBiodata] = useState(false);
     const [platformStats, setPlatformStats] = useState({ count: 50, activeNow: 5 });
     const [performanceData, setPerformanceData] = useState({ views: 0, requests: 0 });
@@ -1932,10 +1951,10 @@ export default function RishtaDashboard() {
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="mb-6">
                             {/* 🌟 PROFILE COMPLETENESS NUDGE SYSTEM */}
-                            {myProfile && calculateProfileStrength(myProfile) < 100 && (
-                                <div className="mb-8 bg-gradient-to-r from-[#881337] to-[#9F1239] p-0.5 rounded-[2.5rem] shadow-xl overflow-hidden group">
-                                    <div className="bg-white rounded-[2.4rem] p-6 flex flex-col md:flex-row items-center gap-6">
-                                        <div className="relative shrink-0">
+                            {myProfile && calculateProfileStrength(myProfile) < 100 && showBoostWidget && (
+                                <div className="mb-4 bg-gradient-to-r from-[#881337] to-[#9F1239] p-0.5 rounded-3xl shadow-lg overflow-hidden group">
+                                    <div className="bg-white rounded-[1.4rem] p-3 flex flex-col md:flex-row items-center gap-4">
+                                        <div className="relative shrink-0 scale-75 origin-center">
                                             <div className="w-20 h-20 rounded-full border-4 border-rose-50 flex items-center justify-center relative overflow-hidden">
                                                 <div className="absolute inset-0 bg-[#881337] opacity-10" />
                                                 <span className="text-xl font-black text-[#881337]">{calculateProfileStrength(myProfile)}%</span>
@@ -1954,8 +1973,8 @@ export default function RishtaDashboard() {
                                             </div>
                                         </div>
                                         <div className="flex-1 text-center md:text-left">
-                                            <h3 className="text-lg font-black text-gray-900 leading-tight">Boost your Visibility! 🚀</h3>
-                                            <p className="text-sm text-gray-500 mt-1">
+                                            <h3 className="text-md font-black text-gray-900 leading-tight">Boost your Visibility! 🚀</h3>
+                                            <p className="text-xs text-gray-500 mt-0.5">
                                                 {calculateProfileStrength(myProfile) < 50 
                                                     ? "Incomplete profiles receive 80% fewer interest requests." 
                                                     : calculateProfileStrength(myProfile) < 80 
@@ -1965,7 +1984,7 @@ export default function RishtaDashboard() {
                                         </div>
                                         <button 
                                             onClick={() => setActiveTab('mybiodata')}
-                                            className="px-6 py-3 bg-[#881337] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-rose-900/20 active:scale-95 transition-all"
+                                            className="px-4 py-2 bg-[#881337] text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-rose-900/20 active:scale-95 transition-all"
                                         >
                                             Complete Now
                                         </button>

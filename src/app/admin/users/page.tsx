@@ -487,53 +487,131 @@ export default function AdminUsersPage() {
                             </div>
                         </div>
                         
-                        <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto scrollbar-hide">
+                        <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto scrollbar-hide">
                             {users.filter(u => u.status === 'pending_verification' || u.selfieStatus === 'pending').map(u => (
-                                <div key={u.uid} className="flex items-center justify-between bg-gray-50 p-3 rounded-xl hover:bg-gray-100 transition-all">
-                                    <div className="flex items-center gap-3">
-                                        {/* Two photos */}
-                                        <div className="flex -space-x-2">
-                                            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white bg-gray-200 shadow-sm" title="Profile Photo">
-                                                <img src={u.libasImageUrl || '/placeholder-profile.png'} alt="" className="w-full h-full object-cover" />
+                                <div key={u.uid} className="flex flex-col bg-gray-50 p-3 rounded-xl hover:bg-gray-100 transition-all">
+                                    <div className="flex items-center justify-between w-full">
+                                        <div className="flex items-center gap-3">
+                                            {/* Two photos */}
+                                            <div className="flex -space-x-2">
+                                                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white bg-gray-200 shadow-sm" title="Profile Photo">
+                                                    <img src={u.libasImageUrl || '/placeholder-profile.png'} alt="" className="w-full h-full object-cover" />
+                                                </div>
+                                                <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white bg-gray-200 shadow-sm" title="Selfie / ID">
+                                                    <img src={u.selfieImageUrl || u.selfieUrl || '/placeholder-profile.png'} alt="" className="w-full h-full object-cover" />
+                                                </div>
                                             </div>
-                                            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white bg-gray-200 shadow-sm" title="Selfie / ID">
-                                                <img src={u.selfieImageUrl || u.selfieUrl || '/placeholder-profile.png'} alt="" className="w-full h-full object-cover" />
+                                            
+                                            <div>
+                                                <p className="font-black text-[12px] text-gray-900">{u.name || 'No Name'}</p>
+                                                <p className="text-[9px] text-gray-400 font-bold uppercase">ITS: {u.ejamaatId || u.itsNumber || 'N/A'}</p>
                                             </div>
                                         </div>
                                         
-                                        <div>
-                                            <p className="font-black text-[12px] text-gray-900">{u.name || 'No Name'}</p>
-                                            <p className="text-[9px] text-gray-400 font-bold uppercase">ITS: {u.ejamaatId || u.itsNumber || 'N/A'}</p>
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    try {
+                                                        await updateDoc(doc(db, 'users', u.uid), {
+                                                            status: 'verified',
+                                                            isItsVerified: true,
+                                                            isPhotoVerified: true
+                                                        });
+                                                        toast.success(`${u.name || 'User'} Approved!`);
+                                                        fetchDashboardData();
+                                                    } catch (err: any) {
+                                                        toast.error('Failed to approve: ' + err.message);
+                                                    }
+                                                }}
+                                                className="bg-[#881337] text-white px-3 py-1.5 rounded-lg font-black text-[10px] uppercase shadow-sm hover:bg-[#70102d] transition-all"
+                                            >
+                                                Approve
+                                            </button>
+                                            <button 
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    setSelectedUser(selectedUser?.uid === u.uid ? null : u); 
+                                                }}
+                                                className="bg-white text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg font-black text-[10px] uppercase hover:bg-gray-50 transition-all"
+                                            >
+                                                {selectedUser?.uid === u.uid ? "Hide" : "View"}
+                                            </button>
                                         </div>
                                     </div>
-                                    
-                                    <div className="flex items-center gap-2">
-                                        <button 
-                                            onClick={async (e) => {
-                                                e.stopPropagation();
-                                                try {
-                                                    await updateDoc(doc(db, 'users', u.uid), {
-                                                        status: 'verified',
-                                                        isItsVerified: true,
-                                                        isPhotoVerified: true
-                                                    });
-                                                    toast.success(`${u.name || 'User'} Approved!`);
-                                                    fetchDashboardData();
-                                                } catch (err: any) {
-                                                    toast.error('Failed to approve: ' + err.message);
-                                                }
-                                            }}
-                                            className="bg-[#881337] text-white px-3 py-1.5 rounded-lg font-black text-[10px] uppercase shadow-sm hover:bg-[#70102d] transition-all"
-                                        >
-                                            Approve
-                                        </button>
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); setSelectedUser(u); }}
-                                            className="bg-white text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg font-black text-[10px] uppercase hover:bg-gray-50 transition-all"
-                                        >
-                                            View
-                                        </button>
-                                    </div>
+
+                                    {/* Expanded detail panel */}
+                                    {selectedUser?.uid === u.uid && (
+                                        <div className="mt-4 border-t border-gray-100 pt-4">
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                                {[
+                                                    { label: 'Firebase UID', value: u.uid },
+                                                    { label: 'Email', value: u.email },
+                                                    { label: 'ITS / EjamaatID', value: u.ejamaatId || u.itsNumber || '—' },
+                                                    { label: 'Mobile', value: u.mobile ? `${u.mobileCode || ''} ${u.mobile}` : '—' },
+                                                    { label: 'Gender', value: u.gender || '—' },
+                                                    { label: 'DOB', value: u.dob || '—' },
+                                                    { label: 'Marital Status', value: u.maritalStatus || '—' },
+                                                    { label: 'Height', value: u.heightFeet ? `${u.heightFeet}'${u.heightInch || 0}"` : '—' },
+                                                    { label: 'Education', value: u.educationDetails || u.education || '—' },
+                                                    { label: 'Profession', value: u.professionType || '—' },
+                                                    { label: 'Father', value: u.fatherName || '—' },
+                                                    { label: 'Mother', value: u.motherName || '—' },
+                                                    { label: 'City', value: u.city || '—' },
+                                                    { label: 'State', value: u.state || '—' },
+                                                    { label: 'Country', value: u.country || '—' },
+                                                    { label: 'Jamaat', value: u.jamaat || '—' },
+                                                ].map(f => (
+                                                    <div key={f.label} className="bg-white rounded-xl p-2.5 border border-gray-100">
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-0.5">{f.label}</p>
+                                                        <p className="font-bold text-gray-700 truncate">{f.value}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="mt-4 flex flex-col md:flex-row gap-4">
+                                                <div className="flex-1">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Libas Image</p>
+                                                    {u.libasImageUrl ? (
+                                                        <div className="w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-white cursor-zoom-in" onClick={e => { e.stopPropagation(); setFullscreenImage(u.libasImageUrl || null); }}>
+                                                            <img src={u.libasImageUrl} className="w-full h-full object-cover" />
+                                                        </div>
+                                                    ) : <div className="text-gray-300 text-[10px] italic">Not uploaded</div>}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-[10px] font-black text-blue-400 uppercase mb-2">Verification Selfie</p>
+                                                    {(u.selfieImageUrl || u.selfieUrl) ? (
+                                                        <div className="w-full h-40 rounded-xl overflow-hidden border-2 border-blue-100 bg-white group relative">
+                                                            <img src={u.selfieImageUrl || u.selfieUrl} className="w-full h-full object-cover cursor-zoom-in" onClick={e => { e.stopPropagation(); setFullscreenImage(u.selfieImageUrl || u.selfieUrl); }} />
+                                                            {!u.isPhotoVerified && (
+                                                                <div className="absolute inset-0 bg-blue-600/10 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); handleVerifySelfie(u.uid, true); }}
+                                                                        className="bg-blue-600 text-white px-3 py-1.5 rounded-lg font-black text-[10px] uppercase shadow-xl hover:bg-blue-700 mb-2"
+                                                                    >
+                                                                        Approve ID
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); handleVerifySelfie(u.uid, false); }}
+                                                                        className="bg-white text-rose-600 px-3 py-1.5 rounded-lg font-black text-[10px] uppercase shadow-sm border border-rose-100"
+                                                                    >
+                                                                        Reject
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : <div className="text-gray-300 text-[10px] italic">Not requested</div>}
+                                                </div>
+                                                <div className="flex-1 col-span-2">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-2">ITS Card</p>
+                                                    {u.itsImageUrl ? (
+                                                        <div className="w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-white cursor-zoom-in" onClick={e => { e.stopPropagation(); setFullscreenImage(u.itsImageUrl); }}>
+                                                            <img src={u.itsImageUrl} className="w-full h-full object-contain" />
+                                                        </div>
+                                                    ) : <div className="text-gray-300 text-[10px] italic">Not uploaded</div>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>

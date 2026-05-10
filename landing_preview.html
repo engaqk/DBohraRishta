@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DBohraRishta - Secure Mobile Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --maroon: #881337;
+            --gold: #D4AF37;
+            --bg-color: #F8F9FA;
+            --box-bg: #FFFFFF;
+            --text-main: #2D3748;
+            --text-muted: #718096;
+            --pink-alert-bg: #FCF2F4;
+            --pink-alert-border: #F3D9DF;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px 15px 100px 15px;
+        }
+
+        /* Main Card */
+        .login-card {
+            background: var(--box-bg);
+            width: 100%;
+            max-width: 420px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        /* Header */
+        .card-header {
+            background-color: #881337;
+            padding: 32px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .badge-53 {
+            background: linear-gradient(to bottom right, #ffffff, #ffe4e6);
+            color: #D4AF37;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.875rem;
+            margin: 0 auto 16px auto;
+            border: 2px solid #D4AF37;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2), 0 0 30px rgba(212,175,55,0.5);
+        }
+
+        .brand-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 4px;
+            letter-spacing: -0.025em;
+            filter: drop-shadow(0 4px 3px rgb(0 0 0 / 0.07)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.06));
+        }
+        
+        .brand-title span {
+            color: #D4AF37;
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        .brand-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 700;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            font-size: 10px;
+            margin-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 8px;
+            display: inline-block;
+        }
+
+        .card-body {
+            padding: 24px 20px;
+        }
+
+        .hero-headline {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--maroon);
+            line-height: 1.4;
+            margin-bottom: 5px;
+        }
+
+        .hero-subline {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .alert-box {
+            background-color: var(--pink-alert-bg);
+            border: 1px solid var(--pink-alert-border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .alert-content h4 {
+            color: var(--maroon);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .alert-content p {
+            font-size: 0.75rem;
+            color: var(--maroon);
+            line-height: 1.4;
+        }
+
+        .alert-content a {
+            color: var(--maroon);
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        /* Highlighted Google Button */
+        .highlight-google-btn {
+            width: 100%;
+            background: var(--maroon);
+            border: 2px solid var(--maroon);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(136, 19, 55, 0.25);
+            margin-bottom: 24px;
+            transition: all 0.2s;
+        }
+        .highlight-google-btn:hover { background: #70102d; }
+        .highlight-google-btn .icon-bg {
+            background: white;
+            padding: 4px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+        }
+        .highlight-google-btn img {
+            width: 18px;
+            height: 18px;
+        }
+
+        .video-demo-container {
+            width: 100%;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .demo-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .privacy-video {
+            width: 100%;
+            max-width: 260px;
+            margin: 0 auto;
+            border-radius: 12px;
+            border: 2px solid var(--pink-alert-border);
+            box-shadow: 0 4px 12px rgba(140, 28, 58, 0.08);
+            display: block;
+            background-color: #000;
+        }
+
+        .safety-banner {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .safety-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #EDF2F7;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .safety-icon {
+            font-size: 1.3rem;
+            background: var(--pink-alert-bg);
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+
+        .safety-text {
+            font-size: 0.8rem;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+        .safety-text strong {
+            color: var(--maroon);
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 2px;
+        }
+
+        /* Showcase with Live Ping */
+        .showcase-card {
+            background: white;
+            border: 1px solid var(--pink-alert-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        .showcase-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .live-dot-container {
+            position: relative;
+            display: flex;
+            width: 12px;
+            height: 12px;
+        }
+        .live-dot-ping {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: var(--maroon);
+            opacity: 0.4;
+            animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        .live-dot {
+            position: relative;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--maroon);
+        }
+        @keyframes ping {
+            75%, 100% { transform: scale(2); opacity: 0; }
+        }
+        .showcase-title-new {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--maroon);
+        }
+        .showcase-tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+        .tag-new {
+            background: var(--pink-alert-bg);
+            border: 1px solid var(--pink-alert-border);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--maroon);
+        }
+
+        /* Verify Section */
+        .verify-section {
+            border-top: 1px dashed #E2E8F0;
+            padding-top: 24px;
+            margin-bottom: 24px;
+        }
+        .verify-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .trust-badges {
+            margin-bottom: 10px;
+        }
+        .trust-badge-item {
+            display: flex;
+            align-items: flex-start;
+            font-size: 0.75rem;
+            margin-bottom: 6px;
+            color: #4A5568;
+        }
+
+        /* Admin Button */
+        .admin-section {
+            border-top: 1px solid #EDF2F7;
+            padding-top: 16px;
+            text-align: center;
+        }
+        .admin-link-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #A0AEC0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .admin-link-btn:hover {
+            color: var(--maroon);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="card-header">
+            <div class="badge-53">53</div>
+            <h1 class="brand-title">DBohra<span>Rishta</span></h1>
+            <div class="brand-subtitle">Intelligent Matches</div>
+        </div>
+
+        <div class="card-body">
+            <h2 class="hero-headline" style="margin-bottom: 20px;">Join now the most secure, ITS-verified rishta platform for Bohra families, where you maintain complete privacy.</h2>
+
+            <div class="alert-box">
+                <svg width="18" height="18" fill="none" stroke="#8C1C3A" viewBox="0 0 24 24" style="flex-shrink:0; margin-top:2px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <div class="alert-content">
+                    <h4>Returning User?</h4>
+                    <p>Please use your <a href="#">same registered email</a> to login again correctly and access your profile.</p>
+                </div>
+            </div>
+
+            <button class="highlight-google-btn">
+                <div class="icon-bg">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                </div>
+                Continue with Google
+            </button>
+
+            <div class="video-demo-container">
+                <div class="demo-title">How Female Profile and Photo Privacy Works</div>
+                <video class="privacy-video" src="public/login.mp4" autoplay loop muted playsinline></video>
+            </div>
+
+            <div class="safety-banner">
+                <div class="safety-item">
+                    <div class="safety-icon">🔒</div>
+                    <div class="safety-text">
+                        <strong>100% Female Profile Privacy</strong>
+                        Blurred by default. Only visible upon your request approval.
+                    </div>
+                </div>
+                <div class="safety-item">
+                    <div class="safety-icon">🛡️</div>
+                    <div class="safety-text">
+                        <strong>100% ITS Verified Profiles</strong>
+                        Strict community verification required. No fake profiles.
+                    </div>
+                </div>
+                <div class="safety-item">
+                    <div class="safety-icon">👪</div>
+                    <div class="safety-text">
+                        <strong>Guardians can manage the profile</strong>
+                        Family-friendly design allows parents to securely control the process.
+                    </div>
+                </div>
+            </div>
+
+            <div class="showcase-card">
+                <div class="showcase-header">
+                    <div class="live-dot-container">
+                        <div class="live-dot-ping"></div>
+                        <div class="live-dot"></div>
+                    </div>
+                    <div class="showcase-title-new">Join 46+ Verified Bohra Professionals</div>
+                </div>
+                <div class="showcase-tags">
+                    <span class="tag-new">👨‍💻 Software Engineers</span>
+                    <span class="tag-new">🩺 Doctors</span>
+                    <span class="tag-new">💼 Business Owners</span>
+                    <span class="tag-new">📊 Chartered Accountants</span>
+                </div>
+            </div>
+
+            <div class="verify-section">
+                <div class="trust-badges">
+                    <div class="trust-badge-item">✅ Exclusive Dawoodi Bohra community Rishta platform with ITS Verification.</div>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <a href="#" class="admin-link-btn">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    Are you an Admin? Login here
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

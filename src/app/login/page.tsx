@@ -272,19 +272,10 @@ export default function LoginPage() {
                 </div>
 
                 <div className="p-6 sm:p-8">
-                    <h2 className="text-xl font-bold font-serif mb-4 text-center">Verify Your Identity</h2>
-
-                    {/* Trust badges */}
-                    <div className="space-y-1.5 mb-5">
-                        <div className="flex items-start text-xs">
-                            <ShieldCheck className="w-4 h-4 text-[#881337] mr-2 mt-0.5 shrink-0" />
-                            <p className="text-gray-600">Exclusive Dawoodi Bohra community matchmaking with ITS Verification.</p>
-                        </div>
-                        <div className="flex items-start text-xs">
-                            <ShieldCheck className="w-4 h-4 text-[#D4AF37] mr-2 mt-0.5 shrink-0" />
-                            <p className="text-gray-600">Dynamic photo blurring protects your privacy until you connect.</p>
-                        </div>
-                    </div>
+                    {/* NEW: Hero Copy */}
+                    <h2 className="text-center text-lg font-bold text-[#881337] leading-[1.4] mb-5">
+                        Join now the most secure, ITS-verified rishta platform for Bohra families, where you maintain complete privacy.
+                    </h2>
 
                     {/* Returning User Note */}
                     <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 mb-5 flex items-start gap-2.5 shadow-sm">
@@ -297,18 +288,79 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-
-                    {/* Google Sign-In */}
+                    {/* HIGHLIGHTED GOOGLE LOGIN BUTTON (Moved to top for easy access) */}
                     <button type="button" onClick={handleGoogleLogin} disabled={authLoading}
-                        className="w-full bg-white border border-gray-300 text-gray-700 py-3.5 rounded-xl font-bold shadow-sm hover:bg-gray-50 active:scale-95 flex items-center justify-center gap-3 mb-4 disabled:opacity-50">
-                        <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                        </svg>
+                        className="w-full bg-[#881337] border-2 border-[#881337] text-white py-3.5 rounded-xl font-bold shadow-[0_8px_20px_rgba(136,19,55,0.25)] hover:bg-[#70102d] active:scale-95 flex items-center justify-center gap-3 mb-6 disabled:opacity-50 transition-all text-[15px]">
+                        <div className="bg-white p-1 rounded-full flex items-center justify-center w-7 h-7 shrink-0">
+                            <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                            </svg>
+                        </div>
                         Continue with Google
                     </button>
+
+                    {/* NEW: Video Demo */}
+                    <div className="w-full mb-6 text-center">
+                        <div className="text-[12px] uppercase tracking-[1px] text-gray-500 mb-2 font-bold">How Female Profile and Photo Privacy Works</div>
+                        <video className="w-full max-w-[260px] mx-auto rounded-xl border-2 border-rose-100 shadow-[0_4px_12px_rgba(140,28,58,0.08)] block bg-black" src="/login.mp4" autoPlay loop muted playsInline></video>
+                    </div>
+
+                    {/* NEW: Safety Guarantees */}
+                    <div className="flex flex-col gap-3 mb-6">
+                        <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                            <div className="text-[20px] bg-rose-50 w-10 h-10 flex items-center justify-center rounded-md shrink-0">🔒</div>
+                            <div className="text-[12px] text-gray-800 leading-[1.4]">
+                                <strong className="text-[#881337] block text-[13px] mb-0.5">100% Female Profile Privacy</strong>
+                                Blurred by default. Only visible upon your request approval.
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                            <div className="text-[20px] bg-rose-50 w-10 h-10 flex items-center justify-center rounded-md shrink-0">🛡️</div>
+                            <div className="text-[12px] text-gray-800 leading-[1.4]">
+                                <strong className="text-[#881337] block text-[13px] mb-0.5">100% ITS Verified Profiles</strong>
+                                Strict community verification required. No fake profiles.
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                            <div className="text-[20px] bg-rose-50 w-10 h-10 flex items-center justify-center rounded-md shrink-0">👪</div>
+                            <div className="text-[12px] text-gray-800 leading-[1.4]">
+                                <strong className="text-[#881337] block text-[13px] mb-0.5">Guardians can manage the profile</strong>
+                                Family-friendly design allows parents to securely control the process.
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* NEW: Professional Showcase */}
+                    <div className="mb-6 bg-white border border-rose-100 rounded-xl p-4 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-rose-50 to-transparent rounded-bl-full pointer-events-none opacity-50"></div>
+                        <div className="flex items-center justify-center gap-2 mb-3">
+                            <div className="relative flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#881337] opacity-40"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#881337]"></span>
+                            </div>
+                            <h3 className="text-[13px] font-bold text-[#881337]">Join 46+ Verified Bohra Professionals</h3>
+                        </div>
+                        <div className="flex flex-wrap justify-center gap-2">
+                            <span className="bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#881337]">👨‍💻 Software Engineers</span>
+                            <span className="bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#881337]">🩺 Doctors</span>
+                            <span className="bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#881337]">💼 Business Owners</span>
+                            <span className="bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#881337]">📊 Chartered Accountants</span>
+                        </div>
+                    </div>
+
+                    {/* ORIGINAL: Verify Identity and Trust Badges */}
+                    <div className="border-t border-dashed border-gray-200 pt-6 mb-4">
+                        {/* Trust badges */}
+                        <div className="space-y-1.5 mb-2">
+                            <div className="flex items-start text-xs">
+                                <ShieldCheck className="w-4 h-4 text-[#881337] mr-2 mt-0.5 shrink-0" />
+                                <p className="text-gray-600">Exclusive Dawoodi Bohra community Rishta platform with ITS Verification.</p>
+                            </div>
+                        </div>
+                    </div>
 
                     {errorMsg && (
                         <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100 mb-4">{errorMsg}</div>

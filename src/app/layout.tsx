@@ -18,9 +18,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DBohraRishta | Intelligent Matchmaking for the Dawoodi Bohra Community",
-  description: "A trusted, community-centric matchmaking platform for the Dawoodi Bohra community. ITS-verified profiles, dynamic photo privacy, and intelligent Rishta connections.",
-  keywords: "Bohra, Dawoodi Bohra, Rishta, matchmaking, matrimony, ITS verified, Muslim matrimony",
+  title: "DBohraRishta | Intelligent Rishta Platform for the Dawoodi Bohra Community",
+  description: "A trusted, community-centric Rishta platform for the Dawoodi Bohra community. ITS-verified profiles, dynamic photo privacy, and intelligent Rishta connections.",
+  keywords: "Bohra, Dawoodi Bohra, Rishta, matrimony, ITS verified, Muslim matrimony",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -32,8 +32,8 @@ export const metadata: Metadata = {
     apple: "/icon-512.png",
   },
   openGraph: {
-    title: "DBohraRishta — Intelligent Bohra Matchmaking",
-    description: "ITS-verified profiles. Privacy-first. Bohra community matchmaking platform.",
+    title: "DBohraRishta — Intelligent Bohra Rishta Platform",
+    description: "ITS-verified profiles. Privacy-first. Bohra community Rishta platform.",
     url: "https://www.53dbohrarishta.in",
     siteName: "DBohraRishta",
     locale: "en_US",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "DBohraRishta",
-    description: "Intelligent matchmaking for the Dawoodi Bohra community.",
+    description: "Intelligent Rishta platform for the Dawoodi Bohra community.",
     images: ["/icon-512.png"],
   },
   other: {

@@ -49,7 +49,7 @@ export default function GlobalNav() {
     }, [pathname]);
 
     // Don't show nav on login or onboarding
-    if (pathname === '/login' || pathname === '/onboarding') return null;
+    if (pathname === '/login' || pathname === '/login2' || pathname === '/login3' || pathname === '/onboarding') return null;
 
     const navClasses = isAdminPage 
         ? "fixed top-0 left-0 w-full z-[100] bg-[#881337] text-white border-b border-rose-900 shadow-lg"
@@ -73,7 +73,7 @@ export default function GlobalNav() {
                             onClick={() => router.push(isAdminPage ? '/admin/approvals' : '/')}
                         >
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm transition-transform group-hover:scale-110 ${isAdminPage ? 'bg-white text-[#881337]' : 'bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] border-2 border-[#D4AF37]'}`}>
-                                53
+                                ✦
                             </div>
                             <span className={`font-serif font-bold tracking-tight text-lg ${isAdminPage ? 'text-white' : 'text-[#881337]'}`}>
                                 DBohra<span className={isAdminPage ? "font-normal opacity-80" : "font-light italic"}>{isAdminPage ? "Admin" : "Rishta"}</span>

@@ -194,11 +194,20 @@ export default function OnboardingPage() {
                 newErrors.mobile = "Mobile Number is required.";
             } else {
                 const normalized = normalizePhone(formData.mobile);
-                if (!normalized) {
-                    newErrors.mobile = "Invalid number. Use international format e.g. +919876543210";
-                } else {
-                    // Auto-correct and store normalized number
+                // Strip to digits only to check basic length
+                const digitsOnly = formData.mobile.replace(/\D/g, '');
+                if (normalized) {
+                    // normalizePhone succeeded — store the clean E.164 version
                     setFormData(prev => ({ ...prev, mobile: normalized }));
+                } else if (digitsOnly.length >= 7 && digitsOnly.length <= 15) {
+                    // Valid-length international number normalizePhone doesn't know about
+                    // (e.g. UAE +971, US +1, UK +44) — store with + prefix if missing
+                    const stored = formData.mobile.trim().startsWith('+')
+                        ? formData.mobile.trim()
+                        : '+' + digitsOnly;
+                    setFormData(prev => ({ ...prev, mobile: stored }));
+                } else {
+                    newErrors.mobile = "Enter a valid number with country code (e.g. +971501234567)";
                 }
             }
             if (!formData.gender) newErrors.gender = "Gender is required.";
@@ -546,19 +555,15 @@ export default function OnboardingPage() {
                                     <div>
                                         <label className="block text-sm font-black text-gray-700 mb-2 uppercase tracking-tight">Mobile Number</label>
                                         <input 
-                                            type="number" 
+                                            type="tel" 
                                             name="mobile" 
                                             onChange={handleChange} 
                                             value={formData.mobile} 
-                                            placeholder="918888888888"
-                                            onInput={(e) => {
-                                                const val = e.currentTarget.value;
-                                                if (val.length > 14) e.currentTarget.value = val.slice(0, 14);
-                                            }}
+                                            placeholder="+919876543210 or +971501234567"
                                             className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-semibold shadow-sm focus:ring-2 focus:ring-[#881337] outline-none" 
                                             readOnly={loginMethod === 'mobile'} 
                                         />
-                                        <p className="text-[10px] text-gray-400 mt-2 font-bold px-1 italic">Include country code digits (e.g., 91, 971, 1)</p>
+                                        <p className="text-[10px] text-gray-400 mt-2 font-bold px-1 italic">Include country code (e.g. +91 India · +971 UAE · +1 USA · +44 UK)</p>
                                     </div>
                                 </div>
                             </div>

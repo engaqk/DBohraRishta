@@ -1,7 +1,7 @@
 {
-    "name": "DBohraRishta — Intentional Matchmaking",
+    "name": "DBohraRishta — Rishta Platform",
     "short_name": "DBohraRishta",
-    "description": "A trusted, community-centric matchmaking platform for the Dawoodi Bohra community.",
+    "description": "A trusted, ITS-verified Rishta Platform for the Dawoodi Bohra community.",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",

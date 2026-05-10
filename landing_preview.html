@@ -315,6 +315,95 @@
             color: var(--maroon);
         }
 
+        /* Profile Scroller Demo */
+        .scrolling-profiles {
+            width: 100%;
+            max-width: 260px;
+            margin: 0 auto;
+            height: 280px;
+            border-radius: 12px;
+            border: 2px solid var(--pink-alert-border);
+            box-shadow: 0 4px 12px rgba(140, 28, 58, 0.08);
+            background-color: white;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scrolling-profiles::before, .scrolling-profiles::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 40px;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .scrolling-profiles::before {
+            top: 0;
+            background: linear-gradient(to bottom, white, transparent);
+        }
+        .scrolling-profiles::after {
+            bottom: 0;
+            background: linear-gradient(to top, white, transparent);
+        }
+
+        .profiles-track {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 12px;
+            animation: scrollUp 15s linear infinite;
+        }
+
+        @keyframes scrollUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+
+        .profile-card-mock {
+            background: var(--bg-color);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .profile-avatar-mock {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #CBD5E0;
+            flex-shrink: 0;
+            filter: blur(4px);
+            opacity: 0.8;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .profile-info-mock {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .blur-text {
+            background: #CBD5E0;
+            border-radius: 4px;
+            height: 8px;
+            filter: blur(2px);
+            opacity: 0.7;
+        }
+
+        .blur-text.name { width: 70%; height: 10px; background: var(--maroon); filter: blur(3px); }
+        .blur-text.detail { width: 50%; }
+        .blur-text.sub { width: 80%; }
+
         /* Verify Section */
         .verify-section {
             border-top: 1px dashed #E2E8F0;
@@ -399,7 +488,76 @@
                     </div>
                     How Female Profile and Photo Privacy Works
                 </div>
-                <video class="privacy-video" src="public/login.mp4" autoplay loop muted playsinline></video>
+                <div class="scrolling-profiles">
+                    <div class="profiles-track">
+                        <!-- Original Set -->
+                        <div class="profile-card-mock">
+                            <div class="profile-avatar-mock"></div>
+                            <div class="profile-info-mock">
+                                <div class="blur-text name"></div>
+                                <div class="blur-text detail"></div>
+                                <div class="blur-text sub"></div>
+                            </div>
+                        </div>
+                        <div class="profile-card-mock">
+                            <div class="profile-avatar-mock"></div>
+                            <div class="profile-info-mock">
+                                <div class="blur-text name"></div>
+                                <div class="blur-text detail"></div>
+                                <div class="blur-text sub"></div>
+                            </div>
+                        </div>
+                        <div class="profile-card-mock">
+                            <div class="profile-avatar-mock"></div>
+                            <div class="profile-info-mock">
+                                <div class="blur-text name"></div>
+                                <div class="blur-text detail"></div>
+                                <div class="blur-text sub"></div>
+                            </div>
+                        </div>
+                        <div class="profile-card-mock">
+                            <div class="profile-avatar-mock"></div>
+                            <div class="profile-info-mock">
+                                <div class="blur-text name"></div>
+                                <div class="blur-text detail"></div>
+                                <div class="blur-text sub"></div>
+                            </div>
+                        </div>
+                        <!-- Duplicate Set for Seamless Scroll -->
+                        <div class="profile-card-mock">
+                            <div class="profile-avatar-mock"></div>
+                            <div class="profile-info-mock">
+                                <div class="blur-text name"></div>
+                                <div class="blur-text detail"></div>
+                                <div class="blur-text sub"></div>
+                            </div>
+                        </div>
+                        <div class="profile-card-mock">
+                            <div class="profile-avatar-mock"></div>
+                            <div class="profile-info-mock">
+                                <div class="blur-text name"></div>
+                                <div class="blur-text detail"></div>
+                                <div class="blur-text sub"></div>
+                            </div>
+                        </div>
+                        <div class="profile-card-mock">
+                            <div class="profile-avatar-mock"></div>
+                            <div class="profile-info-mock">
+                                <div class="blur-text name"></div>
+                                <div class="blur-text detail"></div>
+                                <div class="blur-text sub"></div>
+                            </div>
+                        </div>
+                        <div class="profile-card-mock">
+                            <div class="profile-avatar-mock"></div>
+                            <div class="profile-info-mock">
+                                <div class="blur-text name"></div>
+                                <div class="blur-text detail"></div>
+                                <div class="blur-text sub"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="safety-banner">

@@ -150,7 +150,7 @@ export default function LoginPage() {
                             onClick={() => setIsNewUser(true)}
                             className={`flex-1 py-2.5 text-[13px] font-black transition-all ${isNewUser ? 'bg-[#881337] text-white shadow' : 'bg-white text-gray-500 hover:bg-rose-50'}`}
                         >
-                            ✨ Join Free
+                            ✨ Join
                         </button>
                         <button
                             onClick={() => setIsNewUser(false)}
@@ -188,7 +188,7 @@ export default function LoginPage() {
                         <div className="bg-white p-1 rounded-full w-7 h-7 flex items-center justify-center shrink-0">
                             <GoogleIcon />
                         </div>
-                        {isNewUser ? 'Join Free with Google — It\'s Private' : 'Login with Google'}
+                        {isNewUser ? 'Join with Google — It\'s Private' : 'Login with Google'}
                     </button>
 
                     <p className="text-[10px] text-gray-400 text-center mt-3 font-bold uppercase tracking-wider">

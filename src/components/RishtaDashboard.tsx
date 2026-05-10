@@ -138,6 +138,7 @@ export default function RishtaDashboard() {
     const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
     const [recordingTime, setRecordingTime] = useState(0);
     const [isUploadingVoice, setIsUploadingVoice] = useState(false);
+    const [isAutoScrolling, setIsAutoScrolling] = useState(false);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -659,7 +660,7 @@ export default function RishtaDashboard() {
 
         // --- Heartbeat Logic ---
         const updateStatus = async (status: boolean) => {
-            if (!user) return;
+            if (!user || user.uid === 'admin-panel-service-account') return;
             // Ghosting Prevention: Don't track online status if Admin is impersonating
             if (isImpersonating) return;
 
@@ -2036,48 +2037,110 @@ export default function RishtaDashboard() {
                                 <p className="text-gray-500 font-bold">No new biodatas found dynamically.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
-                                {sortedWithPicks.map((p: UserProfile) => {
-                                    // Check if this profile has a pending or accepted request from/to the current user
-                                    const relatedReq = allRequests.find(r => {
-                                        const otherId = r.isIncoming ? r.from : r.to;
-                                        return otherId === p.id;
-                                    });
-                                    const isAccepted = relatedReq?.status === 'accepted';
-                                    const blurEnabled = isAccepted ? false : (p.isBlurSecurityEnabled !== false);
-                                    
-                                    const isPick = dailyPicks.some(dp => dp.id === p.id);
+                            <>
+                                <div className="mb-4 flex justify-center">
+                                    <button 
+                                        onClick={() => setIsAutoScrolling(!isAutoScrolling)}
+                                        className="inline-flex items-center gap-2 text-[12px] font-extrabold text-[#881337] bg-amber-50 border-2 border-[#D4AF37] px-4 py-1.5 rounded-full hover:bg-[#D4AF37] hover:text-white transition-all cursor-pointer shadow-sm active:scale-95"
+                                    >
+                                        <span>{isAutoScrolling ? "🛑 Stop Scroll" : "▶️ Auto Scroll"}</span>
+                                    </button>
+                                    <style>{`
+                                        @keyframes scrollUp {
+                                            0% { transform: translateY(0); }
+                                            100% { transform: translateY(-50%); }
+                                        }
+                                    `}</style>
+                                </div>
+                                
+                                {isAutoScrolling ? (
+                                    <div className="w-full max-w-[350px] mx-auto h-[700px] rounded-3xl border-2 border-rose-100 shadow-[0_4px_12px_rgba(140,28,58,0.08)] bg-white overflow-hidden relative mb-6">
+                                        <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none"></div>
+                                        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none"></div>
+                                        <div className="flex flex-col gap-6 p-4 animate-[scrollUp_120s_linear_infinite] hover:[animation-play-state:paused]">
+                                            {[...sortedWithPicks, ...sortedWithPicks].map((p: UserProfile, idx) => {
+                                                const relatedReq = allRequests.find(r => {
+                                                    const otherId = r.isIncoming ? r.from : r.to;
+                                                    return otherId === p.id;
+                                                });
+                                                const isAccepted = relatedReq?.status === 'accepted';
+                                                const blurEnabled = isAccepted ? false : (p.isBlurSecurityEnabled !== false);
+                                                const isPick = dailyPicks.some(dp => dp.id === p.id);
 
-                                    return (
-                                        <div key={p.id} className="relative">
-                                            {isPick && !searchQuery && !showOnlyBookmarked && (
-                                                <div className="absolute -top-3 left-4 z-20 bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1.5 border border-white/20">
-                                                    <Sparkles className="w-2.5 h-2.5" /> CURATED MATCH
-                                                </div>
-                                            )}
-                                            <DiscoveryCard
-                                                {...p}
-                                                matchScore={computeMatchScore(myProfile, p)}
-                                                isMyProfileVerified={myProfile?.isItsVerified === true}
-                                                bio={p.bio}
-                                                isBlurSecurityEnabled={blurEnabled}
-                                                viewerItsNumber={myProfile?.itsNumber || ''}
-                                                createdAt={p.createdAt}
-                                                requestId={relatedReq?.id}
-                                                initialRequestStatus={relatedReq?.status}
-                                                isIncomingRequest={relatedReq?.isIncoming}
-                                                onAcceptInterest={(reqId) => {
-                                                    const reqObj = allRequests.find(r => r.id === reqId);
-                                                    if (reqObj) handleAcceptClick(reqObj);
-                                                }}
-                                                onDeclineInterest={async (reqId) => {
-                                                    await handleRequestAction(reqId, 'rejected');
-                                                }}
-                                            />
+                                                return (
+                                                    <div key={`${p.id}-${idx}`} className="relative">
+                                                        {isPick && !searchQuery && !showOnlyBookmarked && (
+                                                            <div className="absolute -top-3 left-4 z-20 bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1.5 border border-white/20">
+                                                                <Sparkles className="w-2.5 h-2.5" /> CURATED MATCH
+                                                            </div>
+                                                        )}
+                                                        <DiscoveryCard
+                                                            {...p}
+                                                            matchScore={computeMatchScore(myProfile, p)}
+                                                            isMyProfileVerified={myProfile?.isItsVerified === true}
+                                                            bio={p.bio}
+                                                            isBlurSecurityEnabled={blurEnabled}
+                                                            viewerItsNumber={myProfile?.itsNumber || ''}
+                                                            createdAt={p.createdAt}
+                                                            requestId={relatedReq?.id}
+                                                            initialRequestStatus={relatedReq?.status}
+                                                            isIncomingRequest={relatedReq?.isIncoming}
+                                                            onAcceptInterest={(reqId) => {
+                                                                const reqObj = allRequests.find(r => r.id === reqId);
+                                                                if (reqObj) handleAcceptClick(reqObj);
+                                                            }}
+                                                            onDeclineInterest={async (reqId) => {
+                                                                await handleRequestAction(reqId, 'rejected');
+                                                            }}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
+                                        {sortedWithPicks.map((p: UserProfile) => {
+                                            const relatedReq = allRequests.find(r => {
+                                                const otherId = r.isIncoming ? r.from : r.to;
+                                                return otherId === p.id;
+                                            });
+                                            const isAccepted = relatedReq?.status === 'accepted';
+                                            const blurEnabled = isAccepted ? false : (p.isBlurSecurityEnabled !== false);
+                                            const isPick = dailyPicks.some(dp => dp.id === p.id);
+
+                                            return (
+                                                <div key={p.id} className="relative">
+                                                    {isPick && !searchQuery && !showOnlyBookmarked && (
+                                                        <div className="absolute -top-3 left-4 z-20 bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1.5 border border-white/20">
+                                                            <Sparkles className="w-2.5 h-2.5" /> CURATED MATCH
+                                                        </div>
+                                                    )}
+                                                    <DiscoveryCard
+                                                        {...p}
+                                                        matchScore={computeMatchScore(myProfile, p)}
+                                                        isMyProfileVerified={myProfile?.isItsVerified === true}
+                                                        bio={p.bio}
+                                                        isBlurSecurityEnabled={blurEnabled}
+                                                        viewerItsNumber={myProfile?.itsNumber || ''}
+                                                        createdAt={p.createdAt}
+                                                        requestId={relatedReq?.id}
+                                                        initialRequestStatus={relatedReq?.status}
+                                                        isIncomingRequest={relatedReq?.isIncoming}
+                                                        onAcceptInterest={(reqId) => {
+                                                            const reqObj = allRequests.find(r => r.id === reqId);
+                                                            if (reqObj) handleAcceptClick(reqObj);
+                                                        }}
+                                                        onDeclineInterest={async (reqId) => {
+                                                            await handleRequestAction(reqId, 'rejected');
+                                                        }}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </>
                         )}
                     </section>
                 );

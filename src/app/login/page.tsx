@@ -299,7 +299,7 @@ export default function LoginPage() {
                                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                             </svg>
                         </div>
-                        Continue with Google
+                        Login with Google
                     </button>
 
                     {/* NEW: Video Demo */}
@@ -341,7 +341,7 @@ export default function LoginPage() {
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#881337] opacity-40"></span>
                               <span className="relative inline-flex rounded-full h-3 w-3 bg-[#881337]"></span>
                             </div>
-                            <h3 className="text-[13px] font-bold text-[#881337]">Join 46+ Verified Bohra Professionals</h3>
+                            <h3 className="text-[13px] font-bold text-[#881337]">46+ Verified Profiles Awaiting You</h3>
                         </div>
                         <div className="flex flex-wrap justify-center gap-2">
                             <span className="bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-full text-[11px] font-bold text-[#881337]">👨‍💻 Software Engineers</span>

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc } from 'firebase/firestore';
+import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Send, ArrowLeft, Loader2, Phone, Mic, Square, Trash2, Play, Pause } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -119,7 +119,8 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
 
         const q = query(
             collection(db, `rishta_requests/${connectionId}/messages`),
-            orderBy("timestamp", "asc")
+            orderBy("timestamp", "desc"),
+            limit(50)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -127,7 +128,7 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
             snapshot.forEach((doc) => {
                 msgs.push({ id: doc.id, ...doc.data() } as ChatMessage);
             });
-            setMessages(msgs);
+            setMessages(msgs.reverse());
             setLoading(false);
             // Auto scroll to bottom
             setTimeout(() => {

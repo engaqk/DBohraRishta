@@ -49,14 +49,28 @@ export default function LoginPage() {
                 }
 
                 setDemoProfiles(combined);
+                localStorage.setItem('cached_demo_profiles', JSON.stringify(combined));
 
                 // Live counts
                 const totalQ = query(collection(db, 'users'), where('isItsVerified', '==', true));
                 const totalSnap = await getCountFromServer(totalQ);
                 setLiveVerifiedCount(totalSnap.data().count);
+                localStorage.setItem('cached_live_count', totalSnap.data().count.toString());
 
             } catch (e) {
                 console.error("login3 data fetch error", e);
+                
+                const cachedCount = localStorage.getItem('cached_live_count');
+                if (cachedCount) {
+                    setLiveVerifiedCount(parseInt(cachedCount));
+                } else {
+                    setLiveVerifiedCount(150); // Hardcoded fallback if no cache yet
+                }
+
+                const cachedProfiles = localStorage.getItem('cached_demo_profiles');
+                if (cachedProfiles) {
+                    setDemoProfiles(JSON.parse(cachedProfiles));
+                }
             }
         };
         fetchData();

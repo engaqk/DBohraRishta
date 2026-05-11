@@ -368,6 +368,7 @@ export default function RishtaDashboard() {
         }
     }, [adminChatParam, router, searchParams]);
     const [dataLoading, setDataLoading] = useState(true);
+    const [discoveryError, setDiscoveryError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
 
     // Live Data State
@@ -1455,7 +1456,7 @@ export default function RishtaDashboard() {
             // Once my profile is loaded, subscribe to discovery profiles
             if (!unsubDiscovery) {
                 const oppositeGender = profileData.gender === 'male' ? 'female' : (profileData.gender === 'female' ? 'male' : 'all');
-                const q = query(collection(db, "users"), where("isItsVerified", "==", true));
+                const q = query(collection(db, "users"), where("isItsVerified", "==", true), limit(100));
 
                 unsubDiscovery = onSnapshot(q, (snap) => {
                     let profiles: UserProfile[] = [];
@@ -1485,9 +1486,18 @@ export default function RishtaDashboard() {
                     });
 
                     setDiscoveryProfiles(profiles);
+                    localStorage.setItem('cached_discovery_profiles', JSON.stringify(profiles));
+                    setDiscoveryError(null);
                     setDataLoading(false);
                 }, (err) => {
                     console.error("Discovery Listener Error:", err);
+                    const cached = localStorage.getItem('cached_discovery_profiles');
+                    if (cached) {
+                        setDiscoveryProfiles(JSON.parse(cached));
+                        setDiscoveryError("Live data paused due to high traffic. Showing previously saved profiles.");
+                    } else {
+                        setDiscoveryError("Quota exceeded or connection error. Please try again later.");
+                    }
                     setDataLoading(false); // At least stop loading
                 });
             }
@@ -2051,7 +2061,12 @@ export default function RishtaDashboard() {
                         </div>
 
 
-                        {filteredProfiles.length === 0 ? (
+                        {discoveryError ? (
+                            <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100">
+                                <p className="text-red-500 font-bold">{discoveryError}</p>
+                                <p className="text-gray-500 text-sm mt-2">Database quota might be exceeded. Please try again once restored.</p>
+                            </div>
+                        ) : filteredProfiles.length === 0 ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100">
                                 <p className="text-gray-500 font-bold">No new biodatas found dynamically.</p>
                             </div>
@@ -2295,6 +2310,23 @@ export default function RishtaDashboard() {
                 )}
 
             </header>
+
+            {/* ⚠️ Quota Fallback Banner */}
+            {discoveryError && (
+                <div className="max-w-7xl mx-auto mb-5 rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 shadow-lg overflow-hidden animate-in slide-in-from-top-4">
+                    <div className="flex items-start gap-4 p-5 md:p-6">
+                        <div className="w-10 h-10 bg-amber-600 rounded-full flex items-center justify-center shrink-0 shadow-md">
+                            <span className="text-white text-xl">⚠️</span>
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-black text-xl text-amber-900 mb-1">High Traffic Mode Active</h3>
+                            <p className="text-amber-800 text-sm leading-relaxed">
+                                {discoveryError}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* 📢 Broadcast Banner */}
             {latestBroadcast && (

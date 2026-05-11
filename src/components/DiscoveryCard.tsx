@@ -57,6 +57,9 @@ interface DiscoveryCardProps {
     isIncomingRequest?: boolean;
     onAcceptInterest?: (requestId: string) => void;
     onDeclineInterest?: (requestId: string) => void;
+    isPhotoVerified?: boolean;
+    isEmailVerified?: boolean;
+    verifiedPhone?: string;
 }
 
 export default function DiscoveryCard({
@@ -67,7 +70,8 @@ export default function DiscoveryCard({
     ejamaatId, itsNumber, maritalStatus, mobile, mobileCode, email,
     fatherName, motherName, professionType, educationDetails,
     city, state, gender, createdAt, selfieImageUrl, selfieStatus, voiceIntroUrl, videoIntroUrl, videoStatus, lastActive,
-    requestId, initialRequestStatus, isIncomingRequest, onAcceptInterest, onDeclineInterest
+    requestId, initialRequestStatus, isIncomingRequest, onAcceptInterest, onDeclineInterest,
+    isPhotoVerified, isEmailVerified, verifiedPhone
 }: DiscoveryCardProps) {
     const { user } = useAuth();
     const router = useRouter();
@@ -108,13 +112,11 @@ export default function DiscoveryCard({
         }
     };
 
-    const [profileData, setProfileData] = useState<any>(null);
-
     const photos = [
         videoIntroUrl,
-        profileData?.libasImageUrl || libasImageUrl,
-        profileData?.extraImageUrl || extraImageUrl,
-        (profileData?.isPhotoVerified || profileData?.selfieStatus === 'verified' ? profileData?.selfieImageUrl : null)
+        libasImageUrl,
+        extraImageUrl,
+        (isPhotoVerified || selfieStatus === 'verified' ? selfieImageUrl : null)
     ].filter(Boolean) as string[];
     const currentPhoto = photos[activePhotoIdx];
     const isVideo = currentPhoto?.startsWith('data:video') || currentPhoto?.endsWith('.mp4') || currentPhoto?.endsWith('.webm');
@@ -141,26 +143,25 @@ export default function DiscoveryCard({
     }, [isOnline, lastActive]);
 
     const profileStrength = useMemo(() => {
-        if (!profileData) return 0;
         let score = 0;
-        if (profileData.name) score += 5;
-        if (profileData.gender) score += 5;
-        if (profileData.dob) score += 5;
-        if (profileData.jamaat) score += 5;
-        if (profileData.mobile || profileData.verifiedPhone) score += 5;
-        if (profileData.isEmailVerified) score += 5;
-        if (profileData.isItsVerified) score += 5;
-        if (profileData.education || profileData.educationDetails) score += 10;
-        if (profileData.professionType || profileData.profession) score += 10;
-        if (profileData.maritalStatus) score += 5;
-        if (profileData.heightFeet) score += 5;
-        if (profileData.bio) score += 5;
-        if (profileData.libasImageUrl) score += 15;
-        if (profileData.extraImageUrl) score += 5;
-        if (profileData.isPhotoVerified || profileData.selfieStatus === 'verified') score += 5;
-        if (profileData.voiceIntroUrl || profileData.videoIntroUrl) score += 5;
+        if (name) score += 5;
+        if (gender) score += 5;
+        if (dob) score += 5;
+        if (jamaat) score += 5;
+        if (mobile || verifiedPhone) score += 5;
+        if (isEmailVerified) score += 5;
+        if (isItsVerified) score += 5;
+        if (education || educationDetails) score += 10;
+        if (professionType) score += 10;
+        if (maritalStatus) score += 5;
+        if (heightFeet) score += 5;
+        if (bio) score += 5;
+        if (libasImageUrl) score += 15;
+        if (extraImageUrl) score += 5;
+        if (isPhotoVerified || selfieStatus === 'verified') score += 5;
+        if (voiceIntroUrl || videoIntroUrl) score += 5;
         return Math.min(100, score);
-    }, [profileData]);
+    }, [name, gender, dob, jamaat, mobile, verifiedPhone, isEmailVerified, isItsVerified, education, educationDetails, professionType, maritalStatus, heightFeet, bio, libasImageUrl, extraImageUrl, isPhotoVerified, selfieStatus, voiceIntroUrl, videoIntroUrl]);
 
     const isVerifiedContributor = profileStrength >= 95;
 
@@ -196,12 +197,7 @@ export default function DiscoveryCard({
         };
         check();
 
-        // Live status listener for profile updates
-        const unsub = onSnapshot(doc(db, "users", id), (snap) => {
-            if (snap.exists()) setProfileData(snap.data());
-        });
-
-        return () => unsub();
+        // Removed redundant listener to save reads. Props are updated by parent listener.
     }, [user, id, initialRequestStatus, requestId, isIncomingRequest]);
  
     const icebreakerError = useMemo(() => {
@@ -416,14 +412,14 @@ export default function DiscoveryCard({
                     <div className="absolute top-3 left-3 right-3 z-30 flex items-start justify-between">
                         <div className="flex flex-col gap-1.5 items-start">
                             <div className="flex flex-wrap gap-1.5">
-                                {(profileData?.isOnline || isOnline) ? (
+                                {isOnline ? (
                                     <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                                         <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />Active Now
                                     </span>
-                                ) : profileData?.lastActive && (
+                                ) : lastActive && (
                                     <span className="bg-gray-800/60 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                                         {(() => {
-                                            const last = profileData.lastActive?.toDate ? profileData.lastActive.toDate() : new Date(profileData.lastActive);
+                                            const last = lastActive?.toDate ? lastActive.toDate() : new Date(lastActive);
                                             const diff = Math.floor((Date.now() - last.getTime()) / 60000);
                                             if (diff < 60) return `${diff}m ago`;
                                             if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;

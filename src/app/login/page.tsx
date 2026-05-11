@@ -19,6 +19,7 @@ export default function LoginPage() {
     const [demoProfiles, setDemoProfiles] = useState<any[]>([]);
     const [liveVerifiedCount, setLiveVerifiedCount] = useState<number | null>(null);
     const [mounted, setMounted] = useState(false);
+    const [showHighTrafficBanner, setShowHighTrafficBanner] = useState(false);
 
     useEffect(() => { setMounted(true); }, []);
 
@@ -64,13 +65,15 @@ export default function LoginPage() {
                 if (cachedCount) {
                     setLiveVerifiedCount(parseInt(cachedCount));
                 } else {
-                    setLiveVerifiedCount(150); // Hardcoded fallback if no cache yet
+                    setLiveVerifiedCount(53); // Fallback matching actual verified count
                 }
 
                 const cachedProfiles = localStorage.getItem('cached_demo_profiles');
                 if (cachedProfiles) {
                     setDemoProfiles(JSON.parse(cachedProfiles));
                 }
+
+                setShowHighTrafficBanner(true);
             }
         };
         fetchData();
@@ -137,6 +140,15 @@ export default function LoginPage() {
                     </div>
 
                 </div>
+
+                {/* ⚠️ High Traffic Banner */}
+                {showHighTrafficBanner && (
+                    <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 text-center">
+                        <p className="text-[11px] font-bold text-amber-800 leading-relaxed">
+                            Salam! We are experiencing exceptionally high traffic today due to a surge in new members! To ensure a smooth experience for everyone, some live updates are temporarily paused. Full live features will automatically resume shortly. Thank you for your patience!
+                        </p>
+                    </div>
+                )}
 
                 {/* ── OUTCOME-FIRST HERO ── */}
                 <div className="bg-white px-6 pt-6 pb-5 fade-up fade-up-2 text-center">

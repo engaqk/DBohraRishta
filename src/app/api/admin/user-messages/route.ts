@@ -91,6 +91,24 @@ export async function POST(request: Request) {
                 totalMsgCount: admin.firestore.FieldValue.increment(1),
                 updatedAt: admin.firestore.FieldValue.serverTimestamp()
             });
+
+            // 3. Log Action in Audit Log
+            try {
+                const userDoc = await adminDb.collection('users').doc(userId).get();
+                const userData = userDoc.data();
+                
+                const auditRef = adminDb.collection('admin_audit_logs').doc();
+                await auditRef.set({
+                    adminId: 'admin',
+                    action: 'send_message',
+                    targetUserId: userId,
+                    targetUserName: userData?.name || 'Unknown',
+                    message: text,
+                    timestamp: admin.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (e) {
+                console.error('Failed to log audit:', e);
+            }
         }
 
         return NextResponse.json({ success: true });

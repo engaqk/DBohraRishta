@@ -14,6 +14,14 @@ interface AuditLog {
     timestamp: any;
 }
 
+const formatTimestamp = (ts: any) => {
+    if (!ts) return "N/A";
+    if (ts._seconds) return new Date(ts._seconds * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    if (ts.seconds) return new Date(ts.seconds * 1000).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const date = new Date(ts);
+    return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
 export default function AuditLogsTab() {
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
@@ -111,7 +119,7 @@ export default function AuditLogsTab() {
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="w-3.5 h-3.5 text-gray-300" />
                                                     <span className="text-[10px] font-bold text-gray-500 uppercase">
-                                                        {log.timestamp ? new Date(log.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                                                        {formatTimestamp(log.timestamp)}
                                                     </span>
                                                 </div>
                                             </td>

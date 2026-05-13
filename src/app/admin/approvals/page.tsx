@@ -36,6 +36,22 @@ interface AdminMessage {
     createdAt: any;
 }
 
+const getTimestamp = (createdAt: any) => {
+    if (!createdAt) return 0;
+    if (createdAt._seconds) return createdAt._seconds * 1000;
+    if (createdAt.seconds) return createdAt.seconds * 1000;
+    const date = new Date(createdAt);
+    return isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
+const formatDate = (createdAt: any) => {
+    if (!createdAt) return "N/A";
+    if (createdAt._seconds) return new Date(createdAt._seconds * 1000).toLocaleDateString();
+    if (createdAt.seconds) return new Date(createdAt.seconds * 1000).toLocaleDateString();
+    const date = new Date(createdAt);
+    return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleDateString();
+};
+
 export default function AdminVerificationPage() {
     const [allUsers, setAllUsers] = useState<PendingUser[]>([]);
     const [loading, setLoading] = useState(true);
@@ -47,6 +63,16 @@ export default function AdminVerificationPage() {
     const [msgCounts, setMsgCounts] = useState<Record<string, { total: number, userMsgs: number }>>({});
     const [requestStats, setRequestStats] = useState({ total: 0, accepted: 0 });
     const [searchQuery, setSearchQuery] = useState("");
+    const [localSearchQuery, setLocalSearchQuery] = useState("");
+
+    // Debounce search input
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setSearchQuery(localSearchQuery);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [localSearchQuery]);
+
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const [filterGender, setFilterGender] = useState<string>('male');
     const [visibleCount, setVisibleCount] = useState(50); // Pagination
@@ -86,8 +112,8 @@ export default function AdminVerificationPage() {
 
             // Handle date strings or Firestore timestamps
             if (sortConfig.key === 'createdAt') {
-                valA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
-                valB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
+                valA = getTimestamp(a.createdAt);
+                valB = getTimestamp(b.createdAt);
             }
 
             if (!valA) return 1;
@@ -292,7 +318,7 @@ export default function AdminVerificationPage() {
         }
 
         fetchDashboardData();
-        const interval = setInterval(fetchDashboardData, 30000);
+        const interval = setInterval(fetchDashboardData, 60000); // Increased to 60s for performance
         return () => clearInterval(interval);
     }, [router, fetchDashboardData]);
 
@@ -497,8 +523,8 @@ export default function AdminVerificationPage() {
                             <input
                                 type="text"
                                 placeholder="Search candidates..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                value={localSearchQuery}
+                                onChange={(e) => setLocalSearchQuery(e.target.value)}
                                 className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#881337] transition-all shadow-sm"
                             />
                         </div>
@@ -912,11 +938,8 @@ export default function AdminVerificationPage() {
                             
                             <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
                                 {[...allUsers]
-                                    .sort((a, b) => {
-                                        const dateA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt || 0).getTime();
-                                        const dateB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt || 0).getTime();
-                                        return dateB - dateA;
-                                    })
+                                    .filter(u => u.gender?.toLowerCase() === filterGender)
+                                    .sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt))
                                     .slice(0, 10)
                                     .map(u => (
                                         <div 
@@ -927,7 +950,7 @@ export default function AdminVerificationPage() {
                                             <div className="relative mb-3">
                                                 <div className="w-full h-24 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100">
                                                     <img 
-                                                        src={u.libasImageUrl || '/placeholder-profile.png'} 
+                                                        src={u.libasImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=random`} 
                                                         alt="" 
                                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                                     />
@@ -940,7 +963,7 @@ export default function AdminVerificationPage() {
                                             <div className="mt-2 flex items-center justify-between">
                                                 <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase border ${getStatusColor(u.status)}`}>{getStatusLabel(u.status)}</span>
                                                 <span className="text-[8px] font-bold text-gray-300">
-                                                    {u.createdAt?.seconds ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : new Date(u.createdAt || 0).toLocaleDateString()}
+                                                    {formatDate(u.createdAt)}
                                                 </span>
                                             </div>
                                         </div>
@@ -1111,7 +1134,7 @@ export default function AdminVerificationPage() {
                                                             title="Click to enlarge Libas Photo"
                                                         >
                                                             <img 
-                                                                src={u.libasImageUrl || '/placeholder-profile.png'} 
+                                                                src={u.libasImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=random`} 
                                                                 alt="Libas" 
                                                                 className="w-full h-full object-cover"
                                                                 loading="lazy" 
@@ -1152,7 +1175,7 @@ export default function AdminVerificationPage() {
                                                     <div>
                                                         <p className="text-gray-400 font-bold uppercase text-[9px] mb-0.5">Joined Date</p>
                                                         <p className="text-gray-600 font-medium text-[11px]">
-                                                            {u.createdAt?.seconds ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : new Date(u.createdAt || 0).toLocaleDateString()}
+                                                            {formatDate(u.createdAt)}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1177,7 +1200,7 @@ export default function AdminVerificationPage() {
 
                                                 <div className="hidden md:block md:col-span-2">
                                                     <p className="text-xs text-gray-500 font-medium">
-                                                        {u.createdAt?.seconds ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : new Date(u.createdAt || 0).toLocaleDateString()}
+                                                        {formatDate(u.createdAt)}
                                                     </p>
                                                 </div>
 

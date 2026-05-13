@@ -20,6 +20,28 @@ export default function LoginPage() {
     const [liveVerifiedCount, setLiveVerifiedCount] = useState<number | null>(null);
     const [mounted, setMounted] = useState(false);
     const [showHighTrafficBanner, setShowHighTrafficBanner] = useState(false);
+    const [currentSlide, setCurrentSlide] = useState(0);
+
+    const reviews = [
+        {
+            text: "We registered our daughter and within 2 weeks received 3 ITS-verified proposals from respectable families. The privacy controls gave us complete peace of mind.",
+            name: "Fatema",
+            location: "Indore",
+            initial: "F"
+        },
+        {
+            text: "I was hesitant to join any platform, but the automatic photo blur feature gave me the privacy I needed. Only people I approve can see my picture.",
+            name: "Abeda",
+            location: "Karachi",
+            initial: "A"
+        },
+        {
+            text: "The mandatory ITS verification gave me and my parents the confidence that everyone here is genuine. It makes a huge difference.",
+            name: "Alefiya",
+            location: "Mumbai",
+            initial: "A"
+        }
+    ];
 
     useEffect(() => { setMounted(true); }, []);
 
@@ -298,23 +320,44 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* ── COMMUNITY QUOTE ── */}
+                {/* ── COMMUNITY QUOTE SLIDER ── */}
                 <div className="bg-white px-6 pb-6 fade-up fade-up-3">
                     <div className="relative bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-2xl px-5 py-4">
                         <div className="absolute -top-3 left-5 text-4xl text-[#D4AF37] font-serif leading-none">"</div>
-                        <p className="text-[12.5px] text-gray-700 italic leading-relaxed pt-3">
-                            We registered our daughter and within 2 weeks received 3 ITS-verified proposals from respectable families. The privacy controls gave us complete peace of mind.
-                        </p>
-                        <div className="flex items-center gap-2 mt-3">
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-200 to-rose-200 flex items-center justify-center text-sm font-bold text-[#881337]">F</div>
-                            <div>
-                                <p className="text-[11px] font-black text-[#881337]">Fatema B., Mumbai</p>
-                                <div className="flex gap-0.5">
-                                    {[1,2,3,4,5].map(i => <Star key={i} className="w-2.5 h-2.5 fill-[#D4AF37] text-[#D4AF37]" />)}
+                        
+                        {/* Arrows */}
+                        <button 
+                            onClick={() => setCurrentSlide(prev => (prev === 0 ? reviews.length - 1 : prev - 1))}
+                            className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/90 border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-all z-10"
+                            title="Previous Review"
+                        >
+                            <span className="text-[#881337] font-black text-xs">&lt;</span>
+                        </button>
+                        <button 
+                            onClick={() => setCurrentSlide(prev => (prev === reviews.length - 1 ? 0 : prev + 1))}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/90 border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-all z-10"
+                            title="Next Review"
+                        >
+                            <span className="text-[#881337] font-black text-xs">&gt;</span>
+                        </button>
+
+                        <div className="px-4">
+                            <p className="text-[12.5px] text-gray-700 italic leading-relaxed pt-3 min-h-[60px]">
+                                {reviews[currentSlide].text}
+                            </p>
+                            <div className="flex items-center gap-2 mt-3">
+                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-200 to-rose-200 flex items-center justify-center text-sm font-bold text-[#881337]">
+                                    {reviews[currentSlide].initial}
                                 </div>
-                            </div>
-                            <div className="ml-auto">
-                                <span className="text-[9px] font-bold bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">✓ Verified Member</span>
+                                <div>
+                                    <p className="text-[11px] font-black text-[#881337]">{reviews[currentSlide].name}, {reviews[currentSlide].location}</p>
+                                    <div className="flex gap-0.5">
+                                        {[1,2,3,4,5].map(i => <Star key={i} className="w-2.5 h-2.5 fill-[#D4AF37] text-[#D4AF37]" />)}
+                                    </div>
+                                </div>
+                                <div className="ml-auto">
+                                    <span className="text-[9px] font-bold bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">✓ Verified Member</span>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -21,16 +21,16 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
             const { transporter } = await import('./nodemailer');
             const { isEmailBlocked, recordEmailFailure } = await import('./emailStatusServer');
 
-            // Prepare BCC
+            // Prepare BCC — auto-add admin unless they are already a TO recipient or already in BCC
             const isAdminRecipient = realRecipients.some(r => r.toLowerCase() === ADMIN_EMAIL.toLowerCase());
             const currentBcc = Array.isArray(payload.bcc) ? payload.bcc : (payload.bcc ? [payload.bcc] : []);
             const isAdminBcc = currentBcc.some(r => r.toLowerCase() === ADMIN_EMAIL.toLowerCase());
-            let bccFinal = payload.bcc;
+            let bccFinal: string[] = [...currentBcc];
             if (!isAdminRecipient && !isAdminBcc) {
                 bccFinal = [...currentBcc, ADMIN_EMAIL];
             }
 
-            // prepared recipients based on blocklist
+            // Filter recipients against blocklist
             const activeRecipients: string[] = [];
             for (const email of realRecipients) {
                 const blocked = await isEmailBlocked(email);
@@ -40,11 +40,15 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
             }
             if (activeRecipients.length === 0) return;
 
+            // Deduplicate: remove any BCC address that is already a TO recipient
+            const activeSet = new Set(activeRecipients.map(r => r.toLowerCase()));
+            const dedupedBcc = bccFinal.filter(r => !activeSet.has(r.toLowerCase()));
+
             const mailOptions = {
                 from: `"53DBohraRishta" <${process.env.GMAIL_USER}>`,
                 to: activeRecipients.join(', '),
                 cc: payload.cc ? (Array.isArray(payload.cc) ? payload.cc.join(', ') : payload.cc) : undefined,
-                bcc: bccFinal ? (Array.isArray(bccFinal) ? bccFinal.join(', ') : bccFinal) : undefined,
+                bcc: dedupedBcc.length > 0 ? dedupedBcc.join(', ') : undefined,
                 subject: payload.subject,
                 html: payload.htmlBody,
             };
@@ -66,15 +70,19 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
         const fetchUrl = typeof window !== 'undefined' ? '/api/notify' : (baseUrl ? `${baseUrl}/api/notify` : '/api/notify');
         
-        // Ensure Admin is BCCed on everything unless they are the direct recipient
+        // Auto-BCC admin unless they are already a TO recipient or already in BCC
         const isAdminRecipient = realRecipients.some(r => r.toLowerCase() === ADMIN_EMAIL.toLowerCase());
         const currentBcc = Array.isArray(payload.bcc) ? payload.bcc : (payload.bcc ? [payload.bcc] : []);
         const isAdminBcc = currentBcc.some(r => r.toLowerCase() === ADMIN_EMAIL.toLowerCase());
         
-        let bccFinal = payload.bcc;
+        let bccFinal: string[] = [...currentBcc];
         if (!isAdminRecipient && !isAdminBcc) {
             bccFinal = [...currentBcc, ADMIN_EMAIL];
         }
+
+        // Deduplicate: remove any BCC address that is already a TO recipient
+        const recipientSet = new Set(realRecipients.map(r => r.toLowerCase()));
+        const dedupedBcc = bccFinal.filter(r => !recipientSet.has(r.toLowerCase()));
 
         const response = await fetch(fetchUrl, {
             method: "POST",
@@ -82,7 +90,7 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
             body: JSON.stringify({
                 to: realRecipients,
                 cc: payload.cc,
-                bcc: bccFinal,
+                bcc: dedupedBcc.length > 0 ? dedupedBcc : undefined,
                 subject: payload.subject,
                 html: payload.htmlBody
             })
@@ -196,7 +204,7 @@ export async function notifyUserRegistrationReceived(opts: {
     await sendEmail({
         toEmail: opts.candidateEmail,
         subject: '✅ Registration Received – 53DBohraRishta',
-        htmlBody: `<h3>Form Submitted Successfully</h3><p>Your ITS: ${opts.itsNumber} has been received.</p>`,
+        htmlBody: templates.getWelcomeOnboardingTemplate({ candidateName: opts.candidateName, isReminder: false }),
     });
 }
 

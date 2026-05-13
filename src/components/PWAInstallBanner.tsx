@@ -94,7 +94,7 @@ export default function PWAInstallBanner() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[#881337] text-sm">Install DBohraRishta</p>
+                    <p className="font-bold text-[#881337] text-sm">Install 53DBohraRishta</p>
                     {isIOS ? (
                         <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
                             Tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong> to install.

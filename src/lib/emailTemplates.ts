@@ -222,7 +222,7 @@ export function getNewCandidateVerifiedTemplate(opts: { newCandidateGender: stri
                 </a>
             </div>
             <hr style="border:0;border-top:1px solid #eee;margin:32px 0"/>
-            <p style="font-size:10px;color:#bbb;text-align:center;line-height:1.5">You are receiving this because your profile is verified on 53DBohraRishta.<br/>&copy; 2026 DBohraRishta Team</p>
+            <p style="font-size:10px;color:#bbb;text-align:center;line-height:1.5">You are receiving this because your profile is verified on 53DBohraRishta.<br/>&copy; 2026 53DBohraRishta Team</p>
         </div>`;
 }
 

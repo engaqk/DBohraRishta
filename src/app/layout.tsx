@@ -18,31 +18,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DBohraRishta | Intelligent Rishta Platform for the Dawoodi Bohra Community",
+  title: "53DBohraRishta | Intelligent Rishta Platform for the Dawoodi Bohra Community",
   description: "A trusted, community-centric Rishta platform for the Dawoodi Bohra community. ITS-verified profiles, dynamic photo privacy, and intelligent Rishta connections.",
   keywords: "Bohra, Dawoodi Bohra, Rishta, matrimony, ITS verified, Muslim matrimony",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "DBohraRishta",
+    title: "53DBohraRishta",
   },
   icons: {
     icon: "/icon-512.png",
     apple: "/icon-512.png",
   },
   openGraph: {
-    title: "DBohraRishta — Intelligent Bohra Rishta Platform",
+    title: "53DBohraRishta — Intelligent Bohra Rishta Platform",
     description: "ITS-verified profiles. Privacy-first. Bohra community Rishta platform.",
     url: "https://www.53dbohrarishta.in",
-    siteName: "DBohraRishta",
+    siteName: "53DBohraRishta",
     locale: "en_US",
     type: "website",
     images: ["/icon-512.png"],
   },
   twitter: {
     card: "summary",
-    title: "DBohraRishta",
+    title: "53DBohraRishta",
     description: "Intelligent Rishta platform for the Dawoodi Bohra community.",
     images: ["/icon-512.png"],
   },

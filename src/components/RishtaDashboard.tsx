@@ -1234,7 +1234,7 @@ export default function RishtaDashboard() {
                 steps: [
                     {
                         popover: {
-                            title: '🌟 Welcome to DBohraRishta!',
+                            title: '🌟 Welcome to 53DBohraRishta!',
                             description: 'Assalaamu Alaykum! This is your trusted halal matrimonial platform. Let\'s take a quick tour to help you find your perfect match. أمين',
                             align: 'center',
                         }
@@ -2304,7 +2304,7 @@ export default function RishtaDashboard() {
                                     <Send className="w-5 h-5" />
                                 </button>
                             </div>
-                            <p className="text-[8px] text-center text-gray-400 font-bold uppercase tracking-widest mt-3">Verified Support Channel • DBohraRishta</p>
+                            <p className="text-[8px] text-center text-gray-400 font-bold uppercase tracking-widest mt-3">Verified Support Channel • 53DBohraRishta</p>
                         </div>
                     </div>
                 )}
@@ -3212,7 +3212,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                             )}
                             <p className="text-center text-[9px] text-gray-400 mt-4 leading-relaxed">
                                 Version 2.1.0 (ITS-Verified)<br />
-                                © 2026 DBohraRishta Online
+                                © 2026 53DBohraRishta Online
                             </p>
                         </div>
                     </div>
@@ -3998,7 +3998,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 <div className="space-y-3">
                                     <p className="text-[13px] font-black text-[#881337] uppercase tracking-[0.3em]">Verified Community Identity Doc</p>
                                     <p className="text-[11px] leading-relaxed text-gray-400 max-w-[500px] font-bold">
-                                        Note: DBohraRishta is a community platform. We assume NO RESPONSIBILITY for the accuracy of information shared in this profile or ANY MISUSE of this biodata by any third party. Users MUST perform independent verification.
+                                        Note: 53DBohraRishta is a community platform. We assume NO RESPONSIBILITY for the accuracy of information shared in this profile or ANY MISUSE of this biodata by any third party. Users MUST perform independent verification.
                                     </p>
                                 </div>
                                 <div className="inline-flex items-center gap-6 px-10 py-5 bg-white rounded-[2rem] border-2 border-gray-100 shadow-xl">

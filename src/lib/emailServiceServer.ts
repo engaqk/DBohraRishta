@@ -29,12 +29,21 @@ export async function sendEmailDirect(payload: EmailPayload): Promise<void> {
 
         if (activeRecipients.length === 0) return;
 
+        // Auto-BCC admin only if they are NOT already a direct recipient AND NOT already in the provided BCC.
+        // This prevents admin from receiving the same email twice (once as TO and once as BCC).
+        const isAdminTo = activeRecipients.some(r => r.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+        const providedBcc = Array.isArray(payload.bcc) ? payload.bcc : (payload.bcc ? [payload.bcc] : []);
+        const isAdminBcc = providedBcc.some(r => r.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+        const finalBcc = (!isAdminTo && !isAdminBcc)
+            ? [...providedBcc, ADMIN_EMAIL]
+            : providedBcc;
+
         const fromUser = NODEMAILER_USER || ADMIN_EMAIL;
         const mailOptions = {
             from: `"53DBohraRishta" <${fromUser}>`,
             to: activeRecipients.join(', '),
             cc: payload.cc ? (Array.isArray(payload.cc) ? payload.cc.join(', ') : payload.cc) : undefined,
-            bcc: payload.bcc ? (Array.isArray(payload.bcc) ? payload.bcc.join(', ') : payload.bcc) : ADMIN_EMAIL, 
+            bcc: finalBcc.length > 0 ? finalBcc.join(', ') : undefined,
             subject: payload.subject,
             html: payload.htmlBody,
         };
@@ -44,7 +53,6 @@ export async function sendEmailDirect(payload: EmailPayload): Promise<void> {
     } catch (serverError: any) {
         const msg = serverError.message || 'Unknown Server Error';
         console.error("[EmailServiceServer] SMTP Failed:", msg);
-        // Record failure
         for(const email of realRecipients) {
             await recordEmailFailure(email, msg);
         }

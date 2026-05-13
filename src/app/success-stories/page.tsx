@@ -92,7 +92,7 @@ export default function SuccessStoriesPage() {
 
     const handleShare = () => {
         if (navigator.share) {
-            navigator.share({ title: 'DBohraRishta Success Stories', url: window.location.href });
+            navigator.share({ title: '53DBohraRishta Success Stories', url: window.location.href });
         } else {
             navigator.clipboard.writeText(window.location.href);
             toast.success('Link copied!');
@@ -116,7 +116,7 @@ export default function SuccessStoriesPage() {
                     </div>
                     <h1 className="text-3xl md:text-4xl font-black font-serif mb-3">Success Stories 💕</h1>
                     <p className="text-white/80 text-sm leading-relaxed max-w-md mx-auto">
-                        Alhamdulillah — beautiful connections formed through DBohraRishta. May Allah bless every union.
+                        Alhamdulillah — beautiful connections formed through 53DBohraRishta. May Allah bless every union.
                     </p>
                     <button onClick={handleShare}
                         className="mt-5 flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white px-5 py-2 rounded-full text-sm font-bold transition-all mx-auto">

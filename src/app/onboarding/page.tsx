@@ -229,7 +229,7 @@ export default function OnboardingPage() {
                 return;
             }
 
-            // Persist progress to Firestore
+            // Persist progress to Firestore (Step 1 save — no email notification yet)
             if (user) {
                 try {
                     await setDoc(doc(db, "users", user.uid), {
@@ -243,16 +243,7 @@ export default function OnboardingPage() {
                         isItsVerified: false,
                         isCommunityContributor: false
                     }, { merge: true });
-
-                    // Notify Admin that onboarding has started (Pending state)
-                    if (formData.email) {
-                        notifyAdminNewRegistration({
-                            candidateName: formData.name,
-                            candidateEmail: formData.email,
-                            gender: formData.gender,
-                            onboardingStatus: 'pending'
-                        }).catch(() => {});
-                    }
+                    // Admin is only notified after full submission (Step 2), not here.
                 } catch (saveErr) {
                     console.warn("Failed to save onboarding progress:", saveErr);
                 }

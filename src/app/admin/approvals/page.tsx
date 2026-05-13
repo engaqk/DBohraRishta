@@ -59,7 +59,7 @@ export default function AdminVerificationPage() {
     // Auth Directory States
     const [authUsers, setAuthUsers] = useState<any[]>([]);
     const [loadingAuth, setLoadingAuth] = useState(false);
-    const [activeMainTab, setActiveMainTab] = useState<'firestore' | 'auth'>('firestore');
+    const [activeMainTab, setActiveMainTab] = useState<'firestore' | 'auth' | 'broadcast' | 'sms' | 'audit'>('firestore');
     const [isSyncing, setIsSyncing] = useState(false);
     const [visibleCountAuth, setVisibleCountAuth] = useState(50); // Pagination for Auth tab
 
@@ -1330,7 +1330,7 @@ export default function AdminVerificationPage() {
                         <SmsBroadcastTab />
                     ) : activeMainTab === 'audit' ? (
                         <AuditLogsTab />
-                    ) : null}
+                    ) : null
                 )}
                 {/* Image Full-View Modal for Admin */}
                 {fullscreenImage && (

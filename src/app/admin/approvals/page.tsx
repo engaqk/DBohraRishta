@@ -74,7 +74,7 @@ export default function AdminVerificationPage() {
             
             const matchesGender = u.gender?.toLowerCase() === filterGender;
             
-            const isComplete = u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved';
+            const isComplete = u.status === 'verified' || u.status === 'approved';
             const matchesTab = activeMainViewTab === 'complete' ? isComplete : !isComplete;
 
             return matchesSearch && matchesGender && matchesTab;
@@ -1069,7 +1069,7 @@ export default function AdminVerificationPage() {
                                 <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'name', direction: p.key === 'name' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
                                     Profile / Name {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                                 </div>
-                                <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'itsNumber', direction: p.key === 'itsNumber' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                                <div className="col-span-1 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'itsNumber', direction: p.key === 'itsNumber' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
                                     ITS Number {sortConfig.key === 'itsNumber' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                                 </div>
                                 <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'location', direction: p.key === 'location' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
@@ -1081,91 +1081,166 @@ export default function AdminVerificationPage() {
                                 <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'createdAt', direction: p.key === 'createdAt' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
                                     Joined Date {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                                 </div>
-                                <div className="col-span-2 text-right">Actions</div>
+                                <div className="col-span-3 text-right">Actions</div>
                             </div>
                             <div className="divide-y divide-gray-100">
                                 {sortedUsers.slice(0, visibleCount).map((u, idx) => {
                                     const hasNewMsgs = (msgCounts[u.id]?.userMsgs || 0) > 0;
                                     return (
-                                        <div key={u.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors group relative">
-                                            {/* Profile Column */}
-                                            <div className="col-span-2 flex items-center gap-3">
-                                                <div className="flex -space-x-3 hover:space-x-1 transition-all">
-                                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-sm z-20">
-                                                        <img 
-                                                            src={u.itsImageUrl || '/placeholder-its.png'} 
-                                                            alt="" 
-                                                            className="w-full h-full object-cover"
-                                                            loading="lazy" 
-                                                        />
-                                                    </div>
-                                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 border-2 border-white shadow-sm z-10">
-                                                        <img 
-                                                            src={u.libasImageUrl || '/placeholder-profile.png'} 
-                                                            alt="" 
-                                                            className="w-full h-full object-cover"
-                                                            loading="lazy" 
-                                                        />
-                                                    </div>
-                                                    {u.isOnline && (
-                                                        <div className="absolute -top-0.5 left-7 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse z-30" title="User is Online" />
-                                                    )}
-                                                    {u.isPhotoVerified && (
-                                                        <div className="absolute -bottom-1 left-7 bg-emerald-500 text-white rounded-full p-0.5 border-2 border-white z-30">
-                                                            <ShieldCheck className="w-2.5 h-2.5" />
+                                        <div key={u.id} className="p-4 hover:bg-gray-50 transition-colors group relative border-b border-gray-100 md:border-b-0">
+                                            <div className="flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 items-start md:items-center">
+                                                
+                                                {/* Profile Column */}
+                                                <div className="md:col-span-2 flex items-center gap-3 w-full md:w-auto">
+                                                    <div className="flex gap-1.5 relative">
+                                                        <div 
+                                                            className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shadow-sm cursor-zoom-in hover:scale-105 transition-transform"
+                                                            onClick={() => u.itsImageUrl && setFullscreenImage(u.itsImageUrl)}
+                                                            title="Click to enlarge ITS Card"
+                                                        >
+                                                            <img 
+                                                                src={u.itsImageUrl || '/placeholder-its.png'} 
+                                                                alt="ITS" 
+                                                                className="w-full h-full object-cover"
+                                                                loading="lazy" 
+                                                            />
                                                         </div>
+                                                        <div 
+                                                            className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shadow-sm cursor-zoom-in hover:scale-105 transition-transform"
+                                                            onClick={() => u.libasImageUrl && setFullscreenImage(u.libasImageUrl)}
+                                                            title="Click to enlarge Libas Photo"
+                                                        >
+                                                            <img 
+                                                                src={u.libasImageUrl || '/placeholder-profile.png'} 
+                                                                alt="Libas" 
+                                                                className="w-full h-full object-cover"
+                                                                loading="lazy" 
+                                                            />
+                                                        </div>
+                                                        {u.isOnline && (
+                                                            <div className="absolute -top-1 -left-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm animate-pulse z-30" title="User is Online" />
+                                                        )}
+                                                        {u.isPhotoVerified && (
+                                                            <div className="absolute -bottom-1 right-0 bg-emerald-500 text-white rounded-full p-0.5 border-2 border-white z-30">
+                                                                <ShieldCheck className="w-2.5 h-2.5" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <p className="font-bold text-sm text-[#881337] truncate max-w-[120px]">{u.name}</p>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase">{u.gender || 'Unknown'}</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Info Grid for Mobile (Middle section) */}
+                                                <div className="grid grid-cols-2 gap-3 w-full md:hidden text-xs bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                                                    <div>
+                                                        <p className="text-gray-400 font-bold uppercase text-[9px] mb-0.5">ITS Number</p>
+                                                        <p className="font-mono font-bold text-gray-700">{u.itsNumber}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-gray-400 font-bold uppercase text-[9px] mb-0.5">Status</p>
+                                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-tighter ${getStatusColor(u.status)}`}>
+                                                            {getStatusLabel(u.status)}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-gray-400 font-bold uppercase text-[9px] mb-0.5">Location</p>
+                                                        <p className="text-gray-700 font-bold truncate max-w-[120px]">{u.location || u.hizratLocation}</p>
+                                                        <p className="text-gray-400 truncate text-[10px] max-w-[120px]">{u.jamaat}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-gray-400 font-bold uppercase text-[9px] mb-0.5">Joined Date</p>
+                                                        <p className="text-gray-600 font-medium text-[11px]">
+                                                            {u.createdAt?.seconds ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : new Date(u.createdAt || 0).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Desktop Columns (Hidden on mobile) */}
+                                                <div className="hidden md:block md:col-span-1">
+                                                    <span className="text-xs font-mono font-bold text-gray-600">{u.itsNumber}</span>
+                                                </div>
+
+                                                <div className="hidden md:block md:col-span-2">
+                                                    <div className="flex flex-col">
+                                                        <p className="text-xs font-bold text-gray-700 truncate">{u.location || u.hizratLocation}</p>
+                                                        <p className="text-[9px] text-gray-400 truncate">{u.jamaat}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="hidden md:block md:col-span-2">
+                                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-tighter ${getStatusColor(u.status)}`}>
+                                                        {getStatusLabel(u.status)}
+                                                    </span>
+                                                </div>
+
+                                                <div className="hidden md:block md:col-span-2">
+                                                    <p className="text-xs text-gray-500 font-medium">
+                                                        {u.createdAt?.seconds ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : new Date(u.createdAt || 0).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+
+                                                {/* Action Column */}
+                                                <div className="md:col-span-3 flex items-center justify-start md:justify-end gap-1.5 w-full md:w-auto flex-wrap md:flex-nowrap mt-1 md:mt-0">
+                                                    {hasNewMsgs && (
+                                                        <div className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse mr-1" title="New messages" />
                                                     )}
+                                                    
+                                                    {/* Quick Actions */}
+                                                    {u.status !== 'approved' && u.status !== 'verified' && (
+                                                        <button 
+                                                            onClick={() => handleStatusMove(u.id, 'verified')}
+                                                            className="px-2.5 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-100 transition-all flex-1 md:flex-none text-center"
+                                                            title="Verify / Accept"
+                                                        >
+                                                            Verify
+                                                        </button>
+                                                    )}
+                                                    {u.status === 'verified' && (
+                                                        <button 
+                                                            onClick={() => handleStatusMove(u.id, 'approved')}
+                                                            className="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-100 transition-all flex-1 md:flex-none text-center"
+                                                            title="Final Approve"
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                    )}
+                                                    {u.status !== 'rejected' && (
+                                                        <button 
+                                                            onClick={() => {
+                                                                const reason = window.prompt("Enter rejection reason (optional):");
+                                                                if (reason !== null) handleStatusMove(u.id, 'rejected', reason);
+                                                            }}
+                                                            className="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[10px] font-black uppercase hover:bg-rose-100 transition-all flex-1 md:flex-none text-center"
+                                                            title="Reject"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    )}
+                                                    {u.status !== 'hold' && (
+                                                        <button 
+                                                            onClick={() => handleStatusMove(u.id, 'hold')}
+                                                            className="px-2.5 py-1.5 bg-yellow-50 text-yellow-600 border border-yellow-200 rounded-lg text-[10px] font-black uppercase hover:bg-yellow-100 transition-all flex-1 md:flex-none text-center"
+                                                            title="Put on Hold"
+                                                        >
+                                                            Hold
+                                                        </button>
+                                                    )}
+
+                                                    <button 
+                                                        onClick={() => openDetails(u)}
+                                                        className="px-2.5 py-1.5 bg-gray-100 hover:bg-[#881337] hover:text-white text-gray-600 rounded-lg text-[10px] font-black uppercase transition-all flex-1 md:flex-none text-center"
+                                                    >
+                                                        Details
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => openDetails(u, 'messages')}
+                                                        className={`p-1.5 rounded-lg transition-all ${hasNewMsgs ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'text-gray-400 hover:bg-gray-100'}`}
+                                                    >
+                                                        <MessageCircle className="w-3.5 h-3.5" />
+                                                    </button>
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <p className="font-bold text-sm text-[#881337] truncate max-w-[120px]">{u.name}</p>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{u.gender || 'Unknown'}</p>
-                                                </div>
-                                            </div>
-
-                                            {/* ITS Column */}
-                                            <div className="col-span-2">
-                                                <span className="text-xs font-mono font-bold text-gray-600">{u.itsNumber}</span>
-                                            </div>
-
-                                            {/* Location Column */}
-                                            <div className="col-span-2">
-                                                <div className="flex flex-col">
-                                                    <p className="text-xs font-bold text-gray-700 truncate">{u.location || u.hizratLocation}</p>
-                                                    <p className="text-[9px] text-gray-400 truncate">{u.jamaat}</p>
-                                                </div>
-                                            </div>
-
-                                            {/* Status Column */}
-                                            <div className="col-span-2">
-                                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-tighter ${getStatusColor(u.status)}`}>
-                                                    {getStatusLabel(u.status)}
-                                                </span>
-                                            </div>
-
-                                            {/* Date Column */}
-                                            <div className="col-span-2">
-                                                <p className="text-xs text-gray-500 font-medium">
-                                                    {u.createdAt?.seconds ? new Date(u.createdAt.seconds * 1000).toLocaleDateString() : new Date(u.createdAt || 0).toLocaleDateString()}
-                                                </p>
-                                            </div>
-
-                                            {/* Action Column */}
-                                            <div className="col-span-2 flex items-center justify-end gap-2">
-                                                {hasNewMsgs && (
-                                                    <div className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse mr-1" title="New messages" />
-                                                )}
-                                                <button 
-                                                    onClick={() => openDetails(u)}
-                                                    className="px-4 py-1.5 bg-gray-100 hover:bg-[#881337] hover:text-white text-gray-600 rounded-lg text-[10px] font-black uppercase transition-all"
-                                                >
-                                                    View Details
-                                                </button>
-                                                <button 
-                                                    onClick={() => openDetails(u, 'messages')}
-                                                    className={`p-2 rounded-lg transition-all ${hasNewMsgs ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'text-gray-400 hover:bg-gray-100'}`}
-                                                >
-                                                    <MessageCircle className="w-4 h-4" />
-                                                </button>
                                             </div>
                                         </div>
                                     );

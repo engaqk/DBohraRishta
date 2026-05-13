@@ -5,11 +5,14 @@ import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverT
 import { db } from "@/lib/firebase/config";
 import { auth } from "@/lib/firebase/config";
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
-import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2, ShieldCheck, Camera, Video } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2, ShieldCheck, Camera, Video, Mail, RefreshCw, Database } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { ADMIN_EMAIL } from '@/lib/emailService';
+import BroadcastTab from "@/components/admin/BroadcastTab";
+import SmsBroadcastTab from "@/components/admin/SmsBroadcastTab";
+import AuditLogsTab from "@/components/admin/AuditLogsTab";
 
 interface PendingUser {
     id: string;
@@ -52,6 +55,13 @@ export default function AdminVerificationPage() {
     const router = useRouter();
 
     const [sortConfig, setSortConfig] = useState<{ key: keyof PendingUser; direction: 'asc' | 'desc' }>({ key: 'createdAt', direction: 'desc' });
+
+    // Auth Directory States
+    const [authUsers, setAuthUsers] = useState<any[]>([]);
+    const [loadingAuth, setLoadingAuth] = useState(false);
+    const [activeMainTab, setActiveMainTab] = useState<'firestore' | 'auth'>('firestore');
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [visibleCountAuth, setVisibleCountAuth] = useState(50); // Pagination for Auth tab
 
     const sortedUsers = useMemo(() => {
         const filtered = allUsers.filter(u => {
@@ -96,6 +106,12 @@ export default function AdminVerificationPage() {
         setVisibleCount(50);
     }, [searchQuery, filterGender]);
 
+    useEffect(() => {
+        if (activeMainTab === 'auth') {
+            fetchAuthUsers();
+        }
+    }, [activeMainTab]);
+
     const genderCounts = useMemo(() => {
         const isComplete = (u: any) => u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved';
         const filteredByTab = allUsers.filter(u => activeMainViewTab === 'complete' ? isComplete(u) : !isComplete(u));
@@ -139,6 +155,51 @@ export default function AdminVerificationPage() {
             setLoading(false);
         }
     }, []);
+
+    const fetchAuthUsers = async () => {
+        if (authUsers.length === 0) setLoadingAuth(true);
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/auth-users', {
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            if (data.users) {
+                setAuthUsers(data.users);
+            } else if (data.error) {
+                toast.error(data.error);
+            }
+        } catch (e: any) {
+            toast.error('Failed to fetch auth users');
+        } finally {
+            setLoadingAuth(false);
+        }
+    };
+
+    const handleSyncAuth = async () => {
+        const confirmed = window.confirm("This will find users who exist in Firebase Auth but have no record in the Database, and create skeleton records for them so they can receive SMS broadcasts.\n\nProceed?");
+        if (!confirmed) return;
+
+        setIsSyncing(true);
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/users/sync-auth', {
+                method: 'POST',
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(`Successfully synced ${data.syncedCount} users!`);
+                fetchAuthUsers(); // Refresh counts
+            } else {
+                toast.error(data.error || "Sync failed");
+            }
+        } catch (e) {
+            toast.error("Network error during sync");
+        } finally {
+            setIsSyncing(false);
+        }
+    };
 
     const handleDeleteUser = async (userId: string, name: string) => {
         const confirmed = window.confirm(`DANGER: Are you absolutely sure you want to PERMANENTLY delete the account and biodata for ${name || 'this user'}? \n\nThis will delete their profile from the Database AND their login account from Firebase Auth. This action CANNOT be undone.`);
@@ -443,30 +504,6 @@ export default function AdminVerificationPage() {
                         </div>
 
                         <button
-                            onClick={() => router.push('/admin/users')}
-                            className="bg-blue-50 hover:bg-white text-blue-700 px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all border border-blue-100 hover:border-blue-400"
-                        >
-                            <Users className="w-3.5 h-3.5" /> Registered Users
-                        </button>
-                        <button
-                            onClick={() => router.push('/admin/broadcast')}
-                            className="bg-purple-50 hover:bg-white text-purple-700 px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all border border-purple-100 hover:border-purple-400"
-                        >
-                            <Send className="w-3.5 h-3.5" /> Broadcast Push
-                        </button>
-                        <button
-                            onClick={() => router.push('/admin/sms-broadcast')}
-                            className="bg-emerald-50 hover:bg-white text-emerald-700 px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all border border-emerald-100 hover:border-emerald-400"
-                        >
-                            <Smartphone className="w-3.5 h-3.5" /> Broadcast SMS
-                        </button>
-                        <button
-                            onClick={() => router.push('/admin/audit-logs')}
-                            className="bg-gray-800 hover:bg-gray-950 text-white px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all border border-gray-700"
-                        >
-                            <ShieldAlert className="w-3.5 h-3.5 text-rose-400" /> Audit Logs
-                        </button>
-                        <button
                             onClick={() => {
                                 localStorage.removeItem("admin_auth_token");
                                 toast.success("Admin session terminated.");
@@ -477,6 +514,50 @@ export default function AdminVerificationPage() {
                             <LogOut className="w-3.5 h-3.5" /> Secure Logout
                         </button>
                     </div>
+                </div>
+
+                {/* Main Tabs */}
+                <div className="flex items-center gap-2 mb-6 border-b border-gray-200 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                    <button
+                        onClick={() => setActiveMainTab('firestore')}
+                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'firestore' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <Database className="w-4 h-4 inline-block mr-2" />
+                        Registered Candidates
+                        {activeMainTab === 'firestore' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                    </button>
+                    <button
+                        onClick={() => setActiveMainTab('auth')}
+                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'auth' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <Users className="w-4 h-4 inline-block mr-2" />
+                        Auth Directory
+                        {activeMainTab === 'auth' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                    </button>
+                    <button
+                        onClick={() => setActiveMainTab('broadcast')}
+                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'broadcast' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <Mail className="w-4 h-4 inline-block mr-2" />
+                        Email Broadcast
+                        {activeMainTab === 'broadcast' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                    </button>
+                    <button
+                        onClick={() => setActiveMainTab('sms')}
+                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'sms' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <Smartphone className="w-4 h-4 inline-block mr-2" />
+                        SMS Broadcast
+                        {activeMainTab === 'sms' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                    </button>
+                    <button
+                        onClick={() => setActiveMainTab('audit')}
+                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'audit' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <ShieldAlert className="w-4 h-4 inline-block mr-2" />
+                        Audit Logs
+                        {activeMainTab === 'audit' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                    </button>
                 </div>
 
                 {/* Full-screen Detail View */}
@@ -760,7 +841,8 @@ export default function AdminVerificationPage() {
                         <p className="animate-pulse tracking-widest uppercase text-xs">Scanning database identities...</p>
                     </div>
                 ) : (
-                    <>
+                    activeMainTab === 'firestore' ? (
+                        <>
                         {/* Premium Analytics Cards */}
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
                             <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex items-center gap-5 hover:scale-[1.02] transition-all group cursor-default">
@@ -1101,7 +1183,154 @@ export default function AdminVerificationPage() {
                                 )}
                             </div>
                         </div>
-                    </>
+                        </>
+                    ) : activeMainTab === 'auth' ? (
+                        /* Auth Directory Tab */
+                        <div className="space-y-4">
+                            <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-3xl flex items-center justify-between">
+                                <div className="flex gap-4 items-center">
+                                    <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg">
+                                        <Mail className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-indigo-900 font-black text-xl">Identity Manager</h3>
+                                        <p className="text-indigo-600 text-sm font-medium">All Unique Signups ({authUsers.length})</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={fetchAuthUsers}
+                                    disabled={loadingAuth}
+                                    className="bg-white text-indigo-600 px-6 py-2.5 rounded-2xl text-sm font-black border-2 border-indigo-100 hover:bg-indigo-50 transition-all flex items-center gap-2"
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${loadingAuth ? 'animate-spin' : ''}`} /> Sync Directory
+                                </button>
+                            </div>
+
+                            {loadingAuth && authUsers.length === 0 ? (
+                                <div className="flex items-center justify-center py-24">
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="w-10 h-10 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
+                                        <p className="text-xs font-bold text-indigo-400 animate-pulse">Syncing User Directory...</p>
+                                    </div>
+                                </div>
+                            ) : authUsers.length === 0 ? (
+                                <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center shadow-sm">
+                                    <Mail className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                                    <p className="text-gray-400 font-bold">No identities found in Auth</p>
+                                </div>
+                            ) : (
+                                <div className="grid gap-2">
+                                    {authUsers.slice(0, visibleCountAuth).map((au, idx) => {
+                                        if (!au) return null;
+                                        const hasFirestore = allUsers.some(u => u.id === au.uid);
+                                        const isGoogle = au.providers?.includes('google.com');
+
+                                        const handleSendVerification = async (uid: string, email: string) => {
+                                            try {
+                                                const token = localStorage.getItem('admin_auth_token');
+                                                const res = await fetch('/api/admin/send-verification', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Authorization': token || '',
+                                                        'Content-Type': 'application/json'
+                                                    },
+                                                    body: JSON.stringify({ uid, email })
+                                                });
+                                                const data = await res.json();
+                                                if (data.success) toast.success('Verification link sent!');
+                                                else toast.error(data.error || 'Failed to send link');
+                                            } catch (e) {
+                                                toast.error('API Error');
+                                            }
+                                        };
+
+                                        return (
+                                            <div key={au.uid} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl group hover:shadow-md transition-all">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 font-black text-xs border border-gray-100 shrink-0">
+                                                        {idx + 1}
+                                                    </div>
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="flex items-center gap-1.5 text-sm font-black text-gray-900">
+                                                                <Mail className="w-3.5 h-3.5 text-blue-500" />
+                                                                {au.email || 'Anonymous Account'}
+                                                            </span>
+                                                            {au.emailVerified ? (
+                                                                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                                                            ) : (
+                                                                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-3 text-[10px] text-gray-400 font-black uppercase tracking-tight">
+                                                            <span className="bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100 font-mono">{au.uid ? au.uid.substring(0, 16) : '...'}...</span>
+                                                            <span className={`px-1.5 py-0.5 rounded border flex items-center gap-1 ${isGoogle ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-gray-50 border-gray-100 text-gray-500'}`}>
+                                                                {isGoogle ? 'Google' : 'Password'}
+                                                            </span>
+                                                            <span>•</span>
+                                                            <span>Joined: {new Date(au.creationTime).toLocaleDateString()}</span>
+                                                            {au.lastSignInTime && (
+                                                                <>
+                                                                    <span>•</span>
+                                                                    <span>Active: {new Date(au.lastSignInTime).toLocaleDateString()}</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {!au.emailVerified && au.email && (
+                                                        <button
+                                                            onClick={() => handleSendVerification(au.uid, au.email)}
+                                                            className="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-xl text-[9px] font-black border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center gap-1.5"
+                                                        >
+                                                            <Mail className="w-3 h-3" /> SEND VERIFICATION
+                                                        </button>
+                                                    )}
+                                                    {hasFirestore ? (
+                                                        <span className="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full text-[9px] font-black border border-emerald-100 tracking-widest flex items-center gap-1.5">
+                                                            <CheckCircle className="w-2.5 h-2.5" /> HAS BIODATA
+                                                        </span>
+                                                    ) : (
+                                                        <span className="bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full text-[9px] font-black border border-amber-100 tracking-widest flex items-center gap-1.5">
+                                                            <ShieldAlert className="w-2.5 h-2.5" /> PENDING BIODATA
+                                                        </span>
+                                                    )}
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(au.uid);
+                                                            toast.success('UID copied!');
+                                                        }}
+                                                        className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"
+                                                        title="Copy UID"
+                                                    >
+                                                        <Users className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {authUsers.length > visibleCountAuth && (
+                                        <div className="flex justify-center mt-6">
+                                            <button 
+                                                onClick={() => setVisibleCountAuth(prev => prev + 50)}
+                                                className="bg-white border-2 border-indigo-50 px-8 py-3 rounded-2xl text-[11px] font-black text-indigo-600 shadow-sm hover:shadow-md hover:bg-indigo-50 transition-all flex items-center gap-2 uppercase tracking-widest"
+                                            >
+                                                <RefreshCw className="w-4 h-4" /> Load More Identities ({authUsers.length - visibleCountAuth} remaining)
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ) : activeMainTab === 'broadcast' ? (
+                        <BroadcastTab />
+                    ) : activeMainTab === 'sms' ? (
+                        <SmsBroadcastTab />
+                    ) : activeMainTab === 'audit' ? (
+                        <AuditLogsTab />
+                    ) : null}
                 )}
                 {/* Image Full-View Modal for Admin */}
                 {fullscreenImage && (

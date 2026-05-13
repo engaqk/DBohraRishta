@@ -47,6 +47,10 @@ export default function AdminSmsBroadcastPage() {
     const router = useRouter();
     const { user } = useAuth();
 
+    useEffect(() => {
+        router.push('/admin/approvals');
+    }, [router]);
+
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const [history, setHistory] = useState<SmsBroadcastHistory[]>([]);

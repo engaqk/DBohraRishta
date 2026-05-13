@@ -19,6 +19,11 @@ interface AuditLog {
 
 export default function AdminAuditLogsPage() {
     const router = useRouter();
+
+    useEffect(() => {
+        router.push('/admin/approvals');
+    }, [router]);
+
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");

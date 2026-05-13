@@ -21,6 +21,11 @@ interface BroadcastHistory {
 export default function AdminBroadcastPage() {
     const router = useRouter();
     const { user } = useAuth();
+
+    useEffect(() => {
+        router.push('/admin/approvals');
+    }, [router]);
+
     const [loading, setLoading] = useState(false);
     const [history, setHistory] = useState<BroadcastHistory[]>([]);
     const [historyLoading, setHistoryLoading] = useState(true);

@@ -1,0 +1,408 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
+import { Send, Bell, Mail, Loader2, Megaphone, CheckCircle2, History } from "lucide-react";
+import toast from "react-hot-toast";
+import { useAuth } from "@/lib/contexts/AuthContext";
+
+interface BroadcastHistory {
+    id: string;
+    title: string;
+    message: string;
+    createdAt: any;
+    stats?: {
+        total: number;
+    };
+}
+
+export default function BroadcastTab() {
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const [history, setHistory] = useState<BroadcastHistory[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(true);
+    const [visibleCountHistory, setVisibleCountHistory] = useState(10);
+    const [formData, setFormData] = useState({
+        title: "",
+        message: "",
+        sendPush: true,
+        sendInApp: true,
+        sendEmail: false,
+        includeAllAuthUsers: false,
+        onlyIncompleteOnboarding: false,
+    });
+
+    const [targetStats, setTargetStats] = useState({ emails: 0, emailsList: [] as string[], loading: false });
+    const [selectedRecipientEmails, setSelectedRecipientEmails] = useState<string[]>([]);
+    const [showEmails, setShowEmails] = useState(false);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            setTargetStats(prev => ({ ...prev, loading: true }));
+            try {
+                const token = localStorage.getItem('admin_auth_token');
+                const res = await fetch('/api/broadcast/send', {
+                    method: 'POST',
+                    headers: { 'Authorization': token || '', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        includeAllAuthUsers: formData.includeAllAuthUsers,
+                        onlyIncompleteOnboarding: formData.onlyIncompleteOnboarding,
+                        preview: true
+                    }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const list = data.emails || [];
+                    setTargetStats({ emails: data.activeEmails, emailsList: list, loading: false });
+                    setSelectedRecipientEmails(list);
+                }
+            } catch (e) {
+                console.error('Stats error:', e);
+                setTargetStats(prev => ({ ...prev, loading: false }));
+            }
+        };
+        fetchStats();
+    }, [formData.includeAllAuthUsers, formData.onlyIncompleteOnboarding]);
+
+    useEffect(() => {
+        fetchHistory();
+    }, []);
+
+    const fetchHistory = async () => {
+        if (history.length === 0) setHistoryLoading(true);
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/broadcast/history', {
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            if (data.history) {
+                setHistory(data.history);
+            }
+        } catch (e) {
+            console.error('Failed to fetch history:', e);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    const handleSend = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData.title || !formData.message) {
+            toast.error("Please fill title and message");
+            return;
+        }
+
+        const confirm = window.confirm(`Are you sure you want to send this broadcast to ALL users? This action cannot be undone.`);
+        if (!confirm) return;
+
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/broadcast/send', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': token || '',
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({
+                    title: formData.title,
+                    message: formData.message,
+                    sendPush: formData.sendPush,
+                    sendInApp: formData.sendInApp,
+                    sendEmail: formData.sendEmail,
+                    includeAllAuthUsers: formData.includeAllAuthUsers,
+                    onlyIncompleteOnboarding: formData.onlyIncompleteOnboarding,
+                    recipients: selectedRecipientEmails,
+                    adminId: user?.uid || 'admin'
+                }),
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || 'Failed to send mass broadcast via API');
+            }
+
+            const data = await res.json();
+            toast.success(`Broadcast sent! Push: ${data.pushSent}, Emails: ${data.emailsSent}`);
+            setFormData({ title: "", message: "", sendPush: true, sendInApp: true, sendEmail: false, includeAllAuthUsers: false, onlyIncompleteOnboarding: false });
+            fetchHistory();
+        } catch (error: any) {
+            toast.error("Failed to send broadcast: " + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-3xl flex items-center justify-between">
+                <div className="flex gap-4 items-center">
+                    <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg">
+                        <Megaphone className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h3 className="text-indigo-900 font-black text-xl">Broadcast Notifications</h3>
+                        <p className="text-indigo-600 text-sm font-medium">Send platform-wide announcements to all members.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Form Section */}
+                <div className="lg:col-span-2 space-y-6">
+                    <form onSubmit={handleSend} className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 space-y-6">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Subject / Title</label>
+                            <input
+                                type="text"
+                                value={formData.title}
+                                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                placeholder="e.g. Eid Mubarak to all members!"
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none transition-all"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Message Content</label>
+                            <textarea
+                                rows={5}
+                                value={formData.message}
+                                onChange={e => setFormData({ ...formData, message: e.target.value })}
+                                placeholder="Write your announcement details here..."
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#881337] outline-none resize-none transition-all"
+                            />
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Delivery Channels</label>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, sendInApp: !formData.sendInApp })}
+                                    className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${formData.sendInApp ? 'border-[#881337] bg-rose-50 text-[#881337]' : 'border-gray-100 bg-gray-50 text-gray-400'}`}
+                                >
+                                    <Bell className="w-5 h-5" />
+                                    <div className="text-left">
+                                        <p className="text-xs font-black uppercase">In-App</p>
+                                        <p className="text-[10px] opacity-70">Dashboard Banner</p>
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, sendPush: !formData.sendPush })}
+                                    className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${formData.sendPush ? 'border-[#881337] bg-rose-50 text-[#881337]' : 'border-gray-100 bg-gray-50 text-gray-400'}`}
+                                >
+                                    <Megaphone className="w-5 h-5" />
+                                    <div className="text-left">
+                                        <p className="text-xs font-black uppercase">Push</p>
+                                        <p className="text-[10px] opacity-70">Browser Alert</p>
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, sendEmail: !formData.sendEmail })}
+                                    className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${formData.sendEmail ? 'border-[#881337] bg-rose-50 text-[#881337]' : 'border-gray-100 bg-gray-50 text-gray-400'}`}
+                                >
+                                    <Mail className="w-5 h-5" />
+                                    <div className="text-left">
+                                        <p className="text-xs font-black uppercase">Email</p>
+                                        <p className="text-[10px] opacity-70">Direct Inbox</p>
+                                    </div>
+                                </button>
+                            </div>
+
+                             <div className="flex flex-col gap-2 p-2 border-t border-gray-50 mt-2">
+                                 <div className="flex items-center gap-2">
+                                     <input
+                                         type="checkbox"
+                                         id="includeAllAuthUsers"
+                                         checked={formData.includeAllAuthUsers}
+                                         onChange={e => {
+                                             const checked = e.target.checked;
+                                             setFormData({ 
+                                                 ...formData, 
+                                                 includeAllAuthUsers: checked,
+                                                 sendEmail: checked ? true : formData.sendEmail,
+                                                 sendPush: checked ? true : formData.sendPush
+                                             });
+                                         }}
+                                         className="w-4 h-4 text-[#881337] rounded border-gray-300 focus:ring-[#881337]"
+                                     />
+                                     <label htmlFor="includeAllAuthUsers" className="text-xs font-bold text-gray-600 cursor-pointer">
+                                         Include all registered users (including those with incomplete profiles)
+                                     </label>
+                                 </div>
+                                 <div className="flex flex-col gap-1">
+                                     <div className="flex items-center gap-2">
+                                         <input
+                                             type="checkbox"
+                                             id="onlyIncompleteOnboarding"
+                                             checked={formData.onlyIncompleteOnboarding}
+                                             onChange={e => {
+                                                 const checked = e.target.checked;
+                                                 setFormData({ 
+                                                     ...formData, 
+                                                     onlyIncompleteOnboarding: checked,
+                                                     includeAllAuthUsers: checked ? true : formData.includeAllAuthUsers,
+                                                     sendEmail: checked ? true : formData.sendEmail,
+                                                     sendPush: checked ? true : formData.sendPush
+                                                 });
+                                             }}
+                                             className="w-4 h-4 text-[#881337] rounded border-gray-300 focus:ring-[#881337]"
+                                         />
+                                         <label htmlFor="onlyIncompleteOnboarding" className="text-xs font-black text-rose-600 cursor-pointer">
+                                             ONLY send to users with INCOMPLETE onboarding/biodata
+                                         </label>
+                                     </div>
+                                     {formData.onlyIncompleteOnboarding && (
+                                         <span className="text-[9px] font-bold text-rose-400 ml-6 italic animate-pulse">
+                                             * Recommended: This will automatically target users who haven't finished their profile.
+                                         </span>
+                                     )}
+                                 </div>
+
+                                 <div className="mt-4 space-y-2">
+                                    <div 
+                                        onClick={() => setShowEmails(!showEmails)}
+                                        className="flex items-center justify-between p-3 bg-[#881337]/5 rounded-2xl border border-[#881337]/10 cursor-pointer hover:bg-[#881337]/10 transition-all shadow-sm"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-[#881337] animate-pulse" />
+                                            <span className="text-[10px] font-black uppercase text-[#881337]/70 tracking-widest leading-none">Recipient Preview</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {targetStats.loading ? (
+                                                <Loader2 className="w-3 h-3 animate-spin text-[#881337]" />
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-black text-[#881337] pr-2 border-r border-[#881337]/20">
+                                                        {targetStats.emails} recipients
+                                                    </span>
+                                                    <span className="text-[10px] font-bold text-[#881337]/60 underline">
+                                                        {showEmails ? 'Hide List' : 'View List'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {showEmails && targetStats.emailsList.length > 0 && (
+                                        <div className="bg-white border-2 border-gray-100 rounded-2xl p-4 max-h-56 overflow-y-auto shadow-inner scrollbar-thin scrollbar-thumb-rose-200">
+                                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-50 flex-wrap gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={selectedRecipientEmails.length === targetStats.emailsList.length}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) setSelectedRecipientEmails([...targetStats.emailsList]);
+                                                            else setSelectedRecipientEmails([]);
+                                                        }}
+                                                        className="w-3.5 h-3.5 rounded border-gray-300 text-[#881337] focus:ring-[#881337]"
+                                                    />
+                                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">Toggle All fetched Accounts</span>
+                                                </div>
+                                                <div className="flex items-center gap-1 bg-rose-50 px-2 py-0.5 rounded-full ring-1 ring-rose-200 shadow-sm ml-auto">
+                                                    <CheckCircle2 className="w-2.5 h-2.5 text-rose-500" />
+                                                    <span className="text-[8px] font-black text-rose-600 uppercase italic">
+                                                        {selectedRecipientEmails.length} Selected for Delivery
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-1.5 pt-1">
+                                                {targetStats.emailsList.map((email, idx) => (
+                                                    <div key={idx} className="flex items-center gap-3 p-2 bg-gray-50/50 hover:bg-rose-50 rounded-xl transition-all border border-transparent hover:border-rose-100 group">
+                                                        <input 
+                                                            type="checkbox"
+                                                            checked={selectedRecipientEmails.includes(email)}
+                                                            onChange={() => {
+                                                                if (selectedRecipientEmails.includes(email)) {
+                                                                    setSelectedRecipientEmails(selectedRecipientEmails.filter(e => e !== email));
+                                                                } else {
+                                                                    setSelectedRecipientEmails([...selectedRecipientEmails, email]);
+                                                                }
+                                                            }}
+                                                            className="w-3.5 h-3.5 rounded-md border-gray-300 text-[#881337] focus:ring-[#881337]"
+                                                        />
+                                                        <div className="flex flex-col gap-0.5 overflow-hidden">
+                                                            <span className="text-[11px] font-bold text-gray-600 group-hover:text-rose-800 truncate leading-none">{email}</span>
+                                                            <span className="text-[8px] text-gray-400 font-medium">Ready for Transmission</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                 </div>
+                             </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-[#881337] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#70102d] transition-all shadow-lg shadow-rose-900/20 disabled:opacity-50"
+                        >
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                            {loading ? "Broadcasting..." : "Launch Announcement"}
+                        </button>
+                    </form>
+                </div>
+
+                {/* Sidebar / History */}
+                <div className="space-y-6">
+                    <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
+                        <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
+                            <History className="w-4 h-4" /> Recent Activity
+                        </h2>
+
+                        {historyLoading && history.length === 0 ? (
+                            <div className="text-center py-12">
+                                <div className="w-8 h-8 border-2 border-rose-100 border-t-rose-900 rounded-full animate-spin mx-auto mb-2" />
+                                <p className="text-[10px] font-black text-gray-400 animate-pulse">Fetching History...</p>
+                            </div>
+                        ) : history.length === 0 ? (
+                            <p className="text-xs text-center text-gray-400 py-8 italic">No previous broadcasts found.</p>
+                        ) : (
+                            <div className="space-y-4">
+                                {history.slice(0, visibleCountHistory).map(item => (
+                                    <div key={item.id} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <p className="text-xs font-bold truncate pr-2">{item.title || 'General Announcement'}</p>
+                                            <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                                        </div>
+                                        <p className="text-[10px] text-gray-500 line-clamp-2 mb-2 leading-relaxed">
+                                            {item.message || (item as any).text}
+                                        </p>
+                                        <p className="text-[9px] text-gray-400 font-medium">
+                                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'} at {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                                        </p>
+                                    </div>
+                                ))}
+
+                                {history.length > visibleCountHistory && (
+                                    <button 
+                                        onClick={() => setVisibleCountHistory(prev => prev + 10)}
+                                        className="w-full py-2 text-[10px] font-black uppercase text-gray-400 hover:text-[#881337] transition-colors"
+                                    >
+                                        View Older Broadcasts ({history.length - visibleCountHistory} more)
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-6 border border-amber-100">
+                        <h3 className="text-xs font-black uppercase text-amber-800 mb-2">Pro Tip</h3>
+                        <p className="text-xs text-amber-700 leading-relaxed">
+                            Avoid over-broadcasting. Use "Push" only for urgent updates or festival greetings to maintain high engagement rates.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

@@ -42,6 +42,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 export default function AdminUsersPage() {
     const { user, impersonateUser } = useAuth();
     const router = useRouter();
+
+    useEffect(() => {
+        router.push('/admin/approvals');
+    }, [router]);
+
     const [users, setUsers] = useState<RegistrationUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');

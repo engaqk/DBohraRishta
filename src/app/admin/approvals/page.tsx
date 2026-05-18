@@ -5,7 +5,7 @@ import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverT
 import { db } from "@/lib/firebase/config";
 import { auth } from "@/lib/firebase/config";
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
-import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2, ShieldCheck, Camera, Video, Mail, RefreshCw, Database } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2, ShieldCheck, Camera, Video, Mail, RefreshCw, Database, User } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -810,12 +810,20 @@ export default function AdminVerificationPage() {
                                             
                                             <div className="w-full h-px bg-gray-100 my-2" />
                                             
-                                            <div className="flex gap-3 justify-end w-full">
+                                            <div className="flex gap-3 justify-end w-full flex-wrap">
+                                                {/* Impersonate / Assume Identity */}
+                                                <button
+                                                    onClick={() => impersonateUser(selectedUser.id, selectedUser.email || selectedUser.notificationEmail || 'user@example.com')}
+                                                    className="px-5 py-2.5 bg-[#D4AF37] hover:bg-[#c29e2f] text-white font-bold text-sm rounded-xl transition-colors shadow-md flex items-center gap-2"
+                                                    title="Log in as this user to see their view of the app"
+                                                >
+                                                    <User className="w-4 h-4" /> Assume Identity (Login as User)
+                                                </button>
                                                 <button
                                                     onClick={() => handleDeleteUser(selectedUser.id, selectedUser.name)}
                                                     className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition-colors shadow-md flex items-center gap-2"
                                                 >
-                                                    <Smartphone className="w-4 h-4" /> Delete Profile Completely
+                                                    <Trash2 className="w-4 h-4" /> Delete Profile Completely
                                                 </button>
                                             </div>
                                         </div>

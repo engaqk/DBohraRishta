@@ -85,6 +85,22 @@ export async function POST(request: Request) {
             updatedAt: new Date()
         });
 
+        // 4. Notify admin with the dedicated selfie-verification email template
+        try {
+            const userSnap = await adminDb.collection('users').doc(userId).get();
+            const userData = userSnap.data() || {};
+            const { notifyAdminSelfiePending } = await import('@/lib/emailService');
+            await notifyAdminSelfiePending({
+                candidateName: userData.name || userData.candidateName || 'Unknown Candidate',
+                candidateEmail: userData.email || userData.notificationEmail || '',
+                itsNumber: userData.ejamaatId || userData.itsNumber,
+                gender: userData.gender,
+                selfieUrl: downloadUrl,
+            });
+        } catch (emailErr: any) {
+            console.warn('[upload-selfie] Admin selfie notification failed (non-critical):', emailErr.message);
+        }
+
         return NextResponse.json({ success: true, downloadUrl });
 
     } catch (error: any) {

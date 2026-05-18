@@ -244,6 +244,47 @@ export function getVideoApprovedTemplate(opts: { candidateName: string }) {
         </div>`;
 }
 
+export function getAdminSelfiePendingTemplate(opts: {
+    candidateName: string;
+    candidateEmail: string;
+    itsNumber?: string;
+    gender?: string;
+    selfieUrl?: string;
+}) {
+    return `
+        <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:2px solid #bfdbfe;border-radius:12px;background:#f0f9ff">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <div style="width:44px;height:44px;background:#2563eb;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <span style="font-size:22px">📸</span>
+                </div>
+                <div>
+                    <h2 style="color:#1e3a8a;margin:0;font-size:18px">Selfie Verification Request</h2>
+                    <p style="color:#3b82f6;margin:2px 0 0;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:0.05em">Action Required – Admin Panel</p>
+                </div>
+            </div>
+            <p style="color:#1e40af;margin:0 0 16px">A candidate has submitted their <strong>verification selfie</strong> and is awaiting your review. This is <em>not</em> a new registration — it is a photo identity check for an existing profile.</p>
+            <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #bfdbfe">
+                <tr><td style="padding:8px 14px;font-weight:bold;color:#1e40af;background:#dbeafe;width:130px">Name</td><td style="padding:8px 14px;color:#1e3a8a">${opts.candidateName}</td></tr>
+                <tr><td style="padding:8px 14px;font-weight:bold;color:#1e40af;background:#dbeafe">Email</td><td style="padding:8px 14px;color:#1e3a8a">${opts.candidateEmail}</td></tr>
+                ${opts.itsNumber ? `<tr><td style="padding:8px 14px;font-weight:bold;color:#1e40af;background:#dbeafe">ITS No.</td><td style="padding:8px 14px;color:#1e3a8a">${opts.itsNumber}</td></tr>` : ''}
+                ${opts.gender ? `<tr><td style="padding:8px 14px;font-weight:bold;color:#1e40af;background:#dbeafe">Gender</td><td style="padding:8px 14px;color:#1e3a8a;text-transform:capitalize">${opts.gender}</td></tr>` : ''}
+                <tr><td style="padding:8px 14px;font-weight:bold;color:#1e40af;background:#dbeafe">Status</td><td style="padding:8px 14px;font-weight:bold;color:#d97706">⏳ SELFIE PENDING REVIEW</td></tr>
+            </table>
+            ${opts.selfieUrl ? `
+            <div style="margin:16px 0;text-align:center">
+                <p style="color:#1e40af;font-size:12px;font-weight:bold;margin:0 0 8px;text-transform:uppercase">Submitted Selfie Preview</p>
+                <img src="${opts.selfieUrl}" alt="Verification Selfie" style="max-width:180px;border-radius:12px;border:3px solid #3b82f6;box-shadow:0 4px 12px rgba(59,130,246,0.25)" />
+            </div>` : ''}
+            <div style="text-align:center;margin-top:24px">
+                <a href="https://53dbohrarishta.in/admin/approvals" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 28px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px;box-shadow:0 4px 12px rgba(37,99,235,0.3)">
+                    📸 Review Selfie in Admin Panel
+                </a>
+            </div>
+            <hr style="border:0;border-top:1px solid #bfdbfe;margin:24px 0"/>
+            <p style="font-size:11px;color:#93c5fd;text-align:center">53DBohraRishta – Selfie Verification Alert</p>
+        </div>`;
+}
+
 export function getVideoRejectedTemplate(opts: { candidateName: string; reason?: string }) {
     return `
         <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">

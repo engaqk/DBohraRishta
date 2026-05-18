@@ -125,6 +125,20 @@ export async function notifyAdminNewRegistration(opts: {
     });
 }
 
+export async function notifyAdminSelfiePending(opts: {
+    candidateName: string;
+    candidateEmail: string;
+    itsNumber?: string;
+    gender?: string;
+    selfieUrl?: string;
+}) {
+    await sendEmail({
+        toEmail: ADMIN_EMAIL,
+        subject: `📸 Selfie Verification Request – ${opts.candidateName}`,
+        htmlBody: templates.getAdminSelfiePendingTemplate(opts),
+    });
+}
+
 export async function notifyInterestSent(opts: {
     recipientName: string;
     recipientEmail: string;

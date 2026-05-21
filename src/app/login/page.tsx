@@ -53,26 +53,42 @@ export default function LoginPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Female profiles (priority)
-                const femaleQ = query(collection(db, 'users'), where('gender', '==', 'female'), where('isItsVerified', '==', true), limit(20));
-                const femaleSnap = await getDocs(femaleQ);
-                let females = femaleSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+                // Fetch a smaller set — only what DiscoveryCard needs for the preview scroller
+                const CARD_FIELDS = ['gender', 'name', 'age', 'city', 'profession', 'photoURL', 'isItsVerified', 'maritalStatus', 'height'];
 
-                // Male profiles (shuffled)
-                const maleQ = query(collection(db, 'users'), where('gender', '==', 'male'), where('isItsVerified', '==', true), limit(20));
+                const stripProfile = (doc: any): any => {
+                    const data = doc.data ? doc.data() : doc;
+                    const slim: any = { id: doc.id ?? doc.id };
+                    CARD_FIELDS.forEach(f => { if (data[f] !== undefined) slim[f] = data[f]; });
+                    return slim;
+                };
+
+                // Female profiles (priority) — limit 8
+                const femaleQ = query(collection(db, 'users'), where('gender', '==', 'female'), where('isItsVerified', '==', true), limit(8));
+                const femaleSnap = await getDocs(femaleQ);
+                let females = femaleSnap.docs.map(d => stripProfile(d));
+
+                // Male profiles (shuffled) — limit 8
+                const maleQ = query(collection(db, 'users'), where('gender', '==', 'male'), where('isItsVerified', '==', true), limit(8));
                 const maleSnap = await getDocs(maleQ);
-                let males = maleSnap.docs.map(d => ({ id: d.id, ...d.data() } as any)).sort(() => 0.5 - Math.random());
+                let males = femaleSnap.docs.length > 0
+                    ? maleSnap.docs.map(d => stripProfile(d)).sort(() => 0.5 - Math.random())
+                    : maleSnap.docs.map(d => stripProfile(d));
 
                 // Interleave: female, male, female, male…
                 let combined: any[] = [];
                 const max = Math.max(females.length, males.length);
                 for (let i = 0; i < max; i++) {
                     if (females[i]) combined.push(females[i]);
-                    if (males[i]) combined.push({ ...males[i], name: males[i].name?.split(' ')[0] + ' ●●●●' });
+                    if (males[i]) combined.push({ ...males[i], name: (males[i].name?.split(' ')[0] ?? '') + ' ●●●●' });
                 }
 
                 setDemoProfiles(combined);
-                localStorage.setItem('cached_demo_profiles', JSON.stringify(combined));
+                try {
+                    localStorage.setItem('cached_demo_profiles', JSON.stringify(combined));
+                } catch {
+                    // localStorage quota exceeded — skip caching silently
+                }
 
                 // Live counts
                 const totalQ = query(collection(db, 'users'), where('isItsVerified', '==', true));

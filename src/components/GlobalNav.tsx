@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X, Home, User, LogOut, Bell, HelpCircle, Smartphone, ShieldCheck, Users, ShieldAlert } from 'lucide-react';
 import { collection, query, onSnapshot, where } from 'firebase/firestore';
@@ -9,6 +11,7 @@ import { db } from '@/lib/firebase/config';
 
 export default function GlobalNav() {
     const { user, logout } = useAuth();
+    const { t } = useLanguage();
     const router = useRouter();
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
@@ -112,31 +115,39 @@ export default function GlobalNav() {
                                     </button>
                                 </>
                             )}
+                            {/* Desktop Language Switcher */}
+                            <div className="mx-2 flex items-center shrink-0">
+                                <LanguageSwitcher variant="nav" />
+                            </div>
+
                             {user ? (
                                 <>
                                     {!isAdminPage && (
                                         <>
                                             <button onClick={() => router.push('/')} className={`flex items-center gap-1.5 transition font-medium text-sm px-3 py-1.5 rounded-lg ${isActive('/') ? 'text-[#881337] bg-rose-50' : 'hover:bg-black/5'} font-bold`}>
-                                                <Home className="w-4 h-4" /> Dashboard
+                                                <Home className="w-4 h-4" /> {t("Dashboard")}
                                             </button>
                                             <button onClick={() => router.push('/candidate-registration')} className={`flex items-center gap-1.5 transition font-medium text-sm px-3 py-1.5 rounded-lg ${isActive('/candidate-registration') ? 'text-[#881337] bg-rose-50' : 'hover:bg-black/5'} font-bold`}>
-                                                <User className="w-4 h-4" /> My Biodata
+                                                <User className="w-4 h-4" /> {t("My Biodata")}
                                             </button>
                                         </>
                                     )}
                                     <button onClick={handleLogout} className="text-red-600 flex items-center gap-1 hover:text-red-700 transition font-bold text-sm bg-red-50 px-3 py-1.5 rounded-full ml-2">
-                                        <LogOut className="w-4 h-4" /> Logout
+                                        <LogOut className="w-4 h-4" /> {t("Logout")}
                                     </button>
                                 </>
                             ) : (
                                 <button onClick={() => router.push('/login')} className="bg-[#D4AF37] text-white flex items-center gap-1 font-bold text-sm px-4 py-2 rounded-full hover:bg-[#c29e2f] transition">
-                                    <User className="w-4 h-4" /> Login / Register
+                                    <User className="w-4 h-4" /> {t("Login / Register")}
                                 </button>
                             )}
                         </div>
 
                         {/* Mobile Controls */}
                         <div className="md:hidden flex items-center gap-1">
+                            <div className="mr-1">
+                                <LanguageSwitcher variant="login" />
+                            </div>
                             {!isAdminPage && user && (
                                 <>
                                     <button
@@ -207,18 +218,18 @@ export default function GlobalNav() {
                         ) : user ? (
                             <>
                                 <button onClick={() => router.push('/')} className={`w-full text-left flex items-center gap-3 font-bold text-lg p-3 rounded-2xl ${isActive('/') ? 'text-[#881337] bg-rose-50' : ''}`}>
-                                    <Home className="w-5 h-5 text-[#D4AF37]" /> Dashboard
+                                    <Home className="w-5 h-5 text-[#D4AF37]" /> {t("Dashboard")}
                                 </button>
                                 <button onClick={() => router.push('/candidate-registration')} className={`w-full text-left flex items-center gap-3 font-bold text-lg p-3 rounded-2xl ${isActive('/candidate-registration') ? 'text-[#881337] bg-rose-50' : ''}`}>
-                                    <User className="w-5 h-5 text-[#D4AF37]" /> Edit Biodata
+                                    <User className="w-5 h-5 text-[#D4AF37]" /> {t("Edit Biodata")}
                                 </button>
                                 <button onClick={handleLogout} className="w-full text-left text-red-600 flex items-center gap-3 font-black text-lg p-3 bg-red-50 rounded-2xl mt-4">
-                                    <LogOut className="w-5 h-5" /> Logout
+                                    <LogOut className="w-5 h-5" /> {t("Logout")}
                                 </button>
                             </>
                         ) : (
                             <button onClick={() => router.push('/login')} className="w-full text-center bg-[#D4AF37] text-white font-black text-lg p-4 rounded-2xl">
-                                Login / Register
+                                {t("Login / Register")}
                             </button>
                         )}
                     </div>

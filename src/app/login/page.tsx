@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { useLanguage } from "@/lib/contexts/LanguageContext";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { ShieldCheck, Sparkles, Users, Star, Lock, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 import { collection, query, where, limit, getDocs, getCountFromServer } from "firebase/firestore";
@@ -11,6 +13,7 @@ import { db } from "@/lib/firebase/config";
 
 export default function LoginPage() {
     const { user, loading, signInWithGoogle } = useAuth();
+    const { t } = useLanguage();
     const router = useRouter();
 
     const [authLoading, setAuthLoading] = useState(false);
@@ -169,17 +172,21 @@ export default function LoginPage() {
 
                 {/* ── HEADER ── */}
                 <div className="bg-[#881337] p-8 text-center relative overflow-hidden">
+                    {/* Absolute Language Switcher */}
+                    <div className="absolute top-4 right-4 z-50">
+                        <LanguageSwitcher variant="login" />
+                    </div>
                     <div className="absolute top-0 right-0 p-4 opacity-10"><Sparkles className="w-24 h-24" /></div>
                     <div className="w-16 h-16 bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] rounded-full flex items-center justify-center font-bold text-3xl shadow-[0_0_30px_rgba(212,175,55,0.5)] mx-auto mb-4 border-2 border-[#D4AF37] ring-4 ring-white/20">53</div>
                     <h1 className="text-4xl font-extrabold font-serif text-white mb-1 tracking-tight drop-shadow-md">DBohra<span className="text-[#D4AF37] font-medium italic">Rishta</span></h1>
-                    <p className="text-white/80 font-bold tracking-[0.25em] uppercase text-[10px] mt-2 border-t border-white/20 pt-2 inline-block">Intelligent search with extraordinary features</p>
+                    <p className="text-white/80 font-bold tracking-[0.25em] uppercase text-[10px] mt-2 border-t border-white/20 pt-2 inline-block">{t("Intelligent search with extraordinary features")}</p>
                     <div className="mt-4 inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 backdrop-blur-sm">
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4AF37] opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-[#D4AF37]"></span>
                         </span>
                         <span className="text-[11px] font-black text-white">
-                            {liveVerifiedCount ? `${liveVerifiedCount}+ ITS Card Verified Registered Candidates` : 'Loading...'}
+                            {liveVerifiedCount ? `${liveVerifiedCount}+ ${t("ITS Card Verified Registered Candidates")}` : 'Loading...'}
                         </span>
                     </div>
 
@@ -189,7 +196,7 @@ export default function LoginPage() {
                 {showHighTrafficBanner && (
                     <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 text-center">
                         <p className="text-[11px] font-bold text-amber-800 leading-relaxed">
-                            Salam! We are experiencing exceptionally high traffic today due to a surge in new members! To ensure a smooth experience for everyone, some live updates are temporarily paused. Full live features will automatically resume shortly. Thank you for your patience!
+                            {t("Salam! We are experiencing exceptionally high traffic today due to a surge in new members! To ensure a smooth experience for everyone, some live updates are temporarily paused. Full live features will automatically resume shortly. Thank you for your patience!")}
                         </p>
                     </div>
                 )}
@@ -197,16 +204,16 @@ export default function LoginPage() {
                 {/* ── OUTCOME-FIRST HERO ── */}
                 <div className="bg-white px-6 pt-6 pb-5 fade-up fade-up-2 text-center">
                     <p className="text-[12.5px] text-gray-500 leading-relaxed">
-                        Join the <span className="bg-[#D4AF37] text-white px-2 py-0.5 rounded-md font-black">most trusted platform</span> of 100% ITS-verified <span className="bg-[#D4AF37] text-white px-1.5 rounded font-black whitespace-nowrap">Dawoodi Bohra</span> candidates — where privacy matters most.
+                        {t("Join the")} <span className="bg-[#D4AF37] text-white px-2 py-0.5 rounded-md font-black">{t("most trusted platform")}</span> {t("of 100% ITS-verified")} <span className="bg-[#D4AF37] text-white px-1.5 rounded font-black whitespace-nowrap">{t("Dawoodi Bohra")}</span> {t("candidates — where privacy matters most.")}
                     </p>
                     <p className="text-[11px] font-extrabold text-[#881337] mt-3 flex items-center justify-center gap-1">
-                        <span>🛡️</span> Utmost privacy. Complete control. Family trusted.
+                        <span>🛡️</span> {t("Utmost privacy. Complete control. Family trusted.")}
                     </p>
                     <button
                         onClick={() => document.getElementById('scroller-section')?.scrollIntoView({ behavior: 'smooth' })}
                         className="mt-4 inline-flex items-center gap-2 text-[12px] font-extrabold text-[#881337] bg-amber-50 border-2 border-[#D4AF37] px-5 py-2 rounded-full hover:bg-[#D4AF37] hover:text-white transition-all cursor-pointer mx-auto shadow-[0_4px_12px_rgba(212,175,55,0.2)] active:scale-95"
                     >
-                        <span>👀 View Live Profiles Glimpse</span>
+                        <span>👀 {t("View Live Profiles Glimpse")}</span>
                         <span className="animate-bounce font-black">↓</span>
                     </button>
                 </div>
@@ -220,13 +227,13 @@ export default function LoginPage() {
                             onClick={() => setIsNewUser(true)}
                             className={`flex-1 py-2.5 text-[13px] font-black transition-all ${isNewUser ? 'bg-[#881337] text-white shadow' : 'bg-white text-gray-500 hover:bg-rose-50'}`}
                         >
-                            ✨ Join
+                            ✨ {t("Join")}
                         </button>
                         <button
                             onClick={() => setIsNewUser(false)}
                             className={`flex-1 py-2.5 text-[13px] font-black transition-all ${!isNewUser ? 'bg-[#881337] text-white shadow' : 'bg-white text-gray-500 hover:bg-rose-50'}`}
                         >
-                            🔑 Login
+                            🔑 {t("Login")}
                         </button>
                     </div>
 
@@ -234,13 +241,13 @@ export default function LoginPage() {
                     {isNewUser ? (
                         <div className="bg-white border border-rose-100 rounded-xl px-4 py-3 mb-5 text-center shadow-sm">
                             <p className="text-[11.5px] text-gray-600 leading-relaxed">
-                                Register in <strong className="text-[#881337]">under 60 seconds</strong> with Google — free, private, and exclusively for ITS-verified Dawoodi Bohra candidates.
+                                {t("Register in under 60 seconds with Google — free, private, and exclusively for ITS-verified Dawoodi Bohra candidates.")}
                             </p>
                         </div>
                     ) : (
                         <div className="bg-white border border-rose-100 rounded-xl px-4 py-3 mb-5 text-center shadow-sm">
                             <p className="text-[11.5px] text-gray-600 leading-relaxed">
-                                Please use your <strong className="text-[#881337] underline">same registered Google account</strong> to access your profile and messages.
+                                {t("Please use your same registered Google account to access your profile and messages.")}
                             </p>
                         </div>
                     )}
@@ -258,11 +265,11 @@ export default function LoginPage() {
                         <div className="bg-white p-1 rounded-full w-7 h-7 flex items-center justify-center shrink-0">
                             <GoogleIcon />
                         </div>
-                        {isNewUser ? 'Join with Google — It\'s Private' : 'Login with Google'}
+                        {isNewUser ? t("Join with Google — It's Private") : t("Login with Google")}
                     </button>
 
                     <p className="text-[10px] text-gray-400 text-center mt-3 font-bold uppercase tracking-wider">
-                        Dawoodi Bohra Community Only
+                        {t("Dawoodi Bohra Community Only")}
                     </p>
                 </div>
 

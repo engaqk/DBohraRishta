@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { ShieldCheck, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, Lock, PauseCircle, X, Video } from 'lucide-react';
 import { notifyInterestSent } from '@/lib/emailService';
 import { collection, addDoc, query, where, getDocs, serverTimestamp, deleteDoc, doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
@@ -75,6 +76,7 @@ export default function DiscoveryCard({
     isPhotoVerified, isEmailVerified, verifiedPhone
 }: DiscoveryCardProps) {
     const { user } = useAuth();
+    const { t } = useLanguage();
     const router = useRouter();
     const [requestSent, setRequestSent] = useState(false);
     const [requestStatus, setRequestStatus] = useState<string | null | undefined>(null);
@@ -415,16 +417,16 @@ export default function DiscoveryCard({
                             <div className="flex flex-wrap gap-1.5">
                                 {isOnline ? (
                                     <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-                                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />Active Now
+                                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />{t("Active Now")}
                                     </span>
                                 ) : lastActive && (
                                     <span className="bg-gray-800/60 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                                         {(() => {
                                             const last = lastActive?.toDate ? lastActive.toDate() : new Date(lastActive);
                                             const diff = Math.floor((Date.now() - last.getTime()) / 60000);
-                                            if (diff < 60) return `${diff}m ago`;
-                                            if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
-                                            return `${Math.floor(diff / 1440)}d ago`;
+                                            if (diff < 60) return `${diff}m ${t("ago")}`;
+                                            if (diff < 1440) return `${Math.floor(diff / 60)}h ${t("ago")}`;
+                                            return `${Math.floor(diff / 1440)}d ${t("ago")}`;
                                         })()}
                                     </span>
                                 )}
@@ -432,17 +434,17 @@ export default function DiscoveryCard({
                                 {/* Premium Activity Ribbons */}
                                 {isNewMember && (
                                     <span className="bg-emerald-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow border border-white/20">
-                                        <Sparkles className="w-2.5 h-2.5" /> NEW
+                                        <Sparkles className="w-2.5 h-2.5" /> {t("NEW")}
                                     </span>
                                 )}
                                 {isHighlyResponsive && (
                                     <span className="bg-amber-500/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow border border-white/20">
-                                        <Clock className="w-2.5 h-2.5" /> RESPONSIVE
+                                        <Clock className="w-2.5 h-2.5" /> {t("RESPONSIVE")}
                                     </span>
                                 )}
                                 {isVerifiedContributor && (
                                     <span className="bg-rose-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow border border-white/20">
-                                        <ShieldCheck className="w-2.5 h-2.5" /> 100% COMPLETE
+                                        <ShieldCheck className="w-2.5 h-2.5" /> {t("100% COMPLETE")}
                                     </span>
                                 )}
                             </div>
@@ -450,19 +452,19 @@ export default function DiscoveryCard({
                             {!canZoom && (
                                 <div className="bg-black/60 backdrop-blur-md rounded-full px-2.5 py-1 flex items-center gap-1.5 shadow border border-white/20">
                                     <Lock className="w-3 h-3 text-white/90" />
-                                    <span className="text-white text-[9px] font-bold whitespace-nowrap uppercase tracking-wider">Unlocks after acceptance</span>
+                                    <span className="text-white text-[9px] font-bold whitespace-nowrap uppercase tracking-wider">{t("Unlocks after acceptance")}</span>
                                 </div>
                             )}
                         </div>
                         <div className="flex flex-col items-end gap-1.5">
                             {isItsVerified && (
                                 <div className="flex items-center gap-1 bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow border border-white/30">
-                                    <ShieldCheck className="w-2.5 h-2.5" /> ITS VERIFIED
+                                    <ShieldCheck className="w-2.5 h-2.5" /> {t("ITS VERIFIED")}
                                 </div>
                             )}
                             {videoStatus === 'verified' && (
                                 <div className="flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow border border-white/30">
-                                    <Video className="w-2.5 h-2.5" /> VIDEO VERIFIED
+                                    <Video className="w-2.5 h-2.5" /> {t("VIDEO VERIFIED")}
                                 </div>
                             )}
                             <button
@@ -577,26 +579,26 @@ export default function DiscoveryCard({
                 <div className="p-4 flex flex-col gap-3 flex-grow">
                     {/* Smart Highlights */}
                     <div className="flex flex-col gap-2">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Preference :</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("Preference :")}</p>
                         <div className="flex flex-wrap gap-2">
                             {(bio?.toLowerCase().includes('hafiz') || education?.toLowerCase().includes('hafiz')) && (
                                 <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-100 shadow-sm transition-transform hover:scale-105">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Hafiz</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{t("Hafiz")}</span>
                                 </div>
                             )}
                             {(education?.toLowerCase().includes('graduate') || education?.toLowerCase().includes('mba') || education?.toLowerCase().includes('master')) && (
                                 <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg border border-blue-100 shadow-sm transition-transform hover:scale-105">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Educated</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{t("Educated")}</span>
                                 </div>
                             )}
                             {(city?.toLowerCase().includes('mumbai') || jamaat?.toLowerCase().includes('mumbai')) && (
                                 <div className="flex items-center gap-1.5 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-lg border border-rose-100 shadow-sm transition-transform hover:scale-105">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Mumbai Location</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{t("Mumbai Location")}</span>
                                 </div>
                             )}
                             {(bio?.toLowerCase().includes('settled') || professionType?.toLowerCase().includes('settled')) && (
                                 <div className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-lg border border-amber-100 shadow-sm transition-transform hover:scale-105">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Well Settled</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{t("Well Settled")}</span>
                                 </div>
                             )}
                         </div>
@@ -622,9 +624,9 @@ export default function DiscoveryCard({
                             </div>
                             <div className="flex flex-col">
                                 <span className={`text-[10px] font-black uppercase tracking-wider ${isPlayingVoice ? 'text-white/80' : 'text-[#881337]/60'}`}>
-                                    {isPlayingVoice ? 'Now Playing' : 'Voice Intro'}
+                                    {isPlayingVoice ? t("Now Playing") : t("Voice Intro")}
                                 </span>
-                                <span className="text-xs font-bold">Hear {firstName}'s Introduction</span>
+                                <span className="text-xs font-bold">{t("Hear {name}'s Introduction", { name: firstName })}</span>
                             </div>
                             {isPlayingVoice && (
                                 <div className="ml-auto w-12 h-4 flex items-center gap-0.5">
@@ -651,14 +653,14 @@ export default function DiscoveryCard({
                     {/* Details grid — always visible, no collapsible */}
                     <div className="grid grid-cols-2 gap-1.5">
                         {[
-                            { label: 'Education', value: education || educationDetails },
-                            { label: 'Profession', value: professionType },
-                            { label: 'Marital', value: maritalStatus || 'Single' },
-                            { label: 'Height', value: heightFeet ? `${heightFeet}'${heightInch || '0'}"` : null },
-                            { label: 'City', value: city || location || hizratLocation },
-                            { label: 'DOB', value: dob },
+                            { label: t('Education'), value: education || educationDetails },
+                            { label: t('Profession'), value: professionType },
+                            { label: t('Marital'), value: maritalStatus || 'Single' },
+                            { label: t('Height'), value: heightFeet ? `${heightFeet}'${heightInch || '0'}"` : null },
+                            { label: t('City'), value: city || location || hizratLocation },
+                            { label: t('DOB'), value: dob },
                             {
-                                label: 'Created', value: createdAt ? (() => {
+                                label: t('Created'), value: createdAt ? (() => {
                                     const d = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
                                     return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
                                 })() : null
@@ -675,11 +677,11 @@ export default function DiscoveryCard({
                     {
                         (fatherName || motherName) && (
                             <div className="bg-rose-50/50 rounded-xl px-3 py-2 border border-rose-100/50">
-                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Parents</p>
+                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{t("Parents")}</p>
                                 <p className="text-xs font-semibold text-gray-600">
-                                    Father: <span className="text-[#881337]">{fatherName || 'N/A'}</span>
+                                    {t("Father:")} <span className="text-[#881337]">{fatherName || 'N/A'}</span>
                                     {' '}&nbsp;|&nbsp;{' '}
-                                    Mother: <span className="text-[#881337]">{motherName || 'N/A'}</span>
+                                    {t("Mother:")} <span className="text-[#881337]">{motherName || 'N/A'}</span>
                                 </p>
                             </div>
                         )
@@ -698,7 +700,7 @@ export default function DiscoveryCard({
                     {
                         requestStatus === 'accepted' && (
                             <div className="bg-emerald-50 rounded-xl px-3 py-2.5 border border-emerald-200">
-                                <p className="text-[8px] font-black text-emerald-700 uppercase tracking-wider mb-1">✓ Contact Shared</p>
+                                <p className="text-[8px] font-black text-emerald-700 uppercase tracking-wider mb-1">✓ {t("Contact Shared")}</p>
                                 {mobile && <p className="text-xs font-bold text-emerald-700">📞 {formatMobileDisplay(mobileCode, mobile)}</p>}
                                 {email && <p className="text-xs font-bold text-emerald-700">✉️ {email}</p>}
                             </div>
@@ -709,19 +711,19 @@ export default function DiscoveryCard({
                     <button
                         onClick={(e) => { e.stopPropagation(); router.push(`/profile?id=${id}`); }}
                         className="text-[10px] font-bold text-[#881337]/60 hover:text-[#881337] flex items-center gap-1 mx-auto transition-colors mt-2 mb-2 relative z-40">
-                        <ExternalLink className="w-3 h-3" /> View Full Profile
+                        <ExternalLink className="w-3 h-3" /> {t("View Full Profile")}
                     </button>
 
                     {/* CTA Button */}
                     {
                         rejectCount >= 2 && !requestSent ? (
                             <div className="w-full py-3 bg-gray-50 text-gray-400 font-bold rounded-xl border border-gray-100 text-xs text-center">
-                                Request limit reached for this profile
+                                {t("Request limit reached for this profile")}
                             </div>
                         ) : !isMyProfileVerified ? (
                             <div className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
-                                <p className="text-amber-800 font-bold text-xs">🔐 Your ITS Verification required to send requests</p>
-                                <p className="text-amber-600 text-[10px] mt-0.5">Awaiting admin approval</p>
+                                <p className="text-amber-800 font-bold text-xs">🔐 {t("Your ITS Verification required to send requests")}</p>
+                                <p className="text-amber-600 text-[10px] mt-0.5">{t("Awaiting admin approval")}</p>
                             </div>
                         ) : (
                             <div className="flex gap-2">
@@ -734,14 +736,14 @@ export default function DiscoveryCard({
                                             }}
                                             className="flex-[2] py-3.5 rounded-xl font-black text-sm bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md active:scale-95 flex items-center justify-center gap-2 animate-pulse hover:shadow-lg transition-all"
                                         >
-                                            🤝 Accept Interest
+                                            {t("🤝 Accept Interest")}
                                         </button>
                                         <button
                                             onClick={handleDeclineClick}
                                             disabled={loading}
                                             className="flex-1 py-3.5 rounded-xl font-black text-xs bg-slate-50 text-slate-500 border border-slate-100 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all flex items-center justify-center gap-1.5"
                                         >
-                                            {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <>Reject</>}
+                                            {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <>{t("Reject")}</>}
                                         </button>
                                     </>
                                 ) : (
@@ -765,11 +767,11 @@ export default function DiscoveryCard({
                                                     : 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white hover:shadow-lg'}`}
                                     >
                                         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                        {requestStatus === 'accepted' ? '✓ Connected & Chatting'
-                                            : isRejectedRecipient ? 'Not Interested'
-                                                : (requestSent && (localIsIncoming ?? isIncomingRequest) === false) ? '✓ Interest Sent'
-                                                    : rejectCount > 0 ? '↩ Retry Request'
-                                                        : 'Send Interest'}
+                                        {requestStatus === 'accepted' ? t("✓ Connected & Chatting")
+                                            : isRejectedRecipient ? t("Not Interested")
+                                                : (requestSent && (localIsIncoming ?? isIncomingRequest) === false) ? t("✓ Interest Sent")
+                                                    : rejectCount > 0 ? t("↩ Retry Request")
+                                                        : t("Send Interest")}
                                     </button>
                                 )}
                             </div>

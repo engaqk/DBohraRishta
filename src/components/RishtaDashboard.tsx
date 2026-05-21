@@ -2103,7 +2103,7 @@ export default function RishtaDashboard() {
                                     <div className="w-full max-w-[350px] mx-auto h-[700px] rounded-3xl border-2 border-rose-100 shadow-[0_4px_12px_rgba(140,28,58,0.08)] bg-white overflow-hidden relative mb-6">
                                         <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none"></div>
                                         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none"></div>
-                                        <div className="flex flex-col gap-6 p-4 animate-[scrollUp_120s_linear_infinite] hover:[animation-play-state:paused]">
+                                        <div className="flex flex-col gap-6 p-4 animate-[scrollUp_55s_linear_infinite] hover:[animation-play-state:paused]">
                                             {[...sortedWithPicks, ...sortedWithPicks].map((p: UserProfile, idx) => {
                                                 const relatedReq = allRequests.find(r => {
                                                     const otherId = r.isIncoming ? r.from : r.to;

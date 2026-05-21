@@ -518,7 +518,7 @@ export default function DiscoveryCard({
                         <div className="flex items-end justify-between gap-2">
                             <div>
                                 <h3 className="text-white font-black text-xl font-serif leading-tight drop-shadow">
-                                    {displayName}, {age}
+                                    {displayName}, {age}{heightFeet ? <span className="text-[#D4AF37] text-base font-black"> · {heightFeet}'{heightInch || '0'}"</span> : null}
                                 </h3>
                             </div>
                             <div className={`px-2.5 py-1.5 rounded-xl text-xs font-black shadow-lg shrink-0

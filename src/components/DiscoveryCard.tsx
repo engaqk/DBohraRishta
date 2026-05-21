@@ -518,8 +518,13 @@ export default function DiscoveryCard({
                         <div className="flex items-end justify-between gap-2">
                             <div>
                                 <h3 className="text-white font-black text-xl font-serif leading-tight drop-shadow">
-                                    {displayName}, {age}{heightFeet ? <span className="text-[#D4AF37] text-base font-black"> · {heightFeet}'{heightInch || '0'}"</span> : null}
+                                    {displayName}, {age}
                                 </h3>
+                                {heightFeet && (
+                                    <p className="text-[#D4AF37] text-[11px] font-black mt-0.5 drop-shadow leading-none">
+                                        {heightFeet}'{heightInch || '0'}"
+                                    </p>
+                                )}
                             </div>
                             <div className={`px-2.5 py-1.5 rounded-xl text-xs font-black shadow-lg shrink-0
                                 ${requestStatus === 'accepted' ? 'bg-[#D4AF37] text-white' : rejectCount > 0 ? 'bg-red-500 text-white' : 'bg-black/50 text-[#D4AF37] backdrop-blur-sm'}`}>

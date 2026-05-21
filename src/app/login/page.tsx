@@ -30,12 +30,6 @@ export default function LoginPage() {
             initial: "F"
         },
         {
-            text: "I was hesitant to join any platform, but the automatic photo blur feature gave me the privacy I needed. Only people I approve can see my picture.",
-            name: "Abeda",
-            location: "Karachi",
-            initial: "A"
-        },
-        {
             text: "The mandatory ITS verification gave me and my parents the confidence that everyone here is genuine. It makes a huge difference.",
             name: "Alefiya",
             location: "Mumbai",
@@ -54,7 +48,19 @@ export default function LoginPage() {
         const fetchData = async () => {
             try {
                 // Fetch a smaller set — only what DiscoveryCard needs for the preview scroller
-                const CARD_FIELDS = ['gender', 'name', 'age', 'city', 'profession', 'photoURL', 'isItsVerified', 'maritalStatus', 'height'];
+                // Fields used by DiscoveryCard for the login-page preview scroller
+                // Photo fields (libasImageUrl, extraImageUrl, selfieImageUrl, videoIntroUrl) are
+                // short Firebase Storage URLs — safe to cache, not base64.
+                const CARD_FIELDS = [
+                    'gender', 'name', 'dob', 'jamaat', 'city', 'location', 'hizratLocation',
+                    'isItsVerified', 'isBlurSecurityEnabled', 'maritalStatus',
+                    'heightFeet', 'heightInch', 'professionType', 'educationDetails',
+                    'bio', 'isOnline', 'lastActive', 'createdAt',
+                    'libasImageUrl', 'extraImageUrl',
+                    'selfieImageUrl', 'selfieStatus',
+                    'videoIntroUrl', 'videoStatus',
+                    'isPhotoVerified',
+                ];
 
                 const stripProfile = (doc: any): any => {
                     const data = doc.data ? doc.data() : doc;

@@ -17,6 +17,8 @@ export default function OnboardingPage() {
     const [isMounted, setIsMounted] = useState(false);
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    // Legal consent: pre-ticked by default as per platform policy
+    const [contactSharingConsent, setContactSharingConsent] = useState(true);
 
     useEffect(() => {
         setIsMounted(true);
@@ -289,6 +291,15 @@ export default function OnboardingPage() {
             toast.error("Please log in to submit your profile.");
             return;
         }
+
+        // --- ✅ Legal Consent Check (must be ticked before submission) ---
+        if (!contactSharingConsent) {
+            toast.error("You must agree to the Contact Sharing Consent to proceed.");
+            const el = document.getElementById('consent-checkbox');
+            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
         let newErrors: { [key: string]: string } = {};
 
         // Validation for Step 2 fields
@@ -393,6 +404,8 @@ export default function OnboardingPage() {
                 lastActive: serverTimestamp(),
                 isEmailVerified: !!(formData.email && !formData.email.endsWith('@dbohrarishta.local')),
                 welcomeEmailSent: !!(formData.email && !formData.email.endsWith('@dbohrarishta.local')),
+                contactSharingConsent: contactSharingConsent,
+                contactSharingConsentAt: serverTimestamp(),
             }, { merge: true });
 
             // Automated Admin Welcome
@@ -604,7 +617,7 @@ export default function OnboardingPage() {
                             {/* Photo Inputs */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className={`border-2 border-dashed ${errors.itsImage ? 'border-red-500 bg-red-50/30' : 'border-gray-200 bg-gray-50/50'} rounded-3xl p-6 flex flex-col items-center gap-3 transition-colors`}>
-                                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${errors.itsImage ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400'}`}>Candidate ITS Card Photo *</span>
+                                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${errors.itsImage ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400'}`}>Upload Candidate ITS Card *</span>
                                     {imagePreview ? (
                                         <div className="relative group w-full aspect-video rounded-2xl overflow-hidden shadow-md">
                                             <img src={imagePreview} className="w-full h-full object-cover" />
@@ -697,7 +710,51 @@ export default function OnboardingPage() {
                                 </div>
                             </div>
 
-                            <div className="flex flex-col md:flex-row gap-4 pt-6">
+                            {/* Platform Notice / Acknowledgement */}
+                            <div id="consent-checkbox" className={`flex items-start gap-4 p-5 rounded-2xl border-2 transition-all ${
+                                !contactSharingConsent
+                                    ? 'border-red-400 bg-red-50/60'
+                                    : 'border-emerald-300 bg-emerald-50/60'
+                            }`}>
+                                <div className="relative mt-0.5 shrink-0">
+                                    <input
+                                        type="checkbox"
+                                        id="consent-tick"
+                                        checked={contactSharingConsent}
+                                        onChange={e => setContactSharingConsent(e.target.checked)}
+                                        className="sr-only"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setContactSharingConsent(p => !p)}
+                                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                                            contactSharingConsent
+                                                ? 'bg-emerald-600 border-emerald-600'
+                                                : 'bg-white border-red-400'
+                                        }`}
+                                    >
+                                        {contactSharingConsent && (
+                                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
+                                <label htmlFor="consent-tick" className="text-[11px] font-bold text-gray-700 leading-relaxed cursor-pointer">
+                                    <span className={`font-black uppercase tracking-wider text-[10px] mr-1 ${
+                                        contactSharingConsent ? 'text-emerald-700' : 'text-red-600'
+                                    }`}>
+                                        {contactSharingConsent ? '✓ Acknowledged —' : '⚠ Please Acknowledge —'}
+                                    </span>
+                                    By joining 53DBohraRishta, I understand that if both parties mutually accept
+                                    each other's interest, the platform will share the registered{' '}
+                                    <strong>mobile number</strong> and <strong>email address</strong> of both
+                                    members to enable direct contact. No details are shared unless both
+                                    sides have accepted.
+                                </label>
+                            </div>
+
+                            <div className="flex flex-col md:flex-row gap-4 pt-2">
                                 <button onClick={() => setStep(1)} className="flex-1 bg-gray-100 text-gray-500 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-200 transition-all">Back</button>
                                 <button
                                     onClick={handleSubmit}

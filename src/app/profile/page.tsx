@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, increment } from 'firebase/firestore';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { formatMobileDisplay } from '@/lib/phoneUtils';
 import { ArrowLeft, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles, User, Mail, Phone, Heart, Send, X, CheckCircle, MapPin, Play, Pause, Volume2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { notifyInterestSent } from '@/lib/emailService';
@@ -732,7 +733,7 @@ function ProfileContent() {
                         {isAccepted && (
                             <div className="bg-emerald-50 rounded-xl px-3 py-3 border border-emerald-200 mt-2">
                                 <p className="text-[8px] font-black text-emerald-700 uppercase tracking-wider mb-1.5">✓ Contact Details (Shared)</p>
-                                {mobile && <p className="text-sm font-bold text-emerald-700">📞 {mobileCode} {mobile}</p>}
+                                {mobile && <p className="text-sm font-bold text-emerald-700">📞 {formatMobileDisplay(mobileCode, mobile)}</p>}
                                 {email && <p className="text-sm font-bold text-emerald-700">✉️ {email}</p>}
                             </div>
                         )}

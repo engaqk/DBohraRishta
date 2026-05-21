@@ -12,6 +12,7 @@ import { db, messaging, storage } from '@/lib/firebase/config';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { requestNotificationPermission } from '@/lib/firebase/messaging';
 import toast from 'react-hot-toast';
+import { formatMobileDisplay, splitMobileParts } from '@/lib/phoneUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { triggerHaptic, HapticPatterns } from '@/lib/uiUtils';
 import { driver } from "driver.js";
@@ -1392,7 +1393,7 @@ export default function RishtaDashboard() {
                             otherUserAge: uData.dob ? Math.floor((new Date().getTime() - new Date(uData.dob).getTime()) / 31557600000) : 25,
                             otherUserLocation: uData.location || uData.hizratLocation || "Global Network",
                             otherUserEducation: uData.education || uData.profession || "Graduated",
-                            otherUserMobile: uData.mobile ? `${uData.mobileCode || ''} ${uData.mobile}` : "Not Shared",
+                            otherUserMobile: uData.mobile ? formatMobileDisplay(uData.mobileCode, uData.mobile) : "Not Shared",
                             otherUserEmail: uData.email || "Not Shared",
                             otherUserLibasUrl: uData.libasImageUrl || null,
                             otherUserBlurSecurityEnabled: uData.isBlurSecurityEnabled !== false,
@@ -1562,6 +1563,13 @@ export default function RishtaDashboard() {
                     createdAt: serverTimestamp()
                 });
 
+                // --- ✅ Bug Fix: Increment acceptedInterestsCount on the original requester's profile when accepted ---
+                if (newStatus === 'accepted') {
+                    updateDoc(doc(db, 'users', requestGroup.from), {
+                        acceptedInterestsCount: increment(1)
+                    }).catch(e => console.error('acceptedInterestsCount update error', e));
+                }
+
                 // --- 💌 Email Notification for Declined Requests ---
                 if (newStatus === "rejected") {
                     notifyInterestDeclined({
@@ -1607,7 +1615,7 @@ export default function RishtaDashboard() {
 
     const handleAcceptClick = (req: RishtaRequest) => {
         setAcceptError('');
-        setAcceptMobile(myProfile?.mobile ? `${myProfile.mobileCode || ''} ${myProfile.mobile}`.trim() : '');
+        setAcceptMobile(myProfile?.mobile ? formatMobileDisplay(myProfile.mobileCode, myProfile.mobile) : '');
         setAcceptEmail(myProfile?.email || '');
         setAcceptingRequest(req);
     };
@@ -1621,8 +1629,12 @@ export default function RishtaDashboard() {
         if (!user || !acceptingRequest) return;
 
         try {
+            // --- ✅ Use splitMobileParts to correctly separate country code from local number ---
+            const { mobileCode: newMobileCode, mobile: newMobile } = splitMobileParts(acceptMobile);
+
             await updateDoc(doc(db, "users", user.uid), {
-                mobile: acceptMobile,
+                mobileCode: newMobileCode,
+                mobile: newMobile,
                 email: acceptEmail
             });
             await handleRequestAction(acceptingRequest.id, "accepted");
@@ -1631,7 +1643,7 @@ export default function RishtaDashboard() {
             notifyRequestAccepted({
                 acceptorName: myProfile?.name || 'Candidate',
                 acceptorEmail: acceptEmail,
-                acceptorMobile: acceptMobile,
+                acceptorMobile: `${newMobileCode} ${newMobile}`.trim(),
                 requesterName: acceptingRequest.otherUserName,
                 requesterEmail: acceptingRequest.otherUserEmail,
                 requesterMobile: acceptingRequest.otherUserMobile
@@ -2493,6 +2505,12 @@ export default function RishtaDashboard() {
                 <div className="flex items-center gap-1.5 bg-white border border-gray-100 text-gray-700 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
                     <Heart className="w-3.5 h-3.5 text-rose-500" /> {myProfile?.interestsCount || 0} Interests
                 </div>
+                {(myProfile?.acceptedInterestsCount || 0) > 0 && (
+                    <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                        {myProfile.acceptedInterestsCount} Accepted
+                    </div>
+                )}
 
                 {/* 3. Ranking/Boost */}
                 {myProfile?.loginStreak > 0 && (
@@ -3910,7 +3928,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                     <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md"><Phone size={28} /></div>
                                     <div className="flex flex-col">
                                         <span className="text-[10px] font-black text-white/60 uppercase tracking-[0.3em] mb-1">Direct Contact</span>
-                                        <span className="text-[24px] font-black leading-none">{myProfile.mobileCode} {myProfile.mobile}</span>
+                                        <span className="text-[24px] font-black leading-none">{formatMobileDisplay(myProfile.mobileCode, myProfile.mobile)}</span>
                                     </div>
                                 </div>
                                 <div className="h-16 w-[1px] bg-white/20" />

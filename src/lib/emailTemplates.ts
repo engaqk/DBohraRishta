@@ -41,11 +41,16 @@ export function getInterestAcceptedTemplate(opts: { recipientName: string; partn
             <p>As-salaamu alaykum <strong>${opts.recipientName}</strong>,</p>
             <p><strong>${opts.partnerName}</strong> has accepted your Interest Request.</p>
             <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:20px;border-radius:12px;margin:16px 0">
-                <p style="margin:0 0 10px;font-weight:bold;color:#166534;font-size:16px underline">Their Contact Details:</p>
+                <p style="margin:0 0 10px;font-weight:bold;color:#166534;font-size:16px">Their Contact Details:</p>
                 <p style="margin:0;color:#166534;font-size:15px">📞 Mobile: <strong>${opts.mobile}</strong></p>
                 <p style="margin:8px 0 0;color:#166534;font-size:15px">✉️ Email: <strong>${opts.email}</strong></p>
             </div>
-            <p>You can now contact them directly to proceed with family discussions.</p>
+            <p>You can now contact them directly to proceed with discussions.</p>
+            <div style="background:#fffbeb;border-left:4px solid #D4AF37;padding:14px 18px;border-radius:8px;margin:16px 0">
+                <p style="margin:0;font-size:11px;color:#78350f;line-height:1.6">
+                    <strong>ℹ️ Platform Notice:</strong> As a member of 53DBohraRishta, you acknowledged during registration that contact details are shared between both parties upon mutual acceptance. No information is disclosed unless both sides have accepted each other's interest.
+                </p>
+            </div>
             <a href="https://53dbohrarishta.in" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
                 Go to Dashboard
             </a>

@@ -8,6 +8,7 @@ import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "fireb
 import { db } from "@/lib/firebase/config";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { notifyAdminNewRegistration } from "@/lib/emailService";
+import { splitMobileParts } from "@/lib/phoneUtils";
 
 const ErrorMsg = ({ msg }: { msg?: string }) => msg ? <p className="text-red-500 text-xs mt-1 font-semibold animate-in fade-in">{msg}</p> : null;
 
@@ -306,15 +307,17 @@ export default function CandidateRegistrationPage() {
                 toast.error(data.error || "Invalid verification code");
                 return;
             }
-            // OTP verified — save the new mobile to Firestore
+            // OTP verified — split and save mobileCode + mobile as separate fields
+            const { mobileCode: newCode, mobile: newNum } = splitMobileParts(newMobileInput);
             const { updateDoc, doc: firestoreDoc } = await import('firebase/firestore');
             await updateDoc(firestoreDoc(db, "users", user.uid), {
-                mobile: newMobileInput,
+                mobileCode: newCode,
+                mobile: newNum,
                 verifiedPhone: newMobileInput,
             });
-            setFormData(prev => ({ ...prev, mobile: newMobileInput }));
+            setFormData(prev => ({ ...prev, mobileCode: newCode, mobile: newNum }));
             setMobileOtpSent(false);
-            setNewMobileInput('+91');
+            setNewMobileInput('');
             setNewMobileOtpCode('');
             toast.success("✅ Mobile number verified and updated!");
         } catch (error: any) {

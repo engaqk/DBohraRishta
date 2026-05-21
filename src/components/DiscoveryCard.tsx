@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { triggerHaptic, HapticPatterns } from '@/lib/uiUtils';
+import { formatMobileDisplay } from '@/lib/phoneUtils';
 
 interface DiscoveryCardProps {
     id: string;
@@ -693,7 +694,7 @@ export default function DiscoveryCard({
                         requestStatus === 'accepted' && (
                             <div className="bg-emerald-50 rounded-xl px-3 py-2.5 border border-emerald-200">
                                 <p className="text-[8px] font-black text-emerald-700 uppercase tracking-wider mb-1">✓ Contact Shared</p>
-                                {mobile && <p className="text-xs font-bold text-emerald-700">📞 {mobileCode} {mobile}</p>}
+                                {mobile && <p className="text-xs font-bold text-emerald-700">📞 {formatMobileDisplay(mobileCode, mobile)}</p>}
                                 {email && <p className="text-xs font-bold text-emerald-700">✉️ {email}</p>}
                             </div>
                         )

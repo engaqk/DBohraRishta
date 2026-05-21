@@ -65,3 +65,67 @@ export function normalizePhone(raw: string): string | null {
 export function isValidPhone(phone: string): boolean {
     return /^\+\d{7,15}$/.test(phone.replace(/[\s\-()]/g, ''));
 }
+
+/**
+ * Safely formats a mobile number for display by combining mobileCode + mobile.
+ *
+ * Handles the two storage patterns used in the DB:
+ *   Pattern A (preferred): mobileCode="+91"  mobile="9876543210"   → "+91 9876543210"
+ *   Pattern B (legacy):    mobileCode=""      mobile="+919876543210" → "+91 9876543210"
+ *   Pattern C (mixed):     mobileCode="+91"   mobile="+919876543210" → "+91 9876543210" (deduped)
+ *
+ * Never returns double country codes.
+ */
+export function formatMobileDisplay(mobileCode?: string, mobile?: string): string {
+    if (!mobile) return '';
+
+    const code = (mobileCode || '').trim();
+    const num = mobile.trim();
+
+    // If mobile already starts with '+', it's a full E.164 number — use as-is (dedupe country code)
+    if (num.startsWith('+')) {
+        // Insert a space after country code for readability if not already spaced
+        // Country codes are 1-3 digits after the '+'
+        const match = num.match(/^(\+\d{1,3})(\d+)$/);
+        if (match) return `${match[1]} ${match[2]}`;
+        return num;
+    }
+
+    // mobile is just the local number portion — prefix with mobileCode
+    if (code) return `${code} ${num}`;
+
+    // Fallback: return number as stored
+    return num;
+}
+
+/**
+ * Splits a combined mobile string (e.g. "+91 9876543210" or "+919876543210")
+ * into { mobileCode, mobile } parts for separate Firestore storage.
+ *
+ * Ensures country code and local number are always stored separately,
+ * preventing the double-country-code display bug.
+ */
+export function splitMobileParts(combined: string): { mobileCode: string; mobile: string } {
+    const str = combined.trim();
+    if (!str) return { mobileCode: '', mobile: '' };
+
+    // Already split with a space: "+91 9876543210"
+    const spaceIdx = str.indexOf(' ');
+    if (spaceIdx > 0 && str.startsWith('+')) {
+        return {
+            mobileCode: str.substring(0, spaceIdx).trim(),
+            mobile: str.substring(spaceIdx + 1).trim(),
+        };
+    }
+
+    // No space but starts with '+': extract country code (1-3 digits)
+    if (str.startsWith('+')) {
+        const match = str.match(/^(\+\d{1,3})(\d+)$/);
+        if (match) {
+            return { mobileCode: match[1], mobile: match[2] };
+        }
+    }
+
+    // Plain local number without country code
+    return { mobileCode: '', mobile: str };
+}

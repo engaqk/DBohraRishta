@@ -5,9 +5,11 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import toast from 'react-hot-toast';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 export default function PrivacyToggle({ isBlurSecurityEnabled = true }: { isBlurSecurityEnabled?: boolean }) {
     const { user } = useAuth();
+    const { t } = useLanguage();
     const [loading, setLoading] = useState(false);
 
     const togglePrivacy = async () => {
@@ -17,9 +19,9 @@ export default function PrivacyToggle({ isBlurSecurityEnabled = true }: { isBlur
             await updateDoc(doc(db, "users", user.uid), {
                 isBlurSecurityEnabled: !isBlurSecurityEnabled
             });
-            toast.success(!isBlurSecurityEnabled ? "Photo Blur Enabled" : "Photo Blur Disabled");
+            toast.success(!isBlurSecurityEnabled ? t("Photo Blur Enabled") : t("Photo Blur Disabled"));
         } catch (error: any) {
-            toast.error("Failed to update privacy settings");
+            toast.error(t("Failed to update privacy settings"));
         } finally {
             setLoading(false);
         }
@@ -30,7 +32,7 @@ export default function PrivacyToggle({ isBlurSecurityEnabled = true }: { isBlur
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                     <Shield className="w-6 h-6 text-[#881337] mr-2" />
-                    <h3 className="text-lg font-bold text-[#881337] font-serif">dBohra Match Privacy</h3>
+                    <h3 className="text-lg font-bold text-[#881337] font-serif">{t("dBohra Match Privacy")}</h3>
                 </div>
                 <button
                     onClick={togglePrivacy}
@@ -42,12 +44,12 @@ export default function PrivacyToggle({ isBlurSecurityEnabled = true }: { isBlur
             </div>
 
             <p className="text-sm text-gray-600 mb-4">
-                {isBlurSecurityEnabled ? "Your photos are currently blurred to everyone until you accept a Rishta Request." : "Your photos are visible to all verified members. (Not Recommended)"}
+                {isBlurSecurityEnabled ? t("Your photos are currently blurred to everyone until you accept a Rishta Request.") : t("Your photos are visible to all verified members. (Not Recommended)")}
             </p>
 
             <div className="bg-gray-50 rounded-xl p-4 text-xs text-gray-700 flex flex-col gap-2 border border-gray-100">
-                <div className="flex items-center">{isBlurSecurityEnabled ? <EyeOff className="w-4 h-4 mr-2 text-[#D4AF37]" /> : <Eye className="w-4 h-4 mr-2 text-gray-400" />} {isBlurSecurityEnabled ? "Dynamic Photo Blur Active" : "Dynamic Photo Blur Inactive"}</div>
-                <div className="flex items-center"><Lock className="w-4 h-4 mr-2 text-[#D4AF37]" /> Screenshot Prevention Active</div>
+                <div className="flex items-center">{isBlurSecurityEnabled ? <EyeOff className="w-4 h-4 mr-2 text-[#D4AF37]" /> : <Eye className="w-4 h-4 mr-2 text-gray-400" />} {isBlurSecurityEnabled ? t("Dynamic Photo Blur Active") : t("Dynamic Photo Blur Inactive")}</div>
+                <div className="flex items-center"><Lock className="w-4 h-4 mr-2 text-[#D4AF37]" /> {t("Screenshot Prevention Active")}</div>
             </div>
         </div>
     );

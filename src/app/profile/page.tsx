@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase/config';
 import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, increment } from 'firebase/firestore';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { formatMobileDisplay } from '@/lib/phoneUtils';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { ArrowLeft, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles, User, Mail, Phone, Heart, Send, X, CheckCircle, MapPin, Play, Pause, Volume2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { notifyInterestSent } from '@/lib/emailService';
@@ -15,6 +16,7 @@ function ProfileContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { user } = useAuth();
+    const { t } = useLanguage();
     const id = searchParams?.get('id') || '';
 
     const [profile, setProfile] = useState<any>(null);
@@ -273,6 +275,20 @@ function ProfileContent() {
 
     if (!profile) return (
         <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center text-gray-400 font-bold">Profile Not Found</div>
+    );
+
+    const isDeactivated = profile.status === 'deactivated';
+    const isSelfView = user && user.uid === profile.id;
+    const isAdminView = viewerProfile?.role === 'admin';
+
+    if (isDeactivated && !isSelfView && !isAdminView) return (
+        <div className="min-h-screen bg-[#F9FAFB] flex flex-col items-center justify-center text-gray-400 font-bold p-6 text-center">
+            <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mb-4 text-[#881337] shadow-inner">
+                <ShieldCheck className="w-8 h-8 text-[#881337] animate-pulse" />
+            </div>
+            <p className="text-gray-600 text-lg font-black font-serif">{t("Profile Deactivated")}</p>
+            <p className="text-gray-400 text-xs mt-1 max-w-sm leading-relaxed">{t("This candidate profile has been temporarily deactivated by the user.")}</p>
+        </div>
     );
 
     const { jamaat, location, hizratLocation, libasImageUrl, extraImageUrl, gender,

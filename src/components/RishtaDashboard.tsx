@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { triggerHaptic, HapticPatterns } from '@/lib/uiUtils';
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 // Deep imports are moved to dynamic imports inside the specific handler function
 import { QRCodeCanvas } from 'qrcode.react';
 import VoIPCallModal from './JitsiCallModal';
@@ -127,6 +128,7 @@ interface RishtaRequest {
 
 export default function RishtaDashboard() {
     const { user, loading, logout, verifyEmail, refreshUser, isImpersonating, stopImpersonating } = useAuth();
+    const { t } = useLanguage();
     const router = useRouter();
     const searchParams = useSearchParams();
     const tabParam = searchParams.get('tab');
@@ -143,6 +145,15 @@ export default function RishtaDashboard() {
     const [showBoostWidget, setShowBoostWidget] = useState(true);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
+    // Delete & Deactivate Account States
+    const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+    const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+    const [isDeactivating, setIsDeactivating] = useState(false);
+    const [deactivateReason, setDeactivateReason] = useState('');
+    const [deleteReason, setDeleteReason] = useState('');
+
     useEffect(() => {
         const timer = setTimeout(() => {
             setShowBoostWidget(false);
@@ -158,6 +169,98 @@ export default function RishtaDashboard() {
     const videoRecorderRef = useRef<MediaRecorder | null>(null);
     const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
     const videoStreamRef = useRef<MediaStream | null>(null);
+
+    // Delete Account Handler
+    const handleDeleteAccountSelf = async () => {
+        if (!user) return;
+        if (deleteConfirmText !== 'DELETE MY ACCOUNT') {
+            toast.error("Please type the exact phrase to confirm.");
+            return;
+        }
+        if (!deleteReason.trim()) {
+            toast.error("Please share a polite reason before deleting.");
+            return;
+        }
+
+        try {
+            setIsDeletingAccount(true);
+            const idToken = await user.getIdToken();
+            const response = await fetch('/api/user/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: user.uid,
+                    idToken,
+                    deleteReason: deleteReason.trim()
+                })
+            });
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+                toast.success("Your account and biodata have been permanently deleted.");
+                setShowDeleteConfirmModal(false);
+                setDeleteConfirmText('');
+                await logout();
+                router.push('/login');
+            } else {
+                toast.error(data.error || "Failed to delete account. Please try again.");
+            }
+        } catch (error: any) {
+            console.error("Error during self deletion:", error);
+            toast.error(error.message || "An unexpected error occurred. Please try again later.");
+        } finally {
+            setIsDeletingAccount(false);
+        }
+    };
+
+    // Deactivate Account Handler
+    const handleDeactivateAccountSelf = async () => {
+        if (!user) return;
+        if (!deactivateReason.trim()) {
+            toast.error("Please share a polite reason before deactivating.");
+            return;
+        }
+        try {
+            setIsDeactivating(true);
+            const { updateDoc, doc } = await import('firebase/firestore');
+            const threeMonthsInMs = 90 * 24 * 60 * 60 * 1000;
+            const deletionTimestamp = new Date(Date.now() + threeMonthsInMs);
+
+            await updateDoc(doc(db, 'users', user.uid), {
+                status: 'deactivated',
+                deactivatedAt: new Date(),
+                scheduledDeletionAt: deletionTimestamp,
+                deactivatedReason: deactivateReason.trim()
+            });
+
+            // Log deactivation to permanent audit log
+            try {
+                const { addDoc, collection } = await import('firebase/firestore');
+                await addDoc(collection(db, 'admin_audit_logs'), {
+                    adminId: 'self',
+                    action: 'candidate_deactivated',
+                    targetUserId: user.uid,
+                    targetUserName: myProfile?.name || 'Unknown',
+                    itsNumber: myProfile?.itsNumber || 'Unknown',
+                    reason: deactivateReason.trim(),
+                    timestamp: new Date()
+                });
+            } catch (auditErr) {
+                console.error("Audit log write failed for deactivation:", auditErr);
+            }
+
+            toast.success("Your profile has been successfully deactivated.");
+            setShowDeactivateModal(false);
+            refreshUser();
+        } catch (error: any) {
+            console.error("Error during self deactivation:", error);
+            toast.error(error.message || "Failed to deactivate account. Please try again.");
+        } finally {
+            setIsDeactivating(false);
+        }
+    };
 
     // Voice Intro Handlers
     const startRecording = async () => {
@@ -2195,6 +2298,86 @@ export default function RishtaDashboard() {
 
     if (loading) return null;
 
+    if (myProfile && myProfile.status === 'deactivated') {
+        return (
+            <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-4">
+                <div className="bg-white rounded-[2.5rem] w-full max-w-lg p-8 md:p-12 shadow-[0_30px_60px_-15px_rgba(136,19,55,0.15)] border border-gray-100 text-center relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-amber-500 to-[#881337]" />
+                    <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6 text-[#881337] shadow-inner">
+                        <ShieldAlert className="w-10 h-10 animate-pulse text-[#881337]" />
+                    </div>
+                    
+                    <h2 className="text-3xl font-black font-serif text-[#881337] mb-3">{t("Profile Deactivated")}</h2>
+                    <p className="text-[11px] font-black text-amber-600 uppercase tracking-[0.2em] mb-6">{t("Temporary Archive Mode")}</p>
+                    
+                    <div className="bg-amber-50/40 border border-amber-100 rounded-3xl p-6 mb-8 text-left space-y-4">
+                        <p className="text-sm font-bold text-gray-700 leading-relaxed">
+                            {t("Mubarak! Your profile is currently hidden from the platform and cannot be viewed by other candidates.")}
+                        </p>
+                        <div className="flex gap-3 items-start text-xs text-gray-500 leading-relaxed">
+                            <span className="text-base">📅</span>
+                            <p>
+                                <strong>{t("3-Month Archive Period:")}</strong> {t("We preserve your details, matches, and chats for 3 months from deactivation. If not reactivated, your account will be permanently deleted.")}
+                            </p>
+                        </div>
+                        <div className="flex gap-3 items-start text-xs text-gray-500 leading-relaxed">
+                            <span className="text-base">🚀</span>
+                            <p>
+                                {t("Reactivate anytime within 3 months to instantly restore your visible presence on the community hub.")}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const { updateDoc, doc, addDoc, collection } = await import('firebase/firestore');
+                                    await updateDoc(doc(db, 'users', user.uid), {
+                                        status: 'verified', // Restore to verified status
+                                        deactivatedAt: null,
+                                        scheduledDeletionAt: null
+                                    });
+
+                                    // Log reactivation to permanent audit log
+                                    try {
+                                        await addDoc(collection(db, 'admin_audit_logs'), {
+                                            adminId: 'self',
+                                            action: 'candidate_reactivated',
+                                            targetUserId: user.uid,
+                                            targetUserName: myProfile?.name || 'Unknown',
+                                            itsNumber: myProfile?.itsNumber || 'Unknown',
+                                            timestamp: new Date()
+                                        });
+                                    } catch (auditErr) {
+                                        console.error("Audit log write failed for reactivation:", auditErr);
+                                    }
+
+                                    toast.success("Welcome back! Your profile has been successfully reactivated.");
+                                    refreshUser();
+                                } catch (e: any) {
+                                    toast.error("Failed to reactivate: " + e.message);
+                                }
+                            }}
+                            className="flex-1 py-4 bg-gradient-to-r from-[#881337] to-[#70102d] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-rose-200 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                            <Sparkles className="w-4 h-4 text-[#D4AF37]" /> {t("Reactivate Profile")}
+                        </button>
+                        <button
+                            onClick={async () => {
+                                await logout();
+                                router.push('/login');
+                            }}
+                            className="px-6 py-4 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-2xl font-black text-sm uppercase tracking-widest border border-gray-200 transition-all active:scale-95"
+                        >
+                            {t("Logout")}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={`min-h-screen bg-[#F9FAFB] text-[#881337] p-3 pb-24 md:p-12 md:pb-12 ${isImpersonating ? 'pt-12' : ''}`}>
             {/* Impersonation Banner */}
@@ -2995,6 +3178,56 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 </div>
                             )}
                         </div>
+
+                        {/* ⚠️ DANGER ZONE: Deactivate & Delete Account Options */}
+                        <div className="mt-4 bg-white rounded-3xl p-5 shadow-sm border border-red-100/50 hover:border-red-200 transition-colors">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center">
+                                    <ShieldAlert className="w-3.5 h-3.5 text-red-600 animate-pulse" />
+                                </div>
+                                <h3 className="text-xs font-black text-red-600 uppercase tracking-wider">{t("Danger Zone")}</h3>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                {/* Option A: Deactivate Profile */}
+                                <div className="bg-amber-50/20 p-4 rounded-2xl border border-amber-100/30 text-left">
+                                    <p className="text-[11px] font-black text-amber-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                        ⏸️ {t("Option A: Deactivate Profile (Archive)")}
+                                    </p>
+                                    <p className="text-[11px] leading-relaxed text-gray-500 mb-3 font-bold">
+                                        {t("Your profile will be hidden immediately and not displayed to any candidate. We will preserve your biodata, matches, and chats for 3 months so you can reactivate at any time.")}
+                                    </p>
+                                    <button
+                                        onClick={() => {
+                                            triggerHaptic(HapticPatterns.MEDIUM);
+                                            setShowDeactivateModal(true);
+                                        }}
+                                        className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl border border-amber-200 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        {t("Pause & Deactivate")}
+                                    </button>
+                                </div>
+
+                                {/* Option B: Delete Immediately */}
+                                <div className="bg-red-50/30 p-4 rounded-2xl border border-red-50 text-left">
+                                    <p className="text-[11px] font-black text-red-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                        💥 {t("Option B: Delete Account (Permanent)")}
+                                    </p>
+                                    <p className="text-[11px] leading-relaxed text-gray-500 mb-3 font-bold">
+                                        {t("Immediately and permanently delete all your data including profile, matches, verified status, and chats. This action cannot be undone.")}
+                                    </p>
+                                    <button
+                                        onClick={() => {
+                                            triggerHaptic(HapticPatterns.ERROR);
+                                            setShowDeleteConfirmModal(true);
+                                        }}
+                                        className="w-full bg-red-50 hover:bg-red-100 text-red-700 font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl border border-red-200 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        {t("Delete My Account")}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                         </motion.div>
                     )}
 
@@ -3703,6 +3936,219 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                     </button>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 🛑 self delete account confirmation modal */}
+            {showDeleteConfirmModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[160] flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 border-t-8 border-red-600">
+                        <div className="bg-red-50 p-6 text-center relative border-b border-red-100">
+                            <button 
+                                onClick={() => {
+                                    setShowDeleteConfirmModal(false);
+                                    setDeleteConfirmText('');
+                                }} 
+                                className="absolute top-4 right-4 text-gray-400 hover:text-red-600 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                            <div className="w-16 h-16 bg-red-100/50 rounded-full flex items-center justify-center mx-auto mb-3 text-red-600 animate-bounce">
+                                <ShieldAlert className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-xl font-black font-serif text-red-700">Delete Account?</h3>
+                            <p className="text-red-600 text-[10px] uppercase font-black tracking-[0.2em] mt-1">Irreversible Action</p>
+                        </div>
+                        <div className="p-8">
+                            <div className="space-y-6">
+                                <p className="text-[11px] text-gray-500 text-center leading-relaxed font-bold">
+                                    {t("This will IMMEDIATELY and PERMANENTLY delete your profile, verified status, matchmaking requests, and chat logs. This data cannot be recovered. If you prefer to temporarily pause your search, please choose Deactivate Profile instead.")}
+                                </p>
+
+                                <div className="space-y-1.5 text-left bg-red-50/10 p-4 rounded-2xl border border-red-100/20">
+                                    <label className="block text-[9px] font-black text-red-600 uppercase tracking-widest">
+                                        {t("Why are you deleting? *")}
+                                    </label>
+                                    <select
+                                        value={deleteReason.startsWith('Other: ') ? 'Other' : deleteReason}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val === 'Other') {
+                                                setDeleteReason('Other: ');
+                                            } else {
+                                                setDeleteReason(val);
+                                            }
+                                        }}
+                                        className="w-full bg-white border border-red-100 rounded-xl px-3 py-2.5 text-xs font-black focus:ring-2 focus:ring-red-500 outline-none transition-all"
+                                        required
+                                    >
+                                        <option value="">{t("-- Select a reason --")}</option>
+                                        <option value="Found match on platform">Alhamdulillah, I found my partner here!</option>
+                                        <option value="Found match elsewhere">Alhamdulillah, I found my partner elsewhere.</option>
+                                        <option value="Taking a break">I am taking a break from matchmaking.</option>
+                                        <option value="Technical issues">I experienced technical difficulties.</option>
+                                        <option value="Other">Other reason...</option>
+                                    </select>
+
+                                    {deleteReason.startsWith('Other:') && (
+                                        <textarea
+                                            placeholder={t("Please share your reason politely...")}
+                                            value={deleteReason.replace('Other: ', '')}
+                                            onChange={(e) => setDeleteReason('Other: ' + e.target.value)}
+                                            className="w-full mt-2 bg-white border border-red-100 rounded-xl px-3 py-2 text-xs font-black focus:ring-2 focus:ring-red-500 outline-none transition-all h-16 placeholder:text-gray-300"
+                                            required
+                                        />
+                                    )}
+                                </div>
+                                
+                                <div className="bg-red-50/20 p-4 rounded-2xl border border-red-100/30">
+                                    <label className="block text-[9px] font-black text-red-600 uppercase tracking-widest mb-2 text-center">
+                                        {t("Type DELETE MY ACCOUNT to confirm")}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={deleteConfirmText}
+                                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                        placeholder={t("Type here...")}
+                                        className="w-full bg-white border border-red-100 rounded-xl px-4 py-3 text-center text-xs font-black focus:ring-2 focus:ring-red-500 outline-none transition-all placeholder:text-gray-300"
+                                        autoFocus
+                                    />
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setShowDeleteConfirmModal(false);
+                                            setDeleteConfirmText('');
+                                            setDeleteReason('');
+                                        }}
+                                        className="flex-1 py-3.5 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-gray-100 border border-gray-200 transition-all active:scale-95"
+                                    >
+                                        {t("Cancel")}
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteAccountSelf}
+                                        disabled={isDeletingAccount || deleteConfirmText !== 'DELETE MY ACCOUNT' || !deleteReason.trim() || deleteReason === 'Other: '}
+                                        className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-lg shadow-red-200 disabled:opacity-40 disabled:shadow-none transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                                    >
+                                        {isDeletingAccount ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                            <>
+                                                <X className="w-3.5 h-3.5" /> {t("Delete")}
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ⏸️ self deactivate account confirmation modal */}
+            {showDeactivateModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[160] flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 border-t-8 border-amber-500">
+                        <div className="bg-amber-50 p-6 text-center relative border-b border-amber-100">
+                            <button 
+                                onClick={() => {
+                                    setShowDeactivateModal(false);
+                                    setDeactivateReason('');
+                                }} 
+                                className="absolute top-4 right-4 text-gray-400 hover:text-amber-600 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                            <div className="w-16 h-16 bg-amber-100/50 rounded-full flex items-center justify-center mx-auto mb-3 text-amber-600 animate-bounce">
+                                <ShieldAlert className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-xl font-black font-serif text-amber-700">{t("Deactivate Profile?")}</h3>
+                            <p className="text-amber-600 text-[10px] uppercase font-black tracking-[0.2em] mt-1">{t("Temporary Archive")}</p>
+                        </div>
+                        <div className="p-8">
+                            <div className="space-y-6">
+                                <div className="space-y-3 text-left">
+                                    <div className="flex gap-2 items-start text-xs font-bold text-gray-600">
+                                        <span>🫣</span>
+                                        <p>{t("Your profile is hidden immediately from all discovery listings.")}</p>
+                                    </div>
+                                    <div className="flex gap-2 items-start text-xs font-bold text-gray-600">
+                                        <span>💾</span>
+                                        <p>{t("All matching history, bio, and chats are archived safely for 3 months.")}</p>
+                                    </div>
+                                    <div className="flex gap-2 items-start text-xs font-bold text-gray-600">
+                                        <span>⚡</span>
+                                        <p>{t("You can reactivate instantly within these 3 months by just logging in.")}</p>
+                                    </div>
+                                    <div className="flex gap-2 items-start text-[10px] font-black text-rose-600 border-t border-amber-100/50 pt-2.5">
+                                        <span>⚠️</span>
+                                        <p>{t("After 3 months, it will be automatically deleted permanently.")}</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5 text-left bg-amber-50/10 p-4 rounded-2xl border border-amber-100/20">
+                                    <label className="block text-[9px] font-black text-amber-700 uppercase tracking-widest">
+                                        {t("Why are you deactivating? *")}
+                                    </label>
+                                    <select
+                                        value={deactivateReason.startsWith('Other: ') ? 'Other' : deactivateReason}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val === 'Other') {
+                                                setDeactivateReason('Other: ');
+                                            } else {
+                                                setDeactivateReason(val);
+                                            }
+                                        }}
+                                        className="w-full bg-white border border-amber-100 rounded-xl px-3 py-2.5 text-xs font-black focus:ring-2 focus:ring-amber-500 outline-none transition-all"
+                                        required
+                                    >
+                                        <option value="">{t("-- Select a reason --")}</option>
+                                        <option value="Taking a temporary break">I am taking a temporary break from matchmaking.</option>
+                                        <option value="Busy with personal matters">I am busy with work/studies/personal matters.</option>
+                                        <option value="Need privacy for a while">I need some profile privacy for a while.</option>
+                                        <option value="Other">Other reason...</option>
+                                    </select>
+
+                                    {deactivateReason.startsWith('Other:') && (
+                                        <textarea
+                                            placeholder={t("Please share your reason politely...")}
+                                            value={deactivateReason.replace('Other: ', '')}
+                                            onChange={(e) => setDeactivateReason('Other: ' + e.target.value)}
+                                            className="w-full mt-2 bg-white border border-amber-100 rounded-xl px-3 py-2 text-xs font-black focus:ring-2 focus:ring-amber-500 outline-none transition-all h-16 placeholder:text-gray-300"
+                                            required
+                                        />
+                                    )}
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setShowDeactivateModal(false);
+                                            setDeactivateReason('');
+                                        }}
+                                        className="flex-1 py-3.5 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-gray-100 border border-gray-200 transition-all active:scale-95"
+                                    >
+                                        {t("Cancel")}
+                                    </button>
+                                    <button
+                                        onClick={handleDeactivateAccountSelf}
+                                        disabled={isDeactivating || !deactivateReason.trim() || deactivateReason === 'Other: '}
+                                        className="flex-1 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-lg shadow-amber-100 disabled:opacity-40 disabled:shadow-none transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                                    >
+                                        {isDeactivating ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                            <>
+                                                ✓ {t("Confirm")}
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

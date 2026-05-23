@@ -78,7 +78,23 @@ export const translations: Record<Language, Record<string, string>> = {
     "Voice Intro": "Voice Intro",
     "Now Playing": "Now Playing",
     "Hear Voice Introduction": "Hear Voice Introduction",
-    "Hear {name}'s Introduction": "Hear {name}'s Introduction"
+    "Hear {name}'s Introduction": "Hear {name}'s Introduction",
+    "Danger Zone": "Danger Zone",
+    "Option A: Deactivate Profile (Archive)": "Option A: Deactivate Profile (Archive)",
+    "Option B: Delete Account (Permanent)": "Option B: Delete Account (Permanent)",
+    "Pause & Deactivate": "Pause & Deactivate",
+    "Delete My Account": "Delete My Account",
+    "Delete Account?": "Delete Account?",
+    "Deactivate Profile?": "Deactivate Profile?",
+    "Irreversible Action": "Irreversible Action",
+    "Temporary Archive": "Temporary Archive",
+    "Type DELETE MY ACCOUNT to confirm": "Type DELETE MY ACCOUNT to confirm",
+    "Type here...": "Type here...",
+    "Cancel": "Cancel",
+    "Delete": "Delete",
+    "Profile Deactivated": "Profile Deactivated",
+    "Temporary Archive Mode": "Temporary Archive Mode",
+    "Reactivate Profile": "Reactivate Profile"
   },
   gu: {
     // Nav & Common
@@ -157,7 +173,23 @@ export const translations: Record<Language, Record<string, string>> = {
     "Voice Intro": "વોઇસ ઇન્ટ્રો",
     "Now Playing": "વાગી રહ્યું છે",
     "Hear Voice Introduction": "પરિચય સાંભળો",
-    "Hear {name}'s Introduction": "{name} નો પરિચય સાંભળો"
+    "Hear {name}'s Introduction": "{name} નો પરિચય સાંભળો",
+    "Danger Zone": "ડેન્જર ઝોન",
+    "Option A: Deactivate Profile (Archive)": "વિકલ્પ A: પ્રોફાઇલ નિષ્ક્રિય કરો (આર્કાઇવ)",
+    "Option B: Delete Account (Permanent)": "વિકલ્પ B: એકાઉન્ટ ડિલીટ કરો (કાયમી)",
+    "Pause & Deactivate": "નિષ્ક્રિય અને થોભાવો",
+    "Delete My Account": "મારું એકાઉન્ટ ડિલીટ કરો",
+    "Delete Account?": "એકાઉન્ટ ડિલીટ કરવું છે?",
+    "Deactivate Profile?": "પ્રોફાઇલ નિષ્ક્રિય કરવી છે?",
+    "Irreversible Action": "અફર પ્રક્રિયા",
+    "Temporary Archive": "અસ્થાયી આર્કાઇવ",
+    "Type DELETE MY ACCOUNT to confirm": "ખાતરી કરવા માટે DELETE MY ACCOUNT લખો",
+    "Type here...": "અહીં લખો...",
+    "Cancel": "રદ કરો",
+    "Delete": "ડિલીટ",
+    "Profile Deactivated": "પ્રોફાઇલ નિષ્ક્રિય કરેલ છે",
+    "Temporary Archive Mode": "અસ્થાયી આર્કાઇવ મોડ",
+    "Reactivate Profile": "પ્રોફાઇલ પુનઃ સક્રિય કરો"
   },
   hi: {
     // Nav & Common
@@ -236,6 +268,22 @@ export const translations: Record<Language, Record<string, string>> = {
     "Voice Intro": "वॉयस इंट्रो",
     "Now Playing": "बज रहा है",
     "Hear Voice Introduction": "परिचय सुनें",
-    "Hear {name}'s Introduction": "{name} का परिचय सुनें"
+    "Hear {name}'s Introduction": "{name} का परिचय सुनें",
+    "Danger Zone": "डेंजर ज़ोन",
+    "Option A: Deactivate Profile (Archive)": "विकल्प A: प्रोफ़ाइल निष्क्रिय करें (संग्रह)",
+    "Option B: Delete Account (Permanent)": "विकल्प B: खाता हटाएं (स्थायी)",
+    "Pause & Deactivate": "निष्क्रिय करें और रोकें",
+    "Delete My Account": "मेरा खाता हटाएं",
+    "Delete Account?": "खाता हटाएं?",
+    "Deactivate Profile?": "प्रोफ़ाइल निष्क्रिय करें?",
+    "Irreversible Action": "अपरिवर्तनीय प्रक्रिया",
+    "Temporary Archive": "अस्थायी संग्रह",
+    "Type DELETE MY ACCOUNT to confirm": "पुष्टि के लिए DELETE MY ACCOUNT टाइप करें",
+    "Type here...": "यहाँ टाइप करें...",
+    "Cancel": "रद्द करें",
+    "Delete": "हटाएं",
+    "Profile Deactivated": "प्रोफ़ाइल निष्क्रिय की गई",
+    "Temporary Archive Mode": "अस्थायी संग्रह मोड",
+    "Reactivate Profile": "प्रोफ़ाइल पुनः सक्रिय करें"
   }
 };

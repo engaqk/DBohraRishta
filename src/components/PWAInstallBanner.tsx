@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { Download, X, Smartphone } from "lucide-react";
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 export default function PWAInstallBanner() {
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showBanner, setShowBanner] = useState(false);
     const [dismissed, setDismissed] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
+    const { t } = useLanguage();
 
     useEffect(() => {
         const wasDismissed = sessionStorage.getItem("pwa_banner_dismissed");
@@ -79,7 +81,7 @@ export default function PWAInstallBanner() {
         <div
             className="fixed bottom-4 left-4 right-4 z-[9000] max-w-md mx-auto animate-in slide-in-from-bottom-4 duration-500"
             role="dialog"
-            aria-label="Install App"
+            aria-label={t("Install App")}
         >
             <div 
                 className="bg-white rounded-2xl p-4 flex items-center gap-4"
@@ -94,14 +96,14 @@ export default function PWAInstallBanner() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[#881337] text-sm">Install 53DBohraRishta</p>
+                    <p className="font-bold text-[#881337] text-sm">{t("Install 53DBohraRishta")}</p>
                     {isIOS ? (
                         <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                            Tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong> to install.
+                            {t("Tap Share then \"Add to Home Screen\" to install.")}
                         </p>
                     ) : (
                         <p className="text-xs text-gray-500 mt-0.5">
-                            Add to your home screen for faster access.
+                            {t("Add to your home screen for faster access.")}
                         </p>
                     )}
                 </div>
@@ -114,7 +116,7 @@ export default function PWAInstallBanner() {
                             className="flex items-center gap-1.5 bg-[#881337] text-white px-3 py-2 rounded-xl text-xs font-bold hover:bg-[#70102d] active:scale-95 transition-all shadow-sm"
                         >
                             <Download className="w-3.5 h-3.5" />
-                            Install
+                            {t("Install")}
                         </button>
                     )}
                     {isIOS && (
@@ -129,7 +131,7 @@ export default function PWAInstallBanner() {
                         onClick={handleDismiss}
                         id="pwa-dismiss-btn"
                         className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
-                        aria-label="Dismiss"
+                        aria-label={t("Dismiss")}
                         style={{ backgroundColor: '#f9fafb' }}
                     >
                         <X className="w-4 h-4" />

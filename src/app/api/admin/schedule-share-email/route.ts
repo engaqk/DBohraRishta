@@ -139,7 +139,7 @@ async function handleRequest(req: Request) {
         for (let i = 0; i < targetEmails.length; i += chunkSize) {
             const chunk = targetEmails.slice(i, i + chunkSize);
             const mailOptions = {
-                from: \`"53DBohraRishta" <\${process.env.GMAIL_USER}>\`,
+                from: `"53DBohraRishta" <${process.env.GMAIL_USER}>`,
                 to: process.env.GMAIL_USER, // Required by some SMTPs when using BCC
                 bcc: chunk.join(', '),
                 subject: title,
@@ -147,11 +147,11 @@ async function handleRequest(req: Request) {
             };
 
             try {
-                console.log(\`Sending email chunk \${i / chunkSize + 1} to \${chunk.length} recipients...\`);
+                console.log(`Sending email chunk ${i / chunkSize + 1} to ${chunk.length} recipients...`);
                 await transporter.sendMail(mailOptions);
                 emailSuccessCount += chunk.length;
             } catch (e: any) {
-                console.error(\`Email error on chunk \${i / chunkSize + 1}:\`, e);
+                console.error(`Email error on chunk ${i / chunkSize + 1}:`, e);
                 if (testEmail) {
                     return NextResponse.json({ error: "Test email sending failed: " + e.message }, { status: 500 });
                 }
@@ -161,7 +161,7 @@ async function handleRequest(req: Request) {
         return NextResponse.json({
             success: true,
             emailsSent: emailSuccessCount,
-            message: \`Successfully scheduled and sent \${emailSuccessCount} emails.\`
+            message: `Successfully scheduled and sent ${emailSuccessCount} emails.`
         });
 
     } catch (error: any) {

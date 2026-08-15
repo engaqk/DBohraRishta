@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { Send, Bell, Mail, Loader2, Megaphone, CheckCircle2, History } from "lucide-react";
+import { Send, Bell, Mail, Loader2, Megaphone, CheckCircle2, History, Share2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/lib/contexts/AuthContext";
 
@@ -132,6 +132,30 @@ export default function BroadcastTab() {
             toast.error("Failed to send broadcast: " + error.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSendPromotionalEmail = async () => {
+        const confirm = window.confirm("Are you sure you want to send the Promotional 'Share' email to all verified candidates? This will process in batches.");
+        if (!confirm) return;
+
+        const toastId = toast.loading("Launching promotional campaign...");
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/schedule-share-email', {
+                method: 'GET',
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                toast.success(`Campaign finished! ${data.messagesSent} emails sent.`, { id: toastId });
+                fetchHistory(); // Refresh history if it creates a log
+            } else {
+                toast.error(data.error || 'Failed to send campaign', { id: toastId });
+            }
+        } catch (e: any) {
+            toast.error("Network error: " + e.message, { id: toastId });
         }
     };
 
@@ -400,6 +424,21 @@ export default function BroadcastTab() {
                         <p className="text-xs text-amber-700 leading-relaxed">
                             Avoid over-broadcasting. Use "Push" only for urgent updates or festival greetings to maintain high engagement rates.
                         </p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-6 border border-indigo-100">
+                        <h3 className="text-sm font-black uppercase text-indigo-900 mb-2 flex items-center gap-2">
+                            <Share2 className="w-4 h-4" /> Growth Campaign
+                        </h3>
+                        <p className="text-xs text-indigo-700 leading-relaxed mb-4">
+                            Send the customized "Share the Platform" promotional email to all verified candidates to encourage them to invite others.
+                        </p>
+                        <button
+                            onClick={handleSendPromotionalEmail}
+                            className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-indigo-700 transition-all shadow-md flex items-center justify-center gap-2"
+                        >
+                            <Mail className="w-4 h-4" /> Trigger Share Campaign
+                        </button>
                     </div>
                 </div>
             </div>

@@ -4290,7 +4290,15 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                             </h1>
                             <div className="flex flex-col items-center gap-4 mt-6">
                                 <div className="h-[1px] w-64 bg-white/20" />
-                                <p className="text-[16px] font-sans font-black tracking-[0.8em] uppercase text-white drop-shadow-lg">Intelligent Matches</p>
+                                <p className="text-[16px] font-sans font-black tracking-[0.8em] uppercase text-white drop-shadow-lg mb-2">Intelligent Matches</p>
+                                <div className="bg-white/10 backdrop-blur-md rounded-xl px-6 py-3 border border-white/20 flex flex-col items-center shadow-inner">
+                                    <p className="text-[12px] font-sans font-bold tracking-widest text-white/90 uppercase mb-1.5">
+                                        Looking for a Rishta? Join 100% Free
+                                    </p>
+                                    <a href="https://53dbohrarishta.in" target="_blank" rel="noopener noreferrer" className="text-[15px] font-black tracking-[0.2em] text-[#D4AF37] underline decoration-[#D4AF37]/50 underline-offset-4 cursor-pointer">
+                                        www.53dbohrarishta.in
+                                    </a>
+                                </div>
                             </div>
                         </div>
 

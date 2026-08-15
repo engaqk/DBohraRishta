@@ -457,10 +457,27 @@ export default function AdminVerificationPage() {
     }, [selectedUser?.id, activeDetailTab]);
 
 
-    const openDetails = (u: PendingUser, tab: 'biodata' | 'messages' = 'biodata') => {
+    const openDetails = async (u: PendingUser, tab: 'biodata' | 'messages' = 'biodata') => {
         setSelectedUser(u);
         setAdminComment(u.adminMessage || "");
         setActiveDetailTab(tab);
+
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch(`/api/admin/user-media?userId=${u.id}`, {
+                headers: { 'Authorization': token || '' }
+            });
+            const data = await res.json();
+            if (data && (data.videoIntroUrl || data.voiceIntroUrl)) {
+                setSelectedUser(prev => prev && prev.id === u.id ? { 
+                    ...prev, 
+                    videoIntroUrl: data.videoIntroUrl, 
+                    voiceIntroUrl: data.voiceIntroUrl 
+                } : prev);
+            }
+        } catch (e) {
+            console.error('Failed to fetch heavy media', e);
+        }
     };
     const closeDetails = () => { setSelectedUser(null); setAdminComment(""); };
 

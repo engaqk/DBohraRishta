@@ -570,20 +570,20 @@ export default function AdminVerificationPage() {
                         {activeMainTab === 'firestore' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
                     </button>
                     <button
-                        onClick={() => setActiveMainTab('auth')}
-                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'auth' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
-                    >
-                        <Users className="w-4 h-4 inline-block mr-2" />
-                        Auth Directory
-                        {activeMainTab === 'auth' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
-                    </button>
-                    <button
                         onClick={() => setActiveMainTab('broadcast')}
                         className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'broadcast' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
                     >
                         <Mail className="w-4 h-4 inline-block mr-2" />
                         Email Broadcast
                         {activeMainTab === 'broadcast' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                    </button>
+                    <button
+                        onClick={() => setActiveMainTab('auth')}
+                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'auth' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <Users className="w-4 h-4 inline-block mr-2" />
+                        Auth Directory
+                        {activeMainTab === 'auth' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
                     </button>
                     <button
                         onClick={() => setActiveMainTab('sms')}

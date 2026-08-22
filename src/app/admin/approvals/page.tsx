@@ -281,6 +281,30 @@ export default function AdminVerificationPage() {
         }
     };
 
+    const handleDeleteSelfie = async (userId: string) => {
+        if (!confirm("Are you sure you want to delete this user's selfie? They will need to upload a new one.")) return;
+        try {
+            const token = localStorage.getItem('admin_auth_token');
+            const res = await fetch('/api/admin/users/delete-selfie', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': token || '' },
+                body: JSON.stringify({ userId, adminId: user?.uid }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success('Selfie deleted successfully!');
+                fetchDashboardData();
+                if (selectedUser?.id === userId) {
+                    setSelectedUser(prev => prev ? { ...prev, isPhotoVerified: false, selfieStatus: undefined, selfieImageUrl: undefined, selfieUrl: undefined } : null);
+                }
+            } else {
+                toast.error(data.error || 'Failed to delete selfie');
+            }
+        } catch (e) {
+            toast.error('Network error deleting selfie');
+        }
+    };
+
     const handleVerifyVideoHandshake = async (userId: string, isApproved: boolean) => {
         const rejectionReason = !isApproved ? window.prompt("Enter rejection reason (optional):") : null;
         if (!isApproved && rejectionReason === null) return; // Cancelled prompt
@@ -682,10 +706,19 @@ export default function AdminVerificationPage() {
                                         )}
                                         {(selectedUser.selfieImageUrl || selectedUser.selfieUrl) && (
                                             <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <p className="text-xs font-bold text-blue-600 uppercase tracking-tight">Selfie Verification</p>
-                                                    {selectedUser.selfieStatus === 'pending' && <span className="bg-blue-100 text-blue-700 text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse uppercase">PENDING REVIEW</span>}
-                                                    {selectedUser.isPhotoVerified && <ShieldCheck className="w-3 h-3 text-emerald-500" />}
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-xs font-bold text-blue-600 uppercase tracking-tight">Selfie Verification</p>
+                                                        {selectedUser.selfieStatus === 'pending' && <span className="bg-blue-100 text-blue-700 text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse uppercase">PENDING REVIEW</span>}
+                                                        {selectedUser.isPhotoVerified && <ShieldCheck className="w-3 h-3 text-emerald-500" />}
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => handleDeleteSelfie(selectedUser.id)}
+                                                        title="Delete Selfie"
+                                                        className="text-gray-400 hover:text-rose-600 transition-colors p-1"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
                                                 </div>
                                                 <div
                                                     className="w-full h-48 bg-gray-100 rounded-xl overflow-hidden border-2 border-blue-200 shadow cursor-pointer hover:opacity-90 transition-opacity"

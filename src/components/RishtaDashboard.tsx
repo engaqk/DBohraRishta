@@ -2863,11 +2863,9 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                             <div
                                                 id="selfie-verification-row"
                                                 onClick={() => {
-                                                    if (!myProfile.isPhotoVerified && myProfile.selfieStatus !== "pending") {
-                                                        setShowSelfieModal(true);
-                                                    }
+                                                    setShowSelfieModal(true);
                                                 }}
-                                                className={`p-3 rounded-xl border flex items-center justify-between transition-all ${myProfile.isPhotoVerified ? 'bg-blue-50 border-blue-100 text-blue-700' : 'bg-white border-gray-100 text-gray-700'} ${(!myProfile.isPhotoVerified && myProfile.selfieStatus !== "pending") ? "cursor-pointer hover:bg-gray-50 active:scale-[0.98]" : ""}`}
+                                                className={`p-3 rounded-xl border flex items-center justify-between transition-all ${myProfile.isPhotoVerified ? 'bg-blue-50 border-blue-100 text-blue-700' : 'bg-white border-gray-100 text-gray-700'} cursor-pointer hover:bg-gray-50 active:scale-[0.98]`}
                                             >
                                                 <div className="flex items-center gap-2.5">
                                                     <div className={`w-5 h-5 rounded-full flex items-center justify-center ${myProfile.isPhotoVerified ? 'bg-blue-500 text-white' : myProfile.selfieStatus === 'pending' ? 'bg-amber-500 text-white' : 'border-2 border-gray-200'}`}>
@@ -2875,9 +2873,9 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                                     </div>
                                                     <span className="text-xs font-bold">Selfie Verification {myProfile.selfieStatus === 'pending' && <span className="text-[9px] font-black uppercase text-amber-600 block leading-none mt-0.5">Under Review</span>}</span>
                                                 </div>
-                                                {!myProfile.isPhotoVerified && myProfile.selfieStatus !== 'pending' && (
-                                                    <button className="text-[10px] font-black bg-[#881337] text-white px-2 py-1 rounded-lg">Get Verified</button>
-                                                )}
+                                                <button className="text-[10px] font-black bg-[#881337] text-white px-2 py-1 rounded-lg">
+                                                    {myProfile.isPhotoVerified ? "Update" : myProfile.selfieStatus === 'pending' ? "Replace" : "Get Verified"}
+                                                </button>
                                             </div>
 
                                             {/* 🎥 Video Handshake (Digital Handshake) Section */}

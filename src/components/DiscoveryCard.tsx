@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
-import { ShieldCheck, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, Lock, PauseCircle, X, Video } from 'lucide-react';
+import { ShieldCheck, MessageCircle, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, Lock, PauseCircle, X, Video } from 'lucide-react';
 import { notifyInterestSent } from '@/lib/emailService';
 import { collection, addDoc, query, where, getDocs, serverTimestamp, deleteDoc, doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -62,6 +62,8 @@ interface DiscoveryCardProps {
     isPhotoVerified?: boolean;
     isEmailVerified?: boolean;
     verifiedPhone?: string;
+    isOpenChatActive?: boolean;
+    onStartDirectChat?: (candidate: { id: string; otherUserId: string; name: string; imageUrl?: string }) => void;
 }
 
 const DiscoveryCard = React.memo(function DiscoveryCard({
@@ -73,7 +75,8 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
     fatherName, motherName, professionType, educationDetails,
     city, state, gender, createdAt, selfieImageUrl, selfieStatus, voiceIntroUrl, videoIntroUrl, videoStatus, lastActive,
     requestId, initialRequestStatus, isIncomingRequest, onAcceptInterest, onDeclineInterest,
-    isPhotoVerified, isEmailVerified, verifiedPhone
+    isPhotoVerified, isEmailVerified, verifiedPhone,
+    isOpenChatActive = false, onStartDirectChat
 }: DiscoveryCardProps) {
     const { user } = useAuth();
     const { t } = useLanguage();
@@ -776,6 +779,28 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                                 )}
                             </div>
                         )}
+
+                    {/* Open Chat Direct Button */}
+                    {isOpenChatActive && isMyProfileVerified && requestStatus !== 'accepted' && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onStartDirectChat && user) {
+                                    const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
+                                    onStartDirectChat({
+                                        id: connectionId,
+                                        otherUserId: id,
+                                        name: name,
+                                        imageUrl: libasImageUrl || undefined
+                                    });
+                                }
+                            }}
+                            className="w-full mt-2.5 py-3 rounded-xl font-black text-xs bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all border border-amber-300"
+                        >
+                            <MessageCircle className="w-4 h-4 text-white" />
+                            <span>💬 Direct Chat (Open Window Active)</span>
+                        </button>
+                    )}
                 </div>
             </div>
 

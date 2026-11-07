@@ -308,3 +308,99 @@ export function getVideoRejectedTemplate(opts: { candidateName: string; reason?:
             <p style="font-size:11px;color:#999">53DBohraRishta Official Notification</p>
         </div>`;
 }
+
+
+export function getOpenChatAnnouncementTemplate(opts: { durationLabel?: string; expiresAt?: string; customNote?: string; candidateName?: string }) {
+    const durationText = opts.durationLabel && opts.durationLabel !== 'Indefinite' && opts.durationLabel !== 'Until Manually Disabled'
+        ? `Active for the next <strong>${opts.durationLabel}</strong>`
+        : `Active Now (Limited-Time Community Window)`;
+
+    return `
+        <div style="font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;max-width:620px;margin:auto;background-color:#ffffff;border:1px solid #f1e5d1;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px -5px rgba(136,19,55,0.08)">
+            <!-- Header Banner -->
+            <div style="background:linear-gradient(135deg, #881337 0%, #4c0519 100%);color:#ffffff;padding:32px 24px;text-align:center;position:relative">
+                <span style="display:inline-block;background:rgba(212,175,55,0.2);border:1px solid #D4AF37;color:#fef08a;font-size:11px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;padding:4px 14px;border-radius:20px;margin-bottom:12px">
+                    ✨ Exclusive Community Opportunity
+                </span>
+                <h1 style="margin:0;font-family:Georgia,serif;font-size:24px;font-weight:normal;letter-spacing:0.5px">53DBohraRishta Platform</h1>
+                <p style="margin:8px 0 0;font-size:14px;color:#fbcfe8;font-weight:500">Special Open Direct Chat Window Is Now Live</p>
+            </div>
+
+            <!-- Content Body -->
+            <div style="padding:32px 28px;color:#374151;line-height:1.65;font-size:15px">
+                <p style="margin-top:0;font-size:16px;color:#1f2937">
+                    Assalamu Alaikum wa Rahmatullah${opts.candidateName ? ` <strong>${opts.candidateName}</strong>` : ''},
+                </p>
+
+                <p>
+                    Alhamdulillah, to foster meaningful connections within our community, the Superadmin has 
+                    <strong style="color:#881337">temporarily opened the Direct Chat Window for all verified members!</strong>
+                </p>
+
+                <!-- Time Box -->
+                <div style="background:linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);border-left:5px solid #D4AF37;padding:16px 20px;border-radius:10px;margin:24px 0">
+                    <p style="margin:0;font-size:13px;font-weight:bold;color:#92400e;text-transform:uppercase;letter-spacing:0.5px">
+                        ⏳ Window Duration & Timing
+                    </p>
+                    <p style="margin:4px 0 0;font-size:15px;color:#78350f">
+                        ${durationText}
+                    </p>
+                    ${opts.customNote ? `<p style="margin:8px 0 0;font-size:13px;color:#78350f;font-style:italic">"${opts.customNote}"</p>` : ''}
+                </div>
+
+                <!-- How It Works & Value -->
+                <h3 style="color:#881337;font-family:Georgia,serif;font-size:18px;margin:28px 0 12px;border-bottom:1px solid #f3f4f6;padding-bottom:6px">
+                    🌟 How You Benefit During This Window:
+                </h3>
+                <ul style="padding-left:20px;margin:0 0 20px;color:#4b5563">
+                    <li style="margin-bottom:8px"><strong>Zero Waiting Time:</strong> You can initiate a direct conversation with any prospective candidate without waiting for interest requests to be formally accepted.</li>
+                    <li style="margin-bottom:8px"><strong>Assess Genuine Compatibility:</strong> Ask essential questions regarding family values, religious priorities, lifestyle, and career aspirations.</li>
+                    <li style="margin-bottom:8px"><strong>Protected Communication:</strong> All conversations take place safely inside the platform.</li>
+                </ul>
+
+                <!-- Islamic Adab & Noble Conduct Reminder -->
+                <div style="background:#fdf2f8;border:1px solid #fbcfe8;border-radius:12px;padding:20px;margin:24px 0">
+                    <h4 style="margin:0 0 10px;color:#9d174d;font-size:15px;font-weight:bold">
+                        🤝 Islamic Adab & Community Etiquette Reminder:
+                    </h4>
+                    <p style="margin:0 0 10px;font-size:13.5px;color:#701a75">
+                        Marriage (Nikah) is a blessed and sacred pursuit. We kindly ask all members to enter every interaction with sincere intentions (Niyat) and the finest character:
+                    </p>
+                    <ul style="margin:0;padding-left:18px;font-size:13.5px;color:#701a75">
+                        <li style="margin-bottom:6px"><strong>Gentlemen:</strong> Please represent yourself honorably with courteous, polite, and dignified conduct at all times.</li>
+                        <li style="margin-bottom:6px"><strong>Ladies & Families:</strong> Please engage with modesty, grace, and confidence as valued daughters of our community.</li>
+                        <li><strong>Mutual Respect:</strong> Maintain modesty and halal boundaries throughout all exchanges.</li>
+                    </ul>
+                </div>
+
+                <!-- Safety Note -->
+                <p style="font-size:12px;color:#6b7280;background:#f9fafb;padding:12px;border-radius:8px;border:1px solid #e5e7eb;margin-bottom:28px">
+                    🛡️ <strong>Safety Guarantee:</strong> All platform safety tools, automated decency filters, and reporting mechanisms remain 100% active. Respectful conduct is strictly enforced.
+                </p>
+
+                <!-- Call to Action -->
+                <div style="text-align:center;margin:32px 0 16px">
+                    <a href="https://53dbohrarishta.in/login" style="display:inline-block;background:linear-gradient(135deg, #881337 0%, #9f1239 100%);color:#ffffff;padding:16px 36px;text-decoration:none;border-radius:12px;font-weight:bold;font-size:15px;box-shadow:0 8px 20px -4px rgba(136,19,55,0.4);letter-spacing:0.3px">
+                        💬 Open Dashboard & Start Chatting
+                    </a>
+                    <p style="font-size:12px;color:#9ca3af;margin-top:10px">
+                        Or visit <a href="https://53dbohrarishta.in" style="color:#881337;text-decoration:underline">53dbohrarishta.in</a> directly.
+                    </p>
+                </div>
+
+                <hr style="border:0;border-top:1px solid #f3f4f6;margin:28px 0 20px"/>
+
+                <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.5">
+                    May Allah Ta'ala bless your journey with barakah and guide you to a righteous and loving life partner.<br/>
+                    <em>Warm regards,<br/><strong>53DBohraRishta Administration</strong></em>
+                </p>
+            </div>
+
+            <!-- Footer -->
+            <div style="background:#fdfaf6;padding:16px;text-align:center;color:#9ca3af;font-size:11px;border-top:1px solid #f1e5d1">
+                You received this exclusive update because your profile is registered & verified on 53DBohraRishta.<br/>
+                &copy; ${new Date().getFullYear()} 53DBohraRishta Community Platform. All rights reserved.
+            </div>
+        </div>
+    `;
+}

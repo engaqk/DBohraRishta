@@ -268,6 +268,19 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                 </button>
             </div>
 
+            {/* Adab & Decency Protection Banner */}
+            <div className="bg-amber-50/90 border-b border-amber-200/60 px-4 py-2 text-[11px] text-amber-900 flex items-center justify-between gap-2 shadow-xs">
+                <div className="flex items-center gap-1.5">
+                    <span className="text-amber-600">🛡️</span>
+                    <span className="font-medium">
+                        <strong>Islamic Adab:</strong> Communicate with noble intentions, mutual respect, and dignity.
+                    </span>
+                </div>
+                <span className="text-[10px] text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full font-bold shrink-0">
+                    Protected Chat
+                </span>
+            </div>
+
             {/* Messages Area */}
             <div className="flex-1 p-4 overflow-y-auto bg-rose-50 flex flex-col gap-3 relative" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 46.223l-3.344-3.042C14.735 32.378 7 25.378 7 16.711 7 9.544 12.544 4 19.711 4c4.056 0 7.944 1.889 10.289 4.889C32.344 5.889 36.233 4 40.289 4 47.456 4 53 9.544 53 16.711c0 8.667-7.735 15.667-19.656 26.47L30 46.223z' fill='%23881337' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E\")" }}>
                 {loading && (

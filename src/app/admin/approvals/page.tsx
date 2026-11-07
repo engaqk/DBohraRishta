@@ -13,6 +13,7 @@ import { ADMIN_EMAIL } from '@/lib/emailService';
 import BroadcastTab from "@/components/admin/BroadcastTab";
 import SmsBroadcastTab from "@/components/admin/SmsBroadcastTab";
 import AuditLogsTab from "@/components/admin/AuditLogsTab";
+import OpenChatController from "@/components/admin/OpenChatController";
 
 interface PendingUser {
     id: string;
@@ -582,6 +583,9 @@ export default function AdminVerificationPage() {
                         </button>
                     </div>
                 </div>
+
+                {/* Superadmin Open Chat Controller */}
+                <OpenChatController />
 
                 {/* Main Tabs */}
                 <div className="flex items-center gap-2 mb-6 border-b border-gray-200 overflow-x-auto whitespace-nowrap scrollbar-hide">

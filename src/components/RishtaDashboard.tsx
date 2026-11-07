@@ -124,6 +124,7 @@ interface RishtaRequest {
     otherUserLibasUrl: string | null;
     otherUserBlurSecurityEnabled: boolean;
     otherUserId: string;
+    isOpenChat?: boolean;
 }
 
 export default function RishtaDashboard() {
@@ -471,6 +472,29 @@ export default function RishtaDashboard() {
             router.replace(newQuery ? `/?${newQuery}` : '/', { scroll: false });
         }
     }, [adminChatParam, router, searchParams]);
+
+    // Handle Direct Chat deep link from profile page
+    const directChatParam = searchParams.get('directChat');
+    useEffect(() => {
+        if (directChatParam && user) {
+            getDoc(doc(db, 'users', directChatParam)).then((snap) => {
+                if (snap.exists()) {
+                    const d = snap.data();
+                    const connectionId = `direct_${[user.uid, directChatParam].sort().join('_')}`;
+                    handleStartDirectChat({
+                        id: connectionId,
+                        otherUserId: directChatParam,
+                        name: d.name || 'Candidate',
+                        imageUrl: d.libasImageUrl || undefined
+                    });
+                }
+            });
+            const params = new URLSearchParams(searchParams.toString());
+            params.delete('directChat');
+            const newQuery = params.toString();
+            router.replace(newQuery ? `/?${newQuery}` : '/', { scroll: false });
+        }
+    }, [directChatParam, user]);
     const [dataLoading, setDataLoading] = useState(true);
     const [discoveryError, setDiscoveryError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -482,6 +506,76 @@ export default function RishtaDashboard() {
 
     // Feature Modules State
     const [activeChat, setActiveChat] = useState<{ id: string, otherUserId: string, name: string, imageUrl?: string } | null>(null);
+
+    // Open Chat Testing Mode State
+    const [openChatData, setOpenChatData] = useState<{
+        isOpenChatActive?: boolean;
+        expiresAt?: string | null;
+        durationLabel?: string;
+        customNote?: string;
+    }>({});
+    const [openChatTimeLeft, setOpenChatTimeLeft] = useState<string>('');
+
+    useEffect(() => {
+        const unsub = onSnapshot(doc(db, 'system_settings', 'chat_window'), (snap) => {
+            if (snap.exists()) {
+                setOpenChatData(snap.data() as any);
+            } else {
+                setOpenChatData({ isOpenChatActive: false });
+            }
+        }, (err) => {
+            console.error('Error listening to chat_window:', err);
+        });
+        return () => unsub();
+    }, []);
+
+    const isOpenChatActive = !!openChatData.isOpenChatActive && (!openChatData.expiresAt || new Date(openChatData.expiresAt).getTime() > Date.now());
+
+    useEffect(() => {
+        if (!isOpenChatActive || !openChatData.expiresAt) {
+            setOpenChatTimeLeft(openChatData.durationLabel || 'Active Now');
+            return;
+        }
+        const tick = () => {
+            const diff = new Date(openChatData.expiresAt!).getTime() - Date.now();
+            if (diff <= 0) {
+                setOpenChatTimeLeft('Ending Soon');
+            } else {
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                setOpenChatTimeLeft(`${hours}h ${mins}m remaining`);
+            }
+        };
+        tick();
+        const id = setInterval(tick, 10000);
+        return () => clearInterval(id);
+    }, [isOpenChatActive, openChatData.expiresAt, openChatData.durationLabel]);
+
+    const handleStartDirectChat = async (targetUser: { id: string; otherUserId: string; name: string; imageUrl?: string }) => {
+        if (!user) return;
+        try {
+            const reqRef = doc(db, 'rishta_requests', targetUser.id);
+            const snap = await getDoc(reqRef);
+            if (!snap.exists()) {
+                await setDoc(reqRef, {
+                    from: user.uid,
+                    to: targetUser.otherUserId,
+                    status: 'open_chat',
+                    isOpenChat: true,
+                    timestamp: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                });
+            }
+        } catch (err) {
+            console.error('Error initiating direct chat room:', err);
+        }
+        setActiveChat({
+            id: targetUser.id,
+            otherUserId: targetUser.otherUserId,
+            name: targetUser.name,
+            imageUrl: targetUser.imageUrl
+        });
+    };
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [paying, setPaying] = useState(false);
     const [adminLastSeen, setAdminLastSeen] = useState<string | null>(null);
@@ -1870,7 +1964,9 @@ export default function RishtaDashboard() {
                     </section>
                 );
             case 'messages':
-                const acceptedRequests = allRequests.filter(r => r.status === "accepted");
+                const acceptedRequests = allRequests.filter(r => 
+                    r.status === "accepted" || (isOpenChatActive && (r.isOpenChat || r.status === "open_chat"))
+                );
 
                 if (activeChat) {
                     return (
@@ -2241,6 +2337,8 @@ export default function RishtaDashboard() {
                                                             onDeclineInterest={async (reqId) => {
                                                                 await handleRequestAction(reqId, 'rejected');
                                                             }}
+                                                            isOpenChatActive={isOpenChatActive}
+                                                            onStartDirectChat={handleStartDirectChat}
                                                         />
                                                     </div>
                                                 );
@@ -2283,6 +2381,8 @@ export default function RishtaDashboard() {
                                                         onDeclineInterest={async (reqId) => {
                                                             await handleRequestAction(reqId, 'rejected');
                                                         }}
+                                                        isOpenChatActive={isOpenChatActive}
+                                                        onStartDirectChat={handleStartDirectChat}
                                                     />
                                                 </div>
                                             );
@@ -2727,6 +2827,44 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
             </div>
 
             <main className="max-w-7xl mx-auto">
+                {/* 🌟 Open Chat Announcement Banner 🌟 */}
+                {isOpenChatActive && (
+                    <div className="mb-6 bg-gradient-to-r from-[#881337] via-[#9F1239] to-[#701a75] text-white p-5 md:p-6 rounded-3xl shadow-xl border-2 border-[#D4AF37]/60 relative overflow-hidden text-left">
+                        <div className="absolute top-0 right-0 w-72 h-72 bg-yellow-400/10 rounded-full blur-2xl pointer-events-none" />
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+                            <div className="space-y-2 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="bg-[#D4AF37] text-rose-950 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                                        <Sparkles className="w-3.5 h-3.5 fill-rose-950" /> Special Open Chat Window Active
+                                    </span>
+                                    <span className="bg-black/30 backdrop-blur-sm border border-white/20 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
+                                        <Clock className="w-3.5 h-3.5 text-yellow-300" /> {openChatTimeLeft}
+                                    </span>
+                                </div>
+                                <h3 className="text-lg md:text-xl font-bold font-serif text-white">
+                                    Direct Messaging Unlocked for All Verified Members!
+                                </h3>
+                                <p className="text-xs md:text-sm text-pink-100 max-w-3xl leading-relaxed">
+                                    Superadmin has enabled open communication so you can chat directly with your preferred candidates without waiting for interest approval.
+                                    Please communicate with noble intentions (Niyat), adab, and mutual respect — representing yourself honorably as a true gentleman and virtuous woman/daughter of our community.
+                                </p>
+                                {openChatData.customNote && (
+                                    <p className="text-xs bg-white/10 px-3.5 py-1.5 rounded-xl border border-white/15 text-yellow-200 inline-block font-medium">
+                                        📢 {openChatData.customNote}
+                                    </p>
+                                )}
+                            </div>
+                            {activeTab !== 'discovery' && (
+                                <button
+                                    onClick={() => setActiveTab('discovery')}
+                                    className="self-start md:self-center shrink-0 bg-white hover:bg-yellow-50 text-[#881337] font-black text-xs px-6 py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                                >
+                                    <Search className="w-4 h-4" /> Browse Candidates
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 <AnimatePresence mode="wait">
                     {/* MY BIODATA TAB */}

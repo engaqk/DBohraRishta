@@ -2,11 +2,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
-import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, getDocs, addDoc, serverTimestamp, updateDoc, increment } from 'firebase/firestore';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { formatMobileDisplay } from '@/lib/phoneUtils';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
-import { ArrowLeft, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles, User, Mail, Phone, Heart, Send, X, CheckCircle, MapPin, Play, Pause, Volume2 } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles, User, Mail, Phone, Heart, Send, X, CheckCircle, MapPin, Play, Pause, Volume2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { notifyInterestSent } from '@/lib/emailService';
 import { computeMatchScore } from '@/lib/matchUtils';
@@ -22,6 +22,20 @@ function ProfileContent() {
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [requestStatus, setRequestStatus] = useState<string | null>(null);
+    const [openChatData, setOpenChatData] = useState<any>(null);
+
+    useEffect(() => {
+        const unsub = onSnapshot(doc(db, 'system_settings', 'chat_window'), (snap) => {
+            if (snap.exists()) {
+                setOpenChatData(snap.data());
+            } else {
+                setOpenChatData(null);
+            }
+        });
+        return () => unsub();
+    }, []);
+
+    const isOpenChatActive = !!openChatData?.isOpenChatActive && (!openChatData.expiresAt || new Date(openChatData.expiresAt).getTime() > Date.now());
     const [requestSent, setRequestSent] = useState(false);
     const [rejectCount, setRejectCount] = useState(0);
     const [isMyProfileVerified, setIsMyProfileVerified] = useState(false);
@@ -834,6 +848,19 @@ function ProfileContent() {
                                                 : requestSent ? '✓ Request Sent'
                                                     : rejectCount >= 1 ? '↩ Retry Interest Request'
                                                         : 'Send Interest Request'}
+                                        </button>
+                                    )}
+
+                                    {/* Open Chat Direct Button on Profile */}
+                                    {isOpenChatActive && isMyProfileVerified && !isAccepted && (
+                                        <button
+                                            onClick={() => {
+                                                router.push(`/?directChat=${id}`);
+                                            }}
+                                            className="w-full py-4 rounded-xl font-black text-sm bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all border border-amber-300"
+                                        >
+                                            <MessageCircle className="w-5 h-5 text-white" />
+                                            <span>💬 Direct Chat (Open Window Active)</span>
                                         </button>
                                     )}
                                 </div>

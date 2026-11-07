@@ -16,7 +16,7 @@ export default function OpenChatController() {
     }>({});
     const [loading, setLoading] = useState(false);
     const [durationHours, setDurationHours] = useState<number | null>(null);
-    const [durationLabel, setDurationLabel] = useState<string>('Until Manually Disabled');
+    const [durationLabel, setDurationLabel] = useState<string>('Open Now (Take Benefit ASAP)');
     const [sendEmail, setSendEmail] = useState(true);
     const [customNote, setCustomNote] = useState('');
     const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -44,7 +44,7 @@ export default function OpenChatController() {
         }
 
         if (!settings.expiresAt) {
-            setTimeLeftStr('Active Indefinitely (Until Disabled)');
+            setTimeLeftStr('Open Now — Connect ASAP');
             return;
         }
 
@@ -185,7 +185,7 @@ export default function OpenChatController() {
                                 const val = e.target.value;
                                 if (val === 'indefinite') {
                                     setDurationHours(null);
-                                    setDurationLabel('Until Manually Disabled');
+                                    setDurationLabel('Open Now (Take Benefit ASAP)');
                                 } else {
                                     const num = Number(val);
                                     setDurationHours(num);
@@ -194,7 +194,7 @@ export default function OpenChatController() {
                             }}
                             className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm font-bold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#881337]/20 focus:border-[#881337]"
                         >
-                            <option value="indefinite">♾️ Until Manually Disabled (No Expiry)</option>
+                            <option value="indefinite">♾️ Open Now (No Expiry Set — Connect ASAP)</option>
                             <option value="1">1 Hour (Quick Test)</option>
                             <option value="2">2 Hours</option>
                             <option value="4">4 Hours</option>
@@ -277,14 +277,16 @@ export default function OpenChatController() {
                             <div className="border-b border-gray-200 pb-2">
                                 <p><span className="font-bold text-gray-700">Subject:</span> ✨ Special Open Chat Window is LIVE! Connect Directly on 53DBohraRishta</p>
                                 <p><span className="font-bold text-gray-700">Recipients:</span> All Registered & Verified Candidates Only</p>
-                                <p><span className="font-bold text-gray-700">Duration:</span> {durationLabel}</p>
+                                <p><span className="font-bold text-gray-700">Duration:</span> {durationHours ? `Next ${durationLabel}` : 'Open Now (Take Benefit ASAP)'}</p>
                             </div>
 
                             <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-3">
                                 <p className="font-bold text-[#881337] text-sm">Assalamu Alaikum wa Rahmatullah,</p>
-                                <p>We are pleased to announce that our Superadmin has <strong>temporarily opened the Direct Chat Window for all verified community members!</strong></p>
+                                <p>Alhamdulillah, the <strong>Direct Chat Window is currently open for all verified community members</strong> to communicate directly with candidates of interest!</p>
                                 <div className="bg-amber-50 p-3 rounded-lg border-l-4 border-amber-400">
-                                    <p className="font-bold text-amber-900">⏳ Window Duration: {durationLabel}</p>
+                                    <p className="font-bold text-amber-900">
+                                        ⏳ {durationHours ? `Currently open for the next ${durationLabel}! Take full benefit today.` : 'Currently Open Now — Take benefit to connect with your interest as soon as possible!'}
+                                    </p>
                                     {customNote && <p className="italic text-amber-800 mt-1">"{customNote}"</p>}
                                 </div>
                                 <p className="font-bold text-gray-800">🤝 Islamic Adab & Etiquette Reminder:</p>

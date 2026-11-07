@@ -311,9 +311,11 @@ export function getVideoRejectedTemplate(opts: { candidateName: string; reason?:
 
 
 export function getOpenChatAnnouncementTemplate(opts: { durationLabel?: string; expiresAt?: string; customNote?: string; candidateName?: string }) {
-    const durationText = opts.durationLabel && opts.durationLabel !== 'Indefinite' && opts.durationLabel !== 'Until Manually Disabled'
-        ? `Active for the next <strong>${opts.durationLabel}</strong>`
-        : `Active Now (Limited-Time Community Window)`;
+    const isIndefinite = !opts.durationLabel || ['indefinite', 'until manually disabled', 'open now', 'open now (take benefit asap)', 'open now (no expiry — connect asap)'].includes(opts.durationLabel.toLowerCase().trim());
+
+    const durationText = !isIndefinite
+        ? `Currently open for the next <strong>${opts.durationLabel}</strong>! Make sure to take benefit and connect with your prospective matches today.`
+        : `Currently Open Now! Take benefit to connect with your preferred matches and express your interest as soon as possible before the window closes!`;
 
     return `
         <div style="font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;max-width:620px;margin:auto;background-color:#ffffff;border:1px solid #f1e5d1;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px -5px rgba(136,19,55,0.08)">
@@ -333,16 +335,15 @@ export function getOpenChatAnnouncementTemplate(opts: { durationLabel?: string; 
                 </p>
 
                 <p>
-                    Alhamdulillah, to foster meaningful connections within our community, the Superadmin has 
-                    <strong style="color:#881337">temporarily opened the Direct Chat Window for all verified members!</strong>
+                    Alhamdulillah, the <strong style="color:#881337">Direct Chat Window is currently open for all verified community members!</strong> You can now communicate directly with candidates of your interest without waiting for approval.
                 </p>
 
                 <!-- Time Box -->
                 <div style="background:linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);border-left:5px solid #D4AF37;padding:16px 20px;border-radius:10px;margin:24px 0">
                     <p style="margin:0;font-size:13px;font-weight:bold;color:#92400e;text-transform:uppercase;letter-spacing:0.5px">
-                        ⏳ Window Duration & Timing
+                        ⏳ Open Chat Availability
                     </p>
-                    <p style="margin:4px 0 0;font-size:15px;color:#78350f">
+                    <p style="margin:6px 0 0;font-size:15px;color:#78350f;font-weight:600">
                         ${durationText}
                     </p>
                     ${opts.customNote ? `<p style="margin:8px 0 0;font-size:13px;color:#78350f;font-style:italic">"${opts.customNote}"</p>` : ''}

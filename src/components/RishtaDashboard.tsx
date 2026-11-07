@@ -533,7 +533,7 @@ export default function RishtaDashboard() {
 
     useEffect(() => {
         if (!isOpenChatActive || !openChatData.expiresAt) {
-            setOpenChatTimeLeft(openChatData.durationLabel || 'Active Now');
+            setOpenChatTimeLeft(openChatData.expiresAt ? (openChatData.durationLabel || 'Ending Soon') : 'Open Now — Connect ASAP');
             return;
         }
         const tick = () => {
@@ -2842,10 +2842,10 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                     </span>
                                 </div>
                                 <h3 className="text-lg md:text-xl font-bold font-serif text-white">
-                                    Direct Messaging Unlocked for All Verified Members!
+                                    Direct Messaging is Currently Open for All Verified Members!
                                 </h3>
                                 <p className="text-xs md:text-sm text-pink-100 max-w-3xl leading-relaxed">
-                                    Superadmin has enabled open communication so you can chat directly with your preferred candidates without waiting for interest approval.
+                                    The chat window is currently open so you can communicate directly with candidates of your interest without waiting for approval. Take benefit to connect with your prospective matches and express your interest as soon as possible!
                                     Please communicate with noble intentions (Niyat), adab, and mutual respect — representing yourself honorably as a true gentleman and virtuous woman/daughter of our community.
                                 </p>
                                 {openChatData.customNote && (

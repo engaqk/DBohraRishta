@@ -470,6 +470,27 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                                     <Video className="w-2.5 h-2.5" /> {t("VIDEO VERIFIED")}
                                 </div>
                             )}
+                            {isOpenChatActive && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (onStartDirectChat && user) {
+                                            const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
+                                            onStartDirectChat({
+                                                id: connectionId,
+                                                otherUserId: id,
+                                                name: name,
+                                                imageUrl: libasImageUrl || undefined
+                                            });
+                                        }
+                                    }}
+                                    className="flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow-md border border-white/40 animate-pulse active:scale-95 transition-all"
+                                    title={`Chat directly with ${name}`}
+                                >
+                                    <MessageCircle className="w-3 h-3 fill-white" />
+                                    <span>CHAT NOW</span>
+                                </button>
+                            )}
                             <button
                                 onClick={handleToggleBookmark}
                                 className={`p-1.5 rounded-full shadow transition-all ${isBookmarked ? 'bg-[#881337] text-white' : 'bg-white/80 text-gray-500 hover:bg-white'}`}
@@ -780,8 +801,8 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                             </div>
                         )}
 
-                    {/* Open Chat Direct Button */}
-                    {isOpenChatActive && isMyProfileVerified && requestStatus !== 'accepted' && (
+                    {/* Open Chat Direct Button - Accessible to ALL candidates */}
+                    {isOpenChatActive && (
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -795,10 +816,10 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                                     });
                                 }
                             }}
-                            className="w-full mt-2.5 py-3 rounded-xl font-black text-xs bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all border border-amber-300"
+                            className="w-full mt-2.5 py-3.5 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-lg active:scale-95 flex items-center justify-center gap-2 transition-all border border-emerald-400 animate-pulse"
                         >
                             <MessageCircle className="w-4 h-4 text-white" />
-                            <span>💬 Direct Chat (Open Window Active)</span>
+                            <span>💬 Start Direct Chat with {firstName}</span>
                         </button>
                     )}
                 </div>

@@ -477,7 +477,16 @@ function ProfileContent() {
                         <ArrowLeft className="w-4 h-4" /> Back
                     </button>
                     <p className="font-serif font-bold text-[#881337]">Profile Details</p>
-                    <div className="w-16" />
+                    {isOpenChatActive ? (
+                        <button
+                            onClick={() => router.push(`/?directChat=${id}`)}
+                            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-black px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-1.5 animate-pulse transition-all"
+                        >
+                            <MessageCircle className="w-3.5 h-3.5" /> Chat Now
+                        </button>
+                    ) : (
+                        <div className="w-16" />
+                    )}
                 </div>
             </div>
 
@@ -852,15 +861,15 @@ function ProfileContent() {
                                     )}
 
                                     {/* Open Chat Direct Button on Profile */}
-                                    {isOpenChatActive && isMyProfileVerified && !isAccepted && (
+                                    {isOpenChatActive && (
                                         <button
                                             onClick={() => {
                                                 router.push(`/?directChat=${id}`);
                                             }}
-                                            className="w-full py-4 rounded-xl font-black text-sm bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all border border-amber-300"
+                                            className="w-full mt-3 py-4 rounded-2xl font-black text-sm bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-lg active:scale-95 flex items-center justify-center gap-2 transition-all border border-emerald-400 animate-pulse"
                                         >
                                             <MessageCircle className="w-5 h-5 text-white" />
-                                            <span>💬 Direct Chat (Open Window Active)</span>
+                                            <span>💬 Start Direct Chat with {profile?.name || 'Candidate'}</span>
                                         </button>
                                     )}
                                 </div>

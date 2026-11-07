@@ -1987,11 +1987,34 @@ export default function RishtaDashboard() {
                     <section className="lg:col-span-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <h2 className="text-2xl font-bold font-serif mb-6">Unblurred Alignments</h2>
                         {acceptedRequests.length === 0 ? (
-                            <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100 flex flex-col items-center">
-                                <MessageCircle className="w-12 h-12 text-gray-300 mb-4" />
-                                <p className="text-gray-500 font-bold">No accepted interest requests yet.</p>
-                                <p className="text-gray-400 text-sm mt-2">When a request is approved, their photos unblur and you can chat here!</p>
-                            </div>
+                            isOpenChatActive ? (
+                                <div className="bg-gradient-to-br from-rose-50/60 to-amber-50/60 p-8 md:p-12 rounded-3xl shadow-sm text-center border-2 border-dashed border-amber-300 flex flex-col items-center">
+                                    <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white mb-4 shadow-lg animate-bounce">
+                                        <MessageCircle className="w-8 h-8" />
+                                    </div>
+                                    <h3 className="text-xl font-bold font-serif text-[#881337] mb-2">
+                                        ✨ Open Chat Window is Currently Active!
+                                    </h3>
+                                    <p className="text-gray-700 font-medium text-sm max-w-md mb-2">
+                                        You can start chatting directly with any candidate right now without waiting for interest approval.
+                                    </p>
+                                    <p className="text-gray-500 text-xs max-w-md mb-6">
+                                        Browse candidate profiles in Discovery and click <strong>"💬 Start Direct Chat"</strong> on any profile to begin!
+                                    </p>
+                                    <button
+                                        onClick={() => setActiveTab('discovery')}
+                                        className="bg-gradient-to-r from-[#881337] to-[#9F1239] hover:from-[#9F1239] hover:to-[#881337] text-white font-bold px-7 py-3.5 rounded-2xl text-sm shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-2"
+                                    >
+                                        <Search className="w-4 h-4" /> Browse Candidate Profiles to Chat
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100 flex flex-col items-center">
+                                    <MessageCircle className="w-12 h-12 text-gray-300 mb-4" />
+                                    <p className="text-gray-500 font-bold">No accepted interest requests yet.</p>
+                                    <p className="text-gray-400 text-sm mt-2">When a request is approved, their photos unblur and you can chat here!</p>
+                                </div>
+                            )
                         ) : (
                             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden divide-y divide-gray-100">
                                 {acceptedRequests.map((msg) => (

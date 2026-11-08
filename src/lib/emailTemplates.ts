@@ -325,7 +325,7 @@ export function getOpenChatAnnouncementTemplate(opts: { durationLabel?: string; 
                     ✨ Exclusive Community Opportunity
                 </span>
                 <h1 style="margin:0;font-family:Georgia,serif;font-size:24px;font-weight:normal;letter-spacing:0.5px">53DBohraRishta Platform</h1>
-                <p style="margin:8px 0 0;font-size:14px;color:#fbcfe8;font-weight:500">Open Chat with Any Candidate is Now Live</p>
+                <p style="margin:8px 0 0;font-size:14px;color:#fbcfe8;font-weight:500">Direct Chat Window is Now Live</p>
             </div>
 
             <!-- Content Body -->
@@ -335,7 +335,7 @@ export function getOpenChatAnnouncementTemplate(opts: { durationLabel?: string; 
                 </p>
 
                 <p>
-                    Alhamdulillah, <strong style="color:#881337">Direct Chat with Any Candidate is currently open!</strong> You can now communicate directly with candidates of your interest without waiting for approval. Take benefit to connect with your preferred matches and express your interest as soon as possible!
+                    Alhamdulillah, <strong style="color:#881337">All registered and verified candidates can currently chat directly without requiring mutual interest approvals.</strong> Take benefit to connect with your preferred matches and express your interest as soon as possible!
                 </p>
 
                 <!-- Time Box -->

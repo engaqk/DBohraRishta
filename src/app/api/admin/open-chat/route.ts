@@ -172,8 +172,8 @@ export async function POST(req: Request) {
                 const notifPromises = validEmails.slice(0, 300).map(u => {
                     return adminDb.collection('users').doc(u.id).collection('notifications').add({
                         type: 'open_chat_announcement',
-                        title: '✨ Special Open Chat Window is LIVE!',
-                        message: `Direct messaging is currently open for all verified candidates! Take benefit to connect directly with your prospective matches as soon as possible${durationHours ? ` (Open for the next ${cleanDurationLabel})` : ''}. Please maintain noble intentions, respectful adab, and represent yourself honorably.`,
+                        title: '✨ Direct Chat Window is LIVE!',
+                        message: `All registered and verified candidates can currently chat directly without requiring mutual interest approvals. Take benefit to connect directly with your prospective matches as soon as possible${durationHours ? ` (Open for the next ${cleanDurationLabel})` : ''}. Please maintain noble intentions, respectful adab, and represent yourself honorably.`,
                         createdAt: admin.firestore.FieldValue.serverTimestamp(),
                         isRead: false
                     }).catch(() => null);

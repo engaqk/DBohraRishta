@@ -2118,13 +2118,13 @@ export default function RishtaDashboard() {
                                         <MessageCircle className="w-8 h-8" />
                                     </div>
                                     <h3 className="text-xl font-bold font-serif text-[#881337] mb-2">
-                                        ✨ Open Chat Window is Currently Active!
+                                        ✨ Direct Chat Window is Currently Active!
                                     </h3>
                                     <p className="text-gray-700 font-medium text-sm max-w-md mb-2">
-                                        You can start chatting directly with any candidate right now without waiting for interest approval.
+                                        All registered and verified candidates can currently chat directly without requiring mutual interest approvals.
                                     </p>
                                     <p className="text-gray-500 text-xs max-w-md mb-6">
-                                        Browse candidate profiles in Discovery and click <strong>"💬 Start Direct Chat"</strong> on any profile to begin!
+                                        Browse candidate profiles in Discovery and click <strong>&quot;💬 Open Chat&quot;</strong> on any profile to begin!
                                     </p>
                                     <button
                                         onClick={() => setActiveTab('discovery')}

@@ -18,6 +18,7 @@ function ProfileContent() {
     const { user } = useAuth();
     const { t } = useLanguage();
     const id = searchParams?.get('id') || '';
+    const fromChat = searchParams?.get('from') === 'chat';
 
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -278,6 +279,18 @@ function ProfileContent() {
                 });
             }
 
+            // 🔔 Real-Time Web & App Push Notification to Recipient
+            fetch('/api/notify/push', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    targetUserId: id,
+                    title: '💌 New Rishta Interest Request',
+                    body: `${user.displayName || 'A Candidate'} has expressed interest in your profile on 53DBohraRishta.`,
+                    url: '/?tab=requests'
+                })
+            }).catch(() => {});
+
             setRequestSent(true);
             toast.success('Interest request sent!');
             setShowInterestModal(false);
@@ -479,20 +492,31 @@ function ProfileContent() {
 
             {/* Sticky Nav */}
             <div className={`bg-white border-b border-gray-100 shadow-sm sticky top-0 z-40 ${typeof window !== 'undefined' && sessionStorage.getItem('impersonate_user_id') ? 'mt-0' : ''}`}>
-                <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-                    <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-500 hover:text-[#881337] font-bold transition-colors text-sm">
-                        <ArrowLeft className="w-4 h-4" /> Back
+                <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+                    <button 
+                        onClick={() => {
+                            if (fromChat) {
+                                router.push(`/?tab=messages&directChat=${id}`);
+                            } else {
+                                router.back();
+                            }
+                        }} 
+                        className="flex items-center gap-1.5 text-gray-600 hover:text-[#881337] font-bold transition-colors text-sm shrink-0"
+                    >
+                        <ArrowLeft className="w-4 h-4" /> 
+                        <span>{fromChat ? 'Back to Chat' : 'Back'}</span>
                     </button>
-                    <p className="font-serif font-bold text-[#881337]">Profile Details</p>
-                    {isOpenChatActive ? (
+                    <p className="font-serif font-bold text-[#881337] truncate">Profile Details</p>
+                    {(isOpenChatActive || isAccepted) ? (
                         <button
-                            onClick={() => router.push(`/?directChat=${id}`)}
-                            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-black px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-1.5 animate-pulse transition-all"
+                            onClick={() => router.push(`/?tab=messages&directChat=${id}`)}
+                            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 active:scale-95 text-white text-xs font-black px-4 py-2 rounded-full shadow-md flex items-center gap-1.5 transition-all shrink-0 animate-pulse"
                         >
-                            <MessageCircle className="w-3.5 h-3.5" /> Chat Now
+                            <MessageCircle className="w-3.5 h-3.5" /> 
+                            <span>{fromChat ? 'Return to Chat' : 'Chat Now'}</span>
                         </button>
                     ) : (
-                        <div className="w-16" />
+                        <div className="w-16 shrink-0" />
                     )}
                 </div>
             </div>
@@ -868,15 +892,15 @@ function ProfileContent() {
                                     )}
 
                                     {/* Open Chat Direct Button on Profile */}
-                                    {isOpenChatActive && (
+                                    {(isOpenChatActive || isAccepted) && (
                                         <button
                                             onClick={() => {
-                                                router.push(`/?directChat=${id}`);
+                                                router.push(`/?tab=messages&directChat=${id}`);
                                             }}
                                             className="w-full mt-3 py-4 rounded-2xl font-black text-sm bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-lg active:scale-95 flex items-center justify-center gap-2 transition-all border border-emerald-400 animate-pulse"
                                         >
                                             <MessageCircle className="w-5 h-5 text-white" />
-                                            <span>💬 Start Direct Chat with {profile?.name || 'Candidate'}</span>
+                                            <span>💬 {fromChat ? `Return to 1-to-1 Chat with ${displayName}` : `Start Direct Chat with ${displayName}`}</span>
                                         </button>
                                     )}
                                 </div>
@@ -884,6 +908,19 @@ function ProfileContent() {
                         </div>
                     </div>
                 </main>
+
+            {/* Mobile Floating Chat Quick-Access Button */}
+            {(isOpenChatActive || isAccepted) && (
+                <div className="fixed bottom-6 right-5 z-40 md:hidden">
+                    <button
+                        onClick={() => router.push(`/?tab=messages&directChat=${id}`)}
+                        className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-xs px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 border-2 border-white/80 active:scale-95"
+                    >
+                        <MessageCircle className="w-4 h-4" />
+                        <span>{fromChat ? 'Return to Chat' : 'Chat with Candidate'}</span>
+                    </button>
+                </div>
+            )}
 
             {/* ── LIGHTBOX ── */}
             {showLightbox && canZoom && currentPhoto && (

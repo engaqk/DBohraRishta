@@ -70,6 +70,16 @@ export async function POST(request: Request) {
 
         await batch.commit();
 
+        // Real-Time Push Notification to candidate
+        try {
+            const { sendPushNotificationToUser } = await import('@/lib/pushNotificationServer');
+            await sendPushNotificationToUser(userId, {
+                title: newStatus === 'verified' ? '🎉 Profile Verified!' : '📋 Profile Status Updated',
+                body: `Your profile status is now: ${newStatus.toUpperCase()}.${message ? ` "${message}"` : ''}`,
+                url: '/?tab=mybiodata'
+            });
+        } catch (_) {}
+
         // 5. Send Email Notification
         try {
             const userEmail = userData?.notificationEmail || userData?.email || userData?.mobileEmail;

@@ -97,6 +97,14 @@ export async function POST(request: Request) {
                 gender: userData.gender,
                 selfieUrl: downloadUrl,
             });
+
+            // 🔔 Push Notification to Admins
+            const { notifyAdmins } = await import('@/lib/pushNotificationServer');
+            await notifyAdmins({
+                title: '🛡️ New Selfie Submitted for Verification',
+                body: `${userData.name || 'A candidate'} has uploaded a selfie for admin verification.`,
+                url: '/admin/approvals'
+            });
         } catch (emailErr: any) {
             console.warn('[upload-selfie] Admin selfie notification failed (non-critical):', emailErr.message);
         }

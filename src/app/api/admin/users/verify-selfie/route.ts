@@ -78,6 +78,18 @@ export async function POST(request: Request) {
             console.error('[verify-selfie] Email notification failed:', emailError.message);
         }
 
+        // 5. Send Real-Time Push Notification to candidate
+        try {
+            const { sendPushNotificationToUser } = await import('@/lib/pushNotificationServer');
+            await sendPushNotificationToUser(userId, {
+                title: isApproved ? '🎉 Photo Verified!' : '⚠️ Selfie Verification Update',
+                body: isApproved 
+                    ? 'Congratulations! Your photo identity has been verified by admin.' 
+                    : 'Your selfie verification needs review. Please check your dashboard.',
+                url: '/?tab=mybiodata'
+            });
+        } catch (_) {}
+
         return NextResponse.json({ success: true });
 
     } catch (error: any) {

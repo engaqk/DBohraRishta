@@ -333,6 +333,18 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
             }
 
             setRequestSent(true);
+            // 🔔 Real-Time Web & App Push Notification to Recipient
+            fetch('/api/notify/push', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    targetUserId: id,
+                    title: '💌 New Rishta Interest Request',
+                    body: `${user.displayName || 'A Candidate'} has expressed interest in your profile on 53DBohraRishta.`,
+                    url: '/?tab=requests'
+                })
+            }).catch(() => {});
+
             setShowIcebreakerModal(false);
             toast.success('Interest sent successfully!');
         } catch (err: any) {

@@ -1098,6 +1098,7 @@ export default function RishtaDashboard() {
     const [acceptMobile, setAcceptMobile] = useState('');
     const [acceptEmail, setAcceptEmail] = useState('');
     const [acceptError, setAcceptError] = useState('');
+    const isInitialNotifLoad = useRef(true);
 
     // Subscribe to notifications collection
     useEffect(() => {
@@ -1114,6 +1115,33 @@ export default function RishtaDashboard() {
             // Calculate unread
             const unread = notifs.filter(n => !n.isRead).length;
             setUnreadNotifCount(unread);
+
+            // Trigger real-time browser push/pop-up for incoming notifications
+            if (!isInitialNotifLoad.current) {
+                snap.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        const data = change.doc.data();
+                        const title = data.title || 'New Notification';
+                        const body = data.message || data.body || 'You have an update on 53DBohraRishta';
+                        
+                        // In-app toast
+                        toast(body, { icon: '🔔', duration: 5000 });
+
+                        // Native Browser / PWA Notification
+                        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                            try {
+                                new Notification(title, {
+                                    body,
+                                    icon: '/icon-192.png',
+                                    badge: '/icon-192.png'
+                                });
+                            } catch (_) {}
+                        }
+                    }
+                });
+            } else {
+                isInitialNotifLoad.current = false;
+            }
         }, (err) => {
             console.error("Notifications Listener Error:", err);
         });
@@ -1843,6 +1871,20 @@ export default function RishtaDashboard() {
                     createdAt: serverTimestamp()
                 });
 
+                // 🔔 Real-Time Web & App Push Notification to Requester
+                if (newStatus === 'accepted') {
+                    fetch('/api/notify/push', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            targetUserId: requestGroup.from,
+                            title: '💍 Interest Request Accepted!',
+                            body: `Alhamdulillah! ${myProfile?.name || 'Candidate'} accepted your interest request. You can now chat directly!`,
+                            url: '/?tab=messages'
+                        })
+                    }).catch(() => {});
+                }
+
                 // --- ✅ Bug Fix: Increment acceptedInterestsCount on the original requester's profile when accepted ---
                 if (newStatus === 'accepted') {
                     updateDoc(doc(db, 'users', requestGroup.from), {
@@ -2103,11 +2145,15 @@ export default function RishtaDashboard() {
                                 {acceptedRequests.map((msg) => (
                                     <div key={msg.id} className="p-5 flex flex-col md:flex-row items-start md:items-center gap-5 hover:bg-gray-50 transition-colors relative">
 
-                                        <div className="flex flex-col items-center shrink-0">
-                                            <div className="w-20 h-20 bg-rose-50 text-[#881337] rounded-full flex items-center justify-center text-xl font-bold border border-rose-100 relative overflow-hidden mb-2">
+                                        <div 
+                                            onClick={() => router.push(`/profile?id=${msg.otherUserId}&from=chat`)}
+                                            className="flex flex-col items-center shrink-0 cursor-pointer group/card"
+                                            title="Click to view full biodata & profile"
+                                        >
+                                            <div className="w-20 h-20 bg-rose-50 text-[#881337] rounded-full flex items-center justify-center text-xl font-bold border-2 border-rose-100 group-hover/card:border-[#881337] relative overflow-hidden mb-2 transition-all shadow-sm">
                                                 {/* Because it is ACCEPTED, photos unblur and are shown! */}
                                                 {msg.otherUserLibasUrl ? (
-                                                    <img src={msg.otherUserLibasUrl} alt="Match" className="w-full h-full object-cover" />
+                                                    <img src={msg.otherUserLibasUrl} alt="Match" className="w-full h-full object-cover group-hover/card:scale-105 transition-transform" />
                                                 ) : (
                                                     <span>{msg.otherUserName.charAt(0)}</span>
                                                 )}
@@ -2116,13 +2162,20 @@ export default function RishtaDashboard() {
                                             <div className="text-center">
                                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{msg.otherUserLocation.split(',')[0]}</p>
                                                 <p className="text-xs text-[#881337] font-medium max-w-[100px] truncate">{msg.otherUserEducation}</p>
+                                                <span className="text-[10px] text-[#881337] font-black group-hover/card:underline mt-0.5 block">View Profile ↗</span>
                                             </div>
                                         </div>
 
                                         <div className="flex-1 w-full mt-4 md:mt-0">
                                             <div className="flex justify-between items-start md:items-center mb-1">
-                                                <div>
-                                                    <h4 className="font-bold text-lg text-[#881337]">{msg.otherUserName}</h4>
+                                                <div 
+                                                    onClick={() => router.push(`/profile?id=${msg.otherUserId}&from=chat`)}
+                                                    className="cursor-pointer group/name"
+                                                >
+                                                    <h4 className="font-bold text-lg text-[#881337] group-hover/name:underline flex items-center gap-1.5">
+                                                        {msg.otherUserName}
+                                                        <span className="text-xs text-gray-400 font-normal">({msg.otherUserAge} yrs)</span>
+                                                    </h4>
                                                     <div className="flex items-center gap-3 text-sm text-gray-600 font-medium mt-1">
                                                         <span>📞 {msg.otherUserMobile}</span>
                                                         <span className="hidden sm:inline">|</span>
@@ -2152,6 +2205,13 @@ export default function RishtaDashboard() {
                                                     }}
                                                     className="bg-[#881337] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-[#9F1239] transition-all flex items-center gap-2">
                                                     <MessageCircle className="w-4 h-4" /> Start Protected Chat
+                                                </button>
+                                                <button
+                                                    onClick={() => router.push(`/profile?id=${msg.otherUserId}&from=chat`)}
+                                                    className="bg-rose-50 hover:bg-rose-100 text-[#881337] border border-rose-200 px-4 py-2 rounded-xl text-sm font-bold shadow-xs transition-all flex items-center gap-1.5"
+                                                    title="View full candidate biodata and family details"
+                                                >
+                                                    <User className="w-4 h-4" /> View Full Biodata
                                                 </button>
                                                 <button
                                                     onClick={() => {

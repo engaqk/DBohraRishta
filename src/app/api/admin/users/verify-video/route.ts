@@ -78,6 +78,18 @@ export async function POST(request: Request) {
             console.error('[verify-video] Email notification failed:', emailError.message);
         }
 
+        // 5. Send Real-Time Push Notification to candidate
+        try {
+            const { sendPushNotificationToUser } = await import('@/lib/pushNotificationServer');
+            await sendPushNotificationToUser(userId, {
+                title: isApproved ? '🎥 Video Handshake Verified!' : '⚠️ Video Handshake Update',
+                body: isApproved 
+                    ? 'Mubarak! Your 15-second video intro is verified and active on your profile.' 
+                    : 'Your video intro needs review. Please check your dashboard.',
+                url: '/?tab=mybiodata'
+            });
+        } catch (_) {}
+
         return NextResponse.json({ success: true });
 
     } catch (error: any) {

@@ -48,11 +48,15 @@ export default function RefreshManager() {
             if (document.visibilityState === 'visible') checkVersion();
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', checkVersion);
+        window.addEventListener('online', checkVersion);
 
         return () => {
             clearTimeout(initialTimer);
             clearInterval(intervalTimer);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', checkVersion);
+            window.removeEventListener('online', checkVersion);
         };
     }, []);
 

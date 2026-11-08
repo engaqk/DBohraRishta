@@ -854,7 +854,7 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                                 className="w-full mt-2.5 py-3.5 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-lg active:scale-95 flex items-center justify-center gap-2 transition-all border border-emerald-400 animate-pulse"
                             >
                                 <MessageCircle className="w-4 h-4 text-white" />
-                                <span>💬 Start Direct Chat with {firstName}</span>
+                                <span>💬 Open Chat with {firstName}</span>
                             </button>
                         )
                     )}

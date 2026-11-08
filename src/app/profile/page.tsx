@@ -900,7 +900,7 @@ function ProfileContent() {
                                             className="w-full mt-3 py-4 rounded-2xl font-black text-sm bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-lg active:scale-95 flex items-center justify-center gap-2 transition-all border border-emerald-400 animate-pulse"
                                         >
                                             <MessageCircle className="w-5 h-5 text-white" />
-                                            <span>💬 {fromChat ? `Return to 1-to-1 Chat with ${displayName}` : `Start Direct Chat with ${displayName}`}</span>
+                                            <span>💬 {fromChat ? `Return to Chat with ${displayName}` : `Open Chat with ${displayName}`}</span>
                                         </button>
                                     )}
                                 </div>

@@ -3001,13 +3001,13 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
                             <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
                                 <span className="bg-[#D4AF37] text-rose-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0 shadow-sm">
-                                    <Sparkles className="w-3 h-3 fill-rose-950" /> Open Chat Active
+                                    <Sparkles className="w-3 h-3 fill-rose-950" /> Open Chat with Any Candidate
                                 </span>
                                 <span className="bg-black/30 border border-white/20 text-yellow-200 px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 shrink-0">
                                     <Clock className="w-3 h-3 text-yellow-300" /> {openChatTimeLeft}
                                 </span>
                                 <p className="text-xs text-pink-100 font-medium leading-tight">
-                                    Direct 1-to-1 chat is open for all verified candidates! Connect with noble Bohra adab & respect.
+                                    Open chat is currently active with any candidate! Take benefit to connect directly with your preferred matches and express your interest as soon as possible with noble Bohra adab.
                                 </p>
                                 {openChatData.customNote && (
                                     <span className="text-[11px] bg-white/10 px-2 py-0.5 rounded-lg border border-white/15 text-yellow-200">

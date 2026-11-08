@@ -18,15 +18,31 @@ export default function RefreshManager() {
                 if (currentVersionRef.current === null) {
                     currentVersionRef.current = currentServerVersion;
                 } else if (currentVersionRef.current !== currentServerVersion && currentServerVersion !== 'development') {
-                    console.log("New version detected. Silently marking for update on next navigation.");
-                    sessionStorage.setItem('pendingUpdate', 'true');
+                    console.log("New version detected:", currentServerVersion);
+
+                    // If user is actively typing in a form or input, postpone reload
+                    const activeEl = document.activeElement;
+                    const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || (activeEl as HTMLElement).isContentEditable);
+
+                    if (!isTyping) {
+                        try {
+                            if ('caches' in window) {
+                                const cacheKeys = await caches.keys();
+                                await Promise.all(cacheKeys.map(k => caches.delete(k)));
+                            }
+                        } catch (_) {}
+                        sessionStorage.setItem('app_just_updated', 'true');
+                        window.location.reload();
+                    } else {
+                        sessionStorage.setItem('pendingUpdate', 'true');
+                    }
                 }
             } catch (e) {}
         };
 
-        // Check initially and periodically (silently)
-        const initialTimer = setTimeout(checkVersion, 3000);
-        const intervalTimer = setInterval(checkVersion, 5 * 60 * 1000); // Check every 5 mins
+        // Check initially and periodically every 25 seconds
+        const initialTimer = setTimeout(checkVersion, 2000);
+        const intervalTimer = setInterval(checkVersion, 25 * 1000);
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') checkVersion();

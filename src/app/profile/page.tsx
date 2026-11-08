@@ -25,6 +25,13 @@ function ProfileContent() {
     const [openChatData, setOpenChatData] = useState<any>(null);
 
     useEffect(() => {
+        fetch('/api/admin/open-chat')
+            .then(res => res.json())
+            .then(data => {
+                if (data?.settings) setOpenChatData(data.settings);
+            })
+            .catch(() => {});
+
         const unsub = onSnapshot(doc(db, 'system_settings', 'chat_window'), (snap) => {
             if (snap.exists()) {
                 setOpenChatData(snap.data());

@@ -59,36 +59,43 @@ service cloud.firestore {
     match /rishta_requests/{requestId} {
       allow read: if signedIn() && (
         isAdmin() ||
-        resource.data.from == request.auth.uid ||
-        resource.data.to == request.auth.uid
-      )
-      allow create: if signedIn() && 
-        request.resource.data.from == request.auth.uid &&
-        isClean(request.resource.data.get('icebreaker', ''))
+        (requestId.matches('direct_.*') && requestId.matches('.*' + request.auth.uid + '.*')) ||
+        (resource != null && (
+          resource.data.from == request.auth.uid ||
+          resource.data.to == request.auth.uid
+        ))
+      );
+      allow create: if signedIn() && (
+        isAdmin() ||
+        (requestId.matches('direct_.*') && requestId.matches('.*' + request.auth.uid + '.*')) ||
+        (request.resource.data.from == request.auth.uid && isClean(request.resource.data.get('icebreaker', '')))
+      );
       allow update: if signedIn() && (
         isAdmin() ||
-        (resource.data.from == request.auth.uid && (
+        (requestId.matches('direct_.*') && requestId.matches('.*' + request.auth.uid + '.*')) ||
+        (resource != null && resource.data.from == request.auth.uid && (
             // Sender can ONLY update to 'withdrawn' or same status
             request.resource.data.get('from', '') == resource.data.get('from', '') &&
             request.resource.data.get('to', '') == resource.data.get('to', '') &&
             request.resource.data.status in [resource.data.status, 'withdrawn']
         )) ||
-        (resource.data.to == request.auth.uid && (
+        (resource != null && resource.data.to == request.auth.uid && (
             // Receiver can ONLY update to 'accepted' or 'declined' or 'read'
             request.resource.data.get('from', '') == resource.data.get('from', '') &&
             request.resource.data.get('to', '') == resource.data.get('to', '') &&
-            request.resource.data.status in ['accepted', 'declined', 'read', resource.data.status]
+            request.resource.data.status in ['accepted', 'declined', 'read', resource.data.status, 'open_chat']
         ))
-      )
-      allow delete: if isAdmin()
+      );
+      allow delete: if isAdmin();
 
       // Chat messages subcollection
       match /messages/{messageId} {
         allow read, write: if signedIn() && (
           isAdmin() ||
+          (requestId.matches('direct_.*') && requestId.matches('.*' + request.auth.uid + '.*')) ||
           get(/databases/$(database)/documents/rishta_requests/$(requestId)).data.from == request.auth.uid ||
           get(/databases/$(database)/documents/rishta_requests/$(requestId)).data.to == request.auth.uid
-        )
+        );
       }
     }
 
@@ -104,6 +111,12 @@ service cloud.firestore {
       match /thread/{msgId} {
         allow read, write: if signedIn() && (isOwner(userId) || isAdmin())
       }
+    }
+
+    // System Settings: Public read, Admin write
+    match /system_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // Official announcements: All read, Admin write

@@ -515,8 +515,30 @@ export default function RishtaDashboard() {
         customNote?: string;
     }>({});
     const [openChatTimeLeft, setOpenChatTimeLeft] = useState<string>('');
+    const [isChatBannerDismissed, setIsChatBannerDismissed] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                return sessionStorage.getItem('open_chat_banner_dismissed') === 'true';
+            } catch (_) {
+                return false;
+            }
+        }
+        return false;
+    });
+    const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
 
     useEffect(() => {
+        // 1. Immediate server API fetch (immune to client Firestore rules propagation / cache issues)
+        fetch('/api/admin/open-chat')
+            .then(res => res.json())
+            .then(data => {
+                if (data?.settings) {
+                    setOpenChatData(data.settings);
+                }
+            })
+            .catch(() => {});
+
+        // 2. Real-time Firestore document listener
         const unsub = onSnapshot(doc(db, 'system_settings', 'chat_window'), (snap) => {
             if (snap.exists()) {
                 setOpenChatData(snap.data() as any);
@@ -553,28 +575,60 @@ export default function RishtaDashboard() {
 
     const handleStartDirectChat = async (targetUser: { id: string; otherUserId: string; name: string; imageUrl?: string }) => {
         if (!user) return;
+        if (isQuotaExceeded) {
+            toast.error("Traffic quota limit reached. Please refresh page to reconnect.");
+            return;
+        }
+
         try {
-            const reqRef = doc(db, 'rishta_requests', targetUser.id);
-            const snap = await getDoc(reqRef);
-            if (!snap.exists()) {
+            // First: Attempt Server API (uses Admin SDK - zero permission issues)
+            const res = await fetch('/api/chat/initiate-direct', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    currentUserId: user.uid,
+                    targetUserId: targetUser.otherUserId
+                })
+            });
+
+            if (!res.ok) {
+                // Fallback to client setDoc with merge: true (never calls getDoc first)
+                const reqRef = doc(db, 'rishta_requests', targetUser.id);
                 await setDoc(reqRef, {
                     from: user.uid,
                     to: targetUser.otherUserId,
+                    participants: [user.uid, targetUser.otherUserId],
                     status: 'open_chat',
                     isOpenChat: true,
                     timestamp: serverTimestamp(),
                     updatedAt: serverTimestamp()
-                });
+                }, { merge: true });
             }
         } catch (err) {
-            console.error('Error initiating direct chat room:', err);
+            console.warn('Direct chat initiation notice:', err);
+            try {
+                const reqRef = doc(db, 'rishta_requests', targetUser.id);
+                await setDoc(reqRef, {
+                    from: user.uid,
+                    to: targetUser.otherUserId,
+                    participants: [user.uid, targetUser.otherUserId],
+                    status: 'open_chat',
+                    isOpenChat: true,
+                    timestamp: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+            } catch (clientErr) {
+                console.error('Client room setDoc fallback:', clientErr);
+            }
         }
+
         setActiveChat({
             id: targetUser.id,
             otherUserId: targetUser.otherUserId,
             name: targetUser.name,
             imageUrl: targetUser.imageUrl
         });
+        setActiveTab('messages');
     };
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [paying, setPaying] = useState(false);
@@ -1684,17 +1738,46 @@ export default function RishtaDashboard() {
                     });
 
                     setDiscoveryProfiles(profiles);
-                    localStorage.setItem('cached_discovery_profiles', JSON.stringify(profiles));
+                    try {
+                        const trimmed = profiles.slice(0, 40).map((p: any) => ({
+                            id: p.id,
+                            name: p.name,
+                            gender: p.gender,
+                            age: p.age,
+                            city: p.city,
+                            profilePhotoUrl: p.profilePhotoUrl,
+                            isItsVerified: p.isItsVerified,
+                            maritalStatus: p.maritalStatus,
+                            education: p.education,
+                            profession: p.profession,
+                            lastActive: p.lastActive
+                        }));
+                        localStorage.setItem('cached_discovery_profiles', JSON.stringify(trimmed));
+                    } catch (storageErr) {
+                        console.warn("Storage quota exceeded or storage unavailable:", storageErr);
+                        try {
+                            localStorage.removeItem('cached_discovery_profiles');
+                        } catch (_) {}
+                    }
                     setDiscoveryError(null);
+                    setIsQuotaExceeded(false);
                     setDataLoading(false);
-                }, (err) => {
+                }, (err: any) => {
                     console.error("Discovery Listener Error:", err);
-                    const cached = localStorage.getItem('cached_discovery_profiles');
-                    if (cached) {
-                        setDiscoveryProfiles(JSON.parse(cached));
-                        setDiscoveryError("Live data paused due to high traffic. Showing previously saved profiles.");
-                    } else {
-                        setDiscoveryError("Quota exceeded or connection error. Please try again later.");
+                    const isQuota = err?.code === 'resource-exhausted' || err?.message?.toLowerCase()?.includes('quota');
+                    if (isQuota) {
+                        setIsQuotaExceeded(true);
+                    }
+                    try {
+                        const cached = localStorage.getItem('cached_discovery_profiles');
+                        if (cached) {
+                            setDiscoveryProfiles(JSON.parse(cached));
+                            setDiscoveryError("Live updates paused due to high traffic quota. Showing previously saved candidates.");
+                        } else {
+                            setDiscoveryError("Traffic quota reached. Please refresh page in a moment to resume.");
+                        }
+                    } catch (_) {
+                        setDiscoveryError("Traffic quota reached. Please refresh page to reconnect.");
                     }
                     setDataLoading(false); // At least stop loading
                 });
@@ -2361,6 +2444,7 @@ export default function RishtaDashboard() {
                                                                 await handleRequestAction(reqId, 'rejected');
                                                             }}
                                                             isOpenChatActive={isOpenChatActive}
+                                                            isQuotaExceeded={isQuotaExceeded}
                                                             onStartDirectChat={handleStartDirectChat}
                                                         />
                                                     </div>
@@ -2405,6 +2489,7 @@ export default function RishtaDashboard() {
                                                             await handleRequestAction(reqId, 'rejected');
                                                         }}
                                                         isOpenChatActive={isOpenChatActive}
+                                                        isQuotaExceeded={isQuotaExceeded}
                                                         onStartDirectChat={handleStartDirectChat}
                                                     />
                                                 </div>
@@ -2850,41 +2935,47 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
             </div>
 
             <main className="max-w-7xl mx-auto">
-                {/* 🌟 Open Chat Announcement Banner 🌟 */}
-                {isOpenChatActive && (
-                    <div className="mb-6 bg-gradient-to-r from-[#881337] via-[#9F1239] to-[#701a75] text-white p-5 md:p-6 rounded-3xl shadow-xl border-2 border-[#D4AF37]/60 relative overflow-hidden text-left">
-                        <div className="absolute top-0 right-0 w-72 h-72 bg-yellow-400/10 rounded-full blur-2xl pointer-events-none" />
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
-                            <div className="space-y-2 flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="bg-[#D4AF37] text-rose-950 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
-                                        <Sparkles className="w-3.5 h-3.5 fill-rose-950" /> Special Open Chat Window Active
-                                    </span>
-                                    <span className="bg-black/30 backdrop-blur-sm border border-white/20 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
-                                        <Clock className="w-3.5 h-3.5 text-yellow-300" /> {openChatTimeLeft}
-                                    </span>
-                                </div>
-                                <h3 className="text-lg md:text-xl font-bold font-serif text-white">
-                                    Direct Messaging is Currently Open for All Verified Members!
-                                </h3>
-                                <p className="text-xs md:text-sm text-pink-100 max-w-3xl leading-relaxed">
-                                    The chat window is currently open so you can communicate directly with candidates of your interest without waiting for approval. Take benefit to connect with your prospective matches and express your interest as soon as possible!
-                                    Please communicate with noble intentions (Niyat), adab, and mutual respect — representing yourself honorably as a true gentleman and virtuous woman/daughter of our community.
+                {/* 🌟 Compact Open Chat Announcement Banner 🌟 */}
+                {isOpenChatActive && !isChatBannerDismissed && (
+                    <div className="mb-4 bg-gradient-to-r from-[#881337] via-[#9F1239] to-[#701a75] text-white px-4 py-3 rounded-2xl shadow-lg border border-[#D4AF37]/50 relative overflow-hidden transition-all text-left">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+                            <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+                                <span className="bg-[#D4AF37] text-rose-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0 shadow-sm">
+                                    <Sparkles className="w-3 h-3 fill-rose-950" /> Open Chat Active
+                                </span>
+                                <span className="bg-black/30 border border-white/20 text-yellow-200 px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 shrink-0">
+                                    <Clock className="w-3 h-3 text-yellow-300" /> {openChatTimeLeft}
+                                </span>
+                                <p className="text-xs text-pink-100 font-medium leading-tight">
+                                    Direct 1-to-1 chat is open for all verified candidates! Connect with noble Bohra adab & respect.
                                 </p>
                                 {openChatData.customNote && (
-                                    <p className="text-xs bg-white/10 px-3.5 py-1.5 rounded-xl border border-white/15 text-yellow-200 inline-block font-medium">
+                                    <span className="text-[11px] bg-white/10 px-2 py-0.5 rounded-lg border border-white/15 text-yellow-200">
                                         📢 {openChatData.customNote}
-                                    </p>
+                                    </span>
                                 )}
                             </div>
-                            {activeTab !== 'discovery' && (
+                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                                {activeTab !== 'discovery' && (
+                                    <button
+                                        onClick={() => setActiveTab('discovery')}
+                                        className="bg-white hover:bg-yellow-50 text-[#881337] font-black text-xs px-3.5 py-1.5 rounded-xl shadow transition-all active:scale-95"
+                                    >
+                                        Browse Candidates
+                                    </button>
+                                )}
                                 <button
-                                    onClick={() => setActiveTab('discovery')}
-                                    className="self-start md:self-center shrink-0 bg-white hover:bg-yellow-50 text-[#881337] font-black text-xs px-6 py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                                    onClick={() => {
+                                        setIsChatBannerDismissed(true);
+                                        try { sessionStorage.setItem('open_chat_banner_dismissed', 'true'); } catch (_) {}
+                                    }}
+                                    className="p-1.5 rounded-full text-pink-200 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                                    title="Close announcement"
+                                    aria-label="Close"
                                 >
-                                    <Search className="w-4 h-4" /> Browse Candidates
+                                    <X className="w-4 h-4" />
                                 </button>
-                            )}
+                            </div>
                         </div>
                     </div>
                 )}

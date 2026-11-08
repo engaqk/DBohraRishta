@@ -63,6 +63,7 @@ interface DiscoveryCardProps {
     isEmailVerified?: boolean;
     verifiedPhone?: string;
     isOpenChatActive?: boolean;
+    isQuotaExceeded?: boolean;
     onStartDirectChat?: (candidate: { id: string; otherUserId: string; name: string; imageUrl?: string }) => void;
 }
 
@@ -76,7 +77,7 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
     city, state, gender, createdAt, selfieImageUrl, selfieStatus, voiceIntroUrl, videoIntroUrl, videoStatus, lastActive,
     requestId, initialRequestStatus, isIncomingRequest, onAcceptInterest, onDeclineInterest,
     isPhotoVerified, isEmailVerified, verifiedPhone,
-    isOpenChatActive = false, onStartDirectChat
+    isOpenChatActive = false, isQuotaExceeded = false, onStartDirectChat
 }: DiscoveryCardProps) {
     const { user } = useAuth();
     const { t } = useLanguage();
@@ -471,25 +472,34 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                                 </div>
                             )}
                             {isOpenChatActive && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (onStartDirectChat && user) {
-                                            const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
-                                            onStartDirectChat({
-                                                id: connectionId,
-                                                otherUserId: id,
-                                                name: name,
-                                                imageUrl: libasImageUrl || undefined
-                                            });
-                                        }
-                                    }}
-                                    className="flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow-md border border-white/40 animate-pulse active:scale-95 transition-all"
-                                    title={`Chat directly with ${name}`}
-                                >
-                                    <MessageCircle className="w-3 h-3 fill-white" />
-                                    <span>CHAT NOW</span>
-                                </button>
+                                isQuotaExceeded ? (
+                                    <span
+                                        className="flex items-center gap-1 bg-gray-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-full shadow border border-white/20"
+                                        title="Direct chat temporarily paused due to traffic quota. Refresh page to reconnect."
+                                    >
+                                        <Clock className="w-2.5 h-2.5" /> PAUSED
+                                    </span>
+                                ) : (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onStartDirectChat && user) {
+                                                const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
+                                                onStartDirectChat({
+                                                    id: connectionId,
+                                                    otherUserId: id,
+                                                    name: name,
+                                                    imageUrl: libasImageUrl || undefined
+                                                });
+                                            }
+                                        }}
+                                        className="flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow-md border border-white/40 animate-pulse active:scale-95 transition-all"
+                                        title={`Chat directly with ${name}`}
+                                    >
+                                        <MessageCircle className="w-3 h-3 fill-white" />
+                                        <span>CHAT NOW</span>
+                                    </button>
+                                )
                             )}
                             <button
                                 onClick={handleToggleBookmark}
@@ -803,24 +813,38 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
 
                     {/* Open Chat Direct Button - Accessible to ALL candidates */}
                     {isOpenChatActive && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (onStartDirectChat && user) {
-                                    const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
-                                    onStartDirectChat({
-                                        id: connectionId,
-                                        otherUserId: id,
-                                        name: name,
-                                        imageUrl: libasImageUrl || undefined
-                                    });
-                                }
-                            }}
-                            className="w-full mt-2.5 py-3.5 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-lg active:scale-95 flex items-center justify-center gap-2 transition-all border border-emerald-400 animate-pulse"
-                        >
-                            <MessageCircle className="w-4 h-4 text-white" />
-                            <span>💬 Start Direct Chat with {firstName}</span>
-                        </button>
+                        isQuotaExceeded ? (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    alert("Direct Chat is temporarily paused due to traffic quota. Please refresh the page to reconnect!");
+                                }}
+                                className="w-full mt-2.5 py-3 rounded-xl font-bold text-xs bg-gray-400 hover:bg-gray-500 text-white shadow flex items-center justify-center gap-2 transition-all border border-gray-300"
+                                title="Chat temporarily paused due to traffic quota. Please refresh page."
+                            >
+                                <Clock className="w-4 h-4 text-white" />
+                                <span>⚠️ Chat Paused (Traffic Quota — Refresh to Reconnect)</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onStartDirectChat && user) {
+                                        const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
+                                        onStartDirectChat({
+                                            id: connectionId,
+                                            otherUserId: id,
+                                            name: name,
+                                            imageUrl: libasImageUrl || undefined
+                                        });
+                                    }
+                                }}
+                                className="w-full mt-2.5 py-3.5 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-lg active:scale-95 flex items-center justify-center gap-2 transition-all border border-emerald-400 animate-pulse"
+                            >
+                                <MessageCircle className="w-4 h-4 text-white" />
+                                <span>💬 Start Direct Chat with {firstName}</span>
+                            </button>
+                        )
                     )}
                 </div>
             </div>

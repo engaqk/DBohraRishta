@@ -513,27 +513,34 @@ export default function RishtaDashboard() {
         expiresAt?: string | null;
         durationLabel?: string;
         customNote?: string;
-    }>({});
-    const [openChatTimeLeft, setOpenChatTimeLeft] = useState<string>('');
-    const [isChatBannerDismissed, setIsChatBannerDismissed] = useState<boolean>(() => {
+    }>(() => {
         if (typeof window !== 'undefined') {
             try {
-                return sessionStorage.getItem('open_chat_banner_dismissed') === 'true';
-            } catch (_) {
-                return false;
-            }
+                const cached = localStorage.getItem('cached_open_chat_data');
+                if (cached) return JSON.parse(cached);
+            } catch (_) {}
         }
-        return false;
+        return { isOpenChatActive: true, durationLabel: 'Open Now (Take Benefit ASAP)' };
     });
+    const [openChatTimeLeft, setOpenChatTimeLeft] = useState<string>('Open Now — Connect ASAP');
+    const [isChatBannerDismissed, setIsChatBannerDismissed] = useState<boolean>(false);
     const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
 
     useEffect(() => {
+        // Clear any previous session dismissal so announcement is always visible
+        if (typeof window !== 'undefined') {
+            try {
+                sessionStorage.removeItem('open_chat_banner_dismissed');
+            } catch (_) {}
+        }
+
         // 1. Immediate server API fetch (immune to client Firestore rules propagation / cache issues)
         fetch('/api/admin/open-chat')
             .then(res => res.json())
             .then(data => {
                 if (data?.settings) {
                     setOpenChatData(data.settings);
+                    try { localStorage.setItem('cached_open_chat_data', JSON.stringify(data.settings)); } catch (_) {}
                 }
             })
             .catch(() => {});
@@ -541,7 +548,9 @@ export default function RishtaDashboard() {
         // 2. Real-time Firestore document listener
         const unsub = onSnapshot(doc(db, 'system_settings', 'chat_window'), (snap) => {
             if (snap.exists()) {
-                setOpenChatData(snap.data() as any);
+                const s = snap.data() as any;
+                setOpenChatData(s);
+                try { localStorage.setItem('cached_open_chat_data', JSON.stringify(s)); } catch (_) {}
             } else {
                 setOpenChatData({ isOpenChatActive: false });
             }
@@ -2103,6 +2112,10 @@ export default function RishtaDashboard() {
                                 otherUserImageUrl={activeChat.imageUrl}
                                 onClose={() => setActiveChat(null)}
                                 onStartCall={() => handleStartVoIPCall(activeChat.id, activeChat.name)}
+                                onBrowseProfiles={() => {
+                                    setActiveChat(null);
+                                    setActiveTab('discovery');
+                                }}
                             />
                         </section>
                     );
@@ -2997,7 +3010,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
             <main className="max-w-7xl mx-auto">
                 {/* 🌟 Compact Open Chat Announcement Banner 🌟 */}
                 {isOpenChatActive && !isChatBannerDismissed && (
-                    <div className="mb-4 bg-gradient-to-r from-[#881337] via-[#9F1239] to-[#701a75] text-white px-4 py-3 rounded-2xl shadow-lg border border-[#D4AF37]/50 relative overflow-hidden transition-all text-left">
+                    <div className="mb-4 bg-gradient-to-r from-[#881337] via-[#9F1239] to-[#701a75] text-white px-4 py-3 rounded-2xl shadow-lg border border-[#D4AF37]/50 relative overflow-hidden transition-all text-left animate-in fade-in">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
                             <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
                                 <span className="bg-[#D4AF37] text-rose-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0 shadow-sm">
@@ -3016,26 +3029,60 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 )}
                             </div>
                             <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                                {activeTab !== 'discovery' && (
+                                {(activeTab !== 'discovery' || activeChat) && (
                                     <button
-                                        onClick={() => setActiveTab('discovery')}
-                                        className="bg-white hover:bg-yellow-50 text-[#881337] font-black text-xs px-3.5 py-1.5 rounded-xl shadow transition-all active:scale-95"
+                                        onClick={() => {
+                                            setActiveChat(null);
+                                            setActiveTab('discovery');
+                                        }}
+                                        className="bg-white hover:bg-yellow-50 text-[#881337] font-black text-xs px-3.5 py-1.5 rounded-xl shadow transition-all active:scale-95 flex items-center gap-1.5"
                                     >
-                                        Browse Candidates
+                                        <Search className="w-3.5 h-3.5 text-[#881337]" />
+                                        <span>Browse Candidates</span>
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => {
-                                        setIsChatBannerDismissed(true);
-                                        try { sessionStorage.setItem('open_chat_banner_dismissed', 'true'); } catch (_) {}
-                                    }}
+                                    onClick={() => setIsChatBannerDismissed(true)}
                                     className="p-1.5 rounded-full text-pink-200 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-                                    title="Close announcement"
-                                    aria-label="Close"
+                                    title="Minimize announcement"
+                                    aria-label="Minimize"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Collapsed State: Never disappears, stays readily accessible */}
+                {isOpenChatActive && isChatBannerDismissed && (
+                    <div className="mb-3 flex items-center justify-between bg-gradient-to-r from-rose-50 via-white to-amber-50 border border-amber-200/80 px-4 py-2 rounded-2xl shadow-xs text-xs text-[#881337] animate-in fade-in">
+                        <div className="flex items-center gap-2 truncate">
+                            <span className="bg-[#D4AF37] text-rose-950 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0">
+                                Open Chat Active
+                            </span>
+                            <span className="text-gray-700 font-medium truncate text-[11px]">
+                                All registered and verified candidates can currently chat directly without requiring mutual interest approvals.
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                            {(activeTab !== 'discovery' || activeChat) && (
+                                <button
+                                    onClick={() => {
+                                        setActiveChat(null);
+                                        setActiveTab('discovery');
+                                    }}
+                                    className="text-[11px] font-black text-[#881337] bg-white hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-lg shadow-2xs transition-all active:scale-95"
+                                >
+                                    Browse Candidates
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setIsChatBannerDismissed(false)}
+                                className="text-[11px] font-bold text-[#881337] underline hover:text-[#9F1239] cursor-pointer"
+                            >
+                                Expand Banner
+                            </button>
                         </div>
                     </div>
                 )}

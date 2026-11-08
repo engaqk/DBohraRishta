@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { Send, ArrowLeft, Loader2, Phone, Mic, Square, Trash2, Play, Pause, User, ExternalLink } from 'lucide-react';
+import { Send, ArrowLeft, Loader2, Phone, Mic, Square, Trash2, Play, Pause, User, ExternalLink, Search, Users } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface ChatWindowProps {
@@ -13,6 +13,7 @@ interface ChatWindowProps {
     otherUserImageUrl?: string;
     onClose: () => void;
     onStartCall?: () => void;
+    onBrowseProfiles?: () => void;
 }
 
 interface ChatMessage {
@@ -24,7 +25,7 @@ interface ChatMessage {
     timestamp: any;
 }
 
-export default function ChatWindow({ connectionId, otherUserId, otherUserName, otherUserImageUrl, onClose, onStartCall }: ChatWindowProps) {
+export default function ChatWindow({ connectionId, otherUserId, otherUserName, otherUserImageUrl, onClose, onStartCall, onBrowseProfiles }: ChatWindowProps) {
     const router = useRouter();
     const { user } = useAuth();
     const [otherUserStatus, setOtherUserStatus] = useState<{ isOnline: boolean; lastActive: any } | null>(null);
@@ -300,42 +301,77 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                {/* Action Buttons: Keep BOTH Candidate Profile + All Profiles */}
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                    {/* 1. Candidate's Profile Button */}
                     <button
                         onClick={() => router.push(`/profile?id=${otherUserId}&from=chat`)}
-                        className="inline-flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all border border-white/20 shadow-xs"
-                        title="View candidate's full biodata and photos"
+                        className="inline-flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all border border-white/25 shadow-xs"
+                        title={`View ${otherUserName}'s full biodata and photos`}
                     >
-                        <User className="w-3.5 h-3.5" />
+                        <User className="w-3.5 h-3.5 text-yellow-300" />
                         <span className="hidden sm:inline">View Profile</span>
                     </button>
+
+                    {/* 2. Go to All Profiles / Browse Candidates Button */}
+                    <button
+                        onClick={() => {
+                            if (onBrowseProfiles) {
+                                onBrowseProfiles();
+                            } else {
+                                router.push('/?tab=discovery');
+                            }
+                        }}
+                        className="inline-flex items-center gap-1.5 bg-[#D4AF37] hover:bg-[#c29e2f] active:scale-95 text-rose-950 text-xs font-black px-3 sm:px-3.5 py-2 rounded-xl transition-all shadow-md border border-white/30"
+                        title="Browse all candidate profiles"
+                    >
+                        <Users className="w-3.5 h-3.5 fill-rose-950" />
+                        <span>All Profiles</span>
+                    </button>
+
+                    {/* VoIP Call Button */}
                     {onStartCall && (
                         <button 
                             onClick={onStartCall}
-                            className="p-2.5 sm:p-3 bg-[#D4AF37] hover:bg-[#c29e2f] active:scale-95 text-rose-950 rounded-xl transition-all shadow-md border border-white/20"
+                            className="p-2 sm:p-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl transition-all shadow-md border border-white/20"
                             title="Start Secure VoIP Call"
                         >
-                            <Phone className="w-4 h-4 fill-rose-950" />
+                            <Phone className="w-4 h-4 fill-white" />
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Quick Profile Access Bar */}
-            <div 
-                onClick={() => router.push(`/profile?id=${otherUserId}&from=chat`)}
-                className="bg-gradient-to-r from-rose-50 via-white to-amber-50 border-b border-rose-100 px-4 py-1.5 text-xs text-[#881337] flex items-center justify-between cursor-pointer hover:bg-rose-100/50 transition-colors group/bar"
-                title="Click to view full biodata, family background, and photos"
-            >
-                <div className="flex items-center gap-2 truncate">
-                    <span className="text-sm">📋</span>
+            {/* Quick Profile & Navigation Access Bar */}
+            <div className="bg-gradient-to-r from-rose-50 via-white to-amber-50 border-b border-rose-100 px-3 sm:px-4 py-2 text-xs text-[#881337] flex flex-wrap items-center justify-between gap-2 shadow-xs">
+                <div 
+                    onClick={() => router.push(`/profile?id=${otherUserId}&from=chat`)}
+                    className="flex items-center gap-2 cursor-pointer hover:underline min-w-0"
+                    title={`Click to view ${otherUserName}'s full biodata and photos`}
+                >
+                    <span className="text-sm shrink-0">📋</span>
                     <span className="font-semibold text-gray-700 truncate text-[11px] sm:text-xs">
-                        Viewing conversation with <strong>{otherUserName}</strong>
+                        Viewing conversation with <strong className="text-[#881337]">{otherUserName}</strong>
+                    </span>
+                    <span className="text-[#881337] font-bold text-[10px] sm:text-[11px] shrink-0 ml-1">
+                        (Open Full Biodata & Photos →)
                     </span>
                 </div>
-                <span className="text-[#881337] font-black text-[10px] sm:text-[11px] group-hover/bar:underline shrink-0 flex items-center gap-0.5 ml-2">
-                    Open Full Biodata & Photos <span>→</span>
-                </span>
+
+                <button
+                    onClick={() => {
+                        if (onBrowseProfiles) {
+                            onBrowseProfiles();
+                        } else {
+                            router.push('/?tab=discovery');
+                        }
+                    }}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-black text-[#881337] hover:text-[#9F1239] bg-white hover:bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 ml-auto"
+                    title="Go to all candidate profiles"
+                >
+                    <Search className="w-3 h-3 text-[#881337]" />
+                    <span>Browse All Candidates</span>
+                </button>
             </div>
 
             {/* Adab & Decency Protection Banner */}

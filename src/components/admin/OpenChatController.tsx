@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { MessageSquare, Sparkles, Clock, AlertTriangle, ShieldCheck, Mail, CheckCircle, X, Send, Eye, Loader2 } from 'lucide-react';
+import { MessageSquare, Sparkles, Clock, AlertTriangle, ShieldCheck, Mail, CheckCircle, X, Send, Eye, Loader2, Bell } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function OpenChatController() {
@@ -20,6 +20,8 @@ export default function OpenChatController() {
     const [sendEmail, setSendEmail] = useState(true);
     const [customNote, setCustomNote] = useState('');
     const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [showReminderModal, setShowReminderModal] = useState(false);
+    const [sendingReminder, setSendingReminder] = useState(false);
     const [timeLeftStr, setTimeLeftStr] = useState<string>('');
 
     // Real-time listener for chat_window doc in system_settings
@@ -102,6 +104,28 @@ export default function OpenChatController() {
         }
     };
 
+    const handleSendReminder = async () => {
+        setSendingReminder(true);
+        try {
+            const res = await fetch('/api/admin/open-chat/remind', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customNote })
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(`Reminder sent! Emails: ${data.emailsSent}, Push dispatched: ${data.totalDispatched}`, { icon: '📢', duration: 5000 });
+                setShowReminderModal(false);
+            } else {
+                toast.error(data.error || 'Failed to send reminder');
+            }
+        } catch (err: any) {
+            toast.error(err.message || 'Error sending reminder');
+        } finally {
+            setSendingReminder(false);
+        }
+    };
+
     const isLive = !!settings.isOpenChatActive && (!settings.expiresAt || new Date(settings.expiresAt).getTime() > Date.now());
 
     return (
@@ -150,14 +174,25 @@ export default function OpenChatController() {
                 {/* Right Action */}
                 <div className="flex items-center gap-3 self-end lg:self-center shrink-0">
                     {isLive ? (
-                        <button
-                            onClick={() => handleToggle(false)}
-                            disabled={loading}
-                            className="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold px-6 py-3 rounded-2xl text-sm shadow-md transition-all flex items-center gap-2"
-                        >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-                            End Open Chat Now
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <button
+                                onClick={() => setShowReminderModal(true)}
+                                disabled={loading || sendingReminder}
+                                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 active:scale-95 text-white font-bold px-4 py-3 rounded-2xl text-xs sm:text-sm shadow-md transition-all flex items-center gap-2"
+                                title="Re-send email & push notification reminder to all candidates"
+                            >
+                                {sendingReminder ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                                Send Reminder (Email & Push)
+                            </button>
+                            <button
+                                onClick={() => handleToggle(false)}
+                                disabled={loading || sendingReminder}
+                                className="bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold px-5 py-3 rounded-2xl text-xs sm:text-sm shadow-md transition-all flex items-center gap-2"
+                            >
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                                End Open Chat
+                            </button>
+                        </div>
                     ) : (
                         <button
                             onClick={() => handleToggle(true)}
@@ -309,6 +344,81 @@ export default function OpenChatController() {
                                 className="bg-[#881337] text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-[#9F1239]"
                             >
                                 Close Preview
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Reminder Blast Modal */}
+            {showReminderModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 text-left">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2 text-emerald-800 font-bold">
+                                <Bell className="w-5 h-5 text-emerald-600" />
+                                <h4 className="text-lg font-serif">Send Open Chat Reminder Blast</h4>
+                            </div>
+                            <button
+                                onClick={() => setShowReminderModal(false)}
+                                className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <p className="text-xs text-gray-600 mb-4 leading-relaxed">
+                            This will simultaneously dispatch a <strong>Reminder Email</strong> (via Gmail SMTP) and a <strong>Real-Time Push Notification</strong> (Web & PWA App) to all registered & verified community members.
+                        </p>
+
+                        <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 mb-4 space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-emerald-950">Target Audience:</span>
+                                <span className="bg-emerald-200 text-emerald-900 font-black px-2 py-0.5 rounded-full text-[10px]">Verified Candidates Only</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-emerald-950">Channels:</span>
+                                <span className="text-emerald-800 font-medium">Simultaneous Email + Push + In-App</span>
+                            </div>
+                            <div className="text-xs pt-1 border-t border-emerald-200">
+                                <span className="font-bold text-emerald-950">Email Subject:</span>
+                                <p className="text-gray-700 mt-0.5 font-medium">✨ Reminder: Direct Chat Window is LIVE! Connect Directly on 53DBohraRishta</p>
+                            </div>
+                            <div className="text-xs pt-1">
+                                <span className="font-bold text-emerald-950">Push Notification:</span>
+                                <p className="text-gray-700 mt-0.5 font-medium">💬 Direct Chat is LIVE! All registered candidates can chat directly without waiting for approval.</p>
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-xs font-bold text-gray-700 mb-1">
+                                Optional Custom Reminder Note (Included in Email & Notifications):
+                            </label>
+                            <input
+                                type="text"
+                                value={customNote}
+                                onChange={(e) => setCustomNote(e.target.value)}
+                                placeholder="e.g. Chat window is open today until 10 PM. Don't miss this opportunity!"
+                                className="w-full bg-gray-50 border border-gray-200 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-emerald-600 font-medium"
+                                maxLength={100}
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 pt-2">
+                            <button
+                                onClick={() => setShowReminderModal(false)}
+                                disabled={sendingReminder}
+                                className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSendReminder}
+                                disabled={sendingReminder}
+                                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-black shadow-md flex items-center gap-2 active:scale-95 transition-all"
+                            >
+                                {sendingReminder ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                Send Reminder to All Now
                             </button>
                         </div>
                     </div>

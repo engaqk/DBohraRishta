@@ -131,3 +131,38 @@ export async function notifyAdmins(payload: PushNotificationPayload) {
         return { success: false };
     }
 }
+
+/**
+ * Resolves user IDs from recipient emails and simultaneously dispatches real-time push notifications
+ */
+export async function sendPushByEmail(
+    emails: string | string[],
+    payload: PushNotificationPayload
+) {
+    if (!adminDb) return { success: false };
+    const emailList = (Array.isArray(emails) ? emails : [emails])
+        .filter(e => e && typeof e === 'string' && e.includes('@') && !e.endsWith('@dbohrarishta.local'))
+        .map(e => e.trim().toLowerCase());
+
+    if (emailList.length === 0) return { success: true, count: 0 };
+
+    const targetUserIds = new Set<string>();
+
+    for (const email of emailList) {
+        try {
+            const snap1 = await adminDb.collection('users').where('email', '==', email).limit(5).get();
+            snap1.forEach(d => targetUserIds.add(d.id));
+
+            const snap2 = await adminDb.collection('users').where('notificationEmail', '==', email).limit(5).get();
+            snap2.forEach(d => targetUserIds.add(d.id));
+        } catch (e) {
+            console.error('[PushServer] Error looking up user by email:', email, e);
+        }
+    }
+
+    if (targetUserIds.size > 0) {
+        return await sendPushNotificationToUser(Array.from(targetUserIds), payload);
+    }
+
+    return { success: true, count: 0 };
+}

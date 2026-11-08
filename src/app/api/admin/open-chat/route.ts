@@ -4,6 +4,7 @@ import * as admin from 'firebase-admin';
 import nodemailer from 'nodemailer';
 import { isEmailBlocked } from '@/lib/emailStatusServer';
 import { getOpenChatAnnouncementTemplate } from '@/lib/emailTemplates';
+import { sendPushNotificationToUser } from '@/lib/pushNotificationServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -178,6 +179,16 @@ export async function POST(req: Request) {
                     }).catch(() => null);
                 });
                 await Promise.allSettled(notifPromises);
+
+                // 🔔 Real-Time Web & PWA Push Notifications to all verified candidates
+                const targetUserIds = validEmails.map(u => u.id);
+                if (targetUserIds.length > 0) {
+                    await sendPushNotificationToUser(targetUserIds, {
+                        title: '💬 Direct Chat Window is LIVE!',
+                        body: 'All registered and verified candidates can currently chat directly without requiring mutual interest approvals.',
+                        url: '/'
+                    }).catch(err => console.error('Push dispatch notice in open-chat:', err));
+                }
             }
 
             return NextResponse.json({

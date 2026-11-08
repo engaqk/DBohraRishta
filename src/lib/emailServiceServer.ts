@@ -50,6 +50,18 @@ export async function sendEmailDirect(payload: EmailPayload): Promise<void> {
 
         const info = await transporter.sendMail(mailOptions);
         console.log('[EmailServiceServer] SMTP Send OK:', info.response);
+
+        // 🔔 Simultaneous Real-Time Push Notification
+        try {
+            const { sendPushByEmail } = await import('./pushNotificationServer');
+            const cleanBody = payload.htmlBody.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+            const snippet = cleanBody.length > 120 ? cleanBody.slice(0, 120) + '...' : cleanBody;
+            sendPushByEmail(activeRecipients, {
+                title: payload.subject,
+                body: snippet || payload.subject,
+                url: '/'
+            }).catch(() => {});
+        } catch (_) {}
     } catch (serverError: any) {
         const msg = serverError.message || 'Unknown Server Error';
         console.error("[EmailServiceServer] SMTP Failed:", msg);

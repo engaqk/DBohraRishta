@@ -48,6 +48,19 @@ export async function POST(req: Request) {
         try {
             const info = await transporter.sendMail(mailOptions);
             console.log('Email sent: ' + info.response);
+
+            // 🔔 Simultaneous Real-Time Push Notification
+            try {
+                const { sendPushByEmail } = await import('@/lib/pushNotificationServer');
+                const cleanBody = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+                const snippet = cleanBody.length > 120 ? cleanBody.slice(0, 120) + '...' : cleanBody;
+                sendPushByEmail(activeRecipients, {
+                    title: subject,
+                    body: snippet || subject,
+                    url: '/'
+                }).catch(() => {});
+            } catch (_) {}
+
             return NextResponse.json({ success: true, messageId: info.messageId });
         } catch (sendError: any) {
             // 📝 Record failure for each recipient if it's a delivery error

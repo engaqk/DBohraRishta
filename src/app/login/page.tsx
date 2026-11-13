@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { ShieldCheck, Sparkles, Users, Star, Lock, Eye, EyeOff } from "lucide-react";
+import { ShieldCheck, Sparkles, Users, Star, Lock, Eye, EyeOff, Smartphone, Download } from "lucide-react";
 import toast from "react-hot-toast";
 import { collection, query, where, limit, getDocs, getCountFromServer } from "firebase/firestore";
 import DiscoveryCard from "@/components/DiscoveryCard";
@@ -145,6 +145,19 @@ export default function LoginPage() {
         </svg>
     );
 
+    const AndroidIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+        <svg viewBox="0 0 24 24" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.082 12 8.082c-1.8533 0-3.5902.3296-5.1368.8677L4.841 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396" />
+        </svg>
+    );
+
+    const AppleIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+        <svg viewBox="0 0 170 170" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.7-3.07-7.63-7.83-11.78-14.28-6.1-9.47-10.8-20.15-14.09-32.05-3.29-11.9-4.93-23.05-4.93-33.45 0-14.92 3.73-26.96 11.19-36.12 7.46-9.16 16.89-13.84 28.3-14.05 4.58 0 9.87 1.15 15.86 3.46 5.99 2.31 9.77 3.52 11.34 3.64 1.35-.12 5.16-1.33 11.44-3.64 6.27-2.31 11.45-3.39 15.54-3.24 10.15.53 18.66 4.31 25.53 11.34-8.81 5.34-13.11 12.72-12.9 22.14.21 7.46 2.87 13.79 7.98 19 5.11 5.21 11.28 8.19 18.52 8.94-2.13 6.4-4.8 12.63-8.03 18.69zM119.22 31.84c0-7.36 2.58-14.19 7.74-20.48 5.16-6.29 11.48-10.42 18.96-12.36.21 1.06.32 2.02.32 2.87 0 7.36-2.69 14.23-8.08 20.6-5.38 6.37-11.85 10.29-19.39 11.77-.32-.85-.55-1.65-.55-2.4z" />
+        </svg>
+    );
+
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-amber-50 flex flex-col items-center justify-start pt-2 pb-6 px-4 sm:pt-4 sm:pb-10 text-[#881337]">
             <style>{`
@@ -168,7 +181,23 @@ export default function LoginPage() {
             <div id="recaptcha-container" className="hidden" />
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] opacity-[0.03] pointer-events-none" />
 
-            <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 z-10 relative">
+                        {/* 📲 Top Mobile App Shortcut */}
+            <div className="max-w-md w-full mb-3 flex items-center justify-between bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-rose-100 shadow-sm text-xs z-10">
+                <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="font-bold text-gray-700">Official Mobile App</span>
+                    <span className="bg-[#D4AF37]/20 text-[#881337] border border-[#D4AF37]/40 text-[9px] font-black uppercase px-2 py-0.5 rounded-full">100% Free</span>
+                </div>
+                <button
+                    onClick={() => router.push('/download')}
+                    className="text-[11px] font-black text-[#881337] bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                    <Download className="w-3.5 h-3.5 text-[#881337]" />
+                    <span>Download App</span>
+                </button>
+            </div>
+
+<div className="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 z-10 relative">
 
                 {/* ── HEADER ── */}
                 <div className="bg-[#881337] p-8 text-center relative overflow-hidden">
@@ -321,6 +350,51 @@ export default function LoginPage() {
                     <p className="text-[10px] text-gray-400 text-center mt-3 font-bold uppercase tracking-wider">
                         {t("Dawoodi Bohra Community Only")}
                     </p>
+                    {/* ── MOBILE APP DOWNLOAD SECTION ── */}
+                    <div className="mt-5 pt-4 border-t border-gray-200/80">
+                        <div className="flex items-center justify-between mb-2.5">
+                            <span className="text-[11px] font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                                <Smartphone className="w-3.5 h-3.5 text-[#881337]" />
+                                Download Mobile App
+                            </span>
+                            <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+                                100% Free
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                            {/* Android App Button */}
+                            <a
+                                href="/downloads/53DBohraRishta.apk"
+                                download="53DBohraRishta.apk"
+                                className="flex items-center gap-2.5 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white p-2.5 rounded-2xl shadow-sm border border-emerald-600/50 active:scale-95 transition-all group"
+                                title="Download Android App (.apk) directly"
+                            >
+                                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                    <AndroidIcon className="w-5 h-5 text-emerald-300" />
+                                </div>
+                                <div className="text-left leading-tight min-w-0">
+                                    <p className="text-[8px] uppercase tracking-wider text-emerald-200 font-bold">Download for</p>
+                                    <p className="text-[12px] font-black text-white truncate">Android APK</p>
+                                </div>
+                            </a>
+
+                            {/* iOS App Button */}
+                            <button
+                                onClick={() => router.push('/download')}
+                                className="flex items-center gap-2.5 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-black hover:to-gray-900 text-white p-2.5 rounded-2xl shadow-sm border border-gray-700 active:scale-95 transition-all group cursor-pointer text-left"
+                                title="Install on iPhone / iPad"
+                            >
+                                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                    <AppleIcon className="w-4 h-4 text-white" />
+                                </div>
+                                <div className="text-left leading-tight min-w-0">
+                                    <p className="text-[8px] uppercase tracking-wider text-gray-300 font-bold">Install on</p>
+                                    <p className="text-[12px] font-black text-white truncate">iPhone / iOS</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* ── 3-COLUMN TRUST STRIP ── */}

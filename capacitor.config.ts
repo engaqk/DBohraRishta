@@ -7,7 +7,16 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://53dbohrarishta.in',
     cleartext: false,
-    androidScheme: 'https'
+    androidScheme: 'https',
+    allowNavigation: [
+      '53dbohrarishta.in',
+      '*.53dbohrarishta.in',
+      'accounts.google.com',
+      '*.google.com',
+      '*.googleapis.com',
+      '*.gstatic.com',
+      '*.firebaseapp.com'
+    ]
   },
   plugins: {
     StatusBar: {

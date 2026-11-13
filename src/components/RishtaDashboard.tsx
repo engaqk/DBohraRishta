@@ -2392,6 +2392,32 @@ export default function RishtaDashboard() {
                                 </div>
                             )}
 
+                            {/* 🌟 Open Chat Window Announcement Card in Discovery 🌟 */}
+                            {isOpenChatActive && (
+                                <div className="mb-5 bg-gradient-to-r from-rose-50/90 via-white to-amber-50/90 border border-[#D4AF37]/50 rounded-3xl p-4 sm:p-5 shadow-sm text-left relative overflow-hidden transition-all animate-in fade-in">
+                                    <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
+                                        <h3 className="text-lg sm:text-xl font-bold font-serif text-gray-900 tracking-tight">
+                                            Open Chat Window
+                                        </h3>
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+                                            Live & Active
+                                        </span>
+                                        <span className="inline-flex items-center gap-1 bg-amber-100/80 text-amber-900 border border-amber-300/60 px-2.5 py-0.5 rounded-full text-[10px] font-bold">
+                                            <Clock className="w-3 h-3 text-amber-700" /> {openChatTimeLeft}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs sm:text-sm text-gray-700 font-medium leading-relaxed">
+                                        All registered and verified candidates can currently chat directly without requiring mutual interest approvals. Direct chat window is open now, so take maximum benefit to connect directly with candidates of your choice!
+                                    </p>
+                                    {openChatData.customNote && (
+                                        <div className="mt-2 inline-block text-[11px] bg-white border border-rose-200 text-[#881337] px-3 py-1 rounded-xl font-semibold shadow-2xs">
+                                            📢 {openChatData.customNote}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
                                 <h2 className="text-2xl font-bold font-serif">Community Discovery</h2>
                                 <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1">

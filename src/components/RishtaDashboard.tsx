@@ -3031,6 +3031,14 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                 >
                     <Bell className="w-3.5 h-3.5" /> Notify
                 </button>
+
+                <button
+                    onClick={() => router.push('/download')}
+                    className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 border border-emerald-500 text-white px-3.5 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider hover:from-emerald-700 hover:to-teal-700 transition-all shrink-0 active:scale-95 cursor-pointer"
+                    title="Download Official 53DBohraRishta Android App (.apk) or iOS App"
+                >
+                    <Smartphone className="w-3.5 h-3.5" /> Download App
+                </button>
             </div>
 
             <main className="max-w-7xl mx-auto">
@@ -3825,6 +3833,14 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 className="w-full flex items-center gap-4 p-4 rounded-2xl text-rose-700 font-bold bg-rose-50/30 hover:bg-rose-50 transition-all"
                             >
                                 <HelpCircle className="w-5 h-5" /> Admin Help
+                            </button>
+
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 mt-6">Mobile App</p>
+                            <button
+                                onClick={() => { router.push('/download'); setShowMobileMenu(false); }}
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl text-emerald-800 font-bold bg-emerald-50 hover:bg-emerald-100 transition-all border border-emerald-200"
+                            >
+                                <Smartphone className="w-5 h-5 text-emerald-600" /> Download App (.apk)
                             </button>
                         </div>
 

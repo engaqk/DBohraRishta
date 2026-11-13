@@ -9,6 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/cli": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/ios": "^8.6.2",
+    "@capacitor/status-bar": "^8.0.4",
     "@jitsi/react-sdk": "^1.4.4",
     "@types/nodemailer": "^7.0.11",
     "@upstash/redis": "^1.36.3",

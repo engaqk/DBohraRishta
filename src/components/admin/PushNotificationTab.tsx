@@ -66,6 +66,7 @@ export default function PushNotificationTab() {
     const [url, setUrl] = useState("/");
     const [sending, setSending] = useState(false);
     const [testingDevice, setTestingDevice] = useState(false);
+    const [pruning, setPruning] = useState(false);
     const [myDeviceToken, setMyDeviceToken] = useState<string>("");
 
     // Load initial stats & history
@@ -176,6 +177,30 @@ export default function PushNotificationTab() {
         }
     };
 
+    // Audit and clean stale / unregistered device tokens from database
+    const handlePruneInactiveTokens = async () => {
+        const confirmed = window.confirm(
+            "Run Device Token Health Audit?\n\nThis scans registered tokens across all candidate accounts and automatically removes inactive, unregistered, or expired device tokens without ringing user devices."
+        );
+        if (!confirmed) return;
+
+        setPruning(true);
+        try {
+            const res = await fetch("/api/admin/push/prune", { method: "POST" });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(data.message || `Audit complete. ${data.activeCount} active devices verified.`);
+                fetchStats();
+            } else {
+                toast.error(data.error || "Failed to audit tokens.");
+            }
+        } catch (err: any) {
+            toast.error(err?.message || "Token audit request failed");
+        } finally {
+            setPruning(false);
+        }
+    };
+
     // Apply Quick Preset Templates
     const applyPreset = (presetTitle: string, presetBody: string, presetUrl: string) => {
         setTitle(presetTitle);
@@ -230,8 +255,8 @@ export default function PushNotificationTab() {
             if (data.success) {
                 playNotificationChime();
                 toast.success(
-                    `Push broadcast dispatched! Delivered to ${data.successCount} device(s)${
-                        data.failureCount > 0 ? ` (${data.failureCount} failed)` : ""
+                    `Push broadcast dispatched! Delivered to ${data.successCount} active device(s)${
+                        data.failureCount > 0 ? ` (${data.failureCount} stale tokens auto-pruned)` : ""
                     }.`
                 );
                 // Clear form & refresh history
@@ -690,17 +715,30 @@ export default function PushNotificationTab() {
 
             {/* ── BROADCAST HISTORY TABLE ── */}
             <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-100">
                     <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-[#881337]" />
                         <h3 className="font-bold font-serif text-lg text-gray-900">Push Notification Broadcast History</h3>
                     </div>
-                    <button
-                        onClick={fetchHistory}
-                        className="text-xs text-[#881337] hover:underline font-bold flex items-center gap-1"
-                    >
-                        <RefreshCw className="w-3 h-3" /> Refresh Log
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={handlePruneInactiveTokens}
+                            disabled={pruning}
+                            className="text-xs bg-rose-50 hover:bg-rose-100 text-[#881337] border border-rose-200 font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            title="Audits all device tokens and cleans inactive, unregistered, or expired subscriptions"
+                        >
+                            {pruning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3 text-[#D4AF37]" />}
+                            <span>{pruning ? "Auditing Tokens..." : "Clean Inactive Tokens"}</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={fetchHistory}
+                            className="text-xs text-[#881337] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                            <RefreshCw className="w-3 h-3" /> Refresh Log
+                        </button>
+                    </div>
                 </div>
 
                 {loadingHistory ? (
@@ -751,8 +789,11 @@ export default function PushNotificationTab() {
                                                 ✓ {item.successCount || 0}
                                             </span>
                                             {item.failureCount > 0 && (
-                                                <span className="ml-1 text-rose-600 text-[10px]">
-                                                    ({item.failureCount} failed)
+                                                <span
+                                                    className="ml-1 text-gray-500 text-[10px] font-medium"
+                                                    title="Expired or unregistered browser sessions (now automatically pruned)"
+                                                >
+                                                    ({item.failureCount} stale/pruned)
                                                 </span>
                                             )}
                                         </td>
@@ -762,6 +803,16 @@ export default function PushNotificationTab() {
                         </table>
                     </div>
                 )}
+
+                {/* Stale Token Explanation & Health Strip */}
+                <div className="mt-5 p-3.5 bg-rose-50/50 border border-rose-100 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-gray-600">
+                    <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-[#881337] shrink-0" />
+                        <span>
+                            <strong className="text-gray-900">Device Token Auto-Pruning Active:</strong> When candidates log out, clear cookies, or change phones, FCM marks their old session as unregistered. The system automatically purges these dead tokens on every broadcast so they never accumulate.
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -109,6 +109,31 @@ export async function POST(req: Request) {
         // Dispatch FCM Multicast
         const dispatchResult = await sendPushNotificationToTokens(tokensArray, notificationPayload);
 
+        // Automatically prune stale / unregistered tokens from Firestore so they never linger
+        if (dispatchResult.staleTokens && dispatchResult.staleTokens.length > 0) {
+            const staleSet = new Set(dispatchResult.staleTokens);
+            const batchPrune = adminDb.batch();
+            let pruneCount = 0;
+
+            usersSnap.forEach(doc => {
+                const data = doc.data();
+                if (Array.isArray(data.fcmTokens)) {
+                    const toRemove = data.fcmTokens.filter((t: string) => staleSet.has(t));
+                    if (toRemove.length > 0) {
+                        batchPrune.update(doc.ref, {
+                            fcmTokens: admin.firestore.FieldValue.arrayRemove(...toRemove)
+                        });
+                        pruneCount++;
+                    }
+                }
+            });
+
+            if (pruneCount > 0) {
+                await batchPrune.commit().catch(e => console.warn('[AdminPushSend] Stale tokens prune warning:', e));
+                console.log(`[AdminPushSend] Automatically pruned ${dispatchResult.staleTokens.length} stale tokens from ${pruneCount} users.`);
+            }
+        }
+
         // Record Broadcast in History
         await adminDb.collection('push_broadcast_logs').add({
             title: notificationPayload.title,

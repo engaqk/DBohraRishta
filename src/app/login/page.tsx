@@ -368,14 +368,14 @@ export default function LoginPage() {
                                 href="/downloads/53DBohraRishta.apk"
                                 download="53DBohraRishta.apk"
                                 className="flex items-center gap-2.5 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white p-2.5 rounded-2xl shadow-sm border border-emerald-600/50 active:scale-95 transition-all group"
-                                title="Download Android App (.apk) directly"
+                                title="Download Android App directly"
                             >
                                 <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                                     <AndroidIcon className="w-5 h-5 text-emerald-300" />
                                 </div>
                                 <div className="text-left leading-tight min-w-0">
                                     <p className="text-[8px] uppercase tracking-wider text-emerald-200 font-bold">Download for</p>
-                                    <p className="text-[12px] font-black text-white truncate">Android APK</p>
+                                    <p className="text-[12px] font-black text-white truncate">Android App</p>
                                 </div>
                             </a>
 

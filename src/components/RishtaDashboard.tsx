@@ -3035,7 +3035,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                 <button
                     onClick={() => router.push('/download')}
                     className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 border border-emerald-500 text-white px-3.5 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider hover:from-emerald-700 hover:to-teal-700 transition-all shrink-0 active:scale-95 cursor-pointer"
-                    title="Download Official 53DBohraRishta Android App (.apk) or iOS App"
+                    title="Download Official 53DBohraRishta Mobile App"
                 >
                     <Smartphone className="w-3.5 h-3.5" /> Download App
                 </button>
@@ -3840,7 +3840,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 onClick={() => { router.push('/download'); setShowMobileMenu(false); }}
                                 className="w-full flex items-center gap-4 p-4 rounded-2xl text-emerald-800 font-bold bg-emerald-50 hover:bg-emerald-100 transition-all border border-emerald-200"
                             >
-                                <Smartphone className="w-5 h-5 text-emerald-600" /> Download App (.apk)
+                                <Smartphone className="w-5 h-5 text-emerald-600" /> Download Mobile App
                             </button>
                         </div>
 

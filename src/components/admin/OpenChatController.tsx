@@ -368,7 +368,7 @@ export default function OpenChatController() {
                         </div>
 
                         <p className="text-xs text-gray-600 mb-4 leading-relaxed">
-                            This will simultaneously dispatch a <strong>Reminder Email</strong> (via Gmail SMTP) and a <strong>Real-Time Push Notification</strong> (Web & PWA App) to all registered & verified community members.
+                            This will simultaneously dispatch a <strong>Reminder Email</strong> and a <strong>Real-Time Push Notification</strong> to all registered & verified community members.
                         </p>
 
                         <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 mb-4 space-y-2">

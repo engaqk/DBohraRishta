@@ -73,17 +73,17 @@ export default function DownloadAppPage() {
                             </div>
                             <h2 className="text-2xl font-bold font-serif text-gray-900 mb-2">Android App</h2>
                             <p className="text-xs text-gray-500 mb-6 font-medium">
-                                Direct standalone APK • Version 1.0 • 6.4 MB • Zero subscription fees
+                                Direct Mobile App • Version 1.0 • 6.4 MB • Zero subscription fees
                             </p>
 
                             <ul className="space-y-3 text-xs text-gray-600 mb-8">
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                                    <span>Direct installation without Google Play sign-in required</span>
+                                    <span>Direct installation without store sign-in required</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                                    <span>Instant live sync with Vercel for zero-delay feature updates</span>
+                                    <span>Instant live cloud sync for zero-delay feature updates</span>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -103,7 +103,7 @@ export default function DownloadAppPage() {
                                 className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black py-4 px-6 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer"
                             >
                                 <Download className="w-5 h-5" />
-                                <span>{downloading ? 'Downloading APK...' : 'Download Android App (.apk)'}</span>
+                                <span>{downloading ? 'Downloading App...' : 'Download Android App'}</span>
                             </button>
                             <p className="text-[11px] text-gray-400 text-center mt-3">
                                 Tap <strong>Open</strong> after download & select <strong>Install</strong> when prompted.
@@ -197,7 +197,7 @@ export default function DownloadAppPage() {
                             <div className="w-12 h-12 bg-amber-50 text-[#D4AF37] rounded-2xl flex items-center justify-center mb-3">
                                 <Zap className="w-6 h-6" />
                             </div>
-                            <h4 className="font-bold text-sm text-gray-900 mb-1">Instant Vercel Sync</h4>
+                            <h4 className="font-bold text-sm text-gray-900 mb-1">Instant Live Sync</h4>
                             <p className="text-xs text-gray-500">
                                 Zero-delay updates. New features and direct chat windows load automatically.
                             </p>

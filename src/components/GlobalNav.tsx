@@ -88,7 +88,12 @@ export default function GlobalNav() {
                             {user && (
                                 <>
                                     <button
-                                        onClick={() => router.push('/?tab=notifications')}
+                                        onClick={() => {
+                                            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+                                                window.dispatchEvent(new CustomEvent('trigger-push-permission'));
+                                            }
+                                            router.push('/?tab=notifications');
+                                        }}
                                         className={`relative p-2 transition-all duration-300 rounded-xl ${isNotificationsActive ? 'text-white bg-[#881337] shadow-md ring-2 ring-rose-100' : 'text-gray-500 hover:text-[#881337] hover:bg-rose-50'}`}
                                         title="Notifications"
                                     >

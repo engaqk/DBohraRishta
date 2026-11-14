@@ -5,13 +5,14 @@ import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverT
 import { db } from "@/lib/firebase/config";
 import { auth } from "@/lib/firebase/config";
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
-import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2, ShieldCheck, Camera, Video, Mail, RefreshCw, Database, User } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2, ShieldCheck, Camera, Video, Mail, RefreshCw, Database, User, Bell } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { ADMIN_EMAIL } from '@/lib/emailService';
 import BroadcastTab from "@/components/admin/BroadcastTab";
 import SmsBroadcastTab from "@/components/admin/SmsBroadcastTab";
+import PushNotificationTab from "@/components/admin/PushNotificationTab";
 import AuditLogsTab from "@/components/admin/AuditLogsTab";
 import OpenChatController from "@/components/admin/OpenChatController";
 
@@ -86,7 +87,7 @@ export default function AdminVerificationPage() {
     // Auth Directory States
     const [authUsers, setAuthUsers] = useState<any[]>([]);
     const [loadingAuth, setLoadingAuth] = useState(false);
-    const [activeMainTab, setActiveMainTab] = useState<'firestore' | 'auth' | 'broadcast' | 'sms' | 'audit'>('firestore');
+    const [activeMainTab, setActiveMainTab] = useState<'firestore' | 'push' | 'broadcast' | 'auth' | 'sms' | 'audit'>('firestore');
     const [isSyncing, setIsSyncing] = useState(false);
     const [visibleCountAuth, setVisibleCountAuth] = useState(50); // Pagination for Auth tab
 
@@ -596,6 +597,14 @@ export default function AdminVerificationPage() {
                         <Database className="w-4 h-4 inline-block mr-2" />
                         Registered Candidates
                         {activeMainTab === 'firestore' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                    </button>
+                    <button
+                        onClick={() => setActiveMainTab('push')}
+                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'push' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <Bell className="w-4 h-4 inline-block mr-2" />
+                        Push Notifications
+                        {activeMainTab === 'push' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
                     </button>
                     <button
                         onClick={() => setActiveMainTab('broadcast')}
@@ -1484,6 +1493,8 @@ export default function AdminVerificationPage() {
                                 </div>
                             )}
                         </div>
+                    ) : activeMainTab === 'push' ? (
+                        <PushNotificationTab />
                     ) : activeMainTab === 'broadcast' ? (
                         <BroadcastTab />
                     ) : activeMainTab === 'sms' ? (

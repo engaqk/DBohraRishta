@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import GlobalNav from "@/components/GlobalNav";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
+import PushNotificationHandler from "@/components/PushNotificationHandler";
 import RefreshManager from "@/components/RefreshManager";
 import PageWrapper from "@/components/PageWrapper";
 
@@ -99,6 +100,7 @@ export default function RootLayout({
         }} />
         <Providers>
           <ImpersonationBanner />
+          <PushNotificationHandler />
           <GlobalNav />
           <PageWrapper>
             {children}

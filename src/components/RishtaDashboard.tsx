@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment, setDoc } from 'firebase/firestore';
 import { db, messaging, storage } from '@/lib/firebase/config';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { requestNotificationPermission } from '@/lib/firebase/messaging';
+import { requestNotificationPermission, playNotificationChime } from '@/lib/firebase/messaging';
 import toast from 'react-hot-toast';
 import { formatMobileDisplay, splitMobileParts } from '@/lib/phoneUtils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -3026,8 +3026,19 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                 </button>
 
                 <button
-                    onClick={() => requestNotificationPermission(user?.uid)}
-                    className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-600 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-all shrink-0 active:scale-95"
+                    onClick={async () => {
+                        const res = await requestNotificationPermission(user?.uid);
+                        if (res.success) {
+                            playNotificationChime();
+                            toast.success("Push notifications enabled on this device!");
+                        } else if (res.reason === "Permission denied by user") {
+                            toast.error("Notifications blocked in browser settings. Please allow notifications for this site.");
+                        } else {
+                            toast("Notifications checked.");
+                        }
+                    }}
+                    className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-600 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-all shrink-0 active:scale-95 cursor-pointer"
+                    title="Enable real-time push alerts on this device"
                 >
                     <Bell className="w-3.5 h-3.5" /> Notify
                 </button>

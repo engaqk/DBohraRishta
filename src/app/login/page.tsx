@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { ShieldCheck, Sparkles, Users, Star, Lock, Eye, EyeOff, Smartphone, Download } from "lucide-react";
+import { ShieldCheck, Sparkles, Users, Star, Lock, Eye, EyeOff, Smartphone, Download, CheckCircle2, ChevronLeft, ChevronRight, Shield, Heart } from "lucide-react";
 import toast from "react-hot-toast";
 import { collection, query, where, limit, getDocs, getCountFromServer } from "firebase/firestore";
-import DiscoveryCard from "@/components/DiscoveryCard";
 import { db } from "@/lib/firebase/config";
 
 export default function LoginPage() {
@@ -18,8 +17,7 @@ export default function LoginPage() {
 
     const [authLoading, setAuthLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
-    const [isNewUser, setIsNewUser] = useState(true); // toggle: new vs returning
-    const [demoProfiles, setDemoProfiles] = useState<any[]>([]);
+    const [isNewUser, setIsNewUser] = useState(true);
     const [liveVerifiedCount, setLiveVerifiedCount] = useState<number | null>(null);
     const [mounted, setMounted] = useState(false);
     const [showHighTrafficBanner, setShowHighTrafficBanner] = useState(false);
@@ -48,90 +46,31 @@ export default function LoginPage() {
     }, [user, loading, router]);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchLiveCount = async () => {
             try {
-                // Fetch a smaller set — only what DiscoveryCard needs for the preview scroller
-                // Fields used by DiscoveryCard for the login-page preview scroller
-                // Photo fields (libasImageUrl, extraImageUrl, selfieImageUrl, videoIntroUrl) are
-                // short Firebase Storage URLs — safe to cache, not base64.
-                const CARD_FIELDS = [
-                    'gender', 'name', 'dob', 'jamaat', 'city', 'location', 'hizratLocation',
-                    'isItsVerified', 'isBlurSecurityEnabled', 'maritalStatus',
-                    'heightFeet', 'heightInch', 'professionType', 'educationDetails',
-                    'bio', 'isOnline', 'lastActive', 'createdAt',
-                    'libasImageUrl', 'extraImageUrl',
-                    'selfieImageUrl', 'selfieStatus',
-                    'videoIntroUrl', 'videoStatus',
-                    'isPhotoVerified',
-                ];
-
-                const stripProfile = (doc: any): any => {
-                    const data = doc.data ? doc.data() : doc;
-                    const slim: any = { id: doc.id ?? doc.id };
-                    CARD_FIELDS.forEach(f => { if (data[f] !== undefined) slim[f] = data[f]; });
-                    return slim;
-                };
-
-                // Female profiles (priority) — limit 8
-                const femaleQ = query(collection(db, 'users'), where('gender', '==', 'female'), where('isItsVerified', '==', true), limit(8));
-                const femaleSnap = await getDocs(femaleQ);
-                let females = femaleSnap.docs.map(d => stripProfile(d));
-
-                // Male profiles (shuffled) — limit 8
-                const maleQ = query(collection(db, 'users'), where('gender', '==', 'male'), where('isItsVerified', '==', true), limit(8));
-                const maleSnap = await getDocs(maleQ);
-                let males = femaleSnap.docs.length > 0
-                    ? maleSnap.docs.map(d => stripProfile(d)).sort(() => 0.5 - Math.random())
-                    : maleSnap.docs.map(d => stripProfile(d));
-
-                // Interleave: female, male, female, male…
-                let combined: any[] = [];
-                const max = Math.max(females.length, males.length);
-                for (let i = 0; i < max; i++) {
-                    if (females[i]) combined.push(females[i]);
-                    if (males[i]) combined.push({ ...males[i], name: (males[i].name?.split(' ')[0] ?? '') + ' ●●●●' });
-                }
-
-                setDemoProfiles(combined);
-                try {
-                    localStorage.setItem('cached_demo_profiles', JSON.stringify(combined));
-                } catch {
-                    // localStorage quota exceeded — skip caching silently
-                }
-
-                // Live counts
                 const totalQ = query(collection(db, 'users'), where('isItsVerified', '==', true));
                 const totalSnap = await getCountFromServer(totalQ);
                 setLiveVerifiedCount(totalSnap.data().count);
                 localStorage.setItem('cached_live_count', totalSnap.data().count.toString());
-
             } catch (e) {
-                console.error("login3 data fetch error", e);
-                
+                console.error("Login live count fetch error:", e);
                 const cachedCount = localStorage.getItem('cached_live_count');
-                if (cachedCount) {
-                    setLiveVerifiedCount(parseInt(cachedCount));
-                } else {
-                    setLiveVerifiedCount(53); // Fallback matching actual verified count
-                }
-
-                const cachedProfiles = localStorage.getItem('cached_demo_profiles');
-                if (cachedProfiles) {
-                    setDemoProfiles(JSON.parse(cachedProfiles));
-                }
-
-                setShowHighTrafficBanner(true);
+                setLiveVerifiedCount(cachedCount ? parseInt(cachedCount) : 53);
             }
         };
-        fetchData();
+        fetchLiveCount();
     }, []);
 
     const handleGoogleLogin = async () => {
         setAuthLoading(true);
         setErrorMsg("");
-        try { await signInWithGoogle(); }
-        catch (e: any) { setErrorMsg(e.message?.replace("Firebase: ", "") || "Sign-in failed."); }
-        finally { setAuthLoading(false); }
+        try {
+            await signInWithGoogle();
+        } catch (e: any) {
+            setErrorMsg(e.message?.replace("Firebase: ", "") || "Sign-in failed.");
+        } finally {
+            setAuthLoading(false);
+        }
     };
 
     if (!mounted || loading) return null;
@@ -157,224 +96,134 @@ export default function LoginPage() {
         </svg>
     );
 
-
     return (
-        <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-amber-50 flex flex-col items-center justify-start pt-2 pb-6 px-4 sm:pt-4 sm:pb-10 text-[#881337]">
-            <style>{`
-                @keyframes scrollUp {
-                    0% { transform: translateY(0); }
-                    100% { transform: translateY(-50%); }
-                }
-                .blur-male-img img, .blur-male-img video { filter: blur(4px) !important; }
-                @keyframes fadeUp {
-                    from { opacity: 0; transform: translateY(16px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .fade-up { animation: fadeUp 0.5s ease forwards; }
-                .fade-up-1 { animation-delay: 0.1s; opacity: 0; }
-                .fade-up-2 { animation-delay: 0.2s; opacity: 0; }
-                .fade-up-3 { animation-delay: 0.3s; opacity: 0; }
-                .fade-up-4 { animation-delay: 0.4s; opacity: 0; }
-                .fade-up-5 { animation-delay: 0.5s; opacity: 0; }
-            `}</style>
-
+        <div className="min-h-screen bg-gradient-to-b from-[#FFF1F2] via-white to-[#FFFBEB] flex flex-col items-center justify-center p-3 sm:p-6 text-[#881337] font-sans antialiased">
             <div id="recaptcha-container" className="hidden" />
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] opacity-[0.03] pointer-events-none" />
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] opacity-[0.025] pointer-events-none" />
 
-                        {/* 📲 Top Mobile App Shortcut */}
-            <div className="max-w-md w-full mb-3 flex items-center justify-between bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-rose-100 shadow-sm text-xs z-10">
-                <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="font-bold text-gray-700">Official Mobile App</span>
-                    <span className="bg-[#D4AF37]/20 text-[#881337] border border-[#D4AF37]/40 text-[9px] font-black uppercase px-2 py-0.5 rounded-full">100% Free</span>
-                </div>
-                <button
-                    onClick={() => router.push('/download')}
-                    className="text-[11px] font-black text-[#881337] bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                    <Download className="w-3.5 h-3.5 text-[#881337]" />
-                    <span>Download App</span>
-                </button>
-            </div>
+            {/* ── COMPACT INTERNATIONAL-STANDARD CARD ── */}
+            <div className="max-w-[420px] w-full bg-white rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(136,19,55,0.15)] border border-rose-100/80 overflow-hidden z-10 relative">
 
-<div className="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 z-10 relative">
-
-                {/* ── HEADER ── */}
-                <div className="bg-[#881337] p-8 text-center relative overflow-hidden">
-                    {/* Absolute Language Switcher */}
-                    <div className="absolute top-4 right-4 z-50">
+                {/* ── CARD HEADER ── */}
+                <div className="bg-gradient-to-br from-[#881337] via-[#9F1239] to-[#70102d] p-6 sm:p-7 text-center relative overflow-hidden text-white">
+                    {/* Top Right Language Switcher */}
+                    <div className="absolute top-3.5 right-3.5 z-20">
                         <LanguageSwitcher variant="login" />
                     </div>
-                    <div className="absolute top-0 right-0 p-4 opacity-10"><Sparkles className="w-24 h-24" /></div>
-                    <div className="w-16 h-16 bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] rounded-full flex items-center justify-center font-bold text-3xl shadow-[0_0_30px_rgba(212,175,55,0.5)] mx-auto mb-4 border-2 border-[#D4AF37] ring-4 ring-white/20">53</div>
-                    <h1 className="text-4xl font-extrabold font-serif text-white mb-1 tracking-tight drop-shadow-md">DBohra<span className="text-[#D4AF37] font-medium italic">Rishta</span></h1>
-                    <p className="text-white/80 font-bold tracking-[0.25em] uppercase text-[10px] mt-2 border-t border-white/20 pt-2 inline-block">{t("Intelligent search with extraordinary features")}</p>
-                    <div className="mt-4 inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 backdrop-blur-sm">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4AF37] opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#D4AF37]"></span>
-                        </span>
+
+                    {/* Subtle decorative glow */}
+                    <div className="absolute -top-10 -right-10 w-36 h-36 bg-[#D4AF37]/15 rounded-full blur-2xl pointer-events-none" />
+
+                    {/* Golden Bohra 53 Crest */}
+                    <div className="w-14 h-14 bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] rounded-full flex items-center justify-center font-bold text-2xl shadow-[0_0_24px_rgba(212,175,55,0.4)] mx-auto mb-3 border-2 border-[#D4AF37] ring-4 ring-white/20">
+                        53
+                    </div>
+
+                    <h1 className="text-3xl font-extrabold font-serif tracking-tight leading-none drop-shadow-sm">
+                        DBohra<span className="text-[#D4AF37] font-normal italic">Rishta</span>
+                    </h1>
+                    
+                    <p className="text-rose-100/90 text-[11px] font-bold tracking-wider uppercase mt-2">
+                        Dawoodi Bohra Community Matchmaking
+                    </p>
+
+                    {/* Live Verified Members Badge */}
+                    <div className="mt-3 inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-3.5 py-1 backdrop-blur-md">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                         <span className="text-[11px] font-black text-white">
-                            {liveVerifiedCount ? `${liveVerifiedCount}+ ${t("ITS Card Verified Registered Candidates")}` : 'Loading...'}
+                            {liveVerifiedCount ? `${liveVerifiedCount}+ ITS Card Verified Members` : "174+ Verified Members"}
                         </span>
                     </div>
-
                 </div>
 
-                {/* ⚠️ High Traffic Banner */}
-                {showHighTrafficBanner && (
-                    <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 text-center">
-                        <p className="text-[11px] font-bold text-amber-800 leading-relaxed">
-                            {t("Salam! We are experiencing exceptionally high traffic today due to a surge in new members! To ensure a smooth experience for everyone, some live updates are temporarily paused. Full live features will automatically resume shortly. Thank you for your patience!")}
-                        </p>
-                    </div>
-                )}
-
-                {/* ── OUTCOME-FIRST HERO ── */}
-                <div className="bg-white px-6 pt-5 pb-0 text-center relative z-10 fade-up fade-up-2">
-                    <p className="text-[12.5px] text-gray-500 leading-relaxed">
-                        {t("Join the")} <span className="bg-[#D4AF37] text-white px-2 py-0.5 rounded-md font-black">{t("most trusted platform")}</span> {t("of 100% ITS-verified")} <span className="bg-[#D4AF37] text-white px-1.5 rounded font-black whitespace-nowrap">{t("Dawoodi Bohra")}</span> {t("candidates — where privacy matters most.")}
-                    </p>
-                    <p className="text-[11px] font-extrabold text-[#881337] mt-3 mb-0 flex items-center justify-center gap-1">
-                        <span>🛡️</span> {t("Utmost privacy. Complete control. Family trusted.")}
-                    </p>
-                </div>
-
-                {/* ── LIVE PROFILE SCROLLER ── */}
-                <div id="scroller-section" className="bg-white px-6 pt-0 pb-4 fade-up fade-up-3">
-                    <div className="text-center mb-4">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] mb-1">The Most Trusted Platform</p>
-                        <h3 className="text-[15px] font-black text-[#881337] mb-1">Live Glimpse of the Platform</h3>
-                        <p className="text-[11.5px] text-gray-500 leading-relaxed">
-                            These are <strong className="text-[#D4AF37]">real, verified registered members</strong>.
-                        </p>
-                    </div>
-
-                    {/* Live member stats */}
-                    <div className="flex justify-center gap-8 mb-5">
-                        <div className="text-center">
-                            <p className="text-[24px] font-black text-transparent bg-clip-text bg-gradient-to-r from-[#881337] to-[#D4AF37]">{liveVerifiedCount ? `${liveVerifiedCount}+` : '...'}</p>
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Verified Members</p>
-                        </div>
-                        <div className="w-px bg-gray-100"></div>
-                        <div className="text-center">
-                            <p className="text-[24px] font-black text-transparent bg-clip-text bg-gradient-to-r from-[#881337] to-[#D4AF37]">100%</p>
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">ITS Verified</p>
-                        </div>
-                    </div>
-
-                    {/* Scroller */}
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-50 border border-rose-100 rounded-lg text-[10px] uppercase tracking-widest text-[#881337] mb-3 font-extrabold w-full justify-center">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#881337] opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#881337]"></span>
-                        </span>
-                        How Profile & Photo Privacy Works
-                    </div>
-                    <div className="w-full max-w-[320px] mx-auto h-[400px] rounded-xl border-2 border-rose-100 shadow-[0_4px_12px_rgba(140,28,58,0.08)] bg-white overflow-hidden relative">
-                        <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none"></div>
-                        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none"></div>
-                        <div className="flex flex-col gap-6 p-4 animate-[scrollUp_30s_linear_infinite] select-none pointer-events-none blur-[2px] opacity-90">
-                            {[...demoProfiles, ...demoProfiles].map((profile, i) => (
-                                <div key={i} className={`transform scale-[0.85] origin-top w-[117%] -ml-[8.5%] ${profile?.gender === 'male' ? 'blur-male-img' : ''} relative`}>
-                                    {profile ? <DiscoveryCard {...profile} isMyProfileVerified={true} /> : null}
-                                    {/* Login-to-interact overlay on the Send Interest button area */}
-                                    <div className="absolute bottom-0 left-0 right-0 h-[72px] z-50 flex items-end px-4 pb-4">
-                                        <div className="w-full py-3 rounded-xl bg-gradient-to-r from-[#881337] to-[#9F1239] text-white text-[13px] font-black text-center shadow-md flex items-center justify-center gap-2">
-                                            <span>🔐 Login to Send Rishta</span>
-                                            <span className="text-[#D4AF37]">→</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            {demoProfiles.length === 0 && (
-                                <div className="flex items-center justify-center h-full text-xs text-gray-400">Loading verified profiles…</div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── AUTH ZONE ── */}
-                <div className="bg-gray-50/90 border-t border-b border-gray-100 px-6 py-7 fade-up fade-up-4">
-
-                    {/* Toggle: New / Returning */}
-                    <div className="flex rounded-xl border border-rose-100 overflow-hidden mb-5 shadow-sm">
+                {/* ── AUTHENTICATION ZONE ── */}
+                <div className="p-6 sm:p-7 bg-white">
+                    {/* Toggle: Join vs Login */}
+                    <div className="flex bg-rose-50/70 p-1 rounded-2xl border border-rose-100 mb-4 shadow-inner">
                         <button
                             onClick={() => setIsNewUser(true)}
-                            className={`flex-1 py-2.5 text-[13px] font-black transition-all ${isNewUser ? 'bg-[#881337] text-white shadow' : 'bg-white text-gray-500 hover:bg-rose-50'}`}
+                            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                isNewUser
+                                    ? "bg-[#881337] text-white shadow-sm"
+                                    : "text-gray-500 hover:text-gray-900"
+                            }`}
                         >
                             ✨ {t("Join")}
                         </button>
                         <button
                             onClick={() => setIsNewUser(false)}
-                            className={`flex-1 py-2.5 text-[13px] font-black transition-all ${!isNewUser ? 'bg-[#881337] text-white shadow' : 'bg-white text-gray-500 hover:bg-rose-50'}`}
+                            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                !isNewUser
+                                    ? "bg-[#881337] text-white shadow-sm"
+                                    : "text-gray-500 hover:text-gray-900"
+                            }`}
                         >
                             🔑 {t("Login")}
                         </button>
                     </div>
 
-                    {/* Contextual hint */}
-                    {isNewUser ? (
-                        <div className="bg-gradient-to-br from-rose-50 to-amber-50 border border-rose-200 rounded-xl px-4 py-3.5 mb-5 text-center shadow-sm">
-                            <p className="text-[11px] font-black text-[#881337] uppercase tracking-wider mb-1">
-                                🎉 All Premium Features Free — Register Now
-                            </p>
-                            <p className="text-[11px] text-gray-700 leading-relaxed font-medium">
-                                {t("Register in under 60 seconds with Google — private, and exclusively for ITS-verified Dawoodi Bohra candidates.")}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="bg-white border border-rose-100 rounded-xl px-4 py-3 mb-5 text-center shadow-sm">
-                            <p className="text-[11.5px] text-gray-600 leading-relaxed">
-                                {t("Please use your same registered Google account to access your profile and messages.")}
-                            </p>
-                        </div>
-                    )}
+                    {/* Concise Value Line */}
+                    <div className="text-center mb-4">
+                        <p className="text-xs text-gray-600 font-medium leading-relaxed">
+                            {isNewUser
+                                ? t("Private registration in under 60 seconds with your Google account.")
+                                : t("Sign in with your registered Google account to view your matches.")}
+                        </p>
+                    </div>
 
                     {errorMsg && (
-                        <div className="p-3 bg-red-50 text-red-500 text-sm font-bold rounded-xl border border-red-100 mb-4">{errorMsg}</div>
+                        <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-200 mb-4">
+                            {errorMsg}
+                        </div>
                     )}
 
+                    {/* Google Sign-in CTA */}
                     <button
                         type="button"
                         onClick={handleGoogleLogin}
                         disabled={authLoading}
-                        className="w-full bg-[#881337] text-white py-3.5 rounded-xl font-black shadow-[0_8px_24px_rgba(136,19,55,0.28)] hover:bg-[#70102d] active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 transition-all text-[15px]"
+                        className="w-full bg-[#881337] hover:bg-[#70102d] text-white py-3.5 px-4 rounded-2xl font-black shadow-[0_8px_20px_rgba(136,19,55,0.22)] active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 transition-all text-sm cursor-pointer"
                     >
-                        <div className="bg-white p-1 rounded-full w-7 h-7 flex items-center justify-center shrink-0">
+                        <div className="bg-white p-1 rounded-full w-6 h-6 flex items-center justify-center shrink-0">
                             <GoogleIcon />
                         </div>
-                        {isNewUser ? t("Join with Google — It's Private") : t("Login with Google")}
+                        <span>
+                            {authLoading ? "Connecting..." : isNewUser ? t("Join with Google") : t("Sign In with Google")}
+                        </span>
                     </button>
 
-                    <p className="text-[10px] text-gray-400 text-center mt-3 font-bold uppercase tracking-wider">
-                        {t("Dawoodi Bohra Community Only")}
+                    <p className="text-[10px] text-gray-400 text-center mt-2.5 font-bold uppercase tracking-wider">
+                        Dawoodi Bohra Community Only • Private & Dignified
                     </p>
-                    {/* ── MOBILE APP DOWNLOAD SECTION ── */}
-                    <div className="mt-5 pt-4 border-t border-gray-200/80">
-                        <div className="flex items-center justify-between mb-2.5">
-                            <span className="text-[11px] font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+
+                    {/* ── DEDICATED MOBILE APP DOWNLOAD SECTION ── */}
+                    <div className="mt-6 pt-5 border-t border-gray-100">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[11px] font-black text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
                                 <Smartphone className="w-3.5 h-3.5 text-[#881337]" />
-                                Download Mobile App
+                                Official Mobile App
                             </span>
-                            <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
-                                100% Free
+                            <span className="text-[10px] font-bold text-gray-400">
+                                Android & iOS
                             </span>
                         </div>
+                        <p className="text-[11px] text-gray-500 mb-3 leading-tight">
+                            Instant push notifications, direct chat, and live match alerts on your smartphone.
+                        </p>
 
                         <div className="grid grid-cols-2 gap-2.5">
                             {/* Android App Button */}
                             <a
                                 href="/downloads/53DBohraRishta.apk"
                                 download="53DBohraRishta.apk"
-                                className="flex items-center gap-2.5 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white p-2.5 rounded-2xl shadow-sm border border-emerald-600/50 active:scale-95 transition-all group"
+                                className="flex items-center gap-2.5 bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white p-2.5 rounded-2xl shadow-xs border border-emerald-600/40 active:scale-95 transition-all group"
                                 title="Download Android App directly"
                             >
                                 <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                                    <AndroidIcon className="w-5 h-5 text-emerald-300" />
+                                    <AndroidIcon className="w-4 h-4 text-emerald-200" />
                                 </div>
                                 <div className="text-left leading-tight min-w-0">
-                                    <p className="text-[8px] uppercase tracking-wider text-emerald-200 font-bold">Download for</p>
+                                    <p className="text-[8px] uppercase tracking-wider text-emerald-200 font-bold">Download</p>
                                     <p className="text-[12px] font-black text-white truncate">Android App</p>
                                 </div>
                             </a>
@@ -382,7 +231,7 @@ export default function LoginPage() {
                             {/* iOS App Button */}
                             <button
                                 onClick={() => router.push('/download')}
-                                className="flex items-center gap-2.5 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-black hover:to-gray-900 text-white p-2.5 rounded-2xl shadow-sm border border-gray-700 active:scale-95 transition-all group cursor-pointer text-left"
+                                className="flex items-center gap-2.5 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-black hover:to-gray-900 text-white p-2.5 rounded-2xl shadow-xs border border-gray-700 active:scale-95 transition-all group cursor-pointer text-left"
                                 title="Install on iPhone / iPad"
                             >
                                 <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
@@ -397,98 +246,66 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* ── 3-COLUMN TRUST STRIP ── */}
-                <div className="bg-white px-6 pb-5 fade-up fade-up-3">
-                    <div className="bg-gradient-to-r from-rose-50 via-white to-amber-50 border border-rose-100 rounded-2xl p-4 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#881337] via-[#D4AF37] to-[#881337]"></div>
-                        <p className="text-[10px] font-black text-[#881337] uppercase tracking-widest mb-3 text-center">Built for Dignity. Respected by Families.</p>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                            <div className="flex flex-col items-center gap-1">
-                                <span className="text-xl">🔒</span>
-                                <p className="text-[10px] font-bold text-gray-700 leading-tight">Photo hidden by default</p>
+                {/* ── 3 CORE VALUES OF DIGNITY ── */}
+                <div className="bg-gray-50/80 px-6 py-4 border-t border-gray-100">
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="flex flex-col items-center">
+                            <div className="w-7 h-7 rounded-lg bg-rose-100 text-[#881337] flex items-center justify-center mb-1">
+                                <ShieldCheck className="w-4 h-4" />
                             </div>
-                            <div className="flex flex-col items-center gap-1">
-                                <span className="text-xl">👀</span>
-                                <p className="text-[10px] font-bold text-gray-700 leading-tight">You approve who views</p>
+                            <p className="text-[10px] font-black text-gray-800 leading-tight">ITS Verified</p>
+                            <p className="text-[9px] text-gray-500 leading-none mt-0.5">100% Genuine</p>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center mb-1">
+                                <Lock className="w-4 h-4" />
                             </div>
-                            <div className="flex flex-col items-center gap-1">
-                                <span className="text-xl">👨‍👩‍👧</span>
-                                <p className="text-[10px] font-bold text-gray-700 leading-tight">Family can co-manage</p>
+                            <p className="text-[10px] font-black text-gray-800 leading-tight">Photo Privacy</p>
+                            <p className="text-[9px] text-gray-500 leading-none mt-0.5">Blurred by Default</p>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center mb-1">
+                                <Heart className="w-4 h-4" />
+                            </div>
+                            <p className="text-[10px] font-black text-gray-800 leading-tight">Family Trusted</p>
+                            <p className="text-[9px] text-gray-500 leading-none mt-0.5">Noble Bohra Adab</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── COMMUNITY TESTIMONIAL ── */}
+                <div className="bg-white px-6 py-3.5 border-t border-gray-100">
+                    <div className="relative bg-gradient-to-r from-amber-50/70 via-rose-50/30 to-amber-50/70 border border-amber-200/60 rounded-2xl px-4 py-2.5">
+                        <p className="text-[11.5px] text-gray-700 italic leading-snug">
+                            "{reviews[currentSlide].text}"
+                        </p>
+                        <div className="flex items-center justify-between mt-2 pt-1 border-t border-amber-200/50">
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-bold text-[#881337]">
+                                    {reviews[currentSlide].name}, {reviews[currentSlide].location}
+                                </span>
+                                <span className="text-[8px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full">
+                                    Verified
+                                </span>
+                            </div>
+                            <div className="flex gap-0.5">
+                                {[1, 2, 3, 4, 5].map((i) => (
+                                    <Star key={i} className="w-2.5 h-2.5 fill-[#D4AF37] text-[#D4AF37]" />
+                                ))}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* ── COMMUNITY QUOTE SLIDER ── */}
-                <div className="bg-white px-6 pb-6 fade-up fade-up-3">
-                    <div className="relative bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-2xl px-5 py-4">
-                        <div className="absolute -top-3 left-5 text-4xl text-[#D4AF37] font-serif leading-none">"</div>
-                        
-                        {/* Arrows */}
-                        <button 
-                            onClick={() => setCurrentSlide(prev => (prev === 0 ? reviews.length - 1 : prev - 1))}
-                            className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/90 border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-all z-10"
-                            title="Previous Review"
-                        >
-                            <span className="text-[#881337] font-black text-xs">&lt;</span>
-                        </button>
-                        <button 
-                            onClick={() => setCurrentSlide(prev => (prev === reviews.length - 1 ? 0 : prev + 1))}
-                            className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/90 border border-gray-100 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-all z-10"
-                            title="Next Review"
-                        >
-                            <span className="text-[#881337] font-black text-xs">&gt;</span>
-                        </button>
-
-                        <div className="px-4">
-                            <p className="text-[12.5px] text-gray-700 italic leading-relaxed pt-3 min-h-[60px]">
-                                {reviews[currentSlide].text}
-                            </p>
-                            <div className="flex items-center gap-2 mt-3">
-                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-200 to-rose-200 flex items-center justify-center text-sm font-bold text-[#881337]">
-                                    {reviews[currentSlide].initial}
-                                </div>
-                                <div>
-                                    <p className="text-[11px] font-black text-[#881337]">{reviews[currentSlide].name}, {reviews[currentSlide].location}</p>
-                                    <div className="flex gap-0.5">
-                                        {[1,2,3,4,5].map(i => <Star key={i} className="w-2.5 h-2.5 fill-[#D4AF37] text-[#D4AF37]" />)}
-                                    </div>
-                                </div>
-                                <div className="ml-auto">
-                                    <span className="text-[9px] font-bold bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">✓ Verified Member</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── CONVICTION BLOCKS ── */}
-                <div className="bg-white px-6 pb-6 space-y-3 fade-up fade-up-3">
-                    <div className="bg-gradient-to-br from-rose-50 to-white border border-rose-100 rounded-2xl px-5 py-4">
-                        <p className="text-[13px] font-extrabold text-[#881337] mb-1">👰 For Brides & Their Families</p>
-                        <p className="text-[12px] text-gray-700 leading-relaxed">
-                            Your photo is <strong>blurred by default</strong> — no one sees you without your approval. ITS-verified grooms are actively waiting. The right rishta won't wait forever.
-                        </p>
-                    </div>
-                    <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 rounded-2xl px-5 py-4">
-                        <p className="text-[13px] font-extrabold text-[#881337] mb-1">🤝 For Grooms & Their Families</p>
-                        <p className="text-[12px] text-gray-700 leading-relaxed">
-                            Qualified brides choose this platform precisely for its dignity. Register now — express your sincere interest to families who have already trusted us.
-                        </p>
-                    </div>
-                </div>
-
-
-                {/* ── ADMIN LINK ── */}
-                <div className="bg-white px-6 py-4 text-center border-t border-gray-100">
+                {/* ── FOOTER: ADMIN ACCESS ── */}
+                <div className="bg-gray-50/60 px-6 py-3 text-center border-t border-gray-100">
                     <button
                         onClick={() => router.push('/admin/login')}
-                        className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-[#881337] transition-colors flex items-center justify-center gap-1.5 mx-auto"
+                        className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-[#881337] transition-colors flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
                     >
-                        <ShieldCheck className="w-3 h-3" /> Admin Login
+                        <Shield className="w-3 h-3" /> Admin Portal
                     </button>
                 </div>
-
             </div>
         </div>
     );

@@ -142,6 +142,12 @@ service cloud.firestore {
       allow write: if false // Strictly via Server SDK
     }
 
+    // Push Broadcast Logs: Admin only
+    match /push_broadcast_logs/{logId} {
+      allow read: if isAdmin()
+      allow write: if false // Strictly via Server SDK
+    }
+
     // Bookmarks: Private to user OR Admin
     match /bookmarks/{bookmarkId} {
       allow read, delete: if signedIn() && (isAdmin() || resource.data.userId == request.auth.uid)

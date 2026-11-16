@@ -52,7 +52,7 @@ export default function GlobalNav() {
     }, [pathname]);
 
     // Don't show nav on login or onboarding
-    if (pathname === '/login' || pathname === '/login2' || pathname === '/login3' || pathname === '/onboarding') return null;
+    if (pathname === '/login' || pathname === '/onboarding') return null;
 
     const navClasses = isAdminPage 
         ? "fixed top-0 left-0 w-full z-[100] bg-[#881337] text-white border-b border-rose-900 shadow-lg"

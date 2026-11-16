@@ -106,7 +106,7 @@ export default function LoginPage() {
                 localStorage.setItem('cached_live_count', totalSnap.data().count.toString());
 
             } catch (e) {
-                console.error("login3 data fetch error", e);
+                console.error("login data fetch error", e);
                 
                 const cachedCount = localStorage.getItem('cached_live_count');
                 if (cachedCount) {

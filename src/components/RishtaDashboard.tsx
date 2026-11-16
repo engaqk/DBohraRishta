@@ -778,6 +778,14 @@ export default function RishtaDashboard() {
 
     const computeMatchScore = (me: any, them: any) => {
         if (!me || !them) return 50;
+
+        const myGender = (me.gender || '').toLowerCase().trim();
+        const theirGender = (them.gender || '').toLowerCase().trim();
+        // Bohra Rishta Matching: Same-gender profiles have zero compatibility
+        if (myGender && theirGender && myGender === theirGender) {
+            return 0;
+        }
+
         let score = 70;
 
         const calculateAge = (dobString: string) => {
@@ -852,6 +860,11 @@ export default function RishtaDashboard() {
     const dailyPicks = useMemo(() => {
         if (!user || discoveryProfiles.length === 0 || !myProfile) return [];
         
+        const myGender = (myProfile.gender || '').toLowerCase().trim();
+        const isAdminNonImpersonating = myProfile.role === 'admin' && !isImpersonating;
+        const targetGender = myGender === 'male' ? 'female' : (myGender === 'female' ? 'male' : (isAdminNonImpersonating ? 'all' : null));
+        if (!targetGender) return [];
+
         // Stable random seed based on uid + date
         const today = new Date().toISOString().split('T')[0];
         const seedStr = user.uid + today;
@@ -863,9 +876,15 @@ export default function RishtaDashboard() {
             return seed / 233280;
         };
 
-        // Filter for "High Quality" matches (Respecting Age Expectations)
+        // Filter for "High Quality" matches (Strict Opposite Gender & Age Expectations)
         const pool = [...discoveryProfiles].filter(p => {
             if (p.id === user.uid) return false;
+            const candGender = (p.gender || '').toLowerCase().trim();
+            if (targetGender !== 'all') {
+                if (candGender !== targetGender) return false;
+            } else if (myGender) {
+                if (candGender === myGender) return false;
+            }
             const score = computeMatchScore(myProfile, p);
             return score >= 60; // Strictly filter out unsuitable curated matches (e.g., 44yo for 23yo)
         });
@@ -882,7 +901,7 @@ export default function RishtaDashboard() {
             if (picked) picks.push(picked);
         }
         return picks;
-    }, [user, discoveryProfiles, myProfile]);
+    }, [user, discoveryProfiles, myProfile, isImpersonating]);
 
     // Compress the selfie on selection (same pattern as libasImageUrl)
     const handleSelfieFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1710,6 +1729,7 @@ export default function RishtaDashboard() {
         };
 
         let unsubDiscovery: (() => void) | null = null;
+        let currentSubscribedGender: string | null = null;
 
         const unsubMe = onSnapshot(doc(db, "users", user.uid), (meRef) => {
             const profileData = meRef.data() || {};
@@ -1742,16 +1762,53 @@ export default function RishtaDashboard() {
                 return;
             }
 
-            // Once my profile is loaded, subscribe to discovery profiles
-            if (!unsubDiscovery) {
-                const oppositeGender = profileData.gender === 'male' ? 'female' : (profileData.gender === 'female' ? 'male' : 'all');
-                const q = query(collection(db, "users"), where("isItsVerified", "==", true), limit(100));
+            // --- 🔒 STRICT GENDER SEGREGATION LOGIC ---
+            // A Male candidate MUST ONLY see Female candidate profiles.
+            // A Female candidate MUST ONLY see Male candidate profiles.
+            const rawGender = (profileData.gender || '').toLowerCase().trim();
+            const isAdminNonImpersonating = profileData.role === 'admin' && !isImpersonating;
 
-                unsubDiscovery = onSnapshot(q, (snap) => {
+            let targetGender: 'male' | 'female' | 'all' | null = null;
+            if (rawGender === 'male') {
+                targetGender = 'female';
+            } else if (rawGender === 'female') {
+                targetGender = 'male';
+            } else if (isAdminNonImpersonating) {
+                targetGender = 'all';
+            }
+
+            if (!targetGender) {
+                console.warn("[Discovery] Candidate gender not yet set. Waiting for profile to specify gender.");
+                setDataLoading(false);
+                return;
+            }
+
+            // Re-subscribe if opposite gender target has changed or not yet initialized
+            if (currentSubscribedGender !== targetGender) {
+                if (unsubDiscovery) {
+                    unsubDiscovery();
+                    unsubDiscovery = null;
+                }
+                currentSubscribedGender = targetGender;
+
+                // Server-side Firestore query strictly scoped to target opposite gender
+                const discoveryQuery = targetGender === 'all'
+                    ? query(collection(db, "users"), where("isItsVerified", "==", true), limit(100))
+                    : query(collection(db, "users"), where("gender", "==", targetGender), where("isItsVerified", "==", true), limit(100));
+
+                unsubDiscovery = onSnapshot(discoveryQuery, (snap) => {
                     let profiles: UserProfile[] = [];
                     snap.forEach(d => {
                         const data = d.data();
-                        if (d.id !== user.uid && (oppositeGender === 'all' || data.gender === oppositeGender)) {
+                        const candGender = (data.gender || '').toLowerCase().trim();
+                        const isDeactivated = data.status === 'deactivated' || data.status === 'archived' || data.status === 'deleted';
+
+                        // Multi-tier opposite-gender verification
+                        const matchesGender = targetGender === 'all'
+                            ? (rawGender ? candGender !== rawGender : true)
+                            : candGender === targetGender;
+
+                        if (d.id !== user.uid && !isDeactivated && matchesGender) {
                             profiles.push({ id: d.id, ...data } as UserProfile);
                         }
                     });
@@ -1789,12 +1846,11 @@ export default function RishtaDashboard() {
                             profession: p.profession,
                             lastActive: p.lastActive
                         }));
-                        localStorage.setItem('cached_discovery_profiles', JSON.stringify(trimmed));
+                        localStorage.setItem(`cached_discovery_${user.uid}_${targetGender}`, JSON.stringify(trimmed));
+                        // Clean up legacy unpartitioned key
+                        localStorage.removeItem('cached_discovery_profiles');
                     } catch (storageErr) {
                         console.warn("Storage quota exceeded or storage unavailable:", storageErr);
-                        try {
-                            localStorage.removeItem('cached_discovery_profiles');
-                        } catch (_) {}
                     }
                     setDiscoveryError(null);
                     setIsQuotaExceeded(false);
@@ -1806,9 +1862,16 @@ export default function RishtaDashboard() {
                         setIsQuotaExceeded(true);
                     }
                     try {
-                        const cached = localStorage.getItem('cached_discovery_profiles');
+                        const cached = localStorage.getItem(`cached_discovery_${user.uid}_${targetGender}`);
                         if (cached) {
-                            setDiscoveryProfiles(JSON.parse(cached));
+                            const parsed = JSON.parse(cached);
+                            const validProfiles = Array.isArray(parsed)
+                                ? parsed.filter((p: any) => {
+                                    const cg = (p.gender || '').toLowerCase().trim();
+                                    return targetGender === 'all' ? (rawGender ? cg !== rawGender : true) : cg === targetGender;
+                                })
+                                : [];
+                            setDiscoveryProfiles(validProfiles);
                             setDiscoveryError("Live updates paused due to high traffic quota. Showing previously saved candidates.");
                         } else {
                             setDiscoveryError("Traffic quota reached. Please refresh page in a moment to resume.");
@@ -2255,7 +2318,23 @@ export default function RishtaDashboard() {
                     }
                 });
 
-                const availableProfiles = discoveryProfiles.filter(p => !hiddenProfileIds.has(p.id));
+                const myGender = (myProfile?.gender || '').toLowerCase().trim();
+                const isAdminNonImpersonating = myProfile?.role === 'admin' && !isImpersonating;
+                const targetGender = myGender === 'male' ? 'female' : (myGender === 'female' ? 'male' : (isAdminNonImpersonating ? 'all' : null));
+
+                const availableProfiles = discoveryProfiles.filter(p => {
+                    if (p.id === user?.uid) return false;
+                    if (hiddenProfileIds.has(p.id)) return false;
+                    const candGender = (p.gender || '').toLowerCase().trim();
+                    // STRICT OPPOSITE-GENDER FILTER:
+                    // Male candidates see ONLY Female profiles. Female candidates see ONLY Male profiles.
+                    if (targetGender && targetGender !== 'all') {
+                        if (candGender !== targetGender) return false;
+                    } else if (myGender) {
+                        if (candGender === myGender) return false;
+                    }
+                    return true;
+                });
                 const filteredProfiles = availableProfiles.filter(p => {
                     const matchesSearch = !searchQuery ||
                         p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -2419,7 +2498,14 @@ export default function RishtaDashboard() {
                             )}
 
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-                                <h2 className="text-2xl font-bold font-serif">Community Discovery</h2>
+                                <div>
+                                    <h2 className="text-2xl font-bold font-serif">Community Discovery</h2>
+                                    {targetGender && targetGender !== 'all' && (
+                                        <p className="text-xs text-gray-500 mt-0.5 font-medium">
+                                            Showing verified <span className="text-[#881337] font-bold capitalize">{targetGender}</span> candidates for you
+                                        </p>
+                                    )}
+                                </div>
                                 <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1">
                                     <button
                                         onClick={() => setShowOnlyBookmarked(!showOnlyBookmarked)}

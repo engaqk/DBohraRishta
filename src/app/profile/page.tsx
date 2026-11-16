@@ -76,8 +76,21 @@ function ProfileContent() {
                         let profileData: any = null;
                         const profileDoc = await getDoc(doc(db, 'users', id));
                         if (profileDoc.exists()) profileData = profileDoc.data();
-                    if (!profileData) { toast.error('Profile not found'); router.push('/'); return; }
-                    setProfile(profileData);
+                        if (!profileData) { toast.error('Profile not found'); router.push('/'); return; }
+
+                        // Check gender compatibility (same-gender viewing prevention)
+                        const isImpersonatingSession = typeof window !== 'undefined' ? sessionStorage.getItem('impersonate_user_id') : null;
+                        if (user && meData && user.uid !== id && meData.role !== 'admin' && !isImpersonatingSession) {
+                            const myGender = (meData.gender || '').toLowerCase().trim();
+                            const theirGender = (profileData.gender || '').toLowerCase().trim();
+                            if (myGender && theirGender && myGender === theirGender) {
+                                toast.error('Same-gender candidate profiles cannot be viewed.');
+                                router.push('/');
+                                return;
+                            }
+                        }
+
+                        setProfile(profileData);
 
                     if (user) {
                         // Check request status

@@ -1,6 +1,13 @@
 export const computeMatchScore = (me: any, them: any) => {
     if (!me || !them) return 50;
 
+    const myGender = (me.gender || '').toLowerCase().trim();
+    const theirGender = (them.gender || '').toLowerCase().trim();
+    // Same-gender candidates have 0 match compatibility in Bohra matrimonial matching
+    if (myGender && theirGender && myGender === theirGender) {
+        return 0;
+    }
+
     let score = 50; // Base community match score
 
     // 1. Location Matching

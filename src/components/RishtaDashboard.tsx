@@ -2471,31 +2471,7 @@ export default function RishtaDashboard() {
                                 </div>
                             )}
 
-                            {/* 🌟 Open Chat Window Announcement Card in Discovery 🌟 */}
-                            {isOpenChatActive && (
-                                <div className="mb-5 bg-gradient-to-r from-rose-50/90 via-white to-amber-50/90 border border-[#D4AF37]/50 rounded-3xl p-4 sm:p-5 shadow-sm text-left relative overflow-hidden transition-all animate-in fade-in">
-                                    <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
-                                        <h3 className="text-lg sm:text-xl font-bold font-serif text-gray-900 tracking-tight">
-                                            Open Chat Window
-                                        </h3>
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
-                                            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-                                            Live & Active
-                                        </span>
-                                        <span className="inline-flex items-center gap-1 bg-amber-100/80 text-amber-900 border border-amber-300/60 px-2.5 py-0.5 rounded-full text-[10px] font-bold">
-                                            <Clock className="w-3 h-3 text-amber-700" /> {openChatTimeLeft}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs sm:text-sm text-gray-700 font-medium leading-relaxed">
-                                        All registered and verified candidates can currently chat directly without requiring mutual interest approvals. Direct chat window is open now, so take maximum benefit to connect directly with candidates of your choice!
-                                    </p>
-                                    {openChatData.customNote && (
-                                        <div className="mt-2 inline-block text-[11px] bg-white border border-rose-200 text-[#881337] px-3 py-1 rounded-xl font-semibold shadow-2xs">
-                                            📢 {openChatData.customNote}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+
 
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
                                 <div>
@@ -3193,24 +3169,30 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
             </div>
 
             <main className="max-w-7xl mx-auto">
-                {/* 🌟 Compact Open Chat Announcement Banner 🌟 */}
+                {/* 🌟 Unified Single Open Chat Announcement Panel 🌟 */}
                 {isOpenChatActive && !isChatBannerDismissed && (
-                    <div className="mb-4 bg-gradient-to-r from-[#881337] via-[#9F1239] to-[#701a75] text-white px-4 py-3 rounded-2xl shadow-lg border border-[#D4AF37]/50 relative overflow-hidden transition-all text-left animate-in fade-in">
+                    <div className="mb-4 bg-gradient-to-r from-[#881337] via-[#9F1239] to-[#70102D] text-white px-5 py-3.5 rounded-2xl shadow-lg border border-[#D4AF37]/50 relative overflow-hidden transition-all text-left animate-in fade-in">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
-                            <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
-                                <span className="bg-[#D4AF37] text-rose-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0 shadow-sm">
-                                    <Sparkles className="w-3 h-3 fill-rose-950" /> Open Chat Active
-                                </span>
-                                <span className="bg-black/30 border border-white/20 text-yellow-200 px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 shrink-0">
-                                    <Clock className="w-3 h-3 text-yellow-300" /> {openChatTimeLeft}
-                                </span>
-                                <p className="text-xs text-pink-100 font-medium leading-tight">
-                                    All registered and verified candidates can currently chat directly without requiring mutual interest approvals.
+                            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="bg-[#D4AF37] text-rose-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0 shadow-sm">
+                                        <Sparkles className="w-3 h-3 fill-rose-950" /> Open Chat Window
+                                    </span>
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                        Live & Active
+                                    </span>
+                                    <span className="bg-black/30 border border-white/20 text-yellow-200 px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 shrink-0">
+                                        <Clock className="w-3 h-3 text-yellow-300" /> {openChatTimeLeft}
+                                    </span>
+                                </div>
+                                <p className="text-xs sm:text-[13px] text-pink-100 font-medium leading-relaxed">
+                                    All registered and verified candidates can currently chat directly without requiring mutual interest approvals. Direct chat window is open now, so take maximum benefit to connect directly with candidates of your choice!
                                 </p>
                                 {openChatData.customNote && (
-                                    <span className="text-[11px] bg-white/10 px-2 py-0.5 rounded-lg border border-white/15 text-yellow-200">
+                                    <div className="inline-block text-[11px] bg-white/10 border border-white/20 text-yellow-200 px-3 py-1 rounded-xl font-semibold shadow-2xs w-fit">
                                         📢 {openChatData.customNote}
-                                    </span>
+                                    </div>
                                 )}
                             </div>
                             <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
@@ -3220,7 +3202,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                             setActiveChat(null);
                                             setActiveTab('discovery');
                                         }}
-                                        className="bg-white hover:bg-yellow-50 text-[#881337] font-black text-xs px-3.5 py-1.5 rounded-xl shadow transition-all active:scale-95 flex items-center gap-1.5"
+                                        className="bg-white hover:bg-yellow-50 text-[#881337] font-black text-xs px-3.5 py-2 rounded-xl shadow transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
                                     >
                                         <Search className="w-3.5 h-3.5 text-[#881337]" />
                                         <span>Browse Candidates</span>
@@ -3247,7 +3229,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 Open Chat Active
                             </span>
                             <span className="text-gray-700 font-medium truncate text-[11px]">
-                                All registered and verified candidates can currently chat directly without requiring mutual interest approvals.
+                                Direct chat window is open now — connect directly with candidates without mutual interest approvals.
                             </span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0 ml-2">
@@ -3257,7 +3239,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                         setActiveChat(null);
                                         setActiveTab('discovery');
                                     }}
-                                    className="text-[11px] font-black text-[#881337] bg-white hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-lg shadow-2xs transition-all active:scale-95"
+                                    className="text-[11px] font-black text-[#881337] bg-white hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-lg shadow-2xs transition-all active:scale-95 cursor-pointer"
                                 >
                                     Browse Candidates
                                 </button>

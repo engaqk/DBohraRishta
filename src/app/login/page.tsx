@@ -214,36 +214,62 @@ export default function LoginPage() {
                     </div>
                 )}
 
-                {/* ── OUTCOME-FIRST HERO ── */}
+                {/* ── OUTCOME-FIRST HERO & TRUSTED PLATFORM ── */}
                 <div className="bg-white px-6 pt-5 pb-0 text-center relative z-10 fade-up fade-up-2">
-                    <p className="text-[12.5px] text-gray-500 leading-relaxed">
-                        {t("Join the")} <span className="bg-[#D4AF37] text-white px-2 py-0.5 rounded-md font-black">{t("most trusted platform")}</span> {t("of 100% ITS-verified")} <span className="bg-[#D4AF37] text-white px-1.5 rounded font-black whitespace-nowrap">{t("Dawoodi Bohra")}</span> {t("candidates — where privacy matters most.")}
-                    </p>
-                    <p className="text-[11px] font-extrabold text-[#881337] mt-3 mb-0 flex items-center justify-center gap-1">
-                        <span>🛡️</span> {t("Utmost privacy. Complete control. Family trusted.")}
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200/80 text-[#881337] text-[11px] font-bold tracking-wide shadow-xs mb-3">
+                        <span>🛡️</span>
+                        <span>{t("Utmost privacy. Complete control. Family trusted.")}</span>
+                    </div>
+
+                    <p className="text-[13px] sm:text-[13.5px] text-gray-600 leading-relaxed max-w-md mx-auto">
+                        {t("Join the")}{" "}
+                        <span className="bg-gradient-to-r from-[#D4AF37] to-[#B89628] text-white px-2 py-0.5 rounded-md font-black shadow-xs whitespace-nowrap">
+                            {t("most trusted platform")}
+                        </span>{" "}
+                        {t("of 100% ITS Card Verified")}{" "}
+                        <span className="bg-gradient-to-r from-[#881337] to-[#9F1239] text-white px-2 py-0.5 rounded-md font-black shadow-xs whitespace-nowrap">
+                            {t("Dawoodi Bohra")}
+                        </span>{" "}
+                        {t("candidates — where privacy matters most.")}
                     </p>
                 </div>
 
                 {/* ── LIVE PROFILE SCROLLER ── */}
                 <div id="scroller-section" className="bg-white px-6 pt-0 pb-4 fade-up fade-up-3">
-                    <div className="text-center mb-4">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] mb-1">The Most Trusted Platform</p>
-                        <h3 className="text-[15px] font-black text-[#881337] mb-1">Live Glimpse of the Platform</h3>
-                        <p className="text-[11.5px] text-gray-500 leading-relaxed">
-                            These are <strong className="text-[#D4AF37]">real, verified registered members</strong>.
+                    <div className="text-center mt-5 mb-4 pt-4 border-t border-rose-100/60">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50/90 border border-amber-200/60 text-[9.5px] font-black uppercase tracking-widest text-[#B89628] mb-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                            {t("The Most Trusted Platform")}
+                        </div>
+                        <h3 className="text-[16px] sm:text-[17px] font-black text-[#881337] tracking-tight mb-1">
+                            {t("Live Glimpse of the Platform")}
+                        </h3>
+                        <p className="text-[12px] text-gray-500 font-medium">
+                            {t("These are")}{" "}
+                            <strong className="text-[#881337] font-bold">
+                                {t("real, verified registered members")}
+                            </strong>.
                         </p>
                     </div>
 
                     {/* Live member stats */}
-                    <div className="flex justify-center gap-8 mb-5">
-                        <div className="text-center">
-                            <p className="text-[24px] font-black text-transparent bg-clip-text bg-gradient-to-r from-[#881337] to-[#D4AF37]">{liveVerifiedCount ? `${liveVerifiedCount}+` : '...'}</p>
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Verified Members</p>
+                    <div className="grid grid-cols-2 gap-3 mb-5 max-w-[340px] mx-auto">
+                        <div className="bg-white/95 backdrop-blur-xs border border-amber-200/60 rounded-xl p-3 shadow-xs text-center flex flex-col justify-center items-center hover:shadow-md transition-all">
+                            <p className="text-[26px] font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#881337] to-[#D4AF37] leading-none mb-1">
+                                {liveVerifiedCount ? `${liveVerifiedCount}+` : '85+'}
+                            </p>
+                            <p className="text-[10px] font-extrabold text-gray-600 uppercase tracking-wider flex items-center justify-center gap-1">
+                                <span className="text-emerald-600 font-bold">✓</span> {t("Verified Members")}
+                            </p>
                         </div>
-                        <div className="w-px bg-gray-100"></div>
-                        <div className="text-center">
-                            <p className="text-[24px] font-black text-transparent bg-clip-text bg-gradient-to-r from-[#881337] to-[#D4AF37]">100%</p>
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">ITS Verified</p>
+
+                        <div className="bg-white/95 backdrop-blur-xs border border-amber-200/60 rounded-xl p-3 shadow-xs text-center flex flex-col justify-center items-center hover:shadow-md transition-all">
+                            <p className="text-[26px] font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-[#B89628] leading-none mb-1">
+                                100%
+                            </p>
+                            <p className="text-[10px] font-extrabold text-gray-600 uppercase tracking-wider flex items-center justify-center gap-1">
+                                <span className="text-[#881337]">🪪</span> {t("ITS Card Verified")}
+                            </p>
                         </div>
                     </div>
 

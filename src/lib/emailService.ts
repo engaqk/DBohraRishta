@@ -123,6 +123,25 @@ export async function notifyAdminNewRegistration(opts: {
         subject: sub,
         htmlBody: templates.getAdminNotifyTemplate(opts),
     });
+
+    // 🔔 Dispatch push notification to admin
+    try {
+        await fetch('/api/notify/push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                notifyAdmin: true,
+                title: opts.isResubmission ? `🔄 Profile Resubmitted: ${opts.candidateName}` : `🆕 New Candidate: ${opts.candidateName}`,
+                body: `${opts.candidateName} (${opts.gender || 'Candidate'}, ${opts.city || 'Location'}) submitted for verification.`,
+                url: '/admin/approvals',
+                data: {
+                    type: 'candidate_registration'
+                }
+            })
+        });
+    } catch (pushErr) {
+        // Non-critical background push failure
+    }
 }
 
 export async function notifyAdminSelfiePending(opts: {

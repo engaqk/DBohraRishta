@@ -109,10 +109,21 @@ export default function AdminVerificationPage() {
         });
 
         const sorted = [...filtered].sort((a, b) => {
+            // 🌟 SMART ADMIN PRIORITY BOOST 🌟
+            // Priority 1: Help message sent by user in help section
+            const unreadA = (msgCounts[a.id]?.userMsgs || a.unreadMsgCountForAdmin || 0) > 0 ? 1 : 0;
+            const unreadB = (msgCounts[b.id]?.userMsgs || b.unreadMsgCountForAdmin || 0) > 0 ? 1 : 0;
+            if (unreadA !== unreadB) return unreadB - unreadA;
+
+            // Priority 2: User requested verification (re-verification, selfie, or video handshake)
+            const isPendingVerifA = (a.status === 'pending_verification' || a.selfieStatus === 'pending' || a.videoStatus === 'pending') ? 1 : 0;
+            const isPendingVerifB = (b.status === 'pending_verification' || b.selfieStatus === 'pending' || b.videoStatus === 'pending') ? 1 : 0;
+            if (isPendingVerifA !== isPendingVerifB) return isPendingVerifB - isPendingVerifA;
+
+            // Priority 3: Fallback to selected column sort (default: newest createdAt first)
             let valA = a[sortConfig.key];
             let valB = b[sortConfig.key];
 
-            // Handle date strings or Firestore timestamps
             if (sortConfig.key === 'createdAt') {
                 valA = getTimestamp(a.createdAt);
                 valB = getTimestamp(b.createdAt);
@@ -127,7 +138,7 @@ export default function AdminVerificationPage() {
         });
 
         return sorted;
-    }, [allUsers, searchQuery, sortConfig, filterGender, activeMainViewTab]);
+    }, [allUsers, searchQuery, sortConfig, filterGender, activeMainViewTab, msgCounts]);
 
     // Reset pagination when filter/search changes
     useEffect(() => {
@@ -494,11 +505,15 @@ export default function AdminVerificationPage() {
                 headers: { 'Authorization': token || '' }
             });
             const data = await res.json();
-            if (data && (data.videoIntroUrl || data.voiceIntroUrl)) {
+            if (data) {
                 setSelectedUser(prev => prev && prev.id === u.id ? { 
                     ...prev, 
-                    videoIntroUrl: data.videoIntroUrl, 
-                    voiceIntroUrl: data.voiceIntroUrl 
+                    videoIntroUrl: data.videoIntroUrl || prev.videoIntroUrl, 
+                    voiceIntroUrl: data.voiceIntroUrl || prev.voiceIntroUrl,
+                    itsImageUrl: data.itsImageUrl || prev.itsImageUrl,
+                    libasImageUrl: data.libasImageUrl || prev.libasImageUrl,
+                    selfieImageUrl: data.selfieImageUrl || prev.selfieImageUrl,
+                    selfieUrl: data.selfieUrl || prev.selfieUrl
                 } : prev);
             }
         } catch (e) {
@@ -1221,7 +1236,29 @@ export default function AdminVerificationPage() {
                                                         )}
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <p className="font-bold text-sm text-[#881337] truncate max-w-[120px]">{u.name}</p>
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <p className="font-bold text-sm text-[#881337] truncate max-w-[140px]">{u.name}</p>
+                                                            {(msgCounts[u.id]?.userMsgs || u.unreadMsgCountForAdmin || 0) > 0 && (
+                                                                <span className="bg-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1 shadow-xs" title="New Help Message from candidate">
+                                                                    💬 {msgCounts[u.id]?.userMsgs || u.unreadMsgCountForAdmin} New
+                                                                </span>
+                                                            )}
+                                                            {u.status === 'pending_verification' && (
+                                                                <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase" title="Profile verification requested">
+                                                                    Pending Verif
+                                                                </span>
+                                                            )}
+                                                            {u.selfieStatus === 'pending' && (
+                                                                <span className="bg-blue-100 text-blue-800 border border-blue-300 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase" title="Live selfie verification pending">
+                                                                    Selfie
+                                                                </span>
+                                                            )}
+                                                            {u.videoStatus === 'pending' && (
+                                                                <span className="bg-purple-100 text-purple-800 border border-purple-300 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase" title="Video handshake verification pending">
+                                                                    Video
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <p className="text-[10px] text-gray-400 font-bold uppercase">{u.gender || 'Unknown'}</p>
                                                     </div>
                                                 </div>

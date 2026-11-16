@@ -27,6 +27,10 @@ export async function GET(request: Request) {
         return NextResponse.json({
             videoIntroUrl: data?.videoIntroUrl || null,
             voiceIntroUrl: data?.voiceIntroUrl || null,
+            itsImageUrl: data?.itsImageUrl || null,
+            libasImageUrl: data?.libasImageUrl || null,
+            selfieImageUrl: data?.selfieImageUrl || data?.selfieUrl || null,
+            selfieUrl: data?.selfieUrl || data?.selfieImageUrl || null,
         });
 
     } catch (error: any) {

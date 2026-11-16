@@ -424,6 +424,21 @@ export default function RishtaDashboard() {
                     videoStatus: 'pending'
                 });
                 toast.success("Video Handshake submitted for verification! 🎥");
+                // 🔔 Dispatch push notification to admin only
+                fetch('/api/notify/push', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        notifyAdmin: true,
+                        title: `🎥 Video Handshake Verification`,
+                        body: `${myProfile?.name || 'A candidate'} submitted a video handshake for verification.`,
+                        url: '/admin/approvals',
+                        data: {
+                            userId: user.uid,
+                            type: 'video_verification'
+                        }
+                    })
+                }).catch(() => {});
                 setVideoBlob(null);
                 setVideoPreviewUrl(null);
                 refreshUser();
@@ -943,6 +958,21 @@ export default function RishtaDashboard() {
                 isPhotoVerified: false
             });
             toast.success('Selfie submitted for verification!');
+            // 🔔 Dispatch push notification to admin only
+            fetch('/api/notify/push', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    notifyAdmin: true,
+                    title: `📸 Selfie Verification Request`,
+                    body: `${myProfile?.name || 'A candidate'} submitted a selfie for verification.`,
+                    url: '/admin/approvals',
+                    data: {
+                        userId: user.uid,
+                        type: 'selfie_verification'
+                    }
+                })
+            }).catch(() => {});
             setShowSelfieModal(false);
             setSelfieImageUrl(null);
         } catch (err: any) {
@@ -1264,10 +1294,11 @@ export default function RishtaDashboard() {
 
     const handleSendMessageToAdmin = async () => {
         if (!userMsgInput.trim() || !user) return;
+        const msgText = userMsgInput.trim();
         try {
             const msgRef = collection(db, 'admin_messages', user.uid, 'thread');
             await addDoc(msgRef, {
-                text: userMsgInput.trim(),
+                text: msgText,
                 from: 'user',
                 createdAt: serverTimestamp(),
             });
@@ -1278,6 +1309,22 @@ export default function RishtaDashboard() {
                 totalMsgCount: increment(1),
                 lastMsgFromUserAt: serverTimestamp()
             });
+
+            // 🔔 Dispatch push notification to admin only
+            fetch('/api/notify/push', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    notifyAdmin: true,
+                    title: `💬 Help Message: ${myProfile?.name || 'Candidate'}`,
+                    body: msgText.length > 80 ? msgText.substring(0, 80) + '...' : msgText,
+                    url: '/admin/approvals',
+                    data: {
+                        userId: user.uid,
+                        type: 'help_message'
+                    }
+                })
+            }).catch(() => {});
 
             setUserMsgInput('');
         } catch (e: any) {
@@ -1516,6 +1563,21 @@ export default function RishtaDashboard() {
                     isItsVerified: false,
                 });
                 toast.success('ITS photo updated! Submitted for re-verification.');
+                // 🔔 Dispatch push notification to admin only
+                fetch('/api/notify/push', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        notifyAdmin: true,
+                        title: `🪪 ITS Card Re-Verification Request`,
+                        body: `${myProfile?.name || 'A candidate'} uploaded a new ITS card photo for verification.`,
+                        url: '/admin/approvals',
+                        data: {
+                            userId: user.uid,
+                            type: 'its_verification'
+                        }
+                    })
+                }).catch(() => {});
             };
         } catch (e: any) {
             toast.error('Failed to upload: ' + e.message);

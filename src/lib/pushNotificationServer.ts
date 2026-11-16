@@ -196,15 +196,30 @@ export async function sendPushNotificationToUser(
 export async function notifyAdmins(payload: PushNotificationPayload) {
     if (!adminDb) return { success: false };
     try {
-        const adminSnaps = await adminDb.collection('users').where('role', '==', 'admin').get();
-        const adminIds: string[] = [];
-        adminSnaps.forEach(doc => adminIds.push(doc.id));
+        const adminIdsSet = new Set<string>();
 
-        if (adminIds.length === 0) {
-            adminIds.push('admin-panel-service-account');
+        // Always include the dedicated admin service account used by logged-in admin sessions
+        adminIdsSet.add('admin-panel-service-account');
+
+        // Include any user accounts with role == 'admin' or isAdmin == true
+        try {
+            const [roleAdmins, isAdmins] = await Promise.all([
+                adminDb.collection('users').where('role', '==', 'admin').get(),
+                adminDb.collection('users').where('isAdmin', '==', true).get()
+            ]);
+            roleAdmins.forEach(doc => adminIdsSet.add(doc.id));
+            isAdmins.forEach(doc => adminIdsSet.add(doc.id));
+        } catch (err) {
+            console.warn('[PushServer] Non-fatal error querying admin roles:', err);
         }
 
-        return await sendPushNotificationToUser(adminIds, payload);
+        const adminIds = Array.from(adminIdsSet);
+        console.log('[PushServer] Notifying admins:', adminIds, payload.title);
+
+        return await sendPushNotificationToUser(adminIds, {
+            ...payload,
+            url: payload.url || '/admin/approvals'
+        });
     } catch (err) {
         console.error('[PushServer] Error notifying admins:', err);
         return { success: false };

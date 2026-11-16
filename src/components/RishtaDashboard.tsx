@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
-import { Sparkles, Mic, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart, Video } from 'lucide-react';
+import { Sparkles, Mic, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart, Video, Compass } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment, setDoc } from 'firebase/firestore';
@@ -2514,51 +2514,88 @@ export default function RishtaDashboard() {
                                         <Bookmark className="w-3.5 h-3.5" fill={showOnlyBookmarked ? 'currentColor' : 'none'} />
                                         {showOnlyBookmarked ? 'Saved' : 'Saved'}
                                     </button>
-                                    <input
-                                        id="discovery-search-input"
-                                        type="text"
-                                        placeholder="Name, Jamaat, Education..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="px-4 py-2 rounded-xl text-sm border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37] w-full md:w-48"
-                                    />
+                                    <div className="relative w-full md:w-56">
+                                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        <input
+                                            id="discovery-search-input"
+                                            type="text"
+                                            placeholder="Search name, city, jamaat..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="w-full pl-9 pr-8 py-2 rounded-xl text-xs bg-white border border-gray-200 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#881337] focus:border-transparent transition-all"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setSearchQuery("")}
+                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 cursor-pointer"
+                                                title="Clear search"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* --- SMART FILTERS --- */}
-                            <div className="grid grid-cols-3 gap-2 bg-white/50 backdrop-blur-sm p-2 rounded-2xl border border-[#D4AF37]/20 shadow-sm">
-                                <select
-                                    value={filters.location}
-                                    onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))}
-                                    className="bg-white border-none rounded-xl text-[10px] font-bold text-gray-600 focus:ring-1 focus:ring-[#D4AF37] p-2 outline-none"
-                                >
-                                    <option value="">Any Location</option>
-                                    <option value="Mumbai">Mumbai</option>
-                                    <option value="Karachi">Karachi</option>
-                                    <option value="Dubai">Dubai</option>
-                                    <option value="London">London</option>
-                                    <option value="Colombo">Colombo</option>
-                                </select>
-                                <select
-                                    value={filters.maritalStatus}
-                                    onChange={(e) => setFilters(f => ({ ...f, maritalStatus: e.target.value }))}
-                                    className="bg-white border-none rounded-xl text-[10px] font-bold text-gray-600 focus:ring-1 focus:ring-[#D4AF37] p-2 outline-none"
-                                >
-                                    <option value="">Marital Status</option>
-                                    <option value="Single">Always Single</option>
-                                    <option value="Divorced">Divorced</option>
-                                    <option value="Widowed">Widowed</option>
-                                </select>
-                                <select
-                                    value={filters.education}
-                                    onChange={(e) => setFilters(f => ({ ...f, education: e.target.value }))}
-                                    className="bg-white border-none rounded-xl text-[10px] font-bold text-gray-600 focus:ring-1 focus:ring-[#D4AF37] p-2 outline-none"
-                                >
-                                    <option value="">Education Level</option>
-                                    <option value="Masters">Post-Graduate</option>
-                                    <option value="Graduate">Graduate</option>
-                                    <option value="Hafiz">Hafiz-ul-Quran</option>
-                                </select>
+                            {/* --- SMART FILTERS BAR --- */}
+                            <div className="flex flex-wrap items-center gap-2 bg-white/80 backdrop-blur-md p-2.5 rounded-2xl border border-rose-100 shadow-xs">
+                                <div className="flex-1 min-w-[130px]">
+                                    <select
+                                        value={filters.location}
+                                        onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))}
+                                        className={`w-full rounded-xl text-xs font-bold p-2.5 px-3 outline-none transition-all border cursor-pointer ${
+                                            filters.location ? 'bg-rose-50/80 border-rose-200 text-[#881337]' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                                        }`}
+                                    >
+                                        <option value="">📍 All Locations</option>
+                                        <option value="Mumbai">Mumbai</option>
+                                        <option value="Karachi">Karachi</option>
+                                        <option value="Dubai">Dubai & UAE</option>
+                                        <option value="London">London & UK</option>
+                                        <option value="Colombo">Colombo</option>
+                                        <option value="Surat">Surat</option>
+                                        <option value="Pune">Pune</option>
+                                        <option value="Indore">Indore</option>
+                                    </select>
+                                </div>
+                                <div className="flex-1 min-w-[130px]">
+                                    <select
+                                        value={filters.maritalStatus}
+                                        onChange={(e) => setFilters(f => ({ ...f, maritalStatus: e.target.value }))}
+                                        className={`w-full rounded-xl text-xs font-bold p-2.5 px-3 outline-none transition-all border cursor-pointer ${
+                                            filters.maritalStatus ? 'bg-rose-50/80 border-rose-200 text-[#881337]' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                                        }`}
+                                    >
+                                        <option value="">💍 Marital Status</option>
+                                        <option value="Single">Unmarried / Single</option>
+                                        <option value="Divorced">Divorced</option>
+                                        <option value="Widowed">Widowed</option>
+                                    </select>
+                                </div>
+                                <div className="flex-1 min-w-[130px]">
+                                    <select
+                                        value={filters.education}
+                                        onChange={(e) => setFilters(f => ({ ...f, education: e.target.value }))}
+                                        className={`w-full rounded-xl text-xs font-bold p-2.5 px-3 outline-none transition-all border cursor-pointer ${
+                                            filters.education ? 'bg-rose-50/80 border-rose-200 text-[#881337]' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                                        }`}
+                                    >
+                                        <option value="">🎓 Education Level</option>
+                                        <option value="Masters">Post-Graduate / Masters</option>
+                                        <option value="Graduate">Graduate / Degree</option>
+                                        <option value="Hafiz">Hafiz-ul-Quran</option>
+                                    </select>
+                                </div>
+                                {(filters.location || filters.maritalStatus || filters.education) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setFilters({ location: '', maritalStatus: '', education: '' })}
+                                        className="text-xs text-[#881337] hover:underline font-bold px-3 py-2 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all cursor-pointer"
+                                    >
+                                        Clear Filters
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -2790,27 +2827,46 @@ export default function RishtaDashboard() {
                     </button>
                 </div>
             )}
-            <header className="max-w-7xl mx-auto mb-4 hidden md:flex items-center">
+            <header className="max-w-7xl mx-auto mb-6 hidden md:flex items-center">
                 <div className="flex-1">
-                    <nav className="flex bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden divide-x divide-gray-100">
-                        {(['mybiodata', 'discovery', 'requests', 'messages'] as const).map((tab) => (
-                            <button
-                                key={tab}
-                                id={`${tab}-nav-tab`}
-                                onClick={() => setActiveTab(tab)}
-                                className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all relative ${activeTab === tab ? 'bg-rose-50/50 text-[#881337]' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
-                            >
-                                <div className="flex flex-col items-center gap-1">
-                                    {tab === 'mybiodata' ? 'My Biodata'
-                                        : tab === 'messages' ? 'Accepted (Chat Now)'
-                                            : tab === 'discovery' ? 'Search Profile'
-                                                : 'Requests'}
-                                    {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337]" />}
-                                </div>
-                            </button>
-                        ))}
+                    <nav className="flex bg-white/95 backdrop-blur-md rounded-2xl shadow-sm border border-rose-100 p-1.5 gap-2">
+                        {[
+                            { key: 'discovery' as const, label: 'Discover Matches', icon: Compass, badge: null },
+                            { key: 'requests' as const, label: 'Interest Requests', icon: Heart, badge: allRequests.filter(r => r.to === user?.uid && r.status?.includes('pending')).length || null },
+                            { key: 'messages' as const, label: 'Conversations', icon: MessageCircle, badge: allRequests.filter(r => r.status === 'accepted').length || null },
+                            { key: 'mybiodata' as const, label: 'My Biodata', icon: User, badge: null },
+                        ].map((item) => {
+                            const isCurrent = activeTab === item.key;
+                            const IconComponent = item.icon;
+                            return (
+                                <button
+                                    key={item.key}
+                                    id={`${item.key}-nav-tab`}
+                                    onClick={() => {
+                                        setActiveTab(item.key);
+                                        triggerHaptic(HapticPatterns.LIGHT);
+                                    }}
+                                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2.5 relative cursor-pointer ${
+                                        isCurrent
+                                            ? 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white shadow-md shadow-rose-950/15'
+                                            : 'text-gray-500 hover:text-[#881337] hover:bg-rose-50/60'
+                                    }`}
+                                >
+                                    <IconComponent className={`w-4 h-4 ${isCurrent ? 'text-[#D4AF37]' : 'text-gray-400'}`} />
+                                    <span>{item.label}</span>
+                                    {item.badge && (
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                            isCurrent ? 'bg-[#D4AF37] text-[#881337]' : 'bg-rose-100 text-[#881337]'
+                                        }`}>
+                                            {item.badge}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </nav>
                 </div>
+            </header>
                 {/* ── Floating Admin Help Chat Panel ── */}
                 {showAdminHelpChat && (
                     <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 w-80 md:w-[400px] bg-white rounded-3xl shadow-2xl border border-rose-100 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300" style={{ maxHeight: '520px' }}>
@@ -2896,8 +2952,6 @@ export default function RishtaDashboard() {
                         </div>
                     </div>
                 )}
-
-            </header>
 
             {/* ⚠️ Quota Fallback Banner */}
             {discoveryError && (
@@ -3838,30 +3892,65 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
             </main>
 
 
-            {/* Mobile Bottom Nav */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2 pb-safe flex justify-around items-center z-50 shadow-2xl">
-                <button onClick={() => { setActiveTab('mybiodata'); triggerHaptic(HapticPatterns.LIGHT); }} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'mybiodata' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <ShieldCheck className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Biodata</span>
+            {/* Mobile Bottom Nav — Modern Floating Dock */}
+            <nav className="md:hidden fixed bottom-2 left-2 right-2 bg-white/95 backdrop-blur-xl border border-rose-100/90 py-2 px-1 flex justify-around items-center z-50 shadow-[0_10px_35px_rgba(136,19,55,0.18)] rounded-2xl">
+                <button
+                    onClick={() => { setActiveTab('discovery'); triggerHaptic(HapticPatterns.LIGHT); }}
+                    className={`flex flex-col items-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
+                        activeTab === 'discovery' ? 'text-[#881337] bg-rose-50/80 font-black' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                >
+                    <Compass className="w-5 h-5" />
+                    <span className="text-[9px] font-bold mt-0.5 tracking-tight">Matches</span>
                 </button>
-                <button onClick={() => { setActiveTab('discovery'); triggerHaptic(HapticPatterns.LIGHT); }} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'discovery' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <Search className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Search</span>
+                <button
+                    onClick={() => { setActiveTab('requests'); triggerHaptic(HapticPatterns.LIGHT); }}
+                    className={`flex flex-col items-center py-1 px-3 rounded-xl transition-all relative cursor-pointer ${
+                        activeTab === 'requests' ? 'text-[#881337] bg-rose-50/80 font-black' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                >
+                    <div className="relative">
+                        <Heart className="w-5 h-5" />
+                        {allRequests.filter(r => r.to === user?.uid && r.status?.includes('pending')).length > 0 && (
+                            <span className="absolute -top-1 -right-2 bg-[#881337] text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white shadow-xs">
+                                {allRequests.filter(r => r.to === user?.uid && r.status?.includes('pending')).length}
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-[9px] font-bold mt-0.5 tracking-tight">Requests</span>
                 </button>
-                <button onClick={() => { setActiveTab('requests'); triggerHaptic(HapticPatterns.LIGHT); }} className={`flex flex-col items-center gap-0.5 transition-colors ${activeTab === 'requests' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <ShieldCheck className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Requests</span>
+                <button
+                    onClick={() => { setActiveTab('messages'); triggerHaptic(HapticPatterns.LIGHT); }}
+                    className={`flex flex-col items-center py-1 px-3 rounded-xl transition-all relative cursor-pointer ${
+                        activeTab === 'messages' ? 'text-[#881337] bg-rose-50/80 font-black' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                >
+                    <div className="relative">
+                        <MessageCircle className="w-5 h-5" />
+                        {allRequests.filter(r => r.status === 'accepted').length > 0 && (
+                            <span className="absolute -top-0.5 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white shadow-2xs" />
+                        )}
+                    </div>
+                    <span className="text-[9px] font-bold mt-0.5 tracking-tight">Chats</span>
                 </button>
-                <button onClick={() => { setActiveTab('messages'); triggerHaptic(HapticPatterns.LIGHT); }} className={`flex flex-col items-center gap-0.5 transition-colors relative ${activeTab === 'messages' ? 'text-[#881337]' : 'text-gray-400'}`}>
-                    <MessageCircle className="w-5 h-5" /><span className="text-[8px] font-bold uppercase">Accepted (Chat Now)</span>
-                    {allRequests.filter(r => r.status === 'accepted' && r.isIncoming).length > 0 && <span className="absolute -top-0.5 right-3 w-1.5 h-1.5 bg-red-500 rounded-full" />}
+                <button
+                    onClick={() => { setActiveTab('mybiodata'); triggerHaptic(HapticPatterns.LIGHT); }}
+                    className={`flex flex-col items-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
+                        activeTab === 'mybiodata' ? 'text-[#881337] bg-rose-50/80 font-black' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                >
+                    <User className="w-5 h-5" />
+                    <span className="text-[9px] font-bold mt-0.5 tracking-tight">My Biodata</span>
                 </button>
                 <button
                     onClick={() => setShowAdminHelpChat(true)}
-                    className="flex flex-col items-center gap-0.5 transition-colors text-gray-400 hover:text-[#881337]"
+                    className="flex flex-col items-center py-1 px-3 rounded-xl transition-all text-gray-400 hover:text-[#881337] cursor-pointer"
                 >
                     <div className="relative">
-                        <MessageSquare className="w-5 h-5" />
+                        <HelpCircle className="w-5 h-5" />
                         <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white animate-pulse" />
                     </div>
-                    <span className="text-[8px] font-bold uppercase">Help</span>
+                    <span className="text-[9px] font-bold mt-0.5 tracking-tight">Help</span>
                 </button>
             </nav>
 

@@ -428,16 +428,27 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Emojis & Input Form */}
+            {/* Quick Greetings & Emojis */}
             <div className="bg-white border-t border-rose-100 flex flex-col">
-                <div className="flex gap-2 p-2 px-3 overflow-x-auto scrollbar-hide border-b border-gray-50 bg-rose-50/30">
-                    {["❤️", "🤲", "😊", "✨", "MashaAllah", "InshaAllah", "JazakAllah"].map(emoji => (
+                <div className="flex gap-2 p-2.5 px-3 overflow-x-auto scrollbar-hide border-b border-gray-100/80 bg-rose-50/40">
+                    {[
+                        "Salam",
+                        "Mubarak",
+                        "Shukran",
+                        "Insha Allah",
+                        "JazakAllah",
+                        "🤲",
+                        "❤️",
+                        "😊",
+                        "✨"
+                    ].map(phrase => (
                         <button
-                            key={emoji}
-                            onClick={() => setNewMessage(prev => prev + (prev ? " " : "") + emoji)}
-                            className="text-sm bg-white border border-rose-100 px-3 py-1 rounded-full shadow-sm hover:bg-rose-50 text-[#881337] font-medium whitespace-nowrap transition-colors active:scale-95"
+                            key={phrase}
+                            type="button"
+                            onClick={() => setNewMessage(prev => prev ? `${prev} ${phrase}` : phrase)}
+                            className="text-xs bg-white hover:bg-rose-50 border border-rose-200/80 px-3.5 py-1.5 rounded-full shadow-2xs text-[#881337] font-bold whitespace-nowrap transition-all active:scale-95 cursor-pointer flex items-center gap-1"
                         >
-                            {emoji}
+                            {phrase}
                         </button>
                     ))}
                 </div>

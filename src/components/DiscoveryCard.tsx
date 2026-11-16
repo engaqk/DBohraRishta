@@ -625,7 +625,7 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                 <div className="p-4 flex flex-col gap-3 flex-grow">
                     {/* Smart Highlights */}
                     <div className="flex flex-col gap-2">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("Preference :")}</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("Key Highlights")}</p>
                         <div className="flex flex-wrap gap-2">
                             {(bio?.toLowerCase().includes('hafiz') || education?.toLowerCase().includes('hafiz')) && (
                                 <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-100 shadow-sm transition-transform hover:scale-105">
@@ -733,11 +733,14 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                         )
                     }
 
-                    {/* Partner qualities */}
+                    {/* Partner Preferences */}
                     {
                         partnerQualities && (
-                            <div className="text-xs text-gray-500 italic border-l-2 border-[#D4AF37] pl-2.5 leading-relaxed mt-2.5">
-                                <span className="font-bold text-[#881337] not-italic mr-1 text-[11px]">PP =</span>"{partnerQualities}"
+                            <div className="bg-amber-50/50 rounded-xl p-3 border border-amber-200/60 text-xs leading-relaxed mt-1">
+                                <p className="text-[9px] font-black text-[#881337] uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3 text-[#D4AF37]" /> {t("Partner Preferences")}
+                                </p>
+                                <p className="text-gray-700 italic font-medium">"{partnerQualities}"</p>
                             </div>
                         )
                     }

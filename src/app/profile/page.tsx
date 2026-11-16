@@ -797,10 +797,13 @@ function ProfileContent() {
                             </div>
                         )}
 
-                        {/* Partner qualities */}
+                        {/* Partner Preferences */}
                         {partnerQualities && (
-                            <div className="text-xs text-gray-500 italic border-l-2 border-[#D4AF37] pl-3 leading-relaxed">
-                                <span className="font-bold text-[#881337] not-italic mr-1 text-[11px]">PP =</span>"{partnerQualities}"
+                            <div className="bg-amber-50/50 rounded-2xl p-4 border border-amber-200/60 text-xs leading-relaxed my-1">
+                                <p className="text-[10px] font-black text-[#881337] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                    <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" /> Partner Preferences
+                                </p>
+                                <p className="text-gray-700 italic font-medium leading-relaxed">"{partnerQualities}"</p>
                             </div>
                         )}
 

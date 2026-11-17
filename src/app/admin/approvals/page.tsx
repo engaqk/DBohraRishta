@@ -1039,6 +1039,10 @@ export default function AdminVerificationPage() {
                                                         src={u.libasImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=random`} 
                                                         alt="" 
                                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                        loading="lazy"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=random`;
+                                                        }}
                                                     />
                                                 </div>
                                                 {u.isOnline && <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />}
@@ -1223,7 +1227,10 @@ export default function AdminVerificationPage() {
                                                                 src={u.libasImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=random`} 
                                                                 alt="Libas" 
                                                                 className="w-full h-full object-cover"
-                                                                loading="lazy" 
+                                                                loading="lazy"
+                                                                onError={(e) => {
+                                                                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=random`;
+                                                                }}
                                                             />
                                                         </div>
                                                         {u.isOnline && (

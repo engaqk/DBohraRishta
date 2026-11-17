@@ -54,7 +54,21 @@ export async function GET(request: Request) {
                 userMsgs: data.unreadMsgCountForAdmin || 0 
             };
 
-            return { uid, id: uid, ...data };
+            // Stream images on-demand via cached binary avatar route.
+            // This restores all candidate photos while keeping the initial JSON payload under 100KB!
+            const avatarUrl = `/api/admin/user-avatar?userId=${uid}&type=libas&token=secure_admin_session_active`;
+            const selfieUrl = data.selfieStatus 
+                ? `/api/admin/user-avatar?userId=${uid}&type=selfie&token=secure_admin_session_active` 
+                : null;
+
+            return { 
+                uid, 
+                id: uid, 
+                ...data,
+                libasImageUrl: avatarUrl,
+                selfieImageUrl: selfieUrl,
+                selfieUrl: selfieUrl,
+            };
         });
 
         return NextResponse.json({

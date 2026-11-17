@@ -78,7 +78,7 @@ export default function AdminVerificationPage() {
     const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
     const [filterGender, setFilterGender] = useState<string>('male');
     const [visibleCount, setVisibleCount] = useState(50); // Pagination
-    const [activeMainViewTab, setActiveMainViewTab] = useState<'complete' | 'incomplete'>('complete');
+    const [activeMainViewTab, setActiveMainViewTab] = useState<'complete' | 'pending' | 'verified_only' | 'incomplete'>('complete');
     const { user, impersonateUser } = useAuth();
     const router = useRouter();
 
@@ -102,8 +102,21 @@ export default function AdminVerificationPage() {
             
             const matchesGender = u.gender?.toLowerCase() === filterGender;
             
-            const isComplete = u.status === 'verified' || u.status === 'approved';
-            const matchesTab = activeMainViewTab === 'complete' ? isComplete : !isComplete;
+            const isPendingVerif = u.status === 'pending_verification' || u.selfieStatus === 'pending' || u.videoStatus === 'pending';
+            const isVerified = u.status === 'verified' || u.status === 'approved';
+            const isCompletedCandidate = u.isCandidateFormComplete || isVerified || isPendingVerif || u.status === 'hold';
+
+            let matchesTab = true;
+            if (activeMainViewTab === 'pending') {
+                matchesTab = isPendingVerif;
+            } else if (activeMainViewTab === 'verified_only') {
+                matchesTab = isVerified;
+            } else if (activeMainViewTab === 'incomplete') {
+                matchesTab = !isCompletedCandidate;
+            } else {
+                // 'complete' (All Pipeline): includes both pending verification (prioritized at the top) and verified members
+                matchesTab = isCompletedCandidate;
+            }
 
             return matchesSearch && matchesGender && matchesTab;
         });
@@ -152,11 +165,21 @@ export default function AdminVerificationPage() {
     }, [activeMainTab]);
 
     const genderCounts = useMemo(() => {
-        const isComplete = (u: any) => u.isCandidateFormComplete || u.status === 'verified' || u.status === 'approved';
-        const filteredByTab = allUsers.filter(u => activeMainViewTab === 'complete' ? isComplete(u) : !isComplete(u));
+        const isPending = (u: any) => u.status === 'pending_verification' || u.selfieStatus === 'pending' || u.videoStatus === 'pending';
+        const isVerified = (u: any) => u.status === 'verified' || u.status === 'approved';
+        const isCompletedCandidate = (u: any) => u.isCandidateFormComplete || isVerified(u) || isPending(u) || u.status === 'hold';
+
+        const filteredByTab = allUsers.filter(u => {
+            if (activeMainViewTab === 'pending') return isPending(u);
+            if (activeMainViewTab === 'verified_only') return isVerified(u);
+            if (activeMainViewTab === 'incomplete') return !isCompletedCandidate(u);
+            return isCompletedCandidate(u);
+        });
+
         return {
             male: filteredByTab.filter(u => u.gender?.toLowerCase() === 'male').length,
-            female: filteredByTab.filter(u => u.gender?.toLowerCase() === 'female').length
+            female: filteredByTab.filter(u => u.gender?.toLowerCase() === 'female').length,
+            pendingTotal: allUsers.filter(isPending).length
         };
     }, [allUsers, activeMainViewTab]);
 
@@ -1141,18 +1164,40 @@ export default function AdminVerificationPage() {
                         })()}
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
-                            <div className="flex items-center p-1 bg-gray-50 rounded-xl">
+                            <div className="flex items-center p-1 bg-gray-50 rounded-xl flex-wrap gap-1">
                                 <button
                                     onClick={() => setActiveMainViewTab('complete')}
-                                    className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeMainViewTab === 'complete' ? 'bg-[#881337] text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${activeMainViewTab === 'complete' ? 'bg-[#881337] text-white shadow-md' : 'text-gray-500 hover:text-gray-800'}`}
                                 >
-                                    Completed & Verified
+                                    <span>All Pipeline</span>
+                                    {genderCounts.pendingTotal > 0 && (
+                                        <span className="bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-full text-[9px] font-black animate-pulse">
+                                            {genderCounts.pendingTotal} Pending
+                                        </span>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setActiveMainViewTab('pending')}
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${activeMainViewTab === 'pending' ? 'bg-amber-600 text-white shadow-md' : 'text-amber-800 hover:bg-amber-100/50'}`}
+                                >
+                                    <span>🚨 Needs Verification</span>
+                                    {genderCounts.pendingTotal > 0 && (
+                                        <span className="bg-white text-amber-800 px-1.5 py-0.5 rounded-full text-[9px] font-black">
+                                            {genderCounts.pendingTotal}
+                                        </span>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setActiveMainViewTab('verified_only')}
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeMainViewTab === 'verified_only' ? 'bg-[#881337] text-white shadow-md' : 'text-gray-500 hover:text-gray-800'}`}
+                                >
+                                    Verified Members
                                 </button>
                                 <button
                                     onClick={() => setActiveMainViewTab('incomplete')}
-                                    className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeMainViewTab === 'incomplete' ? 'bg-[#881337] text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeMainViewTab === 'incomplete' ? 'bg-[#881337] text-white shadow-md' : 'text-gray-500 hover:text-gray-800'}`}
                                 >
-                                    Incomplete Profiles
+                                    Incomplete Drafts
                                 </button>
                             </div>
 
@@ -1199,8 +1244,13 @@ export default function AdminVerificationPage() {
                             <div className="divide-y divide-gray-100">
                                 {sortedUsers.slice(0, visibleCount).map((u, idx) => {
                                     const hasNewMsgs = (msgCounts[u.id]?.userMsgs || 0) > 0;
+                                    const isRowPending = u.status === 'pending_verification' || u.selfieStatus === 'pending' || u.videoStatus === 'pending';
                                     return (
-                                        <div key={u.id} className="p-4 hover:bg-gray-50 transition-colors group relative border-b border-gray-100 md:border-b-0">
+                                        <div key={u.id} className={`p-4 transition-colors group relative border-b border-gray-100 md:border-b-0 ${
+                                            isRowPending 
+                                                ? 'bg-gradient-to-r from-amber-50/90 via-orange-50/30 to-transparent border-l-4 border-l-amber-500 shadow-xs' 
+                                                : 'hover:bg-gray-50'
+                                        }`}>
                                             <div className="flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 items-start md:items-center">
                                                 
                                                 {/* Profile Column */}
@@ -1215,7 +1265,10 @@ export default function AdminVerificationPage() {
                                                                 src={u.itsImageUrl || '/placeholder-its.png'} 
                                                                 alt="ITS" 
                                                                 className="w-full h-full object-cover"
-                                                                loading="lazy" 
+                                                                loading="lazy"
+                                                                onError={(e) => {
+                                                                    (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><rect width="48" height="48" fill="%23f8fafc" rx="6"/><text x="50%" y="45%" font-size="10" font-weight="900" fill="%23881337" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">ITS</text><text x="50%" y="68%" font-size="7" font-weight="bold" fill="%2394a3b8" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">CARD</text></svg>';
+                                                                }}
                                                             />
                                                         </div>
                                                         <div 
@@ -1251,8 +1304,8 @@ export default function AdminVerificationPage() {
                                                                 </span>
                                                             )}
                                                             {u.status === 'pending_verification' && (
-                                                                <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase" title="Profile verification requested">
-                                                                    Pending Verif
+                                                                <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase animate-pulse shadow-xs flex items-center gap-1" title="Profile verification requested">
+                                                                    ⚠️ Action: Pending Verification
                                                                 </span>
                                                             )}
                                                             {u.selfieStatus === 'pending' && (
@@ -1329,10 +1382,10 @@ export default function AdminVerificationPage() {
                                                     {u.status !== 'approved' && u.status !== 'verified' && (
                                                         <button 
                                                             onClick={() => handleStatusMove(u.id, 'verified')}
-                                                            className="px-2.5 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-100 transition-all flex-1 md:flex-none text-center"
-                                                            title="Verify / Accept"
+                                                            className="px-3 py-1.5 bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 rounded-lg text-[10px] font-black uppercase transition-all flex-1 md:flex-none text-center flex items-center justify-center gap-1"
+                                                            title="Verify & Approve Profile"
                                                         >
-                                                            Verify
+                                                            ✓ Verify & Approve
                                                         </button>
                                                     )}
                                                     {u.status === 'verified' && (

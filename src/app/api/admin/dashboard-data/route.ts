@@ -80,6 +80,14 @@ export async function GET(request: Request) {
 
     } catch (error: any) {
         console.error('[dashboard-data] Error:', error.message);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const isQuotaExceeded = error.message?.includes('RESOURCE_EXHAUSTED') || error.message?.includes('Quota exceeded');
+        
+        return NextResponse.json({ 
+            error: error.message,
+            quotaExceeded: isQuotaExceeded,
+            message: isQuotaExceeded 
+                ? 'Firebase Firestore daily free quota has been exhausted. Please upgrade to the Blaze (Pay-as-you-go) plan in Firebase Console or wait for the daily quota reset.' 
+                : error.message
+        }, { status: isQuotaExceeded ? 429 : 500 });
     }
 }

@@ -163,18 +163,24 @@ export function getWelcomeOnboardingTemplate(opts: { candidateName: string; isRe
         </div>`;
 }
 
-export function getInterestDeclinedTemplate(opts: { requesterName: string; declinerName: string; declinerEmail?: string }) {
+export function getInterestDeclinedTemplate(opts: { requesterName: string; declinerName: string; declinerEmail?: string; declineMessage?: string }) {
     return `
-        <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px">
-            <h2 style="color:#555">Interest Request Update</h2>
+        <div style="font-family:Georgia,serif;max-width:560px;margin:auto;padding:32px;border:1px solid #eee;border-radius:12px;background:#ffffff">
+            <h2 style="color:#881337;margin-bottom:12px">Update on your Interest Request</h2>
             <p>As-salaamu alaykum <strong>${opts.requesterName}</strong>,</p>
-            <p>Regarding your Interest Request sent to <strong>${opts.declinerName}</strong>, they are unable to proceed at this time and have declined the request.</p>
-            <p>Don't worry, there are many other suitable profiles waiting for you! Keep exploring.</p>
+            <p>Regarding your Interest Request sent to <strong>${opts.declinerName}</strong>, they have shared a respectful closure message:</p>
+            ${opts.declineMessage ? `
+            <div style="background:#FFFBEB;border-left:4px solid #D4AF37;border-radius:8px;padding:16px 20px;margin:20px 0;font-style:italic;color:#78350F;line-height:1.6;font-size:14px">
+                &ldquo;${opts.declineMessage}&rdquo;
+            </div>` : `
+            <p style="color:#666;font-style:italic">They are unable to proceed with this proposal at this time.</p>
+            `}
+            <p>May Allah Ta'ala bless you with a noble life partner by Aqa Maula's TUS Dua Mubarak. Keep exploring suitable alignments!</p>
             <a href="https://53dbohrarishta.in" style="display:inline-block;margin-top:20px;background:#881337;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold">
                 Explore More Profiles
             </a>
             <hr style="border:0;border-top:1px solid #eee;margin:24px 0"/>
-            <p style="font-size:11px;color:#999">53DBohraRishta Notification System</p>
+            <p style="font-size:11px;color:#999">53DBohraRishta Community Notification</p>
         </div>`;
 }
 

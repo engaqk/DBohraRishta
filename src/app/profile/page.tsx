@@ -6,9 +6,10 @@ import { doc, getDoc, onSnapshot, collection, query, where, getDocs, addDoc, ser
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { formatMobileDisplay } from '@/lib/phoneUtils';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
-import { ArrowLeft, MessageCircle, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles, User, Mail, Phone, Heart, Send, X, CheckCircle, MapPin, Play, Pause, Volume2 } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Loader2, ShieldCheck, ExternalLink, Lock, Sparkles, User, Mail, Phone, Heart, Send, X, CheckCircle, MapPin, Play, Pause, Volume2, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { notifyInterestSent } from '@/lib/emailService';
+import { notifyInterestSent, notifyInterestDeclined } from '@/lib/emailService';
+import AdabERaddModal from '@/components/AdabERaddModal';
 import { computeMatchScore } from '@/lib/matchUtils';
 
 
@@ -24,6 +25,14 @@ function ProfileContent() {
     const [loading, setLoading] = useState(true);
     const [requestStatus, setRequestStatus] = useState<string | null>(null);
     const [openChatData, setOpenChatData] = useState<any>(null);
+    const [showAdabModal, setShowAdabModal] = useState(false);
+
+    const isFastResponder = useMemo(() => {
+        if (profile?.isOnline) return true;
+        if (!profile?.lastActive) return false;
+        const activeDate = profile.lastActive?.toDate ? profile.lastActive.toDate() : new Date(profile.lastActive);
+        return (Date.now() - activeDate.getTime()) < (48 * 60 * 60 * 1000); // 48 hours
+    }, [profile?.isOnline, profile?.lastActive]);
 
     useEffect(() => {
         fetch('/api/admin/open-chat')
@@ -483,6 +492,39 @@ function ProfileContent() {
         );
     }
 
+
+    const handleDeclineWithAdab = async (reason: string) => {
+        if (!user || !id) return;
+        const q = query(collection(db, 'rishta_requests'), where('from', '==', id), where('to', '==', user.uid), where('status', '==', 'pending_response'));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+            const reqId = snap.docs[0].id;
+            setActionLoading(true);
+            try {
+                await updateDoc(doc(db, 'rishta_requests', reqId), { 
+                    status: 'rejected',
+                    rejectionReason: reason,
+                    declinedAt: serverTimestamp()
+                });
+                notifyInterestDeclined({
+                    declinerName: user?.displayName || 'Candidate',
+                    declinerEmail: user?.email || '',
+                    requesterName: profile?.name || 'Candidate',
+                    requesterEmail: profile?.email || '',
+                    declineMessage: reason
+                }).catch(e => console.error('Email error:', e));
+                toast.success('Dignified closure sent with deeni adab.');
+                setRequestStatus('rejected');
+                setIsIncoming(false);
+                setShowAdabModal(false);
+            } catch (err: any) {
+                toast.error('Failed to decline: ' + err.message);
+            } finally { 
+                setActionLoading(false); 
+            }
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#F9FAFB]">
             {/* Impersonation Banner */}
@@ -637,6 +679,12 @@ function ProfileContent() {
                     <div className="p-4 flex flex-col gap-4">
                         {/* Premium Highlights Section */}
                         <div className="flex flex-wrap gap-2.5 py-1">
+                            {isFastResponder && (
+                                <div className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-900 px-3 py-1.5 rounded-xl border border-amber-200 shadow-sm animate-in zoom-in duration-300">
+                                    <div className="w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center text-[10px]">⚡</div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest leading-none">Fast Responder ⚡</span>
+                                </div>
+                            )}
                             {bio?.toLowerCase().includes('hafiz') && (
                                 <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-xl border border-emerald-100 shadow-sm animate-in zoom-in duration-300">
                                     <div className="w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center text-[10px]">✨</div>
@@ -869,23 +917,11 @@ function ProfileContent() {
                                                 {actionLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : '🤝 Accept Interest'}
                                             </button>
                                             <button
-                                                onClick={async () => {
-                                                    const q = query(collection(db, 'rishta_requests'), where('from', '==', id), where('to', '==', user.uid), where('status', '==', 'pending_response'));
-                                                    const snap = await getDocs(q);
-                                                    if (!snap.empty) {
-                                                        const reqId = snap.docs[0].id;
-                                                        setActionLoading(true);
-                                                        try {
-                                                            await updateDoc(doc(db, 'rishta_requests', reqId), { status: 'rejected' });
-                                                            toast.success('Request Declined');
-                                                            setRequestStatus('rejected');
-                                                            setIsIncoming(false);
-                                                        } finally { setActionLoading(false); }
-                                                    }
-                                                }}
-                                                className="flex-1 py-4 rounded-xl font-black text-sm bg-gray-50 text-gray-500 border border-gray-200"
+                                                onClick={() => setShowAdabModal(true)}
+                                                className="flex-1 py-4 rounded-xl font-black text-sm bg-gray-50 text-gray-500 border border-gray-200 hover:bg-rose-50 hover:text-red-600 transition-colors"
+                                                title="Decline with Adab-e-Radd"
                                             >
-                                                Reject
+                                                Decline with Adab
                                             </button>
                                         </div>
                                     ) : (
@@ -1019,6 +1055,14 @@ function ProfileContent() {
                     </div>
                 </div>
             )}
+            {/* Adab-e-Radd Dignified Closure Modal */}
+            <AdabERaddModal
+                isOpen={showAdabModal}
+                requesterName={profile?.name || 'Candidate'}
+                onClose={() => setShowAdabModal(false)}
+                onConfirm={handleDeclineWithAdab}
+                isSubmitting={actionLoading}
+            />
         </div>
     );
 }

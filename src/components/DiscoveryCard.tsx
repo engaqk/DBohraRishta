@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
-import { ShieldCheck, MessageCircle, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, Lock, PauseCircle, X, Video } from 'lucide-react';
+import { ShieldCheck, MessageCircle, Loader2, ExternalLink, Sparkles, Layers, ChevronLeft, ChevronRight, Bookmark, Clock, Lock, PauseCircle, X, Video, Zap } from 'lucide-react';
 import { notifyInterestSent } from '@/lib/emailService';
 import { collection, addDoc, query, where, getDocs, serverTimestamp, deleteDoc, doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
@@ -142,12 +142,13 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
         return (Date.now() - createdDate.getTime()) < 172800000; // 48 Hours
     }, [createdAt]);
 
-    const isHighlyResponsive = useMemo(() => {
+    const isFastResponder = useMemo(() => {
         if (isOnline) return true;
         if (!lastActive) return false;
         const activeDate = lastActive?.toDate ? lastActive.toDate() : new Date(lastActive);
-        return (Date.now() - activeDate.getTime()) < 3600000; // Active within 1 hour
+        return (Date.now() - activeDate.getTime()) < 172800000; // Active within 48 hours
     }, [isOnline, lastActive]);
+    const isHighlyResponsive = isFastResponder;
 
     const profileStrength = useMemo(() => {
         let score = 0;
@@ -453,9 +454,9 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                                         <Sparkles className="w-2.5 h-2.5" /> {t("NEW")}
                                     </span>
                                 )}
-                                {isHighlyResponsive && (
-                                    <span className="bg-amber-500/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow border border-white/20">
-                                        <Clock className="w-2.5 h-2.5" /> {t("RESPONSIVE")}
+                                {isFastResponder && (
+                                    <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow border border-white/20">
+                                        <Zap className="w-2.5 h-2.5 fill-white" /> Fast Responder ⚡
                                     </span>
                                 )}
                                 {isVerifiedContributor && (

@@ -1262,12 +1262,12 @@ export default function AdminVerificationPage() {
                                                             title="Click to enlarge ITS Card"
                                                         >
                                                             <img 
-                                                                src={u.itsImageUrl || '/placeholder-its.png'} 
+                                                                src={u.itsImageUrl || '/placeholder-its.svg'} 
                                                                 alt="ITS" 
                                                                 className="w-full h-full object-cover"
                                                                 loading="lazy"
                                                                 onError={(e) => {
-                                                                    (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><rect width="48" height="48" fill="%23f8fafc" rx="6"/><text x="50%" y="45%" font-size="10" font-weight="900" fill="%23881337" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">ITS</text><text x="50%" y="68%" font-size="7" font-weight="bold" fill="%2394a3b8" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">CARD</text></svg>';
+                                                                    const t = e.target as HTMLImageElement; t.onerror = null; t.src = '/placeholder-its.svg';
                                                                 }}
                                                             />
                                                         </div>

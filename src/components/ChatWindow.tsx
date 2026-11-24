@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { Send, ArrowLeft, Loader2, Phone, Mic, Square, Trash2, Play, Pause, User, ExternalLink, Search, Users } from 'lucide-react';
+import { Send, ArrowLeft, Loader2, Phone, Mic, Square, Trash2, Play, Pause, User, ExternalLink, Search, Users, Lock, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface ChatWindowProps {
@@ -11,6 +11,9 @@ interface ChatWindowProps {
     otherUserId: string;
     otherUserName: string;
     otherUserImageUrl?: string;
+    isInterestAccepted?: boolean;
+    otherUserMobile?: string;
+    otherUserEmail?: string;
     onClose: () => void;
     onStartCall?: () => void;
     onBrowseProfiles?: () => void;
@@ -25,7 +28,7 @@ interface ChatMessage {
     timestamp: any;
 }
 
-export default function ChatWindow({ connectionId, otherUserId, otherUserName, otherUserImageUrl, onClose, onStartCall, onBrowseProfiles }: ChatWindowProps) {
+export default function ChatWindow({ connectionId, otherUserId, otherUserName, otherUserImageUrl, isInterestAccepted = false, otherUserMobile, otherUserEmail, onClose, onStartCall, onBrowseProfiles }: ChatWindowProps) {
     const router = useRouter();
     const { user } = useAuth();
     const [otherUserStatus, setOtherUserStatus] = useState<{ isOnline: boolean; lastActive: any } | null>(null);
@@ -329,8 +332,8 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                         <span>All Profiles</span>
                     </button>
 
-                    {/* VoIP Call Button */}
-                    {onStartCall && (
+                    {/* VoIP Call Button - Active after mutual interest acceptance */}
+                    {onStartCall && isInterestAccepted && (
                         <button 
                             onClick={onStartCall}
                             className="p-2 sm:p-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl transition-all shadow-md border border-white/20"
@@ -341,6 +344,44 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                     )}
                 </div>
             </div>
+
+{/* Direct Contact & Privacy Status Bar */}
+            {isInterestAccepted ? (
+                <div className="bg-emerald-50 border-b border-emerald-200 px-3 sm:px-4 py-2 text-xs text-emerald-900 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+                    <div className="flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="font-bold text-emerald-900 text-[11px]">Direct Contact Unlocked:</span>
+                        {otherUserMobile && (
+                            <span className="font-black text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2.5 py-0.5 rounded-full text-[11px]">
+                                📞 {otherUserMobile}
+                            </span>
+                        )}
+                        {otherUserEmail && (
+                            <span className="text-emerald-700 text-[11px] hidden md:inline">
+                                ✉️ {otherUserEmail}
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full ml-auto">
+                        Mutual Alignment
+                    </span>
+                </div>
+            ) : (
+                <div className="bg-amber-50/95 border-b border-amber-200 px-3 sm:px-4 py-2 text-xs text-amber-900 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+                    <div className="flex items-center gap-2">
+                        <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span className="font-medium text-[11px] text-amber-900">
+                            <strong>Open Chat Mode:</strong> Direct messaging is open. Mobile contact numbers remain private until mutual interest is accepted.
+                        </span>
+                    </div>
+                    <button
+                        onClick={() => router.push(`/profile?id=${otherUserId}&from=chat`)}
+                        className="text-[10px] font-black text-[#881337] bg-white hover:bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-md shadow-2xs transition-colors shrink-0 ml-auto"
+                    >
+                        Send Interest Request
+                    </button>
+                </div>
+            )}
 
             {/* Quick Profile & Navigation Access Bar */}
             <div className="bg-gradient-to-r from-rose-50 via-white to-amber-50 border-b border-rose-100 px-3 sm:px-4 py-2 text-xs text-[#881337] flex flex-wrap items-center justify-between gap-2 shadow-xs">

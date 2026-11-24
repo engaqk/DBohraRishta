@@ -6,6 +6,7 @@ import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
 import { Sparkles, Mic, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart, Video, Compass } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
+import AdabERaddModal from '@/components/AdabERaddModal';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy, limit, increment, setDoc } from 'firebase/firestore';
 import { db, messaging, storage } from '@/lib/firebase/config';
@@ -520,7 +521,9 @@ export default function RishtaDashboard() {
     const [myProfile, setMyProfile] = useState<any>(null);
 
     // Feature Modules State
-    const [activeChat, setActiveChat] = useState<{ id: string, otherUserId: string, name: string, imageUrl?: string } | null>(null);
+    const [activeChat, setActiveChat] = useState<{ id: string, otherUserId: string, name: string, imageUrl?: string, isAccepted?: boolean, otherUserMobile?: string, otherUserEmail?: string } | null>(null);
+    const [decliningRequest, setDecliningRequest] = useState<{ id: string; requesterName: string; requesterEmail?: string } | null>(null);
+    const [isDecliningSubmitting, setIsDecliningSubmitting] = useState(false);
 
     // Open Chat Testing Mode State
     const [openChatData, setOpenChatData] = useState<{
@@ -1982,15 +1985,18 @@ export default function RishtaDashboard() {
     }, [user, loading, router]);
 
 
-    const handleRequestAction = async (requestId: string, newStatus: string) => {
+    const handleRequestAction = async (requestId: string, newStatus: string, reason?: string) => {
 
         try {
-            await updateDoc(doc(db, "rishta_requests", requestId), {
-                status: newStatus
-            });
+            const updatePayload: any = { status: newStatus };
+            if (newStatus === 'rejected') {
+                updatePayload.rejectionReason = reason || null;
+                updatePayload.declinedAt = serverTimestamp();
+            }
+            await updateDoc(doc(db, "rishta_requests", requestId), updatePayload);
 
             // Optimistic UI update
-            setAllRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus } : r));
+            setAllRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: newStatus, rejectionReason: reason } : r));
 
             // --- 🔔 In-App Notification to Requester ---
             const requestGroup = allRequests.find(r => r.id === requestId);
@@ -2000,7 +2006,7 @@ export default function RishtaDashboard() {
                     title: newStatus === 'accepted' ? 'INTEREST ACCEPTED' : 'REQUEST DECLINED',
                     message: newStatus === 'accepted'
                         ? `${myProfile?.name || 'Someone'} has accepted your interest! You can now view their contact details.`
-                        : `${myProfile?.name || 'Someone'} has declined your interest request.`,
+                        : reason ? `${myProfile?.name || 'Someone'} has responded: "${reason}"` : `${myProfile?.name || 'Someone'} has declined your interest request.`,
                     isRead: false,
                     createdAt: serverTimestamp()
                 });
@@ -2032,40 +2038,30 @@ export default function RishtaDashboard() {
                         declinerName: myProfile?.name || 'Candidate',
                         declinerEmail: myProfile?.email || user?.email || '',
                         requesterName: requestGroup.otherUserName || 'Candidate',
-                        requesterEmail: requestGroup.otherUserEmail || ''
+                        requesterEmail: requestGroup.otherUserEmail || '',
+                        declineMessage: reason
                     }).catch(e => console.error("Email notify error", e));
                 }
             }
 
             if (newStatus === "rejected") {
-                toast(
-                    (t) => (
-                        <div className="flex items-center gap-3">
-                            <span>Request declined.</span>
-                            <button
-                                onClick={async () => {
-                                    toast.dismiss(t.id);
-                                    try {
-                                        await updateDoc(doc(db, "rishta_requests", requestId), { status: "pending_response" });
-                                        setAllRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: "pending_response" } : r));
-                                        toast.success("Decline reversed, request is pending again.");
-                                    } catch (e) {
-                                        toast.error("Failed to reverse action.");
-                                    }
-                                }}
-                                className="bg-gray-200 px-3 py-1 rounded text-xs font-bold text-gray-700 hover:bg-gray-300"
-                            >
-                                UNDO
-                            </button>
-                        </div>
-                    ),
-                    { duration: 5000, icon: '⚠️' }
-                );
+                toast.success("Dignified closure sent with deeni adab.");
             } else {
                 toast.success(`Request ${newStatus}!`);
             }
         } catch (error: any) {
             toast.error("Action failed: " + error.message);
+        }
+    };
+
+    const handleDeclineConfirm = async (reason: string) => {
+        if (!decliningRequest) return;
+        setIsDecliningSubmitting(true);
+        try {
+            await handleRequestAction(decliningRequest.id, 'rejected', reason);
+            setDecliningRequest(null);
+        } finally {
+            setIsDecliningSubmitting(false);
         }
     };
 
@@ -2208,7 +2204,7 @@ export default function RishtaDashboard() {
                                         </div>
                                         {req.isIncoming ? (
                                             <div className="flex gap-2">
-                                                <button onClick={() => handleRequestAction(req.id, "rejected")} className="bg-red-50 text-red-600 p-3 rounded-full hover:bg-red-100 transition-colors shadow-sm"><X className="w-5 h-5" /></button>
+                                                <button onClick={() => setDecliningRequest({ id: req.id, requesterName: req.otherUserName || 'Candidate', requesterEmail: req.otherUserEmail })} className="bg-red-50 text-red-600 p-3 rounded-full hover:bg-red-100 transition-colors shadow-sm" title="Decline with Adab-e-Radd"><X className="w-5 h-5" /></button>
                                                 <button onClick={() => handleAcceptClick(req)} className="bg-[#881337] text-white p-3 rounded-full hover:bg-[#9F1239] transition-colors shadow-md"><Check className="w-5 h-5" /></button>
                                             </div>
                                         ) : (
@@ -2235,6 +2231,9 @@ export default function RishtaDashboard() {
                                 otherUserId={activeChat.otherUserId}
                                 otherUserName={activeChat.name}
                                 otherUserImageUrl={activeChat.imageUrl}
+                                isInterestAccepted={activeChat.isAccepted}
+                                otherUserMobile={activeChat.otherUserMobile}
+                                otherUserEmail={activeChat.otherUserEmail}
                                 onClose={() => setActiveChat(null)}
                                 onStartCall={() => handleStartVoIPCall(activeChat.id, activeChat.name)}
                                 onBrowseProfiles={() => {
@@ -2395,6 +2394,25 @@ export default function RishtaDashboard() {
                     } else if (myGender) {
                         if (candGender === myGender) return false;
                     }
+
+                    // --- Pillar 4: Auto-Pause Inactive Profiles (> 14 days) ---
+                    // Candidates inactive for more than 14 days are auto-paused from discovery feed
+                    // so candidates only connect with genuine, active families.
+                    const getTimestamp = (val: any) => {
+                        if (!val) return 0;
+                        if (typeof val.toMillis === 'function') return val.toMillis();
+                        if (val.seconds) return val.seconds * 1000;
+                        const d = new Date(val);
+                        return isNaN(d.getTime()) ? 0 : d.getTime();
+                    };
+                    const lastActiveTime = p.lastActive ? getTimestamp(p.lastActive) : (p.createdAt ? getTimestamp(p.createdAt) : 0);
+                    if (lastActiveTime > 0) {
+                        const FOURTEEN_DAYS = 14 * 24 * 60 * 60 * 1000;
+                        if ((Date.now() - lastActiveTime) > FOURTEEN_DAYS) {
+                            return false; // Auto-paused
+                        }
+                    }
+
                     return true;
                 });
                 const filteredProfiles = availableProfiles.filter(p => {
@@ -5126,6 +5144,15 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                 otherUserName={voipOtherUserName}
                 userName={myProfile?.name || "User"}
                 userEmail={user?.email || myProfile?.email || ""}
+            />
+
+            {/* Pillar 4: Adab-e-Radd Dignified Closure Modal */}
+            <AdabERaddModal
+                isOpen={!!decliningRequest}
+                requesterName={decliningRequest?.requesterName || 'Candidate'}
+                onClose={() => setDecliningRequest(null)}
+                onConfirm={handleDeclineConfirm}
+                isSubmitting={isDecliningSubmitting}
             />
         </div>
     );

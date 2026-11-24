@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { Coffee, Upload, QrCode, CheckCircle, X, Loader2, Copy, Sparkles, AlertCircle } from 'lucide-react';
+import { Zap, Upload, QrCode, CheckCircle, X, Loader2, Copy, Sparkles, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function CoffeeController() {
@@ -20,8 +20,8 @@ export default function CoffeeController() {
     const [isActive, setIsActive] = useState(false);
     const [qrCodeImageUrl, setQrCodeImageUrl] = useState('');
     const [upiId, setUpiId] = useState('');
-    const [coffeeTitle, setCoffeeTitle] = useState('Buy Us a Coffee / Support Khidmat ☕');
-    const [coffeeNote, setCoffeeNote] = useState('Support server & development costs for 53DBohraRishta.');
+    const [coffeeTitle, setCoffeeTitle] = useState('⚡ Fuel Platform Tech');
+    const [coffeeNote, setCoffeeNote] = useState('We are building world-class AI matching, instant verification, and privacy tools for our community. Your voluntary support directly powers our next wave of groundbreaking features.');
 
     useEffect(() => {
         const unsub = onSnapshot(doc(db, 'system_settings', 'coffee'), (snap) => {
@@ -31,8 +31,8 @@ export default function CoffeeController() {
                 setIsActive(!!data.isCoffeeActive);
                 setQrCodeImageUrl(data.qrCodeImageUrl || '');
                 setUpiId(data.upiId || '');
-                setCoffeeTitle(data.coffeeTitle || 'Buy Us a Coffee / Support Khidmat ☕');
-                setCoffeeNote(data.coffeeNote || 'Support server & development costs for 53DBohraRishta.');
+                setCoffeeTitle(data.coffeeTitle || '⚡ Fuel Platform Tech');
+                setCoffeeNote(data.coffeeNote || 'We are building world-class AI matching, instant verification, and privacy tools for our community. Your voluntary support directly powers our next wave of groundbreaking features.');
             } else {
                 setSettings({ isCoffeeActive: false });
                 setIsActive(false);
@@ -104,15 +104,15 @@ export default function CoffeeController() {
                 <div className="flex items-start gap-3.5">
                     <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
                         isVisibleToUsers
-                            ? 'bg-gradient-to-br from-amber-500 to-amber-700 text-white animate-bounce'
+                            ? 'bg-gradient-to-br from-amber-500 to-amber-700 text-white animate-pulse'
                             : 'bg-gray-100 text-gray-400'
                     }`}>
-                        <Coffee className="w-6 h-6" />
+                        <Zap className="w-6 h-6 fill-amber-300 text-amber-300" />
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
                             <h3 className="font-bold text-gray-900 text-base flex items-center gap-1.5">
-                                Buy Us a Coffee / UPI QR Code Button
+                                ⚡ Fuel Platform Tech / UPI QR Code Button
                             </h3>
                             <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
                                 isVisibleToUsers
@@ -125,11 +125,11 @@ export default function CoffeeController() {
                         <p className="text-xs text-gray-500 mt-1 max-w-xl leading-relaxed">
                             {isVisibleToUsers ? (
                                 <span className="text-amber-900 font-medium">
-                                    ☕ <strong>Visible on Mobile & Desktop:</strong> Candidates see the &ldquo;Buy Us a Coffee&rdquo; button and can scan your uploaded UPI QR code to support platform khidmat.
+                                    ⚡ <strong>Visible on Mobile & Desktop:</strong> Candidates see the &ldquo;⚡ Fuel Tech&rdquo; button and can scan your uploaded UPI QR code to empower platform tech and new features.
                                 </span>
                             ) : (
                                 <span>
-                                    Turn toggle ON and upload a valid UPI QR code image below to make the button visible to users.
+                                    Turn toggle ON and upload a valid UPI QR code image below to make the &ldquo;⚡ Fuel Tech&rdquo; button visible to users.
                                 </span>
                             )}
                         </p>

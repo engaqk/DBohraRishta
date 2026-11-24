@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, Home, User, LogOut, Bell, HelpCircle, Smartphone, ShieldCheck, Users, ShieldAlert, Coffee } from 'lucide-react';
+import { Menu, X, Home, User, LogOut, Bell, HelpCircle, Smartphone, ShieldCheck, Users, ShieldAlert, Zap } from 'lucide-react';
 import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import BuyCoffeeModal, { useCoffeeSettings } from './BuyCoffeeModal';
@@ -130,15 +130,15 @@ export default function GlobalNav() {
                                     </button>
                                 </>
                             )}
-                            {/* Buy Me a Coffee / Support Platform (Desktop) */}
+                            {/* Fuel Platform Tech / Support (Desktop) */}
                             {isCoffeeVisible && !isAdminPage && (
                                 <button
                                     onClick={() => setShowCoffeeModal(true)}
-                                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer border border-amber-300 ml-1"
-                                    title="Buy Us a Coffee / Support Platform Khidmat"
+                                    className="bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer border border-amber-300 ml-1"
+                                    title="⚡ Fuel Platform Tech & Next-Gen Features"
                                 >
-                                    <Coffee className="w-3.5 h-3.5" />
-                                    <span>Support ☕</span>
+                                    <Zap className="w-3.5 h-3.5 fill-amber-200 text-amber-200" />
+                                    <span>⚡ Fuel Tech</span>
                                 </button>
                             )}
                             {/* Desktop Language Switcher */}
@@ -189,14 +189,14 @@ export default function GlobalNav() {
                                     </button>
                                 </>
                             )}
-                            {/* Buy Me a Coffee / Support Platform (Mobile Header Icon) */}
+                            {/* Fuel Platform Tech (Mobile Header Icon) */}
                             {isCoffeeVisible && !isAdminPage && (
                                 <button
                                     onClick={() => setShowCoffeeModal(true)}
                                     className="p-2 text-amber-600 hover:text-amber-700 active:scale-95 transition-transform cursor-pointer"
-                                    title="Buy Us a Coffee / Support Platform"
+                                    title="⚡ Fuel Platform Tech"
                                 >
-                                    <Coffee className="w-5 h-5" />
+                                    <Zap className="w-5 h-5 text-amber-500 fill-amber-400" />
                                 </button>
                             )}
                             <button 

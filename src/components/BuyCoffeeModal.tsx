@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { Coffee, X, QrCode, Copy, Check, Heart, Sparkles, ShieldCheck } from 'lucide-react';
+import { Zap, X, QrCode, Copy, Check, Heart, Sparkles, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export function useCoffeeSettings() {
@@ -63,13 +63,13 @@ export default function BuyCoffeeModal({
                 <div className="bg-gradient-to-r from-amber-500 via-[#881337] to-[#5b0a20] text-white p-5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-amber-300 shadow-inner">
-                            <Coffee className="w-5 h-5" />
+                            <Zap className="w-5 h-5 fill-amber-300" />
                         </div>
                         <div>
                             <h3 className="font-bold text-base font-serif leading-tight">
-                                {settings.coffeeTitle || 'Buy Us a Coffee ☕'}
+                                {settings.coffeeTitle || '⚡ Fuel Platform Tech'}
                             </h3>
-                            <p className="text-[11px] text-amber-200 mt-0.5">Support Platform Khidmat</p>
+                            <p className="text-[11px] text-amber-200 mt-0.5">Power Next-Gen Features & Khidmat</p>
                         </div>
                     </div>
                     <button
@@ -83,7 +83,7 @@ export default function BuyCoffeeModal({
                 {/* Body */}
                 <div className="p-5 flex flex-col items-center text-center space-y-4">
                     <p className="text-xs text-gray-600 leading-relaxed max-w-xs">
-                        {settings.coffeeNote || '53DBohraRishta is maintained as a voluntary khidmat for our community. Your contribution supports server, verification & development costs.'}
+                        {settings.coffeeNote || 'We are building world-class AI matching, instant verification, and privacy tools for our community. Your voluntary support directly powers our next wave of groundbreaking features.'}
                     </p>
 
                     {/* QR Code Container */}

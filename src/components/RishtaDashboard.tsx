@@ -4158,7 +4158,7 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 }}
                                 className="w-full flex items-center gap-4 p-4 rounded-2xl text-amber-900 font-bold bg-amber-50 hover:bg-amber-100 transition-all border border-amber-200 mt-2"
                             >
-                                <Coffee className="w-5 h-5 text-amber-600" /> Buy Us a Coffee ☕
+                                <Zap className="w-5 h-5 text-amber-600 fill-amber-500" /> ⚡ Fuel Platform Tech
                             </button>
 
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 mt-6">Mobile App</p>

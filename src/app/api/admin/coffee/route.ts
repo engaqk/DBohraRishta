@@ -20,8 +20,8 @@ export async function GET(req: Request) {
                     isCoffeeActive: false,
                     qrCodeImageUrl: '',
                     upiId: '',
-                    coffeeTitle: 'Buy Us a Coffee / Support Platform ☕',
-                    coffeeNote: 'Support server and maintenance costs for 53DBohraRishta.',
+                    coffeeTitle: '⚡ Fuel Platform Tech',
+                    coffeeNote: 'We are building world-class AI matching, instant verification, and privacy tools for our community. Your voluntary support directly powers our next wave of groundbreaking features.',
                     updatedAt: null
                 }
             });
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
                 isCoffeeActive: !!data.isCoffeeActive,
                 qrCodeImageUrl: data.qrCodeImageUrl || '',
                 upiId: data.upiId || '',
-                coffeeTitle: data.coffeeTitle || 'Buy Us a Coffee / Support Platform ☕',
+                coffeeTitle: data.coffeeTitle || '⚡ Fuel Platform Tech',
                 coffeeNote: data.coffeeNote || '',
                 updatedAt: data.updatedAt || null
             }

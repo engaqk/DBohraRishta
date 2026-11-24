@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
+import SoulSyncTab from './SoulSyncTab';
 import { Sparkles, Mic, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart, Video, Compass } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import AdabERaddModal from '@/components/AdabERaddModal';
@@ -126,6 +127,9 @@ interface RishtaRequest {
     otherUserBlurSecurityEnabled: boolean;
     otherUserId: string;
     isOpenChat?: boolean;
+    isSoulSync?: boolean;
+    soulSyncDate?: string;
+    rejectionReason?: string;
 }
 
 export default function RishtaDashboard() {
@@ -464,7 +468,8 @@ export default function RishtaDashboard() {
         }
     };
 
-    const [activeTab, setActiveTab] = useState<'mybiodata' | 'discovery' | 'requests' | 'messages' | 'notifications'>('discovery');
+    const [activeTab, setActiveTab] = useState<'mybiodata' | 'discovery' | 'requests' | 'messages' | 'notifications' | 'soulsync'>('discovery');
+    const [isSoulSyncActive, setIsSoulSyncActive] = useState<boolean>(false);
 
     // Sync tab with URL
     useEffect(() => {
@@ -526,6 +531,18 @@ export default function RishtaDashboard() {
     const [isDecliningSubmitting, setIsDecliningSubmitting] = useState(false);
 
     // Open Chat Testing Mode State
+        // SoulSync Settings Listener
+    useEffect(() => {
+        const unsub = onSnapshot(doc(db, 'system_settings', 'soulsync'), (snap) => {
+            if (snap.exists()) {
+                setIsSoulSyncActive(snap.data()?.isSoulSyncActive === true);
+            } else {
+                setIsSoulSyncActive(false);
+            }
+        }, () => setIsSoulSyncActive(false));
+        return () => unsub();
+    }, []);
+
     const [openChatData, setOpenChatData] = useState<{
         isOpenChatActive?: boolean;
         expiresAt?: string | null;
@@ -2171,6 +2188,32 @@ export default function RishtaDashboard() {
             );
         }
 
+        // Filter out profiles where there is already an accepted connection
+        const hiddenProfileIds = new Set<string>();
+        allRequests.forEach(r => {
+            if (r.status === "accepted") {
+                const otherId = r.isIncoming ? r.from : r.to;
+                hiddenProfileIds.add(otherId);
+            }
+        });
+
+        const myGender = (myProfile?.gender || '').toLowerCase().trim();
+        const isAdminNonImpersonating = myProfile?.role === 'admin' && !isImpersonating;
+        const targetGender = myGender === 'male' ? 'female' : (myGender === 'female' ? 'male' : (isAdminNonImpersonating ? 'all' : null));
+
+        const availableProfiles = discoveryProfiles.filter(p => {
+            if (p.id === user?.uid) return false;
+            if (hiddenProfileIds.has(p.id)) return false;
+            const candGender = (p.gender || '').toLowerCase().trim();
+            // STRICT OPPOSITE-GENDER FILTER:
+            if (targetGender && targetGender !== 'all') {
+                if (candGender !== targetGender) return false;
+            } else if (myGender) {
+                if (candGender === myGender) return false;
+            }
+            return true;
+        });
+
         switch (activeTab) {
             case 'requests':
                 const pendingRequests = allRequests.filter(r => r.status === "pending_response");
@@ -2198,6 +2241,12 @@ export default function RishtaDashboard() {
                                                 {req.otherUserBlurSecurityEnabled && !req.otherUserLibasUrl && <div className="absolute inset-0 backdrop-blur-md"></div>}
                                             </div>
                                             <div>
+                                                {req.isSoulSync && (
+                                                    <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-yellow-400 text-rose-950 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs animate-pulse mb-1">
+                                                        <Sparkles className="w-3 h-3 fill-rose-950" />
+                                                        <span>✨ Chosen in SoulSync 8:00 PM Drop!</span>
+                                                    </div>
+                                                )}
                                                 <h4 className="font-bold text-lg text-[#881337]">{req.otherUserName}, {req.otherUserAge}</h4>
                                                 <p className="text-sm text-gray-500">{req.otherUserLocation}</p>
                                             </div>
@@ -2217,6 +2266,52 @@ export default function RishtaDashboard() {
                             </div>
                         )}
                     </section>
+                );
+            case 'soulsync':
+                return (
+                    <SoulSyncTab
+                        currentUser={user}
+                        myProfile={myProfile}
+                        availableProfiles={availableProfiles}
+                        allRequests={allRequests}
+                        onRequestSent={async (targetId: string, isSoulSync: boolean) => {
+                            if (!user) return;
+                            const reqRef = await addDoc(collection(db, 'rishta_requests'), {
+                                from: user.uid,
+                                to: targetId,
+                                status: 'pending_response',
+                                isSoulSync: true,
+                                soulSyncDate: new Date().toISOString().slice(0, 10),
+                                timestamp: serverTimestamp(),
+                                updatedAt: serverTimestamp()
+                            });
+                            setAllRequests(prev => [...prev, {
+                                id: reqRef.id,
+                                from: user.uid,
+                                to: targetId,
+                                status: 'pending_response',
+                                isIncoming: false,
+                                isSoulSync: true
+                            } as any]);
+                            notifyInterestSent({
+                                senderName: myProfile?.name || 'A candidate',
+                                senderEmail: user?.email || '',
+                                recipientName: 'Candidate',
+                                recipientEmail: ''
+                            }).catch(() => {});
+                            fetch('/api/notify/push', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    targetUserId: targetId,
+                                    title: '✨ Golden SoulSync Alignment!',
+                                    body: `${myProfile?.name || 'A verified candidate'} selected you in today's SoulSync 8:00 PM Drop!`,
+                                    url: '/?tab=requests'
+                                })
+                            }).catch(() => {});
+                        }}
+                        onBrowseDiscovery={() => setActiveTab('discovery')}
+                    />
                 );
             case 'messages':
                 const acceptedRequests = allRequests.filter(r => 
@@ -2369,33 +2464,6 @@ export default function RishtaDashboard() {
                 );
             case 'discovery':
             default:
-                // Filter out profiles where there is already an accepted connection or the user is the sender of a pending request
-                const hiddenProfileIds = new Set<string>();
-                allRequests.forEach(r => {
-                    if (r.status === "accepted") {
-                        // Hide accepted connections from discovery (they appear in Messages)
-                        const otherId = r.isIncoming ? r.from : r.to;
-                        hiddenProfileIds.add(otherId);
-                    }
-                });
-
-                const myGender = (myProfile?.gender || '').toLowerCase().trim();
-                const isAdminNonImpersonating = myProfile?.role === 'admin' && !isImpersonating;
-                const targetGender = myGender === 'male' ? 'female' : (myGender === 'female' ? 'male' : (isAdminNonImpersonating ? 'all' : null));
-
-                const availableProfiles = discoveryProfiles.filter(p => {
-                    if (p.id === user?.uid) return false;
-                    if (hiddenProfileIds.has(p.id)) return false;
-                    const candGender = (p.gender || '').toLowerCase().trim();
-                    // STRICT OPPOSITE-GENDER FILTER:
-                    // Male candidates see ONLY Female profiles. Female candidates see ONLY Male profiles.
-                    if (targetGender && targetGender !== 'all') {
-                        if (candGender !== targetGender) return false;
-                    } else if (myGender) {
-                        if (candGender === myGender) return false;
-                    }
-                    return true;
-                });
                 const filteredProfiles = availableProfiles.filter(p => {
                     const matchesSearch = !searchQuery ||
                         p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -2867,12 +2935,17 @@ export default function RishtaDashboard() {
             <header className="max-w-7xl mx-auto mb-6 hidden md:flex items-center">
                 <div className="flex-1">
                     <nav className="flex bg-white/95 backdrop-blur-md rounded-2xl shadow-sm border border-rose-100 p-1.5 gap-2">
-                        {[
-                            { key: 'discovery' as const, label: 'Discover Matches', icon: Compass, badge: null },
-                            { key: 'requests' as const, label: 'Interest Requests', icon: Heart, badge: allRequests.filter(r => r.to === user?.uid && r.status?.includes('pending')).length || null },
-                            { key: 'messages' as const, label: 'Conversations', icon: MessageCircle, badge: allRequests.filter(r => r.status === 'accepted').length || null },
-                            { key: 'mybiodata' as const, label: 'My Biodata', icon: User, badge: null },
-                        ].map((item) => {
+                        {(() => {
+                            const isCandidateVerified = (myProfile?.isItsVerified === true || myProfile?.status === 'verified') && myProfile?.isCandidateFormComplete === true;
+                            const canAccessSoulSync = isSoulSyncActive && isCandidateVerified;
+                            return [
+                                { key: 'discovery' as const, label: 'Discover Matches', icon: Compass, badge: null },
+                                ...(canAccessSoulSync ? [{ key: 'soulsync' as const, label: '✨ SoulSync', icon: Sparkles, badge: '8PM DROP' }] : []),
+                                { key: 'requests' as const, label: 'Interest Requests', icon: Heart, badge: allRequests.filter(r => r.to === user?.uid && r.status?.includes('pending')).length || null },
+                                { key: 'messages' as const, label: 'Conversations', icon: MessageCircle, badge: allRequests.filter(r => r.status === 'accepted').length || null },
+                                { key: 'mybiodata' as const, label: 'My Biodata', icon: User, badge: null },
+                            ];
+                        })().map((item) => {
                             const isCurrent = activeTab === item.key;
                             const IconComponent = item.icon;
                             return (
@@ -3946,6 +4019,20 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                     <Compass className="w-5 h-5" />
                     <span className="text-[9px] font-bold mt-0.5 tracking-tight">Matches</span>
                 </button>
+                {isSoulSyncActive && (myProfile?.isItsVerified === true || myProfile?.status === 'verified') && myProfile?.isCandidateFormComplete === true && (
+                    <button
+                        onClick={() => { setActiveTab('soulsync'); triggerHaptic(HapticPatterns.LIGHT); }}
+                        className={`flex flex-col items-center py-1 px-2.5 rounded-xl transition-all relative cursor-pointer ${
+                            activeTab === 'soulsync' ? 'text-[#881337] bg-amber-100/70 font-black' : 'text-amber-600 hover:text-amber-700'
+                        }`}
+                    >
+                        <div className="relative">
+                            <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
+                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full" />
+                        </div>
+                        <span className="text-[9px] font-bold mt-0.5 tracking-tight text-amber-900">SoulSync</span>
+                    </button>
+                )}
                 <button
                     onClick={() => { setActiveTab('requests'); triggerHaptic(HapticPatterns.LIGHT); }}
                     className={`flex flex-col items-center py-1 px-3 rounded-xl transition-all relative cursor-pointer ${

@@ -15,6 +15,7 @@ import SmsBroadcastTab from "@/components/admin/SmsBroadcastTab";
 import PushNotificationTab from "@/components/admin/PushNotificationTab";
 import AuditLogsTab from "@/components/admin/AuditLogsTab";
 import OpenChatController from "@/components/admin/OpenChatController";
+import SoulSyncController from "@/components/admin/SoulSyncController";
 
 interface PendingUser {
     id: string;
@@ -625,6 +626,9 @@ export default function AdminVerificationPage() {
 
                 {/* Superadmin Open Chat Controller */}
                 <OpenChatController />
+
+                {/* Superadmin SoulSync 8:00 PM Daily Drop Controller */}
+                <SoulSyncController />
 
                 {/* Main Tabs */}
                 <div className="flex items-center gap-2 mb-6 border-b border-gray-200 overflow-x-auto whitespace-nowrap scrollbar-hide">

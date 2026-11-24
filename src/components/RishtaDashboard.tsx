@@ -2394,25 +2394,6 @@ export default function RishtaDashboard() {
                     } else if (myGender) {
                         if (candGender === myGender) return false;
                     }
-
-                    // --- Pillar 4: Auto-Pause Inactive Profiles (> 14 days) ---
-                    // Candidates inactive for more than 14 days are auto-paused from discovery feed
-                    // so candidates only connect with genuine, active families.
-                    const getTimestamp = (val: any) => {
-                        if (!val) return 0;
-                        if (typeof val.toMillis === 'function') return val.toMillis();
-                        if (val.seconds) return val.seconds * 1000;
-                        const d = new Date(val);
-                        return isNaN(d.getTime()) ? 0 : d.getTime();
-                    };
-                    const lastActiveTime = p.lastActive ? getTimestamp(p.lastActive) : (p.createdAt ? getTimestamp(p.createdAt) : 0);
-                    if (lastActiveTime > 0) {
-                        const FOURTEEN_DAYS = 14 * 24 * 60 * 60 * 1000;
-                        if ((Date.now() - lastActiveTime) > FOURTEEN_DAYS) {
-                            return false; // Auto-paused
-                        }
-                    }
-
                     return true;
                 });
                 const filteredProfiles = availableProfiles.filter(p => {

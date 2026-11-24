@@ -5,9 +5,10 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, Home, User, LogOut, Bell, HelpCircle, Smartphone, ShieldCheck, Users, ShieldAlert } from 'lucide-react';
+import { Menu, X, Home, User, LogOut, Bell, HelpCircle, Smartphone, ShieldCheck, Users, ShieldAlert, Coffee } from 'lucide-react';
 import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import BuyCoffeeModal, { useCoffeeSettings } from './BuyCoffeeModal';
 
 export default function GlobalNav() {
     const { user, logout } = useAuth();
@@ -16,6 +17,15 @@ export default function GlobalNav() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const { coffeeSettings, isVisible: isCoffeeVisible } = useCoffeeSettings();
+    const [showCoffeeModal, setShowCoffeeModal] = useState(false);
+
+    // Global listener for opening coffee modal from any component
+    useEffect(() => {
+        const handler = () => setShowCoffeeModal(true);
+        window.addEventListener('open-coffee-modal', handler);
+        return () => window.removeEventListener('open-coffee-modal', handler);
+    }, []);
 
     // Listen for notifications
     useEffect(() => {
@@ -120,6 +130,17 @@ export default function GlobalNav() {
                                     </button>
                                 </>
                             )}
+                            {/* Buy Me a Coffee / Support Platform (Desktop) */}
+                            {isCoffeeVisible && !isAdminPage && (
+                                <button
+                                    onClick={() => setShowCoffeeModal(true)}
+                                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer border border-amber-300 ml-1"
+                                    title="Buy Us a Coffee / Support Platform Khidmat"
+                                >
+                                    <Coffee className="w-3.5 h-3.5" />
+                                    <span>Support ☕</span>
+                                </button>
+                            )}
                             {/* Desktop Language Switcher */}
                             <div className="mx-2 flex items-center shrink-0">
                                 <LanguageSwitcher variant="nav" />
@@ -167,6 +188,16 @@ export default function GlobalNav() {
                                         )}
                                     </button>
                                 </>
+                            )}
+                            {/* Buy Me a Coffee / Support Platform (Mobile Header Icon) */}
+                            {isCoffeeVisible && !isAdminPage && (
+                                <button
+                                    onClick={() => setShowCoffeeModal(true)}
+                                    className="p-2 text-amber-600 hover:text-amber-700 active:scale-95 transition-transform cursor-pointer"
+                                    title="Buy Us a Coffee / Support Platform"
+                                >
+                                    <Coffee className="w-5 h-5" />
+                                </button>
                             )}
                             <button 
                                 onClick={(e) => {
@@ -240,6 +271,13 @@ export default function GlobalNav() {
                     </div>
                 </div>
             )}
+
+            {/* Buy Me a Coffee UPI Modal */}
+            <BuyCoffeeModal
+                isOpen={showCoffeeModal}
+                onClose={() => setShowCoffeeModal(false)}
+                settings={coffeeSettings}
+            />
         </>
     );
 }

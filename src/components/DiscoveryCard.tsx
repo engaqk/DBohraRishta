@@ -428,97 +428,35 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                     {/* Bottom-to-top gradient */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent z-20 pointer-events-none" />
 
-                    {/* Top badges */}
-                    <div className="absolute top-3 left-3 right-3 z-30 flex items-start justify-between">
-                        <div className="flex flex-col gap-1.5 items-start">
-                            <div className="flex flex-wrap gap-1.5">
-                                {isOnline ? (
-                                    <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-                                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />{t("Active Now")}
-                                    </span>
-                                ) : lastActive && (
-                                    <span className="bg-gray-800/60 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-                                        {(() => {
-                                            const last = lastActive?.toDate ? lastActive.toDate() : new Date(lastActive);
-                                            const diff = Math.floor((Date.now() - last.getTime()) / 60000);
-                                            if (diff < 60) return `${diff}m ${t("ago")}`;
-                                            if (diff < 1440) return `${Math.floor(diff / 60)}h ${t("ago")}`;
-                                            return `${Math.floor(diff / 1440)}d ${t("ago")}`;
-                                        })()}
-                                    </span>
-                                )}
-
-                                {/* Premium Activity Ribbons */}
-                                {isNewMember && (
-                                    <span className="bg-emerald-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow border border-white/20">
-                                        <Sparkles className="w-2.5 h-2.5" /> {t("NEW")}
-                                    </span>
-                                )}
-                                {isFastResponder && (
-                                    <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow border border-white/20">
-                                        <Zap className="w-2.5 h-2.5 fill-white" /> Fast Responder ⚡
-                                    </span>
-                                )}
-                                {isVerifiedContributor && (
-                                    <span className="bg-rose-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow border border-white/20">
-                                        <ShieldCheck className="w-2.5 h-2.5" /> {t("100% COMPLETE")}
-                                    </span>
-                                )}
-                            </div>
-
+                    {/* Unobstructed Top Navigation & Privacy Overlay */}
+                    <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between pointer-events-none">
+                        <div className="flex items-center gap-2 pointer-events-auto">
                             {!canZoom && (
                                 <div className="bg-black/60 backdrop-blur-md rounded-full px-2.5 py-1 flex items-center gap-1.5 shadow border border-white/20">
                                     <Lock className="w-3 h-3 text-white/90" />
                                     <span className="text-white text-[9px] font-bold whitespace-nowrap uppercase tracking-wider">{t("Unlocks after acceptance")}</span>
                                 </div>
                             )}
+                            {isOnline && (
+                                <span className="bg-black/50 backdrop-blur-md text-emerald-400 text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-emerald-500/30 shadow-md">
+                                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-sm shadow-emerald-400" />
+                                    <span>Online</span>
+                                </span>
+                            )}
                         </div>
-                        <div className="flex flex-col items-end gap-1.5">
-                            {isItsVerified && (
-                                <div className="flex items-center gap-1 bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow border border-white/30">
-                                    <ShieldCheck className="w-2.5 h-2.5" /> {t("ITS VERIFIED")}
-                                </div>
-                            )}
-                            {videoStatus === 'verified' && (
-                                <div className="flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow border border-white/30">
-                                    <Video className="w-2.5 h-2.5" /> {t("VIDEO VERIFIED")}
-                                </div>
-                            )}
-                            {isOpenChatActive && (
-                                isQuotaExceeded ? (
-                                    <span
-                                        className="flex items-center gap-1 bg-gray-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-full shadow border border-white/20"
-                                        title="Direct chat temporarily paused due to traffic quota. Refresh page to reconnect."
-                                    >
-                                        <Clock className="w-2.5 h-2.5" /> PAUSED
-                                    </span>
-                                ) : (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onStartDirectChat && user) {
-                                                const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
-                                                onStartDirectChat({
-                                                    id: connectionId,
-                                                    otherUserId: id,
-                                                    name: name,
-                                                    imageUrl: libasImageUrl || undefined
-                                                });
-                                            }
-                                        }}
-                                        className="flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white text-[9px] font-black px-2.5 py-1 rounded-full shadow-md border border-white/40 animate-pulse active:scale-95 transition-all"
-                                        title={`Chat directly with ${name}`}
-                                    >
-                                        <MessageCircle className="w-3 h-3 fill-white" />
-                                        <span>CHAT NOW</span>
-                                    </button>
-                                )
-                            )}
+
+                        <div className="flex items-center gap-2 pointer-events-auto">
+                            {/* Bookmark Button */}
                             <button
                                 onClick={handleToggleBookmark}
-                                className={`p-1.5 rounded-full shadow transition-all ${isBookmarked ? 'bg-[#881337] text-white' : 'bg-white/80 text-gray-500 hover:bg-white'}`}
+                                className={`p-2 rounded-full shadow-lg backdrop-blur-md transition-all active:scale-90 cursor-pointer ${
+                                    isBookmarked 
+                                        ? 'bg-[#881337] text-white shadow-rose-900/40' 
+                                        : 'bg-black/40 text-white/90 hover:bg-black/60 border border-white/20'
+                                }`}
+                                title={isBookmarked ? "Remove Bookmark" : "Bookmark Candidate"}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" /></svg>
                             </button>
                         </div>
                     </div>
@@ -624,6 +562,86 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                 </div>
 
                 <div className="p-4 flex flex-col gap-3 flex-grow">
+                    {/* ── HIGHLIGHTED TRUST & VERIFICATION STRIP (BELOW IMAGE) ── */}
+                    {(isItsVerified || isFastResponder || videoStatus === 'verified' || isVerifiedContributor || isNewMember || (!isOnline && lastActive)) && (
+                        <div className="flex flex-wrap items-center gap-1.5 pb-2.5 border-b border-rose-100/60">
+                            {isItsVerified && (
+                                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-500 to-[#D4AF37] text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-xs border border-amber-200">
+                                    <ShieldCheck className="w-3 h-3 fill-white" />
+                                    <span>{t("ITS VERIFIED")}</span>
+                                </span>
+                            )}
+                            {isFastResponder && (
+                                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-xs border border-orange-200">
+                                    <Zap className="w-3 h-3 fill-white" />
+                                    <span>Fast Responder ⚡</span>
+                                </span>
+                            )}
+                            {videoStatus === 'verified' && (
+                                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-xs border border-emerald-200">
+                                    <Video className="w-3 h-3" />
+                                    <span>{t("VIDEO VERIFIED")}</span>
+                                </span>
+                            )}
+                            {isVerifiedContributor && (
+                                <span className="inline-flex items-center gap-1 bg-rose-50 text-[#881337] border border-rose-200 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs">
+                                    <ShieldCheck className="w-2.5 h-2.5" />
+                                    <span>{t("100% COMPLETE")}</span>
+                                </span>
+                            )}
+                            {isNewMember && (
+                                <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs">
+                                    <Sparkles className="w-2.5 h-2.5" />
+                                    <span>{t("NEW")}</span>
+                                </span>
+                            )}
+                            {!isOnline && lastActive && (
+                                <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-500 text-[9px] font-bold px-2 py-0.5 rounded-full">
+                                    <Clock className="w-2.5 h-2.5" />
+                                    <span>
+                                        {(() => {
+                                            const last = lastActive?.toDate ? lastActive.toDate() : new Date(lastActive);
+                                            const diff = Math.floor((Date.now() - last.getTime()) / 60000);
+                                            if (diff < 60) return `${diff}m ${t("ago")}`;
+                                            if (diff < 1440) return `${Math.floor(diff / 60)}h ${t("ago")}`;
+                                            return `${Math.floor(diff / 1440)}d ${t("ago")}`;
+                                        })()}
+                                    </span>
+                                </span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ── HIGHLIGHTED OPEN CHAT ACTION (BELOW IMAGE) ── */}
+                    {isOpenChatActive && (
+                        isQuotaExceeded ? (
+                            <div className="flex items-center justify-center gap-1.5 bg-gray-100 text-gray-500 text-xs font-bold py-2 px-3 rounded-xl border border-gray-200">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Direct chat temporarily paused. Refresh to reconnect.</span>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onStartDirectChat && user) {
+                                        const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
+                                        onStartDirectChat({
+                                            id: connectionId,
+                                            otherUserId: id,
+                                            name: name,
+                                            imageUrl: libasImageUrl || undefined
+                                        });
+                                    }
+                                }}
+                                className="w-full py-2.5 px-4 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 animate-pulse cursor-pointer border border-emerald-400"
+                                title={`Chat directly with ${name}`}
+                            >
+                                <MessageCircle className="w-4 h-4 fill-white" />
+                                <span>💬 Direct Chat Active • Chat Now with {firstName}</span>
+                            </button>
+                        )
+                    )}
+
                     {/* Smart Highlights */}
                     <div className="flex flex-col gap-2">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("Key Highlights")}</p>

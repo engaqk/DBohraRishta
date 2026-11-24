@@ -46,6 +46,7 @@ export default function SoulSyncTab({
     const [countdownStr, setCountdownStr] = useState('');
     const [showCustomizeModal, setShowCustomizeModal] = useState(false);
     const [customizingLoading, setCustomizingLoading] = useState(false);
+    const [showFullBiodataSheet, setShowFullBiodataSheet] = useState(false);
 
     // Custom Icebreaker inputs for current user
     const [myZiyarat, setMyZiyarat] = useState(myProfile?.icebreakerZiyarat || '');
@@ -131,6 +132,7 @@ export default function SoulSyncTab({
                 icon: '💍',
                 duration: 4000
             });
+            setShowFullBiodataSheet(false);
             setCurrentIndex(prev => prev + 1);
             setActiveCardTab('icebreakers');
         } catch (err: any) {
@@ -146,6 +148,7 @@ export default function SoulSyncTab({
             icon: '🤲',
             duration: 2000
         });
+        setShowFullBiodataSheet(false);
         setCurrentIndex(prev => prev + 1);
         setActiveCardTab('icebreakers');
     };
@@ -384,13 +387,15 @@ export default function SoulSyncTab({
                                         </div>
                                     </div>
 
-                                    <button
-                                        onClick={() => router.push(`/profile?id=${currentCandidate.id}&from=soulsync`)}
-                                        className="text-[#881337] font-bold hover:underline flex items-center gap-1 mt-2 text-xs"
-                                    >
-                                        <span>View Full Biodata Page</span>
-                                        <ArrowRight className="w-3.5 h-3.5" />
-                                    </button>
+                                    <div className="pt-2">
+                                        <button
+                                            onClick={() => setShowFullBiodataSheet(true)}
+                                            className="w-full py-2.5 px-4 bg-rose-50 hover:bg-rose-100 text-[#881337] rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 border border-rose-200 active:scale-95 shadow-xs cursor-pointer"
+                                        >
+                                            <BookOpen className="w-3.5 h-3.5 text-[#881337]" />
+                                            <span>📖 View Full Biodata & Family Details</span>
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -551,6 +556,190 @@ export default function SoulSyncTab({
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* Modal / Sheet: In-Screen Full Biodata Details */}
+            {showFullBiodataSheet && currentCandidate && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl shadow-2xl border border-rose-100 max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-amber-500 via-[#881337] to-[#4c0519] text-white p-4 sm:p-5 flex items-center justify-between shrink-0 shadow-md">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="bg-black/25 text-amber-300 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-amber-300/30">
+                                        SoulSync Alignment {currentIndex + 1} of {dailyCandidates.length}
+                                    </span>
+                                    {currentCandidate.isItsVerified && (
+                                        <span className="bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                            <ShieldCheck className="w-3 h-3" /> ITS Verified
+                                        </span>
+                                    )}
+                                </div>
+                                <h3 className="text-xl sm:text-2xl font-black font-serif mt-1 flex items-center gap-2">
+                                    {currentCandidate.name}
+                                    {currentCandidate.age && <span className="text-sm font-normal text-rose-200">({currentCandidate.age} yrs)</span>}
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setShowFullBiodataSheet(false)}
+                                className="p-2 rounded-full hover:bg-white/10 text-white/90 hover:text-white transition-colors cursor-pointer"
+                                title="Return to SoulSync Card"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        {/* Scrollable Content */}
+                        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 text-xs flex-grow">
+                            {/* Photo & High Level Details */}
+                            <div className="flex flex-col sm:flex-row items-center gap-4 bg-rose-50/40 p-4 rounded-2xl border border-rose-100">
+                                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden shadow-md border-2 border-white shrink-0">
+                                    <img 
+                                        src={currentCandidate.libasImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentCandidate.name || 'Candidate')}&background=881337&color=ffffff&size=256`} 
+                                        alt={currentCandidate.name} 
+                                        className="w-full h-full object-cover" 
+                                    />
+                                </div>
+                                <div className="flex-1 text-center sm:text-left space-y-1">
+                                    <p className="text-base font-bold text-[#881337]">{currentCandidate.name}</p>
+                                    <p className="text-gray-600 font-medium">
+                                        {currentCandidate.jamaat && `${currentCandidate.jamaat} · `}
+                                        {currentCandidate.city || currentCandidate.location || 'Bohra Member'}
+                                    </p>
+                                    <p className="text-gray-600">
+                                        {currentCandidate.education && `🎓 ${currentCandidate.education}`}
+                                        {currentCandidate.professionType && ` · 💼 ${currentCandidate.professionType}`}
+                                    </p>
+                                    <p className="text-[11px] text-amber-700 font-bold">
+                                        ✨ Curated for your family in today&apos;s 8:00 PM drop
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 3 Halal Icebreaker Cards Highlight */}
+                            <div>
+                                <h4 className="font-bold text-sm text-[#881337] uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                                    <Sparkles className="w-4 h-4 text-amber-500" />
+                                    <span>3 Halal Icebreaker Answers</span>
+                                </h4>
+                                <div className="space-y-2.5">
+                                    <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl p-3">
+                                        <p className="text-[10px] font-bold text-amber-900 uppercase">🕌 Cherished Ziyarat Memory</p>
+                                        <p className="text-xs text-gray-700 italic mt-0.5">
+                                            &ldquo;{currentCandidate.icebreakerZiyarat || "Performing Ziyarat of Imam Husain (AS) in Karbala Mua'lla with family and seeking Aqa Maula's TUS Dua Mubarak."}&rdquo;
+                                        </p>
+                                    </div>
+                                    <div className="bg-rose-50/80 border border-rose-200/80 rounded-xl p-3">
+                                        <p className="text-[10px] font-bold text-[#881337] uppercase">👨‍👩‍👧 Core Value From Parents</p>
+                                        <p className="text-xs text-gray-700 italic mt-0.5">
+                                            &ldquo;{currentCandidate.icebreakerValue || "Humility in conversation, maintaining barakat in daily life, and regular attendance in Jamaat Majalis."}&rdquo;
+                                        </p>
+                                    </div>
+                                    <div className="bg-indigo-50/80 border border-indigo-200/80 rounded-xl p-3">
+                                        <p className="text-[10px] font-bold text-indigo-900 uppercase">☕ Ideal Sunday Evening</p>
+                                        <p className="text-xs text-gray-700 italic mt-0.5">
+                                            &ldquo;{currentCandidate.icebreakerSunday || "Attending Jamaat Majlis, spending quality time with family, and enjoying quiet conversation."}&rdquo;
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Personal & Physical Details */}
+                            <div>
+                                <h4 className="font-bold text-sm text-[#881337] uppercase tracking-wide mb-2">Personal & Family Background</h4>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                        <p className="text-[9px] uppercase font-bold text-gray-400">Marital Status</p>
+                                        <p className="font-bold text-gray-800">{currentCandidate.maritalStatus || 'Single'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                        <p className="text-[9px] uppercase font-bold text-gray-400">Height</p>
+                                        <p className="font-bold text-gray-800">{currentCandidate.heightFeet ? `${currentCandidate.heightFeet} ft` : 'Not specified'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                        <p className="text-[9px] uppercase font-bold text-gray-400">Complexion</p>
+                                        <p className="font-bold text-gray-800">{currentCandidate.complexion || currentCandidate.skinTone || 'Fair'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                        <p className="text-[9px] uppercase font-bold text-gray-400">Father&apos;s Name</p>
+                                        <p className="font-bold text-gray-800">{currentCandidate.fatherName || 'Listed'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                        <p className="text-[9px] uppercase font-bold text-gray-400">Mother&apos;s Name</p>
+                                        <p className="font-bold text-gray-800">{currentCandidate.motherName || 'Listed'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                                        <p className="text-[9px] uppercase font-bold text-gray-400">Hizrat Preference</p>
+                                        <p className="font-bold text-gray-800">{currentCandidate.hizratLocation || 'Open to Discussion'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Bio / About */}
+                            {currentCandidate.bio && (
+                                <div>
+                                    <h4 className="font-bold text-sm text-[#881337] uppercase tracking-wide mb-1.5">About Candidate</h4>
+                                    <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
+                                        <p className="text-gray-700 leading-relaxed font-medium">{currentCandidate.bio}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Partner Expectations */}
+                            <div>
+                                <h4 className="font-bold text-sm text-[#881337] uppercase tracking-wide mb-1.5">Partner Qualities Desired</h4>
+                                <div className="bg-amber-50/50 p-3.5 rounded-xl border border-amber-100">
+                                    <p className="text-gray-800 font-medium leading-relaxed">
+                                        {currentCandidate.partnerQualities || "Seeking an understanding, deeni, educated partner from a respected Dawoodi Bohra family."}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Secondary link to open standalone page */}
+                            <div className="pt-2 text-center">
+                                <button
+                                    onClick={() => router.push(`/profile?id=${currentCandidate.id}&from=soulsync`)}
+                                    className="text-[11px] text-[#881337] font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                >
+                                    <span>Open Standalone Full Profile Page</span>
+                                    <ArrowRight className="w-3 h-3" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Sticky Action Footer */}
+                        <div className="p-3 sm:p-4 bg-gray-50 border-t border-gray-200 flex items-center gap-2 sm:gap-3 shrink-0">
+                            <button
+                                onClick={() => setShowFullBiodataSheet(false)}
+                                className="flex-1 py-3 px-3 rounded-2xl font-bold text-xs text-gray-700 bg-white hover:bg-gray-100 border border-gray-200 transition-all flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95"
+                            >
+                                <span>← Back to Alignment</span>
+                            </button>
+
+                            <button
+                                onClick={handlePassDua}
+                                disabled={isSending}
+                                className="flex-1 py-3 px-3 rounded-2xl font-bold text-xs text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center justify-center gap-1 shadow-xs cursor-pointer active:scale-95"
+                            >
+                                <span>🤲 Pass with Dua</span>
+                            </button>
+
+                            <button
+                                onClick={handleSendSalam}
+                                disabled={isSending}
+                                className="flex-[2] py-3 px-4 rounded-2xl font-black text-xs text-rose-950 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+                            >
+                                {isSending ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <>
+                                        <Send className="w-3.5 h-3.5 fill-rose-950" />
+                                        <span>🕊️ Send Salam (Connect)</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

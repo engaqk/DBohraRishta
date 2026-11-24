@@ -32,7 +32,7 @@ export default function RefreshManager() {
                             }
                         } catch (_) {}
                         sessionStorage.setItem('app_just_updated', 'true');
-                        window.location.reload();
+                        (window as any).location.reload();
                     } else {
                         sessionStorage.setItem('pendingUpdate', 'true');
                     }
@@ -66,7 +66,17 @@ export default function RefreshManager() {
         if (sessionStorage.getItem('pendingUpdate') === 'true') {
             console.log("Applying pending update silently on navigation...");
             sessionStorage.removeItem('pendingUpdate');
-            window.location.reload();
+            try {
+                if ('caches' in window) {
+                    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).finally(() => {
+                        (window as any).location.reload();
+                    });
+                } else {
+                    (window as any).location.reload();
+                }
+            } catch (_) {
+                (window as any).location.reload();
+            }
         }
     }, [pathname]);
 

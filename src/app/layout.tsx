@@ -71,6 +71,72 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} antialiased`} style={{ WebkitUserSelect: 'none', userSelect: 'none' }}>
+        {/* ChunkLoadError & Stale Build Auto-Healing Script */}
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              function isChunkError(err) {
+                try {
+                  var msg = (err && (err.message || (err.error && err.error.message) || String(err))) || '';
+                  var name = (err && (err.name || (err.error && err.error.name))) || '';
+                  return (
+                    name === 'ChunkLoadError' ||
+                    msg.indexOf('ChunkLoadError') !== -1 ||
+                    msg.indexOf('Failed to load chunk') !== -1 ||
+                    msg.indexOf('Loading chunk') !== -1 ||
+                    msg.indexOf('missing chunk') !== -1
+                  );
+                } catch(e) { return false; }
+              }
+
+              function handleChunkFailure() {
+                try {
+                  var now = Date.now();
+                  var key = 'next_chunk_reload_ts';
+                  var last = parseInt(sessionStorage.getItem(key) || '0', 10);
+                  if (now - last > 8000) {
+                    sessionStorage.setItem(key, String(now));
+                    if (window.caches) {
+                      window.caches.keys().then(function(keys) {
+                        return Promise.all(keys.map(function(k) { return window.caches.delete(k); }));
+                      }).finally(function() {
+                        window.location.reload();
+                      });
+                    } else {
+                      window.location.reload();
+                    }
+                  }
+                } catch(e) {
+                  window.location.reload();
+                }
+              }
+
+              window.addEventListener('error', function(event) {
+                try {
+                  if (event && event.target && event.target.tagName === 'SCRIPT') {
+                    var src = event.target.src || '';
+                    if (src.indexOf('/_next/static/chunks/') !== -1) {
+                      handleChunkFailure();
+                      return;
+                    }
+                  }
+                  if (isChunkError(event)) {
+                    handleChunkFailure();
+                  }
+                } catch(e) {}
+              }, true);
+
+              window.addEventListener('unhandledrejection', function(event) {
+                try {
+                  if (event && (isChunkError(event.reason) || isChunkError(event))) {
+                    event.preventDefault();
+                    handleChunkFailure();
+                  }
+                } catch(e) {}
+              });
+            })();
+          `
+        }} />
         {/* Anti-screenshot / print styling hidden in normal display but covers screen on print */}
         <div className="fixed inset-0 z-[9999] bg-black text-white flex justify-center items-center text-3xl font-bold opacity-0 pointer-events-none" id="screenshot-blocker">
           Screenshots Disabled for Security

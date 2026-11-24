@@ -5,7 +5,7 @@ import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
 import SoulSyncTab from './SoulSyncTab';
-import { Sparkles, Mic, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart, Video, Compass } from 'lucide-react';
+import { Sparkles, Mic, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart, Video, Compass, Coffee } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import AdabERaddModal from '@/components/AdabERaddModal';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -2190,21 +2190,22 @@ export default function RishtaDashboard() {
 
         // Filter out profiles where there is already an accepted connection
         const hiddenProfileIds = new Set<string>();
-        allRequests.forEach(r => {
-            if (r.status === "accepted") {
+        (allRequests || []).forEach(r => {
+            if (r && r.status === "accepted") {
                 const otherId = r.isIncoming ? r.from : r.to;
-                hiddenProfileIds.add(otherId);
+                if (otherId) hiddenProfileIds.add(otherId);
             }
         });
 
-        const myGender = (myProfile?.gender || '').toLowerCase().trim();
+        const myGender = String(myProfile?.gender || '').toLowerCase().trim();
         const isAdminNonImpersonating = myProfile?.role === 'admin' && !isImpersonating;
         const targetGender = myGender === 'male' ? 'female' : (myGender === 'female' ? 'male' : (isAdminNonImpersonating ? 'all' : null));
 
-        const availableProfiles = discoveryProfiles.filter(p => {
-            if (p.id === user?.uid) return false;
+        const availableProfiles = (discoveryProfiles || []).filter(p => {
+            if (!p || !p.id) return false;
+            if (user && p.id === user.uid) return false;
             if (hiddenProfileIds.has(p.id)) return false;
-            const candGender = (p.gender || '').toLowerCase().trim();
+            const candGender = String(p.gender || '').toLowerCase().trim();
             // STRICT OPPOSITE-GENDER FILTER:
             if (targetGender && targetGender !== 'all') {
                 if (candGender !== targetGender) return false;
@@ -2216,7 +2217,7 @@ export default function RishtaDashboard() {
 
         switch (activeTab) {
             case 'requests':
-                const pendingRequests = allRequests.filter(r => r.status === "pending_response");
+                const pendingRequests = (allRequests || []).filter(r => r && r.status === "pending_response");
                 return (
                     <section className="lg:col-span-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="flex justify-between items-center mb-6">
@@ -2236,7 +2237,7 @@ export default function RishtaDashboard() {
                                                 {req.otherUserLibasUrl ? (
                                                     <img src={req.otherUserLibasUrl} alt="User" className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${req.otherUserBlurSecurityEnabled ? 'blur-md scale-110 opacity-70' : 'opacity-100 scale-100'}`} />
                                                 ) : (
-                                                    <span className="z-10 relative">{req.otherUserName.charAt(0)}</span>
+                                                    <span className="z-10 relative">{(req.otherUserName || 'U').charAt(0)}</span>
                                                 )}
                                                 {req.otherUserBlurSecurityEnabled && !req.otherUserLibasUrl && <div className="absolute inset-0 backdrop-blur-md"></div>}
                                             </div>
@@ -2247,8 +2248,8 @@ export default function RishtaDashboard() {
                                                         <span>✨ Chosen in SoulSync 8:00 PM Drop!</span>
                                                     </div>
                                                 )}
-                                                <h4 className="font-bold text-lg text-[#881337]">{req.otherUserName}, {req.otherUserAge}</h4>
-                                                <p className="text-sm text-gray-500">{req.otherUserLocation}</p>
+                                                <h4 className="font-bold text-lg text-[#881337]">{req.otherUserName || 'Candidate'}{req.otherUserAge ? `, ${req.otherUserAge}` : ''}</h4>
+                                                <p className="text-sm text-gray-500">{req.otherUserLocation || ''}</p>
                                             </div>
                                         </div>
                                         {req.isIncoming ? (
@@ -2387,13 +2388,13 @@ export default function RishtaDashboard() {
                                                 {msg.otherUserLibasUrl ? (
                                                     <img src={msg.otherUserLibasUrl} alt="Match" className="w-full h-full object-cover group-hover/card:scale-105 transition-transform" />
                                                 ) : (
-                                                    <span>{msg.otherUserName.charAt(0)}</span>
+                                                    <span>{(msg.otherUserName || 'M').charAt(0)}</span>
                                                 )}
                                                 {msg.isIncoming && <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white"></span>}
                                             </div>
                                             <div className="text-center">
-                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{msg.otherUserLocation.split(',')[0]}</p>
-                                                <p className="text-xs text-[#881337] font-medium max-w-[100px] truncate">{msg.otherUserEducation}</p>
+                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{(msg.otherUserLocation || '').split(',')[0] || 'Bohra'}</p>
+                                                <p className="text-xs text-[#881337] font-medium max-w-[100px] truncate">{msg.otherUserEducation || ''}</p>
                                                 <span className="text-[10px] text-[#881337] font-black group-hover/card:underline mt-0.5 block">View Profile ↗</span>
                                             </div>
                                         </div>
@@ -2405,13 +2406,13 @@ export default function RishtaDashboard() {
                                                     className="cursor-pointer group/name"
                                                 >
                                                     <h4 className="font-bold text-lg text-[#881337] group-hover/name:underline flex items-center gap-1.5">
-                                                        {msg.otherUserName}
-                                                        <span className="text-xs text-gray-400 font-normal">({msg.otherUserAge} yrs)</span>
+                                                        {msg.otherUserName || 'Candidate'}
+                                                        {msg.otherUserAge && <span className="text-xs text-gray-400 font-normal">({msg.otherUserAge} yrs)</span>}
                                                     </h4>
                                                     <div className="flex items-center gap-3 text-sm text-gray-600 font-medium mt-1">
-                                                        <span>📞 {msg.otherUserMobile}</span>
+                                                        <span>📞 {msg.otherUserMobile || 'Contact Private'}</span>
                                                         <span className="hidden sm:inline">|</span>
-                                                        <span>✉️ {msg.otherUserEmail}</span>
+                                                        <span>✉️ {msg.otherUserEmail || ''}</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col items-end gap-1.5">
@@ -3206,16 +3207,16 @@ export default function RishtaDashboard() {
                                             <div className="relative">
                                                 <div className="w-14 h-14 rounded-full border-2 border-white shadow-sm overflow-hidden ring-2 ring-transparent group-hover/v:ring-[#881337]/20 transition-all">
                                                     {visitor.viewerLibasUrl ? (
-                                                        <img src={visitor.viewerLibasUrl} alt={visitor.viewerName} className="w-full h-full object-cover grayscale-[0.5] group-hover/v:grayscale-0 transition-all blur-[2px] group-hover/v:blur-0" />
+                                                        <img src={visitor.viewerLibasUrl} alt={visitor.viewerName || 'Visitor'} className="w-full h-full object-cover grayscale-[0.5] group-hover/v:grayscale-0 transition-all blur-[2px] group-hover/v:blur-0" />
                                                     ) : (
                                                         <div className="w-full h-full bg-rose-50 flex items-center justify-center text-[#881337] font-black text-xl">
-                                                            {visitor.viewerName[0]}
+                                                            {(visitor.viewerName || 'Visitor')[0]}
                                                         </div>
                                                     )}
                                                 </div>
                                                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white" title="Active" />
                                             </div>
-                                            <p className="text-[10px] font-bold text-gray-600 truncate w-16 text-center group-hover/v:text-[#881337]">{visitor.viewerName.split(' ')[0]}</p>
+                                            <p className="text-[10px] font-bold text-gray-600 truncate w-16 text-center group-hover/v:text-[#881337]">{(visitor.viewerName || 'Visitor').split(' ')[0]}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -4143,12 +4144,21 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                                 <Search className="w-5 h-5" /> Search Profiles
                             </button>
 
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 mt-6">Support</p>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 mt-6">Support & Khidmat</p>
                             <button
                                 onClick={() => { setShowAdminHelpChat(true); setShowMobileMenu(false); }}
                                 className="w-full flex items-center gap-4 p-4 rounded-2xl text-rose-700 font-bold bg-rose-50/30 hover:bg-rose-50 transition-all"
                             >
                                 <HelpCircle className="w-5 h-5" /> Admin Help
+                            </button>
+                            <button
+                                onClick={() => {
+                                    window.dispatchEvent(new CustomEvent('open-coffee-modal'));
+                                    setShowMobileMenu(false);
+                                }}
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl text-amber-900 font-bold bg-amber-50 hover:bg-amber-100 transition-all border border-amber-200 mt-2"
+                            >
+                                <Coffee className="w-5 h-5 text-amber-600" /> Buy Us a Coffee ☕
                             </button>
 
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-2 mt-6">Mobile App</p>

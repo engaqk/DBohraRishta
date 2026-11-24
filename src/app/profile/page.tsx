@@ -20,6 +20,7 @@ function ProfileContent() {
     const { t } = useLanguage();
     const id = searchParams?.get('id') || '';
     const fromChat = searchParams?.get('from') === 'chat';
+    const fromSoulSync = searchParams?.get('from') === 'soulsync';
 
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -550,7 +551,9 @@ function ProfileContent() {
                 <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
                     <button 
                         onClick={() => {
-                            if (fromChat) {
+                            if (fromSoulSync) {
+                                router.push('/?tab=soulsync');
+                            } else if (fromChat) {
                                 router.push(`/?tab=messages&directChat=${id}`);
                             } else {
                                 router.back();
@@ -559,7 +562,7 @@ function ProfileContent() {
                         className="flex items-center gap-1.5 text-gray-600 hover:text-[#881337] font-bold transition-colors text-sm shrink-0"
                     >
                         <ArrowLeft className="w-4 h-4" /> 
-                        <span>{fromChat ? 'Back to Chat' : 'Back'}</span>
+                        <span>{fromSoulSync ? '← Return to SoulSync Alignment ✨' : fromChat ? 'Back to Chat' : 'Back'}</span>
                     </button>
                     <p className="font-serif font-bold text-[#881337] truncate">Profile Details</p>
                     {(isOpenChatActive || isAccepted) ? (
@@ -575,6 +578,19 @@ function ProfileContent() {
                     )}
                 </div>
             </div>
+
+            {fromSoulSync && (
+                <div className="bg-gradient-to-r from-amber-500 via-[#881337] to-[#4c0519] text-white text-xs font-bold py-2.5 px-4 text-center flex flex-wrap items-center justify-center gap-2 shadow-sm sticky top-14 z-30">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>You are reviewing an alignment from today&apos;s SoulSync 8:00 PM Drop</span>
+                    <button
+                        onClick={() => router.push('/?tab=soulsync')}
+                        className="ml-2 bg-white/20 hover:bg-white/30 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider transition-all cursor-pointer"
+                    >
+                        ← Return to Card
+                    </button>
+                </div>
+            )}
 
             <main className="max-w-2xl mx-auto px-3 py-5 pb-16">
                 <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">

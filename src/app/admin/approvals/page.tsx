@@ -16,6 +16,7 @@ import PushNotificationTab from "@/components/admin/PushNotificationTab";
 import AuditLogsTab from "@/components/admin/AuditLogsTab";
 import OpenChatController from "@/components/admin/OpenChatController";
 import SoulSyncController from "@/components/admin/SoulSyncController";
+import CoffeeController from "@/components/admin/CoffeeController";
 
 interface PendingUser {
     id: string;
@@ -630,6 +631,9 @@ export default function AdminVerificationPage() {
                 {/* Superadmin SoulSync 8:00 PM Daily Drop Controller */}
                 <SoulSyncController />
 
+                {/* Buy Me a Coffee / UPI QR Controller */}
+                <CoffeeController />
+
                 {/* Main Tabs */}
                 <div className="flex items-center gap-2 mb-6 border-b border-gray-200 overflow-x-auto whitespace-nowrap scrollbar-hide">
                     <button
@@ -765,7 +769,8 @@ export default function AdminVerificationPage() {
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-xs font-bold text-blue-600 uppercase tracking-tight">Selfie Verification</p>
                                                         {selectedUser.selfieStatus === 'pending' && <span className="bg-blue-100 text-blue-700 text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse uppercase">PENDING REVIEW</span>}
-                                                        {selectedUser.isPhotoVerified && <ShieldCheck className="w-3 h-3 text-emerald-500" />}
+                                                        {(selectedUser.isPhotoVerified || selectedUser.selfieStatus === 'verified') && <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />}
+                                                        {selectedUser.selfieStatus === 'rejected' && <span className="bg-rose-100 text-rose-700 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">REJECTED</span>}
                                                     </div>
                                                     <button 
                                                         onClick={() => handleDeleteSelfie(selectedUser.id)}
@@ -781,34 +786,71 @@ export default function AdminVerificationPage() {
                                                 >
                                                     <img src={selectedUser.selfieImageUrl || selectedUser.selfieUrl} alt="Selfie" className="w-full h-full object-cover" loading="lazy" />
                                                 </div>
+                                                {/* Direct Action Buttons Right on Selfie Card */}
+                                                <div className="flex gap-2 mt-2">
+                                                    <button
+                                                        onClick={() => handleVerifySelfie(selectedUser.id, false)}
+                                                        className="flex-1 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 font-black text-xs rounded-xl transition-all shadow-xs flex items-center justify-center gap-1 active:scale-95"
+                                                        title="Reject candidate's selfie"
+                                                    >
+                                                        ✕ Reject Selfie
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleVerifySelfie(selectedUser.id, true)}
+                                                        className="flex-1 py-2 bg-blue-600 text-white hover:bg-blue-700 font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1 active:scale-95"
+                                                        title="Approve candidate's selfie"
+                                                    >
+                                                        <ShieldCheck className="w-3.5 h-3.5" /> Approve Selfie
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Selfie Action Button */}
-                                    {(selectedUser.selfieImageUrl || selectedUser.selfieUrl) && !selectedUser.isPhotoVerified && (
-                                        <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl mb-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                                    {/* Dedicated Selfie Action Panel */}
+                                    {(selectedUser.selfieImageUrl || selectedUser.selfieUrl) && (
+                                        <div className={`border p-4 rounded-2xl mb-4 flex flex-col md:flex-row items-center justify-between gap-4 transition-all shadow-xs ${
+                                            selectedUser.selfieStatus === 'pending'
+                                                ? 'bg-blue-50/90 border-blue-200'
+                                                : (selectedUser.isPhotoVerified || selectedUser.selfieStatus === 'verified'
+                                                    ? 'bg-emerald-50/90 border-emerald-200'
+                                                    : 'bg-rose-50/90 border-rose-200')
+                                        }`}>
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                                                    selectedUser.selfieStatus === 'pending'
+                                                        ? 'bg-blue-100 text-blue-600 animate-pulse'
+                                                        : (selectedUser.isPhotoVerified || selectedUser.selfieStatus === 'verified'
+                                                            ? 'bg-emerald-100 text-emerald-600'
+                                                            : 'bg-rose-100 text-rose-600')
+                                                }`}>
                                                     <Camera size={20} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs font-black text-blue-900 uppercase">Selfie Comparison Ready</p>
-                                                    <p className="text-[10px] text-blue-600">Compare the selfie with the Libas photo to verify identity.</p>
+                                                    <p className="text-xs font-black uppercase text-gray-900">
+                                                        {selectedUser.selfieStatus === 'pending'
+                                                            ? '⚡ Selfie Verification: Pending Review'
+                                                            : (selectedUser.isPhotoVerified || selectedUser.selfieStatus === 'verified'
+                                                                ? '✓ Selfie Photo Verified & Approved'
+                                                                : '✕ Selfie Photo Rejected')}
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-600">
+                                                        Compare the live selfie with the Libas photo to verify physical identity.
+                                                    </p>
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
                                                 <button 
                                                     onClick={() => handleVerifySelfie(selectedUser.id, false)}
-                                                    className="px-4 py-2 bg-white text-rose-600 border border-rose-100 font-bold text-xs rounded-xl hover:bg-rose-50"
+                                                    className="px-4 py-2 bg-white text-rose-600 border border-rose-200 font-bold text-xs rounded-xl hover:bg-rose-50 transition-all active:scale-95"
                                                 >
                                                     Reject Selfie
                                                 </button>
                                                 <button 
                                                     onClick={() => handleVerifySelfie(selectedUser.id, true)}
-                                                    className="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-900/20 flex items-center gap-2"
+                                                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95"
                                                 >
-                                                    <ShieldCheck size={14} /> Verify Selfie
+                                                    <ShieldCheck size={14} /> Approve Selfie
                                                 </button>
                                             </div>
                                         </div>
@@ -1091,7 +1133,7 @@ export default function AdminVerificationPage() {
                         {/* ── SELFIE VERIFICATION PIPELINE ── */}
                         {(() => {
                             const selfieQueue = allUsers.filter(u =>
-                                (u.selfieImageUrl || u.selfieUrl) && u.selfieStatus === 'pending' && !u.isPhotoVerified
+                                (u.selfieImageUrl || u.selfieUrl) && u.selfieStatus === 'pending'
                             );
                             if (selfieQueue.length === 0) return null;
                             return (

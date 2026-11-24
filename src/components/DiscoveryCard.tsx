@@ -612,36 +612,6 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                         </div>
                     )}
 
-                    {/* ── HIGHLIGHTED OPEN CHAT ACTION (BELOW IMAGE) ── */}
-                    {isOpenChatActive && (
-                        isQuotaExceeded ? (
-                            <div className="flex items-center justify-center gap-1.5 bg-gray-100 text-gray-500 text-xs font-bold py-2 px-3 rounded-xl border border-gray-200">
-                                <Clock className="w-3.5 h-3.5" />
-                                <span>Direct chat temporarily paused. Refresh to reconnect.</span>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (onStartDirectChat && user) {
-                                        const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
-                                        onStartDirectChat({
-                                            id: connectionId,
-                                            otherUserId: id,
-                                            name: name,
-                                            imageUrl: libasImageUrl || undefined
-                                        });
-                                    }
-                                }}
-                                className="w-full py-2.5 px-4 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 animate-pulse cursor-pointer border border-emerald-400"
-                                title={`Chat directly with ${name}`}
-                            >
-                                <MessageCircle className="w-4 h-4 fill-white" />
-                                <span>💬 Direct Chat Active • Chat Now with {firstName}</span>
-                            </button>
-                        )
-                    )}
-
                     {/* Smart Highlights */}
                     <div className="flex flex-col gap-2">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("Key Highlights")}</p>
@@ -782,27 +752,28 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                         <ExternalLink className="w-3 h-3" /> {t("View Full Profile")}
                     </button>
 
-                    {/* CTA Button */}
-                    {
-                        rejectCount >= 2 && !requestSent ? (
-                            <div className="w-full py-3 bg-gray-50 text-gray-400 font-bold rounded-xl border border-gray-100 text-xs text-center">
-                                {t("Request limit reached for this profile")}
-                            </div>
-                        ) : !isMyProfileVerified ? (
-                            <div className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
-                                <p className="text-amber-800 font-bold text-xs">🔐 {t("Your ITS Verification required to send requests")}</p>
-                                <p className="text-amber-600 text-[10px] mt-0.5">{t("Awaiting admin approval")}</p>
-                            </div>
-                        ) : (
-                            <div className="flex gap-2">
-                                {(((localIsIncoming ?? isIncomingRequest) === true) && (requestStatus?.toLowerCase()?.includes('pending') || (!requestStatus && (initialRequestStatus?.toLowerCase()?.includes('pending'))))) ? (
-                                    <>
+                    {/* ── WORLD-STANDARD UNIFIED ACTION BAR ── */}
+                    {rejectCount >= 2 && !requestSent ? (
+                        <div className="w-full py-3 bg-gray-50 text-gray-400 font-bold rounded-xl border border-gray-100 text-xs text-center">
+                            {t("Request limit reached for this profile")}
+                        </div>
+                    ) : !isMyProfileVerified ? (
+                        <div className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
+                            <p className="text-amber-800 font-bold text-xs">🔐 {t("Your ITS Verification required to send requests")}</p>
+                            <p className="text-amber-600 text-[10px] mt-0.5">{t("Awaiting admin approval")}</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            {/* 1. Incoming Request: Accept or Reject */}
+                            {(((localIsIncoming ?? isIncomingRequest) === true) && (requestStatus?.toLowerCase()?.includes('pending') || (!requestStatus && (initialRequestStatus?.toLowerCase()?.includes('pending'))))) ? (
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex gap-2">
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 if (onAcceptInterest && requestId) onAcceptInterest(requestId);
                                             }}
-                                            className="flex-[2] py-3.5 rounded-xl font-black text-sm bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md active:scale-95 flex items-center justify-center gap-2 animate-pulse hover:shadow-lg transition-all"
+                                            className="flex-[2] py-3.5 rounded-xl font-black text-sm bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 text-white shadow-md active:scale-95 flex items-center justify-center gap-2 animate-pulse hover:shadow-lg transition-all"
                                         >
                                             {t("🤝 Accept Interest")}
                                         </button>
@@ -813,7 +784,120 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                                         >
                                             {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <>{t("Reject")}</>}
                                         </button>
-                                    </>
+                                    </div>
+                                    {isOpenChatActive && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onStartDirectChat && user) {
+                                                    const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
+                                                    onStartDirectChat({
+                                                        id: connectionId,
+                                                        otherUserId: id,
+                                                        name: name,
+                                                        imageUrl: libasImageUrl || undefined
+                                                    });
+                                                }
+                                            }}
+                                            className="w-full py-2.5 rounded-xl font-bold text-xs bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300 shadow-xs flex items-center justify-center gap-1.5 transition-all"
+                                        >
+                                            <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                                            <span>💬 Chat with {firstName} before deciding</span>
+                                        </button>
+                                    )}
+                                </div>
+                            ) : requestStatus === 'accepted' ? (
+                                /* 2. Accepted Connection: Single Clean Direct Chat Button */
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (onStartDirectChat && user) {
+                                            const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
+                                            onStartDirectChat({
+                                                id: connectionId,
+                                                otherUserId: id,
+                                                name: name,
+                                                imageUrl: libasImageUrl || undefined
+                                            });
+                                        }
+                                    }}
+                                    className="w-full py-3.5 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 text-white shadow-lg active:scale-95 flex items-center justify-center gap-2 transition-all border border-emerald-400"
+                                >
+                                    <MessageCircle className="w-4 h-4 text-white" />
+                                    <span>💬 Connected • Chat Now with {firstName}</span>
+                                </button>
+                            ) : (requestSent && (localIsIncoming ?? isIncomingRequest) === false) ? (
+                                /* 3. Interest Already Sent: Status Pill + Clean Chat Button */
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="w-full py-2 bg-amber-50 border border-amber-200/80 rounded-xl text-center text-amber-700 font-bold text-xs flex items-center justify-center gap-1.5">
+                                        <span>✓ {t("Interest Sent")}</span>
+                                        <span className="text-[10px] text-amber-600 font-normal">({t("Awaiting Response")})</span>
+                                    </div>
+                                    {isOpenChatActive && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onStartDirectChat && user) {
+                                                    const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
+                                                    onStartDirectChat({
+                                                        id: connectionId,
+                                                        otherUserId: id,
+                                                        name: name,
+                                                        imageUrl: libasImageUrl || undefined
+                                                    });
+                                                }
+                                            }}
+                                            className="w-full py-2.5 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 text-white shadow-md active:scale-95 flex items-center justify-center gap-2 border border-emerald-400"
+                                        >
+                                            <MessageCircle className="w-3.5 h-3.5 text-white" />
+                                            <span>💬 Open Chat with {firstName}</span>
+                                        </button>
+                                    )}
+                                </div>
+                            ) : isRejectedRecipient ? (
+                                /* 4. Rejected */
+                                <div className="w-full py-3.5 bg-gray-100 text-gray-400 font-bold rounded-xl border border-gray-200 text-xs text-center">
+                                    {t("Not Interested")}
+                                </div>
+                            ) : (
+                                /* 5. Fresh Candidate: Sleek Side-by-Side [ Chat ] + [ Send Interest ] Dock */
+                                isOpenChatActive ? (
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onStartDirectChat && user) {
+                                                    const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
+                                                    onStartDirectChat({
+                                                        id: connectionId,
+                                                        otherUserId: id,
+                                                        name: name,
+                                                        imageUrl: libasImageUrl || undefined
+                                                    });
+                                                }
+                                            }}
+                                            className="flex-1 py-3.5 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 text-white shadow-md active:scale-95 flex items-center justify-center gap-1.5 transition-all border border-emerald-400"
+                                            title={`Chat directly with ${name}`}
+                                        >
+                                            <MessageCircle className="w-4 h-4 text-white" />
+                                            <span>💬 Chat</span>
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (isMyProfileVerified && !requestSent) {
+                                                    setShowIcebreakerModal(true);
+                                                } else if (!requestSent) {
+                                                    handleSendRequest();
+                                                }
+                                            }}
+                                            disabled={loading}
+                                            className="flex-[1.5] py-3.5 rounded-xl font-black text-xs bg-gradient-to-r from-[#881337] to-[#9F1239] hover:from-[#9F1239] text-white shadow-md active:scale-95 flex items-center justify-center gap-1.5 transition-all hover:shadow-lg"
+                                        >
+                                            {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                            <span>💍 {rejectCount > 0 ? t("↩ Retry Request") : t("Send Interest")}</span>
+                                        </button>
+                                    </div>
                                 ) : (
                                     <button
                                         onClick={(e) => {
@@ -824,61 +908,15 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                                                 handleSendRequest();
                                             }
                                         }}
-                                        disabled={(requestSent && requestStatus !== 'accepted' && requestStatus !== 'rejected' && (localIsIncoming ?? isIncomingRequest) === false) || loading || (requestStatus === 'accepted') || isRejectedRecipient}
-                                        className={`w-full py-3.5 rounded-xl font-black text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
-                                        ${requestStatus === 'accepted'
-                                            ? 'bg-gradient-to-r from-amber-400 to-amber-600 text-white border-none shadow-lg'
-                                            : isRejectedRecipient
-                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200 shadow-none'
-                                                : (requestSent && (localIsIncoming ?? isIncomingRequest) === false)
-                                                    ? 'bg-amber-50 text-amber-600 border border-amber-200 shadow-none'
-                                                    : 'bg-gradient-to-r from-[#881337] to-[#9F1239] text-white hover:shadow-lg'}`}
+                                        disabled={loading}
+                                        className="w-full py-3.5 rounded-xl font-black text-sm bg-gradient-to-r from-[#881337] to-[#9F1239] hover:from-[#9F1239] text-white shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all hover:shadow-lg"
                                     >
                                         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                        {requestStatus === 'accepted' ? t("✓ Connected & Chatting")
-                                            : isRejectedRecipient ? t("Not Interested")
-                                                : (requestSent && (localIsIncoming ?? isIncomingRequest) === false) ? t("✓ Interest Sent")
-                                                    : rejectCount > 0 ? t("↩ Retry Request")
-                                                        : t("Send Interest")}
+                                        <span>{rejectCount > 0 ? t("↩ Retry Request") : t("Send Interest")}</span>
                                     </button>
-                                )}
-                            </div>
-                        )}
-
-                    {/* Open Chat Direct Button - Accessible to ALL candidates */}
-                    {isOpenChatActive && (
-                        isQuotaExceeded ? (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    alert("Direct Chat is temporarily paused due to traffic quota. Please refresh the page to reconnect!");
-                                }}
-                                className="w-full mt-2.5 py-3 rounded-xl font-bold text-xs bg-gray-400 hover:bg-gray-500 text-white shadow flex items-center justify-center gap-2 transition-all border border-gray-300"
-                                title="Chat temporarily paused due to traffic quota. Please refresh page."
-                            >
-                                <Clock className="w-4 h-4 text-white" />
-                                <span>⚠️ Chat Paused (Traffic Quota — Refresh to Reconnect)</span>
-                            </button>
-                        ) : (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (onStartDirectChat && user) {
-                                        const connectionId = `direct_${[user.uid, id].sort().join('_')}`;
-                                        onStartDirectChat({
-                                            id: connectionId,
-                                            otherUserId: id,
-                                            name: name,
-                                            imageUrl: libasImageUrl || undefined
-                                        });
-                                    }
-                                }}
-                                className="w-full mt-2.5 py-3.5 rounded-xl font-black text-xs bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-lg active:scale-95 flex items-center justify-center gap-2 transition-all border border-emerald-400 animate-pulse"
-                            >
-                                <MessageCircle className="w-4 h-4 text-white" />
-                                <span>💬 Open Chat with {firstName}</span>
-                            </button>
-                        )
+                                )
+                            )}
+                        </div>
                     )}
                 </div>
             </div>

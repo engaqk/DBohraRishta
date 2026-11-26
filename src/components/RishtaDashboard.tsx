@@ -571,10 +571,10 @@ export default function RishtaDashboard() {
     const updateChipsScrollState = () => {
         const el = chipsScrollRef.current;
         if (!el) return;
-        const hasOverflow = el.scrollWidth > el.clientWidth + 6;
-        setChipsCanScrollLeft(el.scrollLeft > 8);
-        setChipsCanScrollRight(hasOverflow && el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
-        setChipsAtEnd(hasOverflow && el.scrollLeft + el.clientWidth >= el.scrollWidth - 10);
+        const hasOverflow = el.scrollWidth > el.clientWidth + 2;
+        setChipsCanScrollLeft(el.scrollLeft > 4);
+        setChipsCanScrollRight(hasOverflow && el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+        setChipsAtEnd(hasOverflow && el.scrollLeft + el.clientWidth >= el.scrollWidth - 6);
     };
     const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
 
@@ -844,13 +844,24 @@ export default function RishtaDashboard() {
     const [platformStats, setPlatformStats] = useState({ count: 50, activeNow: 5 });
 
     useEffect(() => {
-        const timer = setTimeout(updateChipsScrollState, 200);
+        if (loading) return;
+        const timer1 = setTimeout(updateChipsScrollState, 50);
+        const timer2 = setTimeout(updateChipsScrollState, 400);
         window.addEventListener('resize', updateChipsScrollState);
+
+        let ro: ResizeObserver | null = null;
+        if (typeof ResizeObserver !== 'undefined' && chipsScrollRef.current) {
+            ro = new ResizeObserver(() => updateChipsScrollState());
+            ro.observe(chipsScrollRef.current);
+        }
+
         return () => {
-            clearTimeout(timer);
+            clearTimeout(timer1);
+            clearTimeout(timer2);
             window.removeEventListener('resize', updateChipsScrollState);
+            ro?.disconnect();
         };
-    }, [myProfile, isOpenChatActive, platformStats]);
+    }, [loading, myProfile, isOpenChatActive, platformStats]);
     const [performanceData, setPerformanceData] = useState({ views: 0, requests: 0 });
     const biodataRef = useRef<HTMLDivElement>(null);
 

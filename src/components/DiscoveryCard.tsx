@@ -65,6 +65,9 @@ interface DiscoveryCardProps {
     isOpenChatActive?: boolean;
     isQuotaExceeded?: boolean;
     onStartDirectChat?: (candidate: { id: string; otherUserId: string; name: string; imageUrl?: string }) => void;
+    isMutualBookmark?: boolean;
+    sharedPolls?: { label: string; emoji: string }[];
+    onBookmarkChange?: (profileId: string, isNowBookmarked: boolean) => void;
 }
 
 const DiscoveryCard = React.memo(function DiscoveryCard({
@@ -77,7 +80,8 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
     city, state, gender, createdAt, selfieImageUrl, selfieStatus, voiceIntroUrl, videoIntroUrl, videoStatus, lastActive,
     requestId, initialRequestStatus, isIncomingRequest, onAcceptInterest, onDeclineInterest,
     isPhotoVerified, isEmailVerified, verifiedPhone,
-    isOpenChatActive = false, isQuotaExceeded = false, onStartDirectChat
+    isOpenChatActive = false, isQuotaExceeded = false, onStartDirectChat,
+    isMutualBookmark = false, sharedPolls = [], onBookmarkChange
 }: DiscoveryCardProps) {
     const { user } = useAuth();
     const { t } = useLanguage();
@@ -232,6 +236,7 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                 // Remove
                 await deleteDoc(doc(db, 'bookmarks', snap.docs[0].id));
                 setIsBookmarked(false);
+                onBookmarkChange?.(id, false);
                 toast.success('Removed from bookmarks');
             } else {
                 // Add
@@ -242,7 +247,28 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                 });
                 setIsBookmarked(true);
                 triggerHaptic(HapticPatterns.LIGHT);
-                toast.success('Profile bookmarked!');
+                onBookmarkChange?.(id, true);
+
+                // Check Mutual Bookmark Spark (non-blocking)
+                try {
+                    const res = await fetch('/api/bookmarks/mutual', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: user.uid,
+                            targetProfileId: id,
+                            userName: user.displayName || ''
+                        })
+                    });
+                    const data = await res.json();
+                    if (data?.isMutual) {
+                        toast.success(`✨ Mutual Bookmark Spark! Both you and ${firstName} saved each other's profiles!`, { duration: 5000 });
+                    } else {
+                        toast.success('Profile bookmarked!');
+                    }
+                } catch {
+                    toast.success('Profile bookmarked!');
+                }
             }
         } catch (e: any) {
             toast.error('Bookmark failed');
@@ -607,6 +633,26 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                                             return `${Math.floor(diff / 1440)}d ${t("ago")}`;
                                         })()}
                                     </span>
+                                </span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Mutual Bookmark Spark & Shared Mindset Values */}
+                    {(isMutualBookmark || (sharedPolls && sharedPolls.length > 0)) && (
+                        <div className="flex flex-wrap gap-1.5">
+                            {isMutualBookmark && (
+                                <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-400 via-[#D4AF37] to-amber-500 text-rose-950 text-[10px] font-black px-2.5 py-1 rounded-lg shadow-xs border border-amber-300">
+                                    ✨ {t("Mutual Bookmark")}
+                                </span>
+                            )}
+                            {sharedPolls && sharedPolls.length > 0 && (
+                                <span
+                                    className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-800 border border-indigo-200/80 text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-2xs"
+                                    title={sharedPolls.map(s => `${s.emoji} ${s.label}`).join(' • ')}
+                                >
+                                    <span>🤝 {sharedPolls.length} {sharedPolls.length === 1 ? 'Shared Value' : 'Shared Values'}:</span>
+                                    <span className="font-black">{sharedPolls[0].emoji} {sharedPolls[0].label}</span>
                                 </span>
                             )}
                         </div>

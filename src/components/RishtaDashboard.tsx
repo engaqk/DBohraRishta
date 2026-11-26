@@ -5,6 +5,8 @@ import DiscoveryCard from './DiscoveryCard';
 import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
 import SoulSyncTab from './SoulSyncTab';
+import DailyCompatibilityPoll from './DailyCompatibilityPoll';
+import { computeSharedPolls } from '@/lib/compatibilityPolls';
 import { Sparkles, Mic, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart, Video, Compass, Coffee } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import AdabERaddModal from '@/components/AdabERaddModal';
@@ -782,6 +784,25 @@ export default function RishtaDashboard() {
         }
     };
     const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
+    const [mutualBookmarkIds, setMutualBookmarkIds] = useState<Set<string>>(new Set());
+    const [showOnlyMutualBookmarks, setShowOnlyMutualBookmarks] = useState(false);
+
+    const refreshMutualBookmarks = async () => {
+        if (!user) return;
+        try {
+            const res = await fetch(`/api/bookmarks/mutual?userId=${user.uid}`);
+            if (res.ok) {
+                const data = await res.json();
+                setMutualBookmarkIds(new Set(data.mutualProfileIds || []));
+            }
+        } catch (err) {
+            console.warn('Mutual bookmarks refresh notice:', err);
+        }
+    };
+
+    useEffect(() => {
+        if (user) refreshMutualBookmarks();
+    }, [user]);
     const [latestBroadcast, setLatestBroadcast] = useState<{ id: string; title?: string; message: string; type?: string } | null>(null);
     
     useEffect(() => {
@@ -2477,6 +2498,9 @@ export default function RishtaDashboard() {
                     const matchesLocation = !filters.location || p.location?.toLowerCase().includes(filters.location.toLowerCase()) || p.hizratLocation?.toLowerCase().includes(filters.location.toLowerCase()) || p.city?.toLowerCase().includes(filters.location.toLowerCase());
                     const matchesMarital = !filters.maritalStatus || p.maritalStatus?.toLowerCase() === filters.maritalStatus.toLowerCase();
 
+                    if (showOnlyMutualBookmarks) {
+                        return matchesSearch && matchesEducation && matchesLocation && matchesMarital && mutualBookmarkIds.has(p.id);
+                    }
                     if (showOnlyBookmarked) {
                         return matchesSearch && matchesEducation && matchesLocation && matchesMarital && bookmarkedProfileIds.has(p.id);
                     }
@@ -2538,7 +2562,7 @@ export default function RishtaDashboard() {
                     return getTime(b.lastActive) - getTime(a.lastActive);
                 });
 
-                const sortedWithPicks = searchQuery || filters.education || filters.location || filters.maritalStatus || showOnlyBookmarked 
+                const sortedWithPicks = searchQuery || filters.education || filters.location || filters.maritalStatus || showOnlyBookmarked || showOnlyMutualBookmarks 
                     ? filteredProfiles 
                     : (() => {
                         const incomingPendingIds = new Set(allRequests.filter(r => r.to === user?.uid && r.status?.includes('pending')).map(r => r.from));
@@ -2614,12 +2638,30 @@ export default function RishtaDashboard() {
                                 </div>
                                 <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1">
                                     <button
-                                        onClick={() => setShowOnlyBookmarked(!showOnlyBookmarked)}
+                                        onClick={() => {
+                                            setShowOnlyBookmarked(!showOnlyBookmarked);
+                                            if (!showOnlyBookmarked) setShowOnlyMutualBookmarks(false);
+                                        }}
                                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-sm shrink-0 ${showOnlyBookmarked ? 'bg-[#881337] text-white border-[#881337]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'}`}
                                     >
                                         <Bookmark className="w-3.5 h-3.5" fill={showOnlyBookmarked ? 'currentColor' : 'none'} />
-                                        {showOnlyBookmarked ? 'Saved' : 'Saved'}
+                                        Saved
                                     </button>
+                                    {mutualBookmarkIds.size > 0 && (
+                                        <button
+                                            onClick={() => {
+                                                setShowOnlyMutualBookmarks(!showOnlyMutualBookmarks);
+                                                if (!showOnlyMutualBookmarks) setShowOnlyBookmarked(false);
+                                            }}
+                                            className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border shadow-sm shrink-0 ${
+                                                showOnlyMutualBookmarks
+                                                    ? 'bg-gradient-to-r from-amber-400 to-[#D4AF37] text-rose-950 border-amber-400'
+                                                    : 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100'
+                                            }`}
+                                        >
+                                            <span>✨ Mutual ({mutualBookmarkIds.size})</span>
+                                        </button>
+                                    )}
                                     <div className="relative w-full md:w-56">
                                         <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                         <input
@@ -2705,6 +2747,23 @@ export default function RishtaDashboard() {
                             </div>
                         </div>
 
+                        {/* ── DAILY 1-TAP COMPATIBILITY POLL ── */}
+                        {user && myProfile && (
+                            <DailyCompatibilityPoll
+                                userId={user.uid}
+                                myPolls={myProfile.compatibilityPolls || {}}
+                                availableProfiles={availableProfiles}
+                                onPollAnswered={(pollId, optionId) => {
+                                    setMyProfile((prev: any) => prev ? {
+                                        ...prev,
+                                        compatibilityPolls: {
+                                            ...(prev.compatibilityPolls || {}),
+                                            [pollId]: optionId
+                                        }
+                                    } : prev);
+                                }}
+                            />
+                        )}
 
                         {discoveryError ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100">
@@ -2774,6 +2833,9 @@ export default function RishtaDashboard() {
                                                             isOpenChatActive={isOpenChatActive}
                                                             isQuotaExceeded={isQuotaExceeded}
                                                             onStartDirectChat={handleStartDirectChat}
+                                                            isMutualBookmark={mutualBookmarkIds.has(p.id)}
+                                                            sharedPolls={computeSharedPolls(myProfile?.compatibilityPolls, (p as any).compatibilityPolls)}
+                                                            onBookmarkChange={() => refreshMutualBookmarks()}
                                                         />
                                                     </div>
                                                 );
@@ -2819,6 +2881,9 @@ export default function RishtaDashboard() {
                                                         isOpenChatActive={isOpenChatActive}
                                                         isQuotaExceeded={isQuotaExceeded}
                                                         onStartDirectChat={handleStartDirectChat}
+                                                        isMutualBookmark={mutualBookmarkIds.has(p.id)}
+                                                        sharedPolls={computeSharedPolls(myProfile?.compatibilityPolls, (p as any).compatibilityPolls)}
+                                                        onBookmarkChange={() => refreshMutualBookmarks()}
                                                     />
                                                 </div>
                                             );

@@ -570,143 +570,124 @@ export default function AdminVerificationPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col p-4 md:p-6 text-[#881337] pt-4 md:px-12">
-            {/* Mobile Header (Admin) */}
-            <div className="md:hidden flex items-center justify-between mb-6 bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#881337] text-white rounded-2xl flex items-center justify-center font-bold text-lg shadow-lg">53</div>
-                    <div>
-                        <h1 className="text-xl font-bold font-serif leading-tight">Admin</h1>
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Control Panel</p>
-                    </div>
-                </div>
-                <button
-                    onClick={() => {
-                        localStorage.removeItem("admin_auth_token");
-                        toast.success("Admin session terminated.");
-                        router.push('/admin/login');
-                    }}
-                    className="w-10 h-10 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-sm border border-rose-100"
-                    title="Logout"
-                >
-                    <LogOut className="w-5 h-5" />
-                </button>
-            </div>
-
+        <div className="min-h-screen bg-gray-50 flex flex-col p-3 sm:p-5 text-[#881337] md:px-10">
             <div className="max-w-[1400px] w-full mx-auto">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-                    <div className="hidden md:flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-white to-rose-100 text-[#D4AF37] rounded-full flex items-center justify-center font-bold text-xl shadow-[0_0_20px_rgba(212,175,55,0.4)] border-2 border-[#D4AF37] ring-4 ring-white/20">53</div>
-                        <div>
-                            <h1 className="text-2xl font-extrabold font-serif text-[#881337] tracking-tight leading-tight">DBohra<span className="text-[#D4AF37] font-medium italic">Rishta</span></h1>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] leading-none mt-1">Admin Control Panel</p>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                        <div className="relative w-full md:w-64">
+                {/* Row 1: Unified Admin Command Bar (Search + Live Stats + Feature Controls + Directory) */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 mb-3">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="relative flex-1 max-w-md">
                             <input
                                 type="text"
-                                placeholder="Search candidates..."
+                                placeholder="Search candidates by name, ITS, city..."
                                 value={localSearchQuery}
                                 onChange={(e) => setLocalSearchQuery(e.target.value)}
-                                className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#881337] transition-all shadow-sm"
+                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-[#881337] transition-all shadow-2xs"
                             />
                         </div>
-
                         <button
-                            onClick={() => {
-                                localStorage.removeItem("admin_auth_token");
-                                toast.success("Admin session terminated.");
-                                router.push('/admin/login');
-                            }}
-                            className="hidden md:flex bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider items-center gap-2 shadow-sm transition-all border border-gray-200 cursor-pointer"
+                            type="button"
+                            onClick={() => setShowFeatureControls(!showFeatureControls)}
+                            className={`px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border shadow-2xs shrink-0 cursor-pointer ${
+                                showFeatureControls
+                                    ? 'bg-[#881337] text-white border-[#881337]'
+                                    : 'bg-white text-[#881337] border-rose-200 hover:bg-rose-50'
+                            }`}
+                            title="Open Chat • SoulSync 8PM • Fuel Tech QR"
                         >
-                            <LogOut className="w-3.5 h-3.5" /> Secure Logout
+                            <SlidersHorizontal className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Controls</span>
+                            {showFeatureControls ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         </button>
+                        <button
+                            type="button"
+                            onClick={() => router.push('/admin/users')}
+                            className="px-3 py-2 rounded-xl text-xs font-black bg-rose-50 text-[#881337] border border-rose-200 hover:bg-rose-100 transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                            title="Open Full Users Directory"
+                        >
+                            <Users className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Directory</span>
+                        </button>
+                    </div>
+
+                    {/* Compact Live Metrics Pills */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl text-[11px] font-black text-emerald-800 shrink-0">
+                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
+                            {analytics.liveCount} Live
+                        </span>
+                        <span className="bg-white border border-gray-200 px-2.5 py-1 rounded-xl text-[11px] font-black text-gray-700 shrink-0">
+                            {analytics.totalUsers} Total
+                        </span>
+                        <span className="bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-xl text-[11px] font-black text-orange-800 shrink-0">
+                            {analytics.pendingCount} Pending
+                        </span>
+                        <span className="bg-yellow-50 border border-yellow-200 px-2.5 py-1 rounded-xl text-[11px] font-black text-yellow-800 shrink-0">
+                            {analytics.holdCount} Hold
+                        </span>
+                        <span className="bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl text-[11px] font-black text-emerald-800 shrink-0">
+                            {analytics.acceptedRatio}% Match
+                        </span>
                     </div>
                 </div>
 
-                {/* Collapsible Platform Feature Controls Bar (Keeps Approvals Queue Immediately Visible!) */}
-                <div className="mb-5">
-                    <button
-                        type="button"
-                        onClick={() => setShowFeatureControls(!showFeatureControls)}
-                        className="w-full bg-white hover:bg-rose-50/40 border border-rose-100 rounded-2xl px-4 py-3 shadow-xs flex flex-wrap items-center justify-between gap-2 transition-all cursor-pointer"
-                    >
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-rose-50 text-[#881337] flex items-center justify-center shrink-0">
-                                <SlidersHorizontal className="w-4 h-4" />
-                            </div>
-                            <div className="text-left">
-                                <p className="text-xs sm:text-sm font-black text-[#881337] leading-tight">Platform Feature Controls</p>
-                                <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium">Open Chat • SoulSync 8PM Drop • Fuel Tech QR</p>
-                            </div>
-                        </div>
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-[#881337] bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl">
-                            <span>{showFeatureControls ? 'Hide Controls' : 'Manage Controls'}</span>
-                            {showFeatureControls ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                        </span>
-                    </button>
+                {/* Collapsible Feature Controls Drawer */}
+                {showFeatureControls && (
+                    <div className="mb-4 space-y-3 animate-in fade-in duration-200">
+                        <OpenChatController />
+                        <SoulSyncController />
+                        <CoffeeController />
+                    </div>
+                )}
 
-                    {showFeatureControls && (
-                        <div className="mt-3 space-y-3 animate-in fade-in duration-200">
-                            <OpenChatController />
-                            <SoulSyncController />
-                            <CoffeeController />
-                        </div>
-                    )}
-                </div>
-
-                {/* Main Tabs */}
-                <div className="flex items-center gap-2 mb-6 border-b border-gray-200 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                {/* Row 2: Clean Single-Row Main Tabs (All 6 fit without clipping) */}
+                <div className="flex items-center gap-1 mb-4 border-b border-gray-200 overflow-x-auto whitespace-nowrap no-scrollbar">
                     <button
                         onClick={() => setActiveMainTab('firestore')}
-                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'firestore' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                        className={`py-2.5 px-3 sm:px-4 text-xs font-black uppercase tracking-wider transition-all relative flex items-center gap-1.5 shrink-0 cursor-pointer ${activeMainTab === 'firestore' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
                     >
-                        <Database className="w-4 h-4 inline-block mr-2" />
-                        Registered Candidates
-                        {activeMainTab === 'firestore' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                        <Database className="w-3.5 h-3.5" />
+                        <span>Candidates</span>
+                        {activeMainTab === 'firestore' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#881337] rounded-full" />}
                     </button>
                     <button
                         onClick={() => setActiveMainTab('push')}
-                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'push' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                        className={`py-2.5 px-3 sm:px-4 text-xs font-black uppercase tracking-wider transition-all relative flex items-center gap-1.5 shrink-0 cursor-pointer ${activeMainTab === 'push' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
                     >
-                        <Bell className="w-4 h-4 inline-block mr-2" />
-                        Push Notifications
-                        {activeMainTab === 'push' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                        <Bell className="w-3.5 h-3.5" />
+                        <span>Push</span>
+                        {activeMainTab === 'push' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#881337] rounded-full" />}
                     </button>
                     <button
                         onClick={() => setActiveMainTab('broadcast')}
-                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'broadcast' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                        className={`py-2.5 px-3 sm:px-4 text-xs font-black uppercase tracking-wider transition-all relative flex items-center gap-1.5 shrink-0 cursor-pointer ${activeMainTab === 'broadcast' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
                     >
-                        <Mail className="w-4 h-4 inline-block mr-2" />
-                        Email Broadcast
-                        {activeMainTab === 'broadcast' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>Email</span>
+                        {activeMainTab === 'broadcast' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#881337] rounded-full" />}
                     </button>
                     <button
                         onClick={() => setActiveMainTab('auth')}
-                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'auth' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                        className={`py-2.5 px-3 sm:px-4 text-xs font-black uppercase tracking-wider transition-all relative flex items-center gap-1.5 shrink-0 cursor-pointer ${activeMainTab === 'auth' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
                     >
-                        <Users className="w-4 h-4 inline-block mr-2" />
-                        Auth Directory
-                        {activeMainTab === 'auth' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Auth</span>
+                        {activeMainTab === 'auth' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#881337] rounded-full" />}
                     </button>
                     <button
                         onClick={() => setActiveMainTab('sms')}
-                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'sms' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                        className={`py-2.5 px-3 sm:px-4 text-xs font-black uppercase tracking-wider transition-all relative flex items-center gap-1.5 shrink-0 cursor-pointer ${activeMainTab === 'sms' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
                     >
-                        <Smartphone className="w-4 h-4 inline-block mr-2" />
-                        SMS Broadcast
-                        {activeMainTab === 'sms' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                        <Smartphone className="w-3.5 h-3.5" />
+                        <span>SMS</span>
+                        {activeMainTab === 'sms' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#881337] rounded-full" />}
                     </button>
                     <button
                         onClick={() => setActiveMainTab('audit')}
-                        className={`py-3 px-6 text-sm font-black uppercase tracking-wider transition-all relative ${activeMainTab === 'audit' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
+                        className={`py-2.5 px-3 sm:px-4 text-xs font-black uppercase tracking-wider transition-all relative flex items-center gap-1.5 shrink-0 cursor-pointer ${activeMainTab === 'audit' ? 'text-[#881337]' : 'text-gray-400 hover:text-gray-600'}`}
                     >
-                        <ShieldAlert className="w-4 h-4 inline-block mr-2" />
-                        Audit Logs
-                        {activeMainTab === 'audit' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#881337] rounded-full" />}
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        <span>Audit Logs</span>
+                        {activeMainTab === 'audit' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#881337] rounded-full" />}
                     </button>
                 </div>
 
@@ -1048,41 +1029,17 @@ export default function AdminVerificationPage() {
                 ) : (
                     activeMainTab === 'firestore' ? (
                         <>
-                        {/* Compact Live Metrics Strip */}
-                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 mb-4">
-                            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-2xl shrink-0">
-                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
-                                <span className="text-[11px] font-black text-emerald-800">{analytics.liveCount} Live</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-white border border-gray-200 px-3.5 py-2 rounded-2xl shrink-0 shadow-2xs">
-                                <Users className="w-3.5 h-3.5 text-[#881337]" />
-                                <span className="text-[11px] font-black text-gray-800">{analytics.totalUsers} Total</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 px-3.5 py-2 rounded-2xl shrink-0">
-                                <Clock className="w-3.5 h-3.5 text-orange-600" />
-                                <span className="text-[11px] font-black text-orange-800">{analytics.pendingCount} Pending</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 px-3.5 py-2 rounded-2xl shrink-0">
-                                <PauseCircle className="w-3.5 h-3.5 text-yellow-600" />
-                                <span className="text-[11px] font-black text-yellow-800">{analytics.holdCount} Hold</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-2xl shrink-0">
-                                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                                <span className="text-[11px] font-black text-emerald-800">{analytics.acceptedRatio}% Match</span>
-                            </div>
-                        </div>
-
                         {/* 1-Tap Admin Section Navigator */}
                         {(() => {
                             const pendingSelfiesCount = allUsers.filter(u => (u.selfieImageUrl || u.selfieUrl) && u.selfieStatus === 'pending').length;
                             const pendingVideosCount = allUsers.filter(u => u.videoIntroUrl && u.videoStatus === 'pending').length;
                             return (
-                                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 mb-5">
+                                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
                                     <button
                                         onClick={() => setAdminSection('pipeline')}
-                                        className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shrink-0 cursor-pointer border ${
+                                        className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer border ${
                                             adminSection === 'pipeline'
-                                                ? 'bg-[#881337] text-white border-[#881337] shadow-md'
+                                                ? 'bg-[#881337] text-white border-[#881337] shadow-sm'
                                                 : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                                         }`}
                                     >
@@ -1096,9 +1053,9 @@ export default function AdminVerificationPage() {
 
                                     <button
                                         onClick={() => setAdminSection('selfie')}
-                                        className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shrink-0 cursor-pointer border ${
+                                        className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer border ${
                                             adminSection === 'selfie'
-                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                                                 : 'bg-white text-gray-700 border-gray-200 hover:bg-blue-50'
                                         }`}
                                     >
@@ -1113,9 +1070,9 @@ export default function AdminVerificationPage() {
 
                                     <button
                                         onClick={() => setAdminSection('latest')}
-                                        className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shrink-0 cursor-pointer border ${
+                                        className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer border ${
                                             adminSection === 'latest'
-                                                ? 'bg-[#881337] text-white border-[#881337] shadow-md'
+                                                ? 'bg-[#881337] text-white border-[#881337] shadow-sm'
                                                 : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                                         }`}
                                     >
@@ -1125,14 +1082,6 @@ export default function AdminVerificationPage() {
                                                 {pendingVideosCount} Vid
                                             </span>
                                         )}
-                                    </button>
-
-                                    <button
-                                        onClick={() => router.push('/admin/users')}
-                                        className="px-4 py-2.5 rounded-2xl text-xs font-black bg-rose-50 text-[#881337] border border-rose-200 hover:bg-rose-100 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
-                                    >
-                                        <Users className="w-3.5 h-3.5" />
-                                        <span>All Users Directory →</span>
                                     </button>
                                 </div>
                             );

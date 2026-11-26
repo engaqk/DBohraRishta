@@ -1491,7 +1491,7 @@ export default function AdminVerificationPage() {
                                                 </div>
 
                                                 {/* Action Column */}
-                                                <div className="md:col-span-3 flex items-center justify-start md:justify-end gap-1.5 w-full md:w-auto flex-wrap md:flex-nowrap mt-1 md:mt-0">
+                                                <div className="md:col-span-3 flex flex-wrap items-center justify-start md:justify-end gap-1.5 w-full md:w-auto mt-2 md:mt-0">
                                                     {hasNewMsgs && (
                                                         <div className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse mr-1" title="New messages" />
                                                     )}
@@ -1500,16 +1500,16 @@ export default function AdminVerificationPage() {
                                                     {u.status !== 'approved' && u.status !== 'verified' && (
                                                         <button 
                                                             onClick={() => handleStatusMove(u.id, 'verified')}
-                                                            className="px-3 py-1.5 bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 rounded-lg text-[10px] font-black uppercase transition-all flex-1 md:flex-none text-center flex items-center justify-center gap-1"
+                                                            className="px-3 py-1.5 bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 rounded-lg text-[10px] font-black uppercase transition-all text-center flex items-center justify-center gap-1 shrink-0 cursor-pointer"
                                                             title="Verify & Approve Profile"
                                                         >
-                                                            ✓ Verify & Approve
+                                                            ✓ Verify &amp; Approve
                                                         </button>
                                                     )}
                                                     {u.status === 'verified' && (
                                                         <button 
                                                             onClick={() => handleStatusMove(u.id, 'approved')}
-                                                            className="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-100 transition-all flex-1 md:flex-none text-center"
+                                                            className="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-100 transition-all text-center shrink-0 cursor-pointer"
                                                             title="Final Approve"
                                                         >
                                                             Approve
@@ -1521,7 +1521,7 @@ export default function AdminVerificationPage() {
                                                                 const reason = window.prompt("Enter rejection reason (optional):");
                                                                 if (reason !== null) handleStatusMove(u.id, 'rejected', reason);
                                                             }}
-                                                            className="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[10px] font-black uppercase hover:bg-rose-100 transition-all flex-1 md:flex-none text-center"
+                                                            className="px-2.5 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[10px] font-black uppercase hover:bg-rose-100 transition-all text-center shrink-0 cursor-pointer"
                                                             title="Reject"
                                                         >
                                                             Reject
@@ -1530,22 +1530,34 @@ export default function AdminVerificationPage() {
                                                     {u.status !== 'hold' && (
                                                         <button 
                                                             onClick={() => handleStatusMove(u.id, 'hold')}
-                                                            className="px-2.5 py-1.5 bg-yellow-50 text-yellow-600 border border-yellow-200 rounded-lg text-[10px] font-black uppercase hover:bg-yellow-100 transition-all flex-1 md:flex-none text-center"
+                                                            className="px-2.5 py-1.5 bg-yellow-50 text-yellow-600 border border-yellow-200 rounded-lg text-[10px] font-black uppercase hover:bg-yellow-100 transition-all text-center shrink-0 cursor-pointer"
                                                             title="Put on Hold"
                                                         >
                                                             Hold
                                                         </button>
                                                     )}
 
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            impersonateUser(u.id, u.email || u.notificationEmail || 'user@example.com');
+                                                        }}
+                                                        className="px-2.5 py-1.5 bg-gradient-to-r from-[#D4AF37] to-amber-500 hover:from-amber-500 hover:to-amber-600 text-rose-950 rounded-lg text-[10px] font-black uppercase shadow-xs transition-all flex items-center justify-center gap-1 shrink-0 cursor-pointer active:scale-95"
+                                                        title={`Assume Identity (Login as ${u.name})`}
+                                                    >
+                                                        <User className="w-3 h-3" />
+                                                        <span>Assume Identity</span>
+                                                    </button>
+
                                                     <button 
                                                         onClick={() => openDetails(u)}
-                                                        className="px-2.5 py-1.5 bg-gray-100 hover:bg-[#881337] hover:text-white text-gray-600 rounded-lg text-[10px] font-black uppercase transition-all flex-1 md:flex-none text-center"
+                                                        className="px-2.5 py-1.5 bg-gray-100 hover:bg-[#881337] hover:text-white text-gray-600 rounded-lg text-[10px] font-black uppercase transition-all text-center shrink-0 cursor-pointer"
                                                     >
                                                         Details
                                                     </button>
                                                     <button 
                                                         onClick={() => openDetails(u, 'messages')}
-                                                        className={`p-1.5 rounded-lg transition-all ${hasNewMsgs ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'text-gray-400 hover:bg-gray-100'}`}
+                                                        className={`p-1.5 rounded-lg transition-all shrink-0 cursor-pointer ${hasNewMsgs ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'text-gray-400 hover:bg-gray-100'}`}
                                                     >
                                                         <MessageCircle className="w-3.5 h-3.5" />
                                                     </button>

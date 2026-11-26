@@ -6,8 +6,8 @@ import PrivacyToggle from './PrivacyToggle';
 import ChatWindow from './ChatWindow';
 import SoulSyncTab from './SoulSyncTab';
 import DailyCompatibilityPoll from './DailyCompatibilityPoll';
-import { computeSharedPolls } from '@/lib/compatibilityPolls';
-import { Sparkles, Mic, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart, Video, Compass, Coffee } from 'lucide-react';
+import { computeSharedPolls, COMPATIBILITY_POLLS } from '@/lib/compatibilityPolls';
+import { Sparkles, Mic, Zap, Smartphone, MessageCircle, MessageSquare, Menu, ShieldCheck, LogOut, X, Check, Clock, Loader2, CreditCard, ShieldAlert, CheckCircle, Info, Send, PauseCircle, Bell, Search, HelpCircle, Users, Megaphone, Lock, Layers, ChevronLeft, ChevronRight, Eye, ArrowRight, Bookmark, RefreshCw, Download, User, MapPin, GraduationCap, Briefcase, Phone, Mail, Camera, Heart, Video, Compass, Coffee, SlidersHorizontal } from 'lucide-react';
 import { notifyInterestSent, notifyRequestAccepted, notifyInterestDeclined, ADMIN_EMAIL } from '@/lib/emailService';
 import AdabERaddModal from '@/components/AdabERaddModal';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -560,11 +560,12 @@ export default function RishtaDashboard() {
         return { isOpenChatActive: true, durationLabel: 'Open Now (Take Benefit ASAP)' };
     });
     const [openChatTimeLeft, setOpenChatTimeLeft] = useState<string>('Open Now — Connect ASAP');
-    const [isChatBannerDismissed, setIsChatBannerDismissed] = useState<boolean>(false);
+    const [isChatBannerDismissed, setIsChatBannerDismissed] = useState<boolean>(true);
+    const [showOpenChatSheet, setShowOpenChatSheet] = useState<boolean>(false);
+    const [showDiscoveryFilters, setShowDiscoveryFilters] = useState<boolean>(false);
     const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
 
     useEffect(() => {
-        // Clear any previous session dismissal so announcement is always visible
         if (typeof window !== 'undefined') {
             try {
                 sessionStorage.removeItem('open_chat_banner_dismissed');
@@ -598,6 +599,17 @@ export default function RishtaDashboard() {
     }, []);
 
     const isOpenChatActive = !!openChatData.isOpenChatActive && (!openChatData.expiresAt || new Date(openChatData.expiresAt).getTime() > Date.now());
+
+    useEffect(() => {
+        // First-visit Open Chat announcement modal/sheet (so it's read without pushing cards down)
+        if (typeof window !== 'undefined' && isOpenChatActive) {
+            try {
+                if (!localStorage.getItem('open_chat_sheet_seen_v1')) {
+                    setShowOpenChatSheet(true);
+                }
+            } catch (_) {}
+        }
+    }, [isOpenChatActive]);
 
     useEffect(() => {
         if (!isOpenChatActive || !openChatData.expiresAt) {
@@ -2582,117 +2594,110 @@ export default function RishtaDashboard() {
 
                 return (
                     <section className="lg:col-span-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="mb-6">
-                            {/* 🌟 PROFILE COMPLETENESS NUDGE SYSTEM */}
-                            {myProfile && calculateProfileStrength(myProfile) < 100 && showBoostWidget && (
-                                <div className="mb-4 bg-gradient-to-r from-[#881337] to-[#9F1239] p-0.5 rounded-3xl shadow-lg overflow-hidden group">
-                                    <div className="bg-white rounded-[1.4rem] p-3 flex flex-col md:flex-row items-center gap-4">
-                                        <div className="relative shrink-0 scale-75 origin-center">
-                                            <div className="w-20 h-20 rounded-full border-4 border-rose-50 flex items-center justify-center relative overflow-hidden">
-                                                <div className="absolute inset-0 bg-[#881337] opacity-10" />
-                                                <span className="text-xl font-black text-[#881337]">{calculateProfileStrength(myProfile)}%</span>
-                                                <svg className="absolute inset-0 w-full h-full -rotate-90">
-                                                    <circle cx="40" cy="40" r="36" fill="transparent" stroke="#FEE2E2" strokeWidth="4" />
-                                                    <circle 
-                                                        cx="40" cy="40" r="36" fill="transparent" stroke="#881337" strokeWidth="4" 
-                                                        strokeDasharray="226.2" 
-                                                        strokeDashoffset={226.2 - (226.2 * calculateProfileStrength(myProfile)) / 100}
-                                                        className="transition-all duration-1000 ease-out"
-                                                    />
-                                                </svg>
-                                            </div>
-                                            <div className="absolute -bottom-1 -right-1 bg-amber-400 p-1.5 rounded-full shadow-lg animate-bounce">
-                                                <Zap className="w-3 h-3 text-white fill-current" />
-                                            </div>
-                                        </div>
-                                        <div className="flex-1 text-center md:text-left">
-                                            <h3 className="text-md font-black text-gray-900 leading-tight">Boost your Visibility! 🚀</h3>
-                                            <p className="text-xs text-gray-500 mt-0.5">
-                                                {calculateProfileStrength(myProfile) < 50 
-                                                    ? "Incomplete profiles receive 80% fewer interest requests." 
-                                                    : calculateProfileStrength(myProfile) < 80 
-                                                    ? "Almost there! Adding a Voice Intro increases your match rate by 3x." 
-                                                    : "Final touch! Get your Selfie Verified to show the trust badge."}
-                                            </p>
-                                        </div>
-                                        <button 
-                                            onClick={() => setActiveTab('mybiodata')}
-                                            className="px-4 py-2 bg-[#881337] text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-rose-900/20 active:scale-95 transition-all"
-                                        >
-                                            Complete Now
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-
-
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-                                <div>
-                                    <h2 className="text-2xl font-bold font-serif">Community Discovery</h2>
+                        <div className="mb-3">
+                            {/* Compact Mobile-First Discovery Header */}
+                            <div className="flex items-center justify-between gap-2 mb-2.5">
+                                <div className="min-w-0">
+                                    <h2 className="text-lg sm:text-2xl font-bold font-serif truncate">Community Discovery</h2>
                                     {targetGender && targetGender !== 'all' && (
-                                        <p className="text-xs text-gray-500 mt-0.5 font-medium">
-                                            Showing verified <span className="text-[#881337] font-bold capitalize">{targetGender}</span> candidates for you
+                                        <p className="text-[11px] sm:text-xs text-gray-500 font-medium truncate">
+                                            Verified <span className="text-[#881337] font-bold capitalize">{targetGender}</span> candidates
                                         </p>
                                     )}
                                 </div>
-                                <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1">
-                                    <button
-                                        onClick={() => {
-                                            setShowOnlyBookmarked(!showOnlyBookmarked);
-                                            if (!showOnlyBookmarked) setShowOnlyMutualBookmarks(false);
-                                        }}
-                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border shadow-sm shrink-0 ${showOnlyBookmarked ? 'bg-[#881337] text-white border-[#881337]' : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'}`}
-                                    >
-                                        <Bookmark className="w-3.5 h-3.5" fill={showOnlyBookmarked ? 'currentColor' : 'none'} />
-                                        Saved
-                                    </button>
-                                    {mutualBookmarkIds.size > 0 && (
-                                        <button
-                                            onClick={() => {
-                                                setShowOnlyMutualBookmarks(!showOnlyMutualBookmarks);
-                                                if (!showOnlyMutualBookmarks) setShowOnlyBookmarked(false);
-                                            }}
-                                            className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 border shadow-sm shrink-0 ${
-                                                showOnlyMutualBookmarks
-                                                    ? 'bg-gradient-to-r from-amber-400 to-[#D4AF37] text-rose-950 border-amber-400'
-                                                    : 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100'
-                                            }`}
-                                        >
-                                            <span>✨ Mutual ({mutualBookmarkIds.size})</span>
-                                        </button>
-                                    )}
-                                    <div className="relative w-full md:w-56">
-                                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                        <input
-                                            id="discovery-search-input"
-                                            type="text"
-                                            placeholder="Search name, city, jamaat..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full pl-9 pr-8 py-2 rounded-xl text-xs bg-white border border-gray-200 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#881337] focus:border-transparent transition-all"
-                                        />
-                                        {searchQuery && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setSearchQuery("")}
-                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 cursor-pointer"
-                                                title="Clear search"
-                                            >
-                                                <X className="w-3.5 h-3.5" />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
+                                <button
+                                    onClick={() => setIsAutoScrolling(!isAutoScrolling)}
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#881337] bg-amber-50 border border-[#D4AF37] px-3 py-1.5 rounded-full hover:bg-[#D4AF37] hover:text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
+                                >
+                                    <span>{isAutoScrolling ? "🛑 Stop" : "▶️ Auto Scroll"}</span>
+                                </button>
                             </div>
 
-                            {/* --- SMART FILTERS BAR --- */}
-                            <div className="flex flex-wrap items-center gap-2 bg-white/80 backdrop-blur-md p-2.5 rounded-2xl border border-rose-100 shadow-xs">
-                                <div className="flex-1 min-w-[130px]">
+                            {/* Airbnb-Style 1-Row Search + Filter Toggle + Saved + Mutual */}
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                <div className="relative flex-1 min-w-0">
+                                    <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    <input
+                                        id="discovery-search-input"
+                                        type="text"
+                                        placeholder="Search name, city, jamaat..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full pl-8 sm:pl-9 pr-7 py-2 rounded-xl text-xs bg-white border border-gray-200 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#881337] focus:border-transparent transition-all"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchQuery("")}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 cursor-pointer"
+                                            title="Clear search"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {(() => {
+                                    const activeFilterCount = [filters.location, filters.maritalStatus, filters.education].filter(Boolean).length;
+                                    return (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowDiscoveryFilters(!showDiscoveryFilters)}
+                                            className={`px-2.5 sm:px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-xs shrink-0 cursor-pointer ${
+                                                showDiscoveryFilters || activeFilterCount > 0
+                                                    ? 'bg-rose-50 text-[#881337] border-rose-200'
+                                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                            }`}
+                                            title="Filter by location, marital status, education"
+                                        >
+                                            <SlidersHorizontal className="w-3.5 h-3.5" />
+                                            <span className="hidden sm:inline">Filters</span>
+                                            {activeFilterCount > 0 && (
+                                                <span className="bg-[#881337] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                                                    {activeFilterCount}
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })()}
+
+                                <button
+                                    onClick={() => {
+                                        setShowOnlyBookmarked(!showOnlyBookmarked);
+                                        if (!showOnlyBookmarked) setShowOnlyMutualBookmarks(false);
+                                    }}
+                                    className={`px-2.5 sm:px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-xs shrink-0 cursor-pointer ${showOnlyBookmarked ? 'bg-[#881337] text-white border-[#881337]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                                    title="Saved Profiles"
+                                >
+                                    <Bookmark className="w-3.5 h-3.5" fill={showOnlyBookmarked ? 'currentColor' : 'none'} />
+                                    <span className="hidden sm:inline">Saved</span>
+                                </button>
+
+                                {mutualBookmarkIds.size > 0 && (
+                                    <button
+                                        onClick={() => {
+                                            setShowOnlyMutualBookmarks(!showOnlyMutualBookmarks);
+                                            if (!showOnlyMutualBookmarks) setShowOnlyBookmarked(false);
+                                        }}
+                                        className={`px-2.5 sm:px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1 border shadow-xs shrink-0 cursor-pointer ${
+                                            showOnlyMutualBookmarks
+                                                ? 'bg-gradient-to-r from-amber-400 to-[#D4AF37] text-rose-950 border-amber-400'
+                                                : 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100'
+                                        }`}
+                                        title="Mutual Bookmarks"
+                                    >
+                                        <span>✨ {mutualBookmarkIds.size}</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Collapsible Smart Filters Drawer */}
+                            {(showDiscoveryFilters || filters.location || filters.maritalStatus || filters.education) && (
+                                <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-3 gap-2 bg-white/90 backdrop-blur-md p-2.5 rounded-2xl border border-rose-100 shadow-xs animate-in fade-in duration-200">
                                     <select
                                         value={filters.location}
                                         onChange={(e) => setFilters(f => ({ ...f, location: e.target.value }))}
-                                        className={`w-full rounded-xl text-xs font-bold p-2.5 px-3 outline-none transition-all border cursor-pointer ${
+                                        className={`w-full rounded-xl text-xs font-bold p-2 px-3 outline-none transition-all border cursor-pointer ${
                                             filters.location ? 'bg-rose-50/80 border-rose-200 text-[#881337]' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
                                         }`}
                                     >
@@ -2701,17 +2706,16 @@ export default function RishtaDashboard() {
                                         <option value="Karachi">Karachi</option>
                                         <option value="Dubai">Dubai & UAE</option>
                                         <option value="London">London & UK</option>
-                                        <option value="Colombo">Colombo</option>
                                         <option value="Surat">Surat</option>
                                         <option value="Pune">Pune</option>
                                         <option value="Indore">Indore</option>
+                                        <option value="Ahmedabad">Ahmedabad</option>
+                                        <option value="USA">USA & Canada</option>
                                     </select>
-                                </div>
-                                <div className="flex-1 min-w-[130px]">
                                     <select
                                         value={filters.maritalStatus}
                                         onChange={(e) => setFilters(f => ({ ...f, maritalStatus: e.target.value }))}
-                                        className={`w-full rounded-xl text-xs font-bold p-2.5 px-3 outline-none transition-all border cursor-pointer ${
+                                        className={`w-full rounded-xl text-xs font-bold p-2 px-3 outline-none transition-all border cursor-pointer ${
                                             filters.maritalStatus ? 'bg-rose-50/80 border-rose-200 text-[#881337]' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
                                         }`}
                                     >
@@ -2720,50 +2724,32 @@ export default function RishtaDashboard() {
                                         <option value="Divorced">Divorced</option>
                                         <option value="Widowed">Widowed</option>
                                     </select>
+                                    <div className="flex items-center gap-2">
+                                        <select
+                                            value={filters.education}
+                                            onChange={(e) => setFilters(f => ({ ...f, education: e.target.value }))}
+                                            className={`flex-1 rounded-xl text-xs font-bold p-2 px-3 outline-none transition-all border cursor-pointer ${
+                                                filters.education ? 'bg-rose-50/80 border-rose-200 text-[#881337]' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            <option value="">🎓 Education Level</option>
+                                            <option value="Masters">Post-Graduate / Masters</option>
+                                            <option value="Graduate">Graduate / Degree</option>
+                                            <option value="Hafiz">Hafiz-ul-Quran</option>
+                                        </select>
+                                        {(filters.location || filters.maritalStatus || filters.education) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setFilters({ location: '', maritalStatus: '', education: '' })}
+                                                className="text-xs text-[#881337] font-bold px-2.5 py-2 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all cursor-pointer shrink-0"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="flex-1 min-w-[130px]">
-                                    <select
-                                        value={filters.education}
-                                        onChange={(e) => setFilters(f => ({ ...f, education: e.target.value }))}
-                                        className={`w-full rounded-xl text-xs font-bold p-2.5 px-3 outline-none transition-all border cursor-pointer ${
-                                            filters.education ? 'bg-rose-50/80 border-rose-200 text-[#881337]' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                                        }`}
-                                    >
-                                        <option value="">🎓 Education Level</option>
-                                        <option value="Masters">Post-Graduate / Masters</option>
-                                        <option value="Graduate">Graduate / Degree</option>
-                                        <option value="Hafiz">Hafiz-ul-Quran</option>
-                                    </select>
-                                </div>
-                                {(filters.location || filters.maritalStatus || filters.education) && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setFilters({ location: '', maritalStatus: '', education: '' })}
-                                        className="text-xs text-[#881337] hover:underline font-bold px-3 py-2 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all cursor-pointer"
-                                    >
-                                        Clear Filters
-                                    </button>
-                                )}
-                            </div>
+                            )}
                         </div>
-
-                        {/* ── DAILY 1-TAP COMPATIBILITY POLL ── */}
-                        {user && myProfile && (
-                            <DailyCompatibilityPoll
-                                userId={user.uid}
-                                myPolls={myProfile.compatibilityPolls || {}}
-                                availableProfiles={availableProfiles}
-                                onPollAnswered={(pollId, optionId) => {
-                                    setMyProfile((prev: any) => prev ? {
-                                        ...prev,
-                                        compatibilityPolls: {
-                                            ...(prev.compatibilityPolls || {}),
-                                            [pollId]: optionId
-                                        }
-                                    } : prev);
-                                }}
-                            />
-                        )}
 
                         {discoveryError ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100">
@@ -2776,22 +2762,13 @@ export default function RishtaDashboard() {
                             </div>
                         ) : (
                             <>
-                                <div className="mb-4 flex justify-center">
-                                    <button 
-                                        onClick={() => setIsAutoScrolling(!isAutoScrolling)}
-                                        className="inline-flex items-center gap-2 text-[12px] font-extrabold text-[#881337] bg-amber-50 border-2 border-[#D4AF37] px-4 py-1.5 rounded-full hover:bg-[#D4AF37] hover:text-white transition-all cursor-pointer shadow-sm active:scale-95"
-                                    >
-                                        <span>{isAutoScrolling ? "🛑 Stop Scroll" : "▶️ Auto Scroll"}</span>
-                                    </button>
-                                    <style>{`
-                                        @keyframes scrollUp {
-                                            0% { transform: translateY(0); }
-                                            100% { transform: translateY(-50%); }
-                                        }
-                                    `}</style>
-                                </div>
-                                
-                                {isAutoScrolling ? (
+                                <style>{`
+                                    @keyframes scrollUp {
+                                        0% { transform: translateY(0); }
+                                        100% { transform: translateY(-50%); }
+                                    }
+                                `}</style>
+                                                                {isAutoScrolling ? (
                                     <div className="w-full max-w-[350px] mx-auto h-[700px] rounded-3xl border-2 border-rose-100 shadow-[0_4px_12px_rgba(140,28,58,0.08)] bg-white overflow-hidden relative mb-6">
                                         <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none"></div>
                                         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none"></div>
@@ -2844,7 +2821,7 @@ export default function RishtaDashboard() {
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
-                                        {sortedWithPicks.map((p: UserProfile) => {
+                                        {sortedWithPicks.map((p: UserProfile, gridIdx: number) => {
                                             const relatedReq = allRequests.find(r => {
                                                 const otherId = r.isIncoming ? r.from : r.to;
                                                 return otherId === p.id;
@@ -2854,7 +2831,8 @@ export default function RishtaDashboard() {
                                             const isPick = dailyPicks.some(dp => dp.id === p.id);
 
                                             return (
-                                                <div key={p.id} className="relative">
+                                                <React.Fragment key={p.id}>
+                                                <div className="relative">
                                                     {isPick && !searchQuery && !showOnlyBookmarked && (
                                                         <div className="absolute -top-3 left-4 z-20 bg-gradient-to-r from-[#D4AF37] to-[#B38F00] text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1.5 border border-white/20">
                                                             <Sparkles className="w-2.5 h-2.5" /> CURATED MATCH
@@ -2886,6 +2864,25 @@ export default function RishtaDashboard() {
                                                         onBookmarkChange={() => refreshMutualBookmarks()}
                                                     />
                                                 </div>
+                                                {((sortedWithPicks.length >= 2 && gridIdx === 1) || (sortedWithPicks.length < 2 && gridIdx === sortedWithPicks.length - 1)) && user && myProfile && (
+                                                    <div id="infeed-mindset-poll" className="col-span-full">
+                                                        <DailyCompatibilityPoll
+                                                            userId={user.uid}
+                                                            myPolls={myProfile.compatibilityPolls || {}}
+                                                            availableProfiles={availableProfiles}
+                                                            onPollAnswered={(pollId, optionId) => {
+                                                                setMyProfile((prev: any) => prev ? {
+                                                                    ...prev,
+                                                                    compatibilityPolls: {
+                                                                        ...(prev.compatibilityPolls || {}),
+                                                                        [pollId]: optionId
+                                                                    }
+                                                                } : prev);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
+                                                </React.Fragment>
                                             );
                                         })}
                                     </div>
@@ -3293,8 +3290,41 @@ export default function RishtaDashboard() {
             )}
 
             {/* 🚀 ENGAGEMENT HUB — HORIZONTAL CAROUSEL ON MOBILE / GRID ON DESKTOP */}
-            {/* 🚀 ENGAGEMENT HUB — ULTRA-COMPACT PILLS ONLY (REORDERED) */}
-            <div className="max-w-7xl mx-auto mb-6 flex items-center overflow-x-auto no-scrollbar gap-2 pb-2">
+            {/* 🚀 ENGAGEMENT HUB — SINGLE-LINE SWIPEABLE PILLS STRIP */}
+            <div className="max-w-7xl mx-auto mb-3 flex items-center overflow-x-auto no-scrollbar gap-2 pb-1">
+                {/* 0. Mobile-First Quick Action Pills (Open Chat, Profile Boost, Mindset Poll) */}
+                {isOpenChatActive && (
+                    <button
+                        onClick={() => setShowOpenChatSheet(true)}
+                        className="flex items-center gap-1.5 bg-gradient-to-r from-[#881337] to-[#9F1239] text-white border border-[#D4AF37]/60 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0 active:scale-95 cursor-pointer"
+                    >
+                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                        <span>⚡ Open Chat</span>
+                    </button>
+                )}
+                {myProfile && calculateProfileStrength(myProfile) < 100 && (
+                    <button
+                        onClick={() => setActiveTab('mybiodata')}
+                        className="flex items-center gap-1.5 bg-amber-50 text-[#881337] border border-amber-200 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0 hover:bg-amber-100 active:scale-95 cursor-pointer"
+                    >
+                        <span>🚀 {calculateProfileStrength(myProfile)}% Profile</span>
+                    </button>
+                )}
+                {user && myProfile && (
+                    <button
+                        onClick={() => {
+                            if (activeTab !== 'discovery') setActiveTab('discovery');
+                            setTimeout(() => {
+                                document.getElementById('infeed-mindset-poll')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 150);
+                        }}
+                        className="flex items-center gap-1.5 bg-rose-50 text-[#881337] border border-rose-200 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0 hover:bg-rose-100 active:scale-95 cursor-pointer"
+                    >
+                        <Sparkles className="w-3 h-3 text-[#D4AF37]" />
+                        <span>Mindset {Object.keys(myProfile.compatibilityPolls || {}).filter(k => COMPATIBILITY_POLLS.some(p => p.id === k)).length}/{COMPATIBILITY_POLLS.length}</span>
+                    </button>
+                )}
+
                 {/* 1. Live Platform Stats */}
                 <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" /> {platformStats.activeNow} Live
@@ -3368,92 +3398,74 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                 </button>
             </div>
 
-            <main className="max-w-7xl mx-auto">
-                {/* 🌟 Unified Single Open Chat Announcement Panel 🌟 */}
-                {isOpenChatActive && !isChatBannerDismissed && (
-                    <div className="mb-4 bg-gradient-to-r from-[#881337] via-[#9F1239] to-[#70102D] text-white px-5 py-3.5 rounded-2xl shadow-lg border border-[#D4AF37]/50 relative overflow-hidden transition-all text-left animate-in fade-in">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
-                            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="bg-[#D4AF37] text-rose-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0 shadow-sm">
-                                        <Sparkles className="w-3 h-3 fill-rose-950" /> Open Chat Window
-                                    </span>
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                        Live & Active
-                                    </span>
-                                    <span className="bg-black/30 border border-white/20 text-yellow-200 px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 shrink-0">
-                                        <Clock className="w-3 h-3 text-yellow-300" /> {openChatTimeLeft}
-                                    </span>
-                                </div>
-                                <p className="text-xs sm:text-[13px] text-pink-100 font-medium leading-relaxed">
-                                    All registered and verified candidates can currently chat directly without requiring mutual interest approvals. Direct chat window is open now, so take maximum benefit to connect directly with candidates of your choice!
-                                </p>
-                                {openChatData.customNote && (
-                                    <div className="inline-block text-[11px] bg-white/10 border border-white/20 text-yellow-200 px-3 py-1 rounded-xl font-semibold shadow-2xs w-fit">
-                                        📢 {openChatData.customNote}
-                                    </div>
-                                )}
+            {/* 🌟 Open Chat Details Sheet / Modal (First-Visit Auto-Popup + Pill Trigger) 🌟 */}
+            {isOpenChatActive && showOpenChatSheet && (
+                <div
+                    className="fixed inset-0 z-[75] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4"
+                    onClick={() => {
+                        setShowOpenChatSheet(false);
+                        try { localStorage.setItem('open_chat_sheet_seen_v1', 'true'); } catch (_) {}
+                    }}
+                >
+                    <div
+                        className="w-full sm:max-w-lg bg-gradient-to-br from-[#881337] via-[#9F1239] to-[#70102D] text-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl border border-[#D4AF37]/60 animate-in slide-in-from-bottom-6 duration-300"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="bg-[#D4AF37] text-rose-950 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3 fill-rose-950" /> Open Chat Window
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                    Live & Active
+                                </span>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                                {(activeTab !== 'discovery' || activeChat) && (
-                                    <button
-                                        onClick={() => {
-                                            setActiveChat(null);
-                                            setActiveTab('discovery');
-                                        }}
-                                        className="bg-white hover:bg-yellow-50 text-[#881337] font-black text-xs px-3.5 py-2 rounded-xl shadow transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
-                                    >
-                                        <Search className="w-3.5 h-3.5 text-[#881337]" />
-                                        <span>Browse Candidates</span>
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => setIsChatBannerDismissed(true)}
-                                    className="p-1.5 rounded-full text-pink-200 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-                                    title="Minimize announcement"
-                                    aria-label="Minimize"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Collapsed State: Never disappears, stays readily accessible */}
-                {isOpenChatActive && isChatBannerDismissed && (
-                    <div className="mb-3 flex items-center justify-between bg-gradient-to-r from-rose-50 via-white to-amber-50 border border-amber-200/80 px-4 py-2 rounded-2xl shadow-xs text-xs text-[#881337] animate-in fade-in">
-                        <div className="flex items-center gap-2 truncate">
-                            <span className="bg-[#D4AF37] text-rose-950 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0">
-                                Open Chat Active
-                            </span>
-                            <span className="text-gray-700 font-medium truncate text-[11px]">
-                                Direct chat window is open now — connect directly with candidates without mutual interest approvals.
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0 ml-2">
-                            {(activeTab !== 'discovery' || activeChat) && (
-                                <button
-                                    onClick={() => {
-                                        setActiveChat(null);
-                                        setActiveTab('discovery');
-                                    }}
-                                    className="text-[11px] font-black text-[#881337] bg-white hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-lg shadow-2xs transition-all active:scale-95 cursor-pointer"
-                                >
-                                    Browse Candidates
-                                </button>
-                            )}
                             <button
-                                onClick={() => setIsChatBannerDismissed(false)}
-                                className="text-[11px] font-bold text-[#881337] underline hover:text-[#9F1239] cursor-pointer"
+                                onClick={() => {
+                                    setShowOpenChatSheet(false);
+                                    try { localStorage.setItem('open_chat_sheet_seen_v1', 'true'); } catch (_) {}
+                                }}
+                                className="p-1.5 rounded-full text-pink-200 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                                aria-label="Close"
                             >
-                                Expand Banner
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
-                    </div>
-                )}
 
+                        <p className="text-sm text-pink-100 font-medium leading-relaxed mb-3">
+                            All registered and verified candidates can currently chat directly without requiring mutual interest approvals. Direct chat window is open now — connect directly with candidates of your choice!
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-2 mb-4">
+                            <span className="bg-black/30 border border-white/20 text-yellow-200 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-yellow-300" /> {openChatTimeLeft}
+                            </span>
+                            {openChatData.customNote && (
+                                <span className="text-xs bg-white/10 border border-white/20 text-yellow-200 px-3 py-1 rounded-xl font-semibold">
+                                    📢 {openChatData.customNote}
+                                </span>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setShowOpenChatSheet(false);
+                                try { localStorage.setItem('open_chat_sheet_seen_v1', 'true'); } catch (_) {}
+                                if (activeTab !== 'discovery' || activeChat) {
+                                    setActiveChat(null);
+                                    setActiveTab('discovery');
+                                }
+                            }}
+                            className="w-full py-3 rounded-2xl bg-white hover:bg-yellow-50 text-[#881337] font-black text-sm shadow-lg active:scale-95 transition-all cursor-pointer"
+                        >
+                            Got it • Browse Candidates ✨
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <main className="max-w-7xl mx-auto">
                 <AnimatePresence mode="wait">
                     {/* MY BIODATA TAB */}
                     {activeTab === 'mybiodata' && myProfile && (

@@ -150,6 +150,7 @@ export default function RishtaDashboard() {
     const [recordingTime, setRecordingTime] = useState(0);
     const [isUploadingVoice, setIsUploadingVoice] = useState(false);
     const [isAutoScrolling, setIsAutoScrolling] = useState(false);
+    const [isAutoScrollPaused, setIsAutoScrollPaused] = useState(false);
     const [showBoostWidget, setShowBoostWidget] = useState(true);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
@@ -2663,10 +2664,14 @@ export default function RishtaDashboard() {
                                     )}
                                 </div>
                                 <button
-                                    onClick={() => setIsAutoScrolling(!isAutoScrolling)}
+                                    onClick={() => {
+                                        const next = !isAutoScrolling;
+                                        setIsAutoScrolling(next);
+                                        if (!next) setIsAutoScrollPaused(false);
+                                    }}
                                     className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#881337] bg-amber-50 border border-[#D4AF37] px-3 py-1.5 rounded-full hover:bg-[#D4AF37] hover:text-white transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
                                 >
-                                    <span>{isAutoScrolling ? "🛑 Stop" : "▶️ Auto Scroll"}</span>
+                                    <span>{isAutoScrolling ? "🛑 Stop Scroll" : "▶️ Auto Scroll"}</span>
                                 </button>
                             </div>
 
@@ -2826,10 +2831,43 @@ export default function RishtaDashboard() {
                                     }
                                 `}</style>
                                                                 {isAutoScrolling ? (
-                                    <div className="w-full max-w-[350px] mx-auto h-[700px] rounded-3xl border-2 border-rose-100 shadow-[0_4px_12px_rgba(140,28,58,0.08)] bg-white overflow-hidden relative mb-6">
+                                    <div
+                                        className="w-full max-w-[350px] mx-auto h-[700px] rounded-3xl border-2 border-rose-100 shadow-[0_4px_12px_rgba(140,28,58,0.08)] bg-white overflow-hidden relative mb-6 select-none"
+                                        onTouchStart={() => setIsAutoScrollPaused(true)}
+                                        onTouchEnd={() => setIsAutoScrollPaused(false)}
+                                        onTouchCancel={() => setIsAutoScrollPaused(false)}
+                                        onMouseEnter={() => setIsAutoScrollPaused(true)}
+                                        onMouseLeave={() => setIsAutoScrollPaused(false)}
+                                    >
                                         <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none"></div>
                                         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none"></div>
-                                        <div className="flex flex-col gap-6 p-4 animate-[scrollUp_55s_linear_infinite] hover:[animation-play-state:paused]">
+
+                                        {isAutoScrollPaused && (
+                                            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-black/75 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md pointer-events-none">
+                                                ⏸️ Paused — Release to resume
+                                            </div>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setIsAutoScrolling(false);
+                                                setIsAutoScrollPaused(false);
+                                            }}
+                                            onTouchStart={(e) => e.stopPropagation()}
+                                            className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 bg-[#881337] hover:bg-[#9F1239] text-white text-[11px] font-black px-4 py-1.5 rounded-full shadow-lg border border-white/30 active:scale-95 transition-all cursor-pointer"
+                                        >
+                                            🛑 Stop Auto Scroll
+                                        </button>
+
+                                        <div
+                                            className="flex flex-col gap-6 p-4"
+                                            style={{
+                                                animation: `scrollUp ${Math.max(110, sortedWithPicks.length * 9)}s linear infinite`,
+                                                animationPlayState: isAutoScrollPaused ? 'paused' : 'running',
+                                            }}
+                                        >
                                             {[...sortedWithPicks, ...sortedWithPicks].map((p: UserProfile, idx) => {
                                                 const relatedReq = allRequests.find(r => {
                                                     const otherId = r.isIncoming ? r.from : r.to;

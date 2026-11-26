@@ -61,7 +61,7 @@ export const COMPATIBILITY_POLLS: CompatibilityPoll[] = [
         id: 'wedding_style',
         category: 'Deen & Values',
         emoji: '💍',
-        question: 'Preferred Nikah & Walima style?',
+        question: 'Preferred Nikah & Shaadi style?',
         options: [
             { id: 'simple', label: 'Simple & Barakat-filled', emoji: '🕊️' },
             { id: 'classic', label: 'Classic Bohra celebration', emoji: '✨' },

@@ -2408,7 +2408,9 @@ export default function RishtaDashboard() {
                             )
                         ) : (
                             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden divide-y divide-gray-100">
-                                {acceptedRequests.map((msg) => (
+                                {acceptedRequests.map((msg) => {
+                                    const isMsgAccepted = msg.status === 'accepted';
+                                    return (
                                     <div key={msg.id} className="p-5 flex flex-col md:flex-row items-start md:items-center gap-5 hover:bg-gray-50 transition-colors relative">
 
                                         <div 
@@ -2417,7 +2419,6 @@ export default function RishtaDashboard() {
                                             title="Click to view full biodata & profile"
                                         >
                                             <div className="w-20 h-20 bg-rose-50 text-[#881337] rounded-full flex items-center justify-center text-xl font-bold border-2 border-rose-100 group-hover/card:border-[#881337] relative overflow-hidden mb-2 transition-all shadow-sm">
-                                                {/* Because it is ACCEPTED, photos unblur and are shown! */}
                                                 {msg.otherUserLibasUrl ? (
                                                     <img src={msg.otherUserLibasUrl} alt="Match" className="w-full h-full object-cover group-hover/card:scale-105 transition-transform" />
                                                 ) : (
@@ -2442,14 +2443,29 @@ export default function RishtaDashboard() {
                                                         {msg.otherUserName || 'Candidate'}
                                                         {msg.otherUserAge && <span className="text-xs text-gray-400 font-normal">({msg.otherUserAge} yrs)</span>}
                                                     </h4>
-                                                    <div className="flex items-center gap-3 text-sm text-gray-600 font-medium mt-1">
-                                                        <span>📞 {msg.otherUserMobile || 'Contact Private'}</span>
-                                                        <span className="hidden sm:inline">|</span>
-                                                        <span>✉️ {msg.otherUserEmail || ''}</span>
-                                                    </div>
+                                                    {isMsgAccepted ? (
+                                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600 font-medium mt-1">
+                                                            <span>📞 {msg.otherUserMobile || 'Contact Private'}</span>
+                                                            {msg.otherUserEmail && (
+                                                                <>
+                                                                    <span className="hidden sm:inline">|</span>
+                                                                    <span>✉️ {msg.otherUserEmail}</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-1.5 text-xs text-amber-700 font-semibold mt-1">
+                                                            <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                                            <span>Contact private • Unlocks after mutual acceptance</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="flex flex-col items-end gap-1.5">
-                                                    <span className={`text-xs ${msg.isIncoming ? 'text-[#D4AF37] font-bold bg-[#D4AF37]/10 px-2 py-1 rounded-full' : 'text-gray-400'}`}>Accepted Matched</span>
+                                                    {isMsgAccepted ? (
+                                                        <span className={`text-xs ${msg.isIncoming ? 'text-[#D4AF37] font-bold bg-[#D4AF37]/10 px-2 py-1 rounded-full' : 'text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded-full'}`}>Accepted Match</span>
+                                                    ) : (
+                                                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">Open Chat</span>
+                                                    )}
                                                     {/* Premium Badges for Matches */}
                                                     <div className="flex gap-1">
                                                         {msg.otherUserEducation?.toLowerCase().includes('hafiz') && <span className="bg-emerald-100 text-emerald-800 text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm border border-emerald-200">Hafiz</span>}
@@ -2458,7 +2474,11 @@ export default function RishtaDashboard() {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'} mb-4 mt-2`}>Alhamdulillah, Interest Request Accepted! Direct contact info is now visible.</p>
+                                            <p className={`text-sm ${msg.isIncoming ? 'text-gray-900 font-bold' : 'text-gray-500'} mb-4 mt-2`}>
+                                                {isMsgAccepted
+                                                    ? 'Alhamdulillah, Interest Request Accepted! Direct contact info is now visible.'
+                                                    : 'Direct Chat is active. You can chat safely inside the app while contact info stays protected.'}
+                                            </p>
                                             <div className="flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => {
@@ -2466,7 +2486,10 @@ export default function RishtaDashboard() {
                                                             id: msg.id,
                                                             otherUserId: msg.otherUserId,
                                                             name: msg.otherUserName,
-                                                            imageUrl: msg.otherUserLibasUrl || undefined
+                                                            imageUrl: msg.otherUserLibasUrl || undefined,
+                                                            isAccepted: isMsgAccepted,
+                                                            otherUserMobile: isMsgAccepted ? msg.otherUserMobile : undefined,
+                                                            otherUserEmail: isMsgAccepted ? msg.otherUserEmail : undefined
                                                         });
                                                     }}
                                                     className="bg-[#881337] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-[#9F1239] transition-all flex items-center gap-2">
@@ -2491,7 +2514,8 @@ export default function RishtaDashboard() {
                                             </div>
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </section>

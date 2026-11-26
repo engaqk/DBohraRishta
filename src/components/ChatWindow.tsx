@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc, limit } from 'firebase/firestore';
+import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc, getDoc, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Send, ArrowLeft, Loader2, Phone, Mic, Square, Trash2, Play, Pause, User, ExternalLink, Search, Users, Lock, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -31,6 +31,7 @@ interface ChatMessage {
 export default function ChatWindow({ connectionId, otherUserId, otherUserName, otherUserImageUrl, isInterestAccepted = false, otherUserMobile, otherUserEmail, onClose, onStartCall, onBrowseProfiles }: ChatWindowProps) {
     const router = useRouter();
     const { user } = useAuth();
+    const [mySenderName, setMySenderName] = useState<string>(user?.displayName || 'Candidate');
     const [otherUserStatus, setOtherUserStatus] = useState<{ isOnline: boolean; lastActive: any } | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState("");
@@ -148,6 +149,61 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
     const BAD_WORDS = ['porn', 'sex', 'nude', 'nudes', 'fuck', 'shit', 'bitch', 'ass', 'dick', 'pussy', 'slut', 'whore', 'boobs', 'tits', 'cock', 'cunt'];
     const [msgError, setMsgError] = useState("");
 
+    // Resolve real sender name from Firestore so OTP/ITS users don't show as generic "Candidate"
+    useEffect(() => {
+        if (!user) return;
+        if (user.displayName && user.displayName.trim()) {
+            setMySenderName(user.displayName.trim());
+            return;
+        }
+        getDoc(doc(db, 'users', user.uid))
+            .then((snap) => {
+                if (snap.exists()) {
+                    const name = snap.data()?.name;
+                    if (typeof name === 'string' && name.trim()) {
+                        setMySenderName(name.trim());
+                    }
+                }
+            })
+            .catch(() => {});
+    }, [user]);
+
+    // Reliable push notification dispatcher with automatic retry & keepalive
+    const dispatchChatPush = async (title: string, body: string) => {
+        if (!otherUserId || !user) return;
+        const payload = JSON.stringify({
+            targetUserId: otherUserId,
+            title,
+            body,
+            url: `/?tab=messages&directChat=${user.uid}`,
+            data: {
+                type: 'chat_message',
+                connectionId,
+                senderId: user.uid,
+            }
+        });
+
+        const maxAttempts = 3;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const res = await fetch('/api/notify/push', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: payload,
+                    keepalive: true,
+                });
+                if (res.ok) return;
+            } catch (err) {
+                if (attempt === maxAttempts) {
+                    console.warn('Push dispatch notice after retries:', err);
+                }
+            }
+            if (attempt < maxAttempts) {
+                await new Promise(r => setTimeout(r, 800 * attempt));
+            }
+        }
+    };
+
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         setMsgError("");
@@ -175,17 +231,11 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
             timestamp: serverTimestamp()
         });
 
-        // 🔔 Dispatch Real-Time Web & App Push Notification to recipient
-        fetch('/api/notify/push', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                targetUserId: otherUserId,
-                title: `💬 New Message from ${user.displayName || 'Candidate'}`,
-                body: text.length > 80 ? text.slice(0, 80) + '...' : text,
-                url: `/?tab=messages&directChat=${user.uid}`
-            })
-        }).catch(err => console.warn('Push dispatch notice:', err));
+        // 🔔 Dispatch Real-Time Web & App Push Notification to recipient (with retry)
+        dispatchChatPush(
+            `💬 New Message from ${mySenderName}`,
+            text.length > 80 ? text.slice(0, 80) + '...' : text
+        );
     };
 
     // --- VOICE RECORDING LOGIC ---
@@ -241,6 +291,12 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                     senderId: user.uid,
                     timestamp: serverTimestamp()
                 });
+
+                // 🔔 Dispatch Real-Time Push Notification for voice note as well
+                dispatchChatPush(
+                    `🎙️ Voice Note from ${mySenderName}`,
+                    'Sent you a voice message — tap to listen'
+                );
             };
         } catch (error) {
             console.error("Voice encoding error:", error);

@@ -563,6 +563,19 @@ export default function RishtaDashboard() {
     const [isChatBannerDismissed, setIsChatBannerDismissed] = useState<boolean>(true);
     const [showOpenChatSheet, setShowOpenChatSheet] = useState<boolean>(false);
     const [showDiscoveryFilters, setShowDiscoveryFilters] = useState<boolean>(false);
+    const chipsScrollRef = useRef<HTMLDivElement>(null);
+    const [chipsCanScrollLeft, setChipsCanScrollLeft] = useState(false);
+    const [chipsCanScrollRight, setChipsCanScrollRight] = useState(false);
+    const [chipsAtEnd, setChipsAtEnd] = useState(false);
+
+    const updateChipsScrollState = () => {
+        const el = chipsScrollRef.current;
+        if (!el) return;
+        const hasOverflow = el.scrollWidth > el.clientWidth + 6;
+        setChipsCanScrollLeft(el.scrollLeft > 8);
+        setChipsCanScrollRight(hasOverflow && el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+        setChipsAtEnd(hasOverflow && el.scrollLeft + el.clientWidth >= el.scrollWidth - 10);
+    };
     const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
 
     useEffect(() => {
@@ -829,6 +842,15 @@ export default function RishtaDashboard() {
 
     const [generatingBiodata, setGeneratingBiodata] = useState(false);
     const [platformStats, setPlatformStats] = useState({ count: 50, activeNow: 5 });
+
+    useEffect(() => {
+        const timer = setTimeout(updateChipsScrollState, 200);
+        window.addEventListener('resize', updateChipsScrollState);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('resize', updateChipsScrollState);
+        };
+    }, [myProfile, isOpenChatActive, platformStats]);
     const [performanceData, setPerformanceData] = useState({ views: 0, requests: 0 });
     const biodataRef = useRef<HTMLDivElement>(null);
 
@@ -3314,8 +3336,24 @@ export default function RishtaDashboard() {
             )}
 
             {/* 🚀 ENGAGEMENT HUB — HORIZONTAL CAROUSEL ON MOBILE / GRID ON DESKTOP */}
-            {/* 🚀 ENGAGEMENT HUB — SINGLE-LINE SWIPEABLE PILLS STRIP */}
-            <div className="max-w-7xl mx-auto mb-3 flex items-center overflow-x-auto no-scrollbar gap-2 pb-1">
+            {/* 🚀 ENGAGEMENT HUB — SINGLE-LINE SWIPEABLE PILLS STRIP WITH DIRECTIONAL CONTROLS */}
+            <div className="relative max-w-7xl mx-auto mb-3">
+                {chipsCanScrollLeft && (
+                    <button
+                        type="button"
+                        onClick={() => chipsScrollRef.current?.scrollBy({ left: -220, behavior: 'smooth' })}
+                        aria-label="Scroll options left"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white/95 border border-rose-200 text-[#881337] shadow-md flex items-center justify-center hover:bg-rose-50 active:scale-90 transition-all cursor-pointer"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </button>
+                )}
+
+                <div
+                    ref={chipsScrollRef}
+                    onScroll={updateChipsScrollState}
+                    className={`flex items-center overflow-x-auto no-scrollbar gap-2 pb-1 scroll-smooth ${chipsCanScrollLeft ? 'pl-8' : ''} ${(chipsCanScrollRight || chipsAtEnd) ? 'pr-12' : ''}`}
+                >
                 {/* 0. Mobile-First Quick Action Pills (Open Chat, Profile Boost, Mindset Poll) */}
                 {isOpenChatActive && (
                     <button
@@ -3420,6 +3458,36 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                 >
                     <Smartphone className="w-3.5 h-3.5" /> Download App
                 </button>
+                </div>
+
+                {/* Right Scroll Indicator (More tabs on right) */}
+                {chipsCanScrollRight && (
+                    <div className="absolute right-0 top-0 bottom-1 flex items-center pl-6 bg-gradient-to-l from-[#FFFDF9] via-[#FFFDF9]/90 to-transparent pointer-events-none z-20">
+                        <button
+                            type="button"
+                            onClick={() => chipsScrollRef.current?.scrollBy({ left: 220, behavior: 'smooth' })}
+                            aria-label="Scroll more options right"
+                            className="pointer-events-auto w-7 h-7 rounded-full bg-white border border-rose-200 text-[#881337] shadow-md flex items-center justify-center hover:bg-rose-50 active:scale-90 transition-all cursor-pointer animate-pulse"
+                            title="More options →"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
+
+                {/* At Last Tab: Quick Return to First Tab */}
+                {chipsAtEnd && !chipsCanScrollRight && (
+                    <button
+                        type="button"
+                        onClick={() => chipsScrollRef.current?.scrollTo({ left: 0, behavior: 'smooth' })}
+                        aria-label="Back to first option"
+                        className="absolute right-0 top-1/2 -translate-y-1/2 z-20 inline-flex items-center gap-0.5 bg-[#881337] text-white border border-[#D4AF37]/70 px-2.5 py-1.5 rounded-full shadow-md text-[10px] font-black hover:bg-[#9F1239] active:scale-90 transition-all cursor-pointer"
+                        title="Back to first tab"
+                    >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                        <span>Start</span>
+                    </button>
+                )}
             </div>
 
             {/* 🌟 Open Chat Details Sheet / Modal (First-Visit Auto-Popup + Pill Trigger) 🌟 */}

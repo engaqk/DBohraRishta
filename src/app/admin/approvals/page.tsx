@@ -91,6 +91,7 @@ export default function AdminVerificationPage() {
     const [loadingAuth, setLoadingAuth] = useState(false);
     const [activeMainTab, setActiveMainTab] = useState<'firestore' | 'push' | 'broadcast' | 'auth' | 'sms' | 'audit'>('firestore');
     const [showFeatureControls, setShowFeatureControls] = useState(false);
+    const [adminSection, setAdminSection] = useState<'pipeline' | 'selfie' | 'video' | 'latest'>('pipeline');
     const [isSyncing, setIsSyncing] = useState(false);
     const [visibleCountAuth, setVisibleCountAuth] = useState(50); // Pagination for Auth tab
 
@@ -1047,59 +1048,98 @@ export default function AdminVerificationPage() {
                 ) : (
                     activeMainTab === 'firestore' ? (
                         <>
-                        {/* Premium Analytics Cards */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
-                            <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex items-center gap-5 hover:scale-[1.02] transition-all group cursor-default">
-                                <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors shadow-inner">
-                                    <div className="relative">
-                                        <Users className="w-7 h-7" />
-                                        <div className="absolute top-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white animate-pulse" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400/80 mb-1">Live Now</p>
-                                    <h2 className="text-3xl font-black font-serif text-emerald-600">{analytics.liveCount}</h2>
-                                </div>
+                        {/* Compact Live Metrics Strip */}
+                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 mb-4">
+                            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-2xl shrink-0">
+                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+                                <span className="text-[11px] font-black text-emerald-800">{analytics.liveCount} Live</span>
                             </div>
-                            <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex items-center gap-5 hover:scale-[1.02] transition-all group cursor-default">
-                                <div className="w-14 h-14 bg-rose-50 text-[#881337] rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-rose-100 transition-colors shadow-inner">
-                                    <BarChart3 className="w-7 h-7" />
-                                </div>
-                                <div>
-                                    <p className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400/80 mb-1">Total Users</p>
-                                    <h2 className="text-3xl font-black font-serif text-[#881337]">{analytics.totalUsers}</h2>
-                                </div>
+                            <div className="flex items-center gap-1.5 bg-white border border-gray-200 px-3.5 py-2 rounded-2xl shrink-0 shadow-2xs">
+                                <Users className="w-3.5 h-3.5 text-[#881337]" />
+                                <span className="text-[11px] font-black text-gray-800">{analytics.totalUsers} Total</span>
                             </div>
-                            <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex items-center gap-5 hover:scale-[1.02] transition-all group cursor-default">
-                                <div className="w-14 h-14 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-orange-100 transition-colors shadow-inner">
-                                    <Clock className="w-7 h-7" />
-                                </div>
-                                <div>
-                                    <p className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400/80 mb-1">Pending</p>
-                                    <h2 className="text-3xl font-black font-serif text-orange-600">{analytics.pendingCount}</h2>
-                                </div>
+                            <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 px-3.5 py-2 rounded-2xl shrink-0">
+                                <Clock className="w-3.5 h-3.5 text-orange-600" />
+                                <span className="text-[11px] font-black text-orange-800">{analytics.pendingCount} Pending</span>
                             </div>
-                            <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex items-center gap-5 hover:scale-[1.02] transition-all group cursor-default">
-                                <div className="w-14 h-14 bg-yellow-50 text-yellow-500 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-yellow-100 transition-colors shadow-inner">
-                                    <PauseCircle className="w-7 h-7" />
-                                </div>
-                                <div>
-                                    <p className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400/80 mb-1">On Hold</p>
-                                    <h2 className="text-3xl font-black font-serif text-yellow-600">{analytics.holdCount}</h2>
-                                </div>
+                            <div className="flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 px-3.5 py-2 rounded-2xl shrink-0">
+                                <PauseCircle className="w-3.5 h-3.5 text-yellow-600" />
+                                <span className="text-[11px] font-black text-yellow-800">{analytics.holdCount} Hold</span>
                             </div>
-                            <div className="bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 flex items-center gap-5 hover:scale-[1.02] transition-all group cursor-default">
-                                <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors shadow-inner">
-                                    <CheckCircle className="w-7 h-7" />
-                                </div>
-                                <div>
-                                    <p className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400/80 mb-1">Match Rate</p>
-                                    <h2 className="text-3xl font-black font-serif text-emerald-600">{analytics.acceptedRatio}%</h2>
-                                </div>
+                            <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-2xl shrink-0">
+                                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                                <span className="text-[11px] font-black text-emerald-800">{analytics.acceptedRatio}% Match</span>
                             </div>
                         </div>
 
+                        {/* 1-Tap Admin Section Navigator */}
+                        {(() => {
+                            const pendingSelfiesCount = allUsers.filter(u => (u.selfieImageUrl || u.selfieUrl) && u.selfieStatus === 'pending').length;
+                            const pendingVideosCount = allUsers.filter(u => u.videoIntroUrl && u.videoStatus === 'pending').length;
+                            return (
+                                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 mb-5">
+                                    <button
+                                        onClick={() => setAdminSection('pipeline')}
+                                        className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shrink-0 cursor-pointer border ${
+                                            adminSection === 'pipeline'
+                                                ? 'bg-[#881337] text-white border-[#881337] shadow-md'
+                                                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        <span>📋 Approval Pipeline</span>
+                                        {genderCounts.pendingTotal > 0 && (
+                                            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black ${adminSection === 'pipeline' ? 'bg-amber-400 text-rose-950' : 'bg-amber-100 text-amber-800'}`}>
+                                                {genderCounts.pendingTotal}
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    <button
+                                        onClick={() => setAdminSection('selfie')}
+                                        className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shrink-0 cursor-pointer border ${
+                                            adminSection === 'selfie'
+                                                ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                : 'bg-white text-gray-700 border-gray-200 hover:bg-blue-50'
+                                        }`}
+                                    >
+                                        <Camera className="w-3.5 h-3.5" />
+                                        <span>Selfie Queue</span>
+                                        {pendingSelfiesCount > 0 && (
+                                            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black animate-pulse ${adminSection === 'selfie' ? 'bg-white text-blue-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                {pendingSelfiesCount}
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    <button
+                                        onClick={() => setAdminSection('latest')}
+                                        className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shrink-0 cursor-pointer border ${
+                                            adminSection === 'latest'
+                                                ? 'bg-[#881337] text-white border-[#881337] shadow-md'
+                                                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        <span>🆕 Latest Joined</span>
+                                        {pendingVideosCount > 0 && (
+                                            <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full text-[9px] font-black">
+                                                {pendingVideosCount} Vid
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    <button
+                                        onClick={() => router.push('/admin/users')}
+                                        className="px-4 py-2.5 rounded-2xl text-xs font-black bg-rose-50 text-[#881337] border border-rose-200 hover:bg-rose-100 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                                    >
+                                        <Users className="w-3.5 h-3.5" />
+                                        <span>All Users Directory →</span>
+                                    </button>
+                                </div>
+                            );
+                        })()}
+
                         {/* ── LATEST CANDIDATES (ADMIN GRID VIEW) ── */}
+                        {adminSection === 'latest' && (
                         <div className="mb-10">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
@@ -1152,13 +1192,20 @@ export default function AdminVerificationPage() {
                                     ))}
                             </div>
                         </div>
+                        )}
 
                         {/* ── SELFIE VERIFICATION PIPELINE ── */}
-                        {(() => {
+                        {adminSection === 'selfie' && (() => {
                             const selfieQueue = allUsers.filter(u =>
                                 (u.selfieImageUrl || u.selfieUrl) && u.selfieStatus === 'pending'
                             );
-                            if (selfieQueue.length === 0) return null;
+                            if (selfieQueue.length === 0) return (
+                                <div className="bg-white rounded-3xl border border-gray-100 p-12 text-center mb-10">
+                                    <Camera className="w-10 h-10 text-blue-300 mx-auto mb-3" />
+                                    <p className="font-bold text-gray-700">All Caught Up!</p>
+                                    <p className="text-xs text-gray-400 mt-1">No selfies currently pending review.</p>
+                                </div>
+                            );
                             return (
                                 <div className="mb-10">
                                     <div className="flex items-center gap-3 mb-4">
@@ -1232,6 +1279,8 @@ export default function AdminVerificationPage() {
                             );
                         })()}
 
+                        {adminSection === 'pipeline' && (
+                        <>
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
                             <div className="flex items-center p-1 bg-gray-50 rounded-xl flex-wrap gap-1">
                                 <button
@@ -1518,6 +1567,8 @@ export default function AdminVerificationPage() {
                                 )}
                             </div>
                         </div>
+                        </>
+                        )}
                         </>
                     ) : activeMainTab === 'auth' ? (
                         /* Auth Directory Tab */

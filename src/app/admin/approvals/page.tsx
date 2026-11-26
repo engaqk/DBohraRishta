@@ -5,7 +5,7 @@ import { collection, query, getDocs, doc, updateDoc, onSnapshot, addDoc, serverT
 import { db } from "@/lib/firebase/config";
 import { auth } from "@/lib/firebase/config";
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
-import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2, ShieldCheck, Camera, Video, Mail, RefreshCw, Database, User, Bell } from "lucide-react";
+import { ShieldAlert, CheckCircle, XCircle, BarChart3, Clock, ArrowRight, Key, MessageCircle, Send, PauseCircle, LogOut, Archive, Users, Smartphone, Trash2, ShieldCheck, Camera, Video, Mail, RefreshCw, Database, User, Bell, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -90,6 +90,7 @@ export default function AdminVerificationPage() {
     const [authUsers, setAuthUsers] = useState<any[]>([]);
     const [loadingAuth, setLoadingAuth] = useState(false);
     const [activeMainTab, setActiveMainTab] = useState<'firestore' | 'push' | 'broadcast' | 'auth' | 'sms' | 'audit'>('firestore');
+    const [showFeatureControls, setShowFeatureControls] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [visibleCountAuth, setVisibleCountAuth] = useState(50); // Pagination for Auth tab
 
@@ -618,21 +619,43 @@ export default function AdminVerificationPage() {
                                 toast.success("Admin session terminated.");
                                 router.push('/admin/login');
                             }}
-                            className="bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all border border-gray-200"
+                            className="hidden md:flex bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider items-center gap-2 shadow-sm transition-all border border-gray-200 cursor-pointer"
                         >
                             <LogOut className="w-3.5 h-3.5" /> Secure Logout
                         </button>
                     </div>
                 </div>
 
-                {/* Superadmin Open Chat Controller */}
-                <OpenChatController />
+                {/* Collapsible Platform Feature Controls Bar (Keeps Approvals Queue Immediately Visible!) */}
+                <div className="mb-5">
+                    <button
+                        type="button"
+                        onClick={() => setShowFeatureControls(!showFeatureControls)}
+                        className="w-full bg-white hover:bg-rose-50/40 border border-rose-100 rounded-2xl px-4 py-3 shadow-xs flex flex-wrap items-center justify-between gap-2 transition-all cursor-pointer"
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-rose-50 text-[#881337] flex items-center justify-center shrink-0">
+                                <SlidersHorizontal className="w-4 h-4" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-xs sm:text-sm font-black text-[#881337] leading-tight">Platform Feature Controls</p>
+                                <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium">Open Chat • SoulSync 8PM Drop • Fuel Tech QR</p>
+                            </div>
+                        </div>
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-[#881337] bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl">
+                            <span>{showFeatureControls ? 'Hide Controls' : 'Manage Controls'}</span>
+                            {showFeatureControls ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </span>
+                    </button>
 
-                {/* Superadmin SoulSync 8:00 PM Daily Drop Controller */}
-                <SoulSyncController />
-
-                {/* Buy Me a Coffee / UPI QR Controller */}
-                <CoffeeController />
+                    {showFeatureControls && (
+                        <div className="mt-3 space-y-3 animate-in fade-in duration-200">
+                            <OpenChatController />
+                            <SoulSyncController />
+                            <CoffeeController />
+                        </div>
+                    )}
+                </div>
 
                 {/* Main Tabs */}
                 <div className="flex items-center gap-2 mb-6 border-b border-gray-200 overflow-x-auto whitespace-nowrap scrollbar-hide">

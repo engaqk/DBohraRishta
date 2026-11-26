@@ -812,6 +812,18 @@ export default function RishtaDashboard() {
     const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
     const [mutualBookmarkIds, setMutualBookmarkIds] = useState<Set<string>>(new Set());
     const [showOnlyMutualBookmarks, setShowOnlyMutualBookmarks] = useState(false);
+    const [seenProfileIds, setSeenProfileIds] = useState<Set<string>>(new Set());
+    const [showOnlyUnseen, setShowOnlyUnseen] = useState(false);
+
+    useEffect(() => {
+        if (!user) return;
+        fetch(`/api/views/seen?userId=${user.uid}`)
+            .then(r => r.ok ? r.json() : { seenProfileIds: [] })
+            .then(data => {
+                setSeenProfileIds(new Set(data.seenProfileIds || []));
+            })
+            .catch(() => {});
+    }, [user]);
 
     const refreshMutualBookmarks = async () => {
         if (!user) return;
@@ -2574,6 +2586,10 @@ export default function RishtaDashboard() {
                     if (showOnlyBookmarked) {
                         return matchesSearch && matchesEducation && matchesLocation && matchesMarital && bookmarkedProfileIds.has(p.id);
                     }
+                    if (showOnlyUnseen) {
+                        const alreadyInteracted = allRequests.some(r => !r.isIncoming && r.to === p.id);
+                        return matchesSearch && matchesEducation && matchesLocation && matchesMarital && !seenProfileIds.has(p.id) && !alreadyInteracted;
+                    }
                     return matchesSearch && matchesEducation && matchesLocation && matchesMarital;
                 }).sort((a, b) => {
                     const getTime = (val: any) => {
@@ -2632,7 +2648,7 @@ export default function RishtaDashboard() {
                     return getTime(b.lastActive) - getTime(a.lastActive);
                 });
 
-                const sortedWithPicks = searchQuery || filters.education || filters.location || filters.maritalStatus || showOnlyBookmarked || showOnlyMutualBookmarks 
+                const sortedWithPicks = searchQuery || filters.education || filters.location || filters.maritalStatus || showOnlyBookmarked || showOnlyMutualBookmarks || showOnlyUnseen 
                     ? filteredProfiles 
                     : (() => {
                         const incomingPendingIds = new Set(allRequests.filter(r => r.to === user?.uid && r.status?.includes('pending')).map(r => r.from));
@@ -2725,8 +2741,27 @@ export default function RishtaDashboard() {
 
                                 <button
                                     onClick={() => {
+                                        const next = !showOnlyUnseen;
+                                        setShowOnlyUnseen(next);
+                                        if (next) {
+                                            setShowOnlyBookmarked(false);
+                                            setShowOnlyMutualBookmarks(false);
+                                        }
+                                    }}
+                                    className={`px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-xs shrink-0 cursor-pointer ${showOnlyUnseen ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                                    title="Show Unseen Profiles Only"
+                                >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">Unseen</span>
+                                </button>
+
+                                <button
+                                    onClick={() => {
                                         setShowOnlyBookmarked(!showOnlyBookmarked);
-                                        if (!showOnlyBookmarked) setShowOnlyMutualBookmarks(false);
+                                        if (!showOnlyBookmarked) {
+                                            setShowOnlyMutualBookmarks(false);
+                                            setShowOnlyUnseen(false);
+                                        }
                                     }}
                                     className={`px-2.5 sm:px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-xs shrink-0 cursor-pointer ${showOnlyBookmarked ? 'bg-[#881337] text-white border-[#881337]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
                                     title="Saved Profiles"
@@ -2739,7 +2774,10 @@ export default function RishtaDashboard() {
                                     <button
                                         onClick={() => {
                                             setShowOnlyMutualBookmarks(!showOnlyMutualBookmarks);
-                                            if (!showOnlyMutualBookmarks) setShowOnlyBookmarked(false);
+                                            if (!showOnlyMutualBookmarks) {
+                                                setShowOnlyBookmarked(false);
+                                                setShowOnlyUnseen(false);
+                                            }
                                         }}
                                         className={`px-2.5 sm:px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1 border shadow-xs shrink-0 cursor-pointer ${
                                             showOnlyMutualBookmarks
@@ -2820,7 +2858,19 @@ export default function RishtaDashboard() {
                             </div>
                         ) : filteredProfiles.length === 0 ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100">
-                                <p className="text-gray-500 font-bold">No new biodatas found dynamically.</p>
+                                {showOnlyUnseen ? (
+                                    <>
+                                        <p className="text-gray-700 font-bold">✨ Alhamdulillah! You&apos;ve explored all matching unseen profiles.</p>
+                                        <button
+                                            onClick={() => setShowOnlyUnseen(false)}
+                                            className="mt-4 px-5 py-2.5 bg-[#881337] text-white rounded-xl text-xs font-black shadow hover:bg-[#9F1239] transition-all cursor-pointer"
+                                        >
+                                            Show All Profiles
+                                        </button>
+                                    </>
+                                ) : (
+                                    <p className="text-gray-500 font-bold">No new biodatas found dynamically.</p>
+                                )}
                             </div>
                         ) : (
                             <>
@@ -5167,6 +5217,8 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
 
 
             {/* 🟢 Floating WhatsApp Share Button */}
+            {!activeChat && (
+            <>
             <a
                 href={`https://wa.me/?text=${encodeURIComponent(`Salam e Jameel!
 Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRishta.in is a trusted platform app built on respect, privacy, and meaningful connections — with ITS Card Verified Profiles and Matches to ensure authenticity and peace of mind. And the best part: it’s free of cost!
@@ -5207,6 +5259,8 @@ Looking for genuine, serious matches in our Dawoodi Bohra community? 53DBohraRis
                         )}
                     </button>
                 </div>
+            )}
+            </>
             )}
 
             {/* 🖼️ HIDDEN BIODATA TEMPLATE FOR EXPORT (ULTIMATE VERTICAL OPTIMIZED LAYOUT) */}

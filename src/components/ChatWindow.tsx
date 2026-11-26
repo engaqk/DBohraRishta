@@ -311,27 +311,27 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
     };
 
     return (
-        <div className="flex flex-col h-[500px] bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="flex flex-col h-[calc(100dvh-185px)] min-h-[460px] max-h-[680px] sm:h-[540px] bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden animate-in zoom-in-95 duration-300">
             {/* Header */}
-            <div className="bg-[#881337] text-white p-3 sm:p-4 flex items-center justify-between gap-3 shadow-md">
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="bg-[#881337] text-white px-3 py-2.5 sm:p-3.5 flex items-center justify-between gap-2 shadow-md">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                     <button 
                         onClick={onClose} 
-                        className="p-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-full transition-all shrink-0"
+                        className="p-1.5 sm:p-2 bg-white/10 hover:bg-white/20 active:scale-95 rounded-full transition-all shrink-0 cursor-pointer"
                         title="Back to messages list"
                         aria-label="Back"
                     >
-                        <ArrowLeft className="w-5 h-5" />
+                        <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                     
                     {/* Candidate Info - Clickable to open full profile */}
                     <div 
                         onClick={() => router.push(`/profile?id=${otherUserId}&from=chat`)}
-                        className="flex items-center gap-2.5 cursor-pointer group/user p-1 -m-1 rounded-2xl hover:bg-white/15 transition-all min-w-0 flex-1"
+                        className="flex items-center gap-2 cursor-pointer group/user p-1 -m-1 rounded-2xl hover:bg-white/15 transition-all min-w-0 flex-1"
                         title={`View ${otherUserName}'s full biodata and photos`}
                     >
                         <div className="relative shrink-0">
-                            <div className="w-10 h-10 bg-rose-100 text-[#881337] rounded-full flex items-center justify-center font-bold text-lg overflow-hidden border-2 border-white/80 shadow-sm group-hover/user:scale-105 transition-transform">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-rose-100 text-[#881337] rounded-full flex items-center justify-center font-bold text-base sm:text-lg overflow-hidden border-2 border-white/80 shadow-sm group-hover/user:scale-105 transition-transform">
                                 {otherUserImageUrl ? (
                                     <img src={otherUserImageUrl} alt={otherUserName} className="w-full h-full object-cover" />
                                 ) : (
@@ -339,40 +339,33 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                                 )}
                             </div>
                             {otherUserStatus?.isOnline && (
-                                <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-[#881337] rounded-full shadow-xs animate-pulse" />
+                                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#881337] rounded-full shadow-xs animate-pulse" />
                             )}
                         </div>
                         <div className="min-w-0 flex-1 text-left">
-                            <div className="flex items-center gap-1.5">
-                                <h3 className="font-bold leading-tight truncate group-hover/user:underline text-sm sm:text-base">
-                                    {otherUserName}
-                                </h3>
-                                <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded text-rose-100 group-hover/user:bg-[#D4AF37] group-hover/user:text-rose-950 font-bold transition-colors shrink-0">
-                                    Profile ↗
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-1.5 leading-none mt-0.5">
-                                <p className="text-[10px] text-rose-200 font-medium truncate">
-                                    {formatLastSeen()}
-                                </p>
-                            </div>
+                            <h3 className="font-bold leading-tight truncate group-hover/user:underline text-sm sm:text-base">
+                                {otherUserName}
+                            </h3>
+                            <p className="text-[10px] text-rose-200 font-medium truncate leading-none mt-0.5">
+                                {formatLastSeen()}
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Action Buttons: Keep BOTH Candidate Profile + All Profiles */}
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {/* Clean Non-Repeating Action Buttons */}
+                <div className="flex items-center gap-1.5 shrink-0">
                     {/* 1. Candidate's Profile Button */}
                     <button
                         onClick={() => router.push(`/profile?id=${otherUserId}&from=chat`)}
-                        className="inline-flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all border border-white/25 shadow-xs"
+                        className="inline-flex items-center gap-1 bg-white/15 hover:bg-white/25 active:scale-95 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-xl transition-all border border-white/25 shadow-xs cursor-pointer"
                         title={`View ${otherUserName}'s full biodata and photos`}
                     >
                         <User className="w-3.5 h-3.5 text-yellow-300" />
-                        <span className="hidden sm:inline">View Profile</span>
+                        <span className="hidden sm:inline">Biodata</span>
                     </button>
 
-                    {/* 2. Go to All Profiles / Browse Candidates Button */}
+                    {/* 2. All Profiles Button */}
                     <button
                         onClick={() => {
                             if (onBrowseProfiles) {
@@ -381,18 +374,18 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                                 router.push('/?tab=discovery');
                             }
                         }}
-                        className="inline-flex items-center gap-1.5 bg-[#D4AF37] hover:bg-[#c29e2f] active:scale-95 text-rose-950 text-xs font-black px-3 sm:px-3.5 py-2 rounded-xl transition-all shadow-md border border-white/30"
+                        className="inline-flex items-center gap-1 bg-[#D4AF37] hover:bg-[#c29e2f] active:scale-95 text-rose-950 text-[11px] font-black px-2.5 py-1.5 rounded-xl transition-all shadow-md border border-white/30 cursor-pointer"
                         title="Browse all candidate profiles"
                     >
                         <Users className="w-3.5 h-3.5 fill-rose-950" />
-                        <span>All Profiles</span>
+                        <span className="hidden xs:inline sm:inline">All</span>
                     </button>
 
                     {/* VoIP Call Button - Active after mutual interest acceptance */}
                     {onStartCall && isInterestAccepted && (
                         <button 
                             onClick={onStartCall}
-                            className="p-2 sm:p-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl transition-all shadow-md border border-white/20"
+                            className="p-1.5 sm:p-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl transition-all shadow-md border border-white/20 cursor-pointer"
                             title="Start Secure VoIP Call"
                         >
                             <Phone className="w-4 h-4 fill-white" />
@@ -401,87 +394,49 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                 </div>
             </div>
 
-{/* Direct Contact & Privacy Status Bar */}
+            {/* Unified 1-Line Contact Privacy & Interest Bar */}
             {isInterestAccepted ? (
-                <div className="bg-emerald-50 border-b border-emerald-200 px-3 sm:px-4 py-2 text-xs text-emerald-900 flex flex-wrap items-center justify-between gap-2 shadow-xs">
-                    <div className="flex items-center gap-2">
+                <div className="bg-emerald-50 border-b border-emerald-200 px-3 py-1.5 text-xs text-emerald-900 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
                         <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span className="font-bold text-emerald-900 text-[11px]">Direct Contact Unlocked:</span>
-                        {otherUserMobile && (
-                            <span className="font-black text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2.5 py-0.5 rounded-full text-[11px]">
+                        {otherUserMobile ? (
+                            <span className="font-black text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2 py-0.5 rounded-full text-[11px] truncate">
                                 📞 {otherUserMobile}
                             </span>
+                        ) : (
+                            <span className="font-bold text-emerald-800 text-[11px]">Contact Unlocked</span>
                         )}
                         {otherUserEmail && (
-                            <span className="text-emerald-700 text-[11px] hidden md:inline">
+                            <span className="text-emerald-700 text-[11px] hidden md:inline truncate">
                                 ✉️ {otherUserEmail}
                             </span>
                         )}
                     </div>
-                    <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full ml-auto">
+                    <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full shrink-0">
                         Mutual Alignment
                     </span>
                 </div>
             ) : (
-                <div className="bg-amber-50/95 border-b border-amber-200 px-3 sm:px-4 py-2 text-xs text-amber-900 flex flex-wrap items-center justify-between gap-2 shadow-xs">
-                    <div className="flex items-center gap-2">
+                <div className="bg-amber-50/95 border-b border-amber-200 px-3 py-1.5 text-xs text-amber-900 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
                         <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        <span className="font-medium text-[11px] text-amber-900">
-                            <strong>Open Chat Mode:</strong> Direct messaging is open. Mobile contact numbers remain private until mutual interest is accepted.
+                        <span className="font-medium text-[11px] text-amber-900 truncate">
+                            Contact private until mutual acceptance
                         </span>
                     </div>
                     <button
                         onClick={() => router.push(`/profile?id=${otherUserId}&from=chat`)}
-                        className="text-[10px] font-black text-[#881337] bg-white hover:bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-md shadow-2xs transition-colors shrink-0 ml-auto"
+                        className="text-[10px] font-black text-[#881337] bg-white hover:bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg shadow-2xs transition-colors shrink-0 cursor-pointer"
                     >
-                        Send Interest Request
+                        Send Interest
                     </button>
                 </div>
             )}
 
-            {/* Quick Profile & Navigation Access Bar */}
-            <div className="bg-gradient-to-r from-rose-50 via-white to-amber-50 border-b border-rose-100 px-3 sm:px-4 py-2 text-xs text-[#881337] flex flex-wrap items-center justify-between gap-2 shadow-xs">
-                <div 
-                    onClick={() => router.push(`/profile?id=${otherUserId}&from=chat`)}
-                    className="flex items-center gap-2 cursor-pointer hover:underline min-w-0"
-                    title={`Click to view ${otherUserName}'s full biodata and photos`}
-                >
-                    <span className="text-sm shrink-0">📋</span>
-                    <span className="font-semibold text-gray-700 truncate text-[11px] sm:text-xs">
-                        Viewing conversation with <strong className="text-[#881337]">{otherUserName}</strong>
-                    </span>
-                    <span className="text-[#881337] font-bold text-[10px] sm:text-[11px] shrink-0 ml-1">
-                        (Open Full Biodata & Photos →)
-                    </span>
-                </div>
-
-                <button
-                    onClick={() => {
-                        if (onBrowseProfiles) {
-                            onBrowseProfiles();
-                        } else {
-                            router.push('/?tab=discovery');
-                        }
-                    }}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-black text-[#881337] hover:text-[#9F1239] bg-white hover:bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 ml-auto"
-                    title="Go to all candidate profiles"
-                >
-                    <Search className="w-3 h-3 text-[#881337]" />
-                    <span>Browse All Candidates</span>
-                </button>
-            </div>
-
-            {/* Adab & Decency Protection Banner */}
-            <div className="bg-amber-50/90 border-b border-amber-200/60 px-4 py-2 text-[11px] text-amber-900 flex items-center justify-between gap-2 shadow-xs">
-                <div className="flex items-center gap-1.5">
-                    <span className="text-amber-600">🛡️</span>
-                    <span className="font-medium">
-                        <strong>Islamic Adab:</strong> Communicate with noble intentions, mutual respect, and dignity.
-                    </span>
-                </div>
-                <span className="text-[10px] text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full font-bold shrink-0">
-                    Protected Chat
-                </span>
+            {/* Subtle Single-Line Adab Reminder */}
+            <div className="bg-rose-50/60 border-b border-rose-100/80 px-3 py-1 text-[10px] text-gray-500 flex items-center justify-center gap-1.5">
+                <span>🛡️</span>
+                <span><strong>Islamic Adab:</strong> Communicate with noble intentions &amp; dignity</span>
             </div>
 
             {/* Messages Area */}

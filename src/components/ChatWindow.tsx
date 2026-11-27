@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc, getDoc, limit } from 'firebase/firestore';
+import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc, getDoc, setDoc, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Send, ArrowLeft, Loader2, Phone, Mic, Square, Trash2, Play, Pause, User, ExternalLink, Search, Users, Lock, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -231,6 +231,11 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
             timestamp: serverTimestamp()
         });
 
+        setDoc(doc(db, 'rishta_requests', connectionId), {
+            lastSenderId: user.uid,
+            lastMessageAt: serverTimestamp(),
+        }, { merge: true }).catch(() => {});
+
         // 🔔 Dispatch Real-Time Web & App Push Notification to recipient (with retry)
         dispatchChatPush(
             `💬 New Message from ${mySenderName}`,
@@ -291,6 +296,11 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                     senderId: user.uid,
                     timestamp: serverTimestamp()
                 });
+
+                setDoc(doc(db, 'rishta_requests', connectionId), {
+                    lastSenderId: user.uid,
+                    lastMessageAt: serverTimestamp(),
+                }, { merge: true }).catch(() => {});
 
                 // 🔔 Dispatch Real-Time Push Notification for voice note as well
                 dispatchChatPush(

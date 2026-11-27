@@ -132,6 +132,8 @@ interface RishtaRequest {
     isSoulSync?: boolean;
     soulSyncDate?: string;
     rejectionReason?: string;
+    lastSenderId?: string;
+    lastMessageAt?: any;
 }
 
 export default function RishtaDashboard() {
@@ -624,6 +626,22 @@ export default function RishtaDashboard() {
             } catch (_) {}
         }
     }, [isOpenChatActive]);
+
+    // Gentle "Waiting for Your Reply" reminder for active conversations where the other person sent the last message
+    const awaitingReplyReq = useMemo(() => {
+        if (!user) return null;
+        const candidates = allRequests.filter(r =>
+            (r.status === 'accepted' || (isOpenChatActive && (r.isOpenChat || r.status === 'open_chat'))) &&
+            r.lastSenderId &&
+            r.lastSenderId !== user.uid
+        );
+        if (candidates.length === 0) return null;
+        return candidates.sort((a, b) => {
+            const ta = a.lastMessageAt?.toMillis ? a.lastMessageAt.toMillis() : 0;
+            const tb = b.lastMessageAt?.toMillis ? b.lastMessageAt.toMillis() : 0;
+            return tb - ta;
+        })[0];
+    }, [allRequests, user, isOpenChatActive]);
 
     useEffect(() => {
         if (!isOpenChatActive || !openChatData.expiresAt) {
@@ -3453,7 +3471,29 @@ export default function RishtaDashboard() {
                     onScroll={updateChipsScrollState}
                     className={`flex items-center overflow-x-auto no-scrollbar gap-2 pb-1 scroll-smooth ${chipsCanScrollLeft ? 'pl-8' : ''} ${(chipsCanScrollRight || chipsAtEnd) ? 'pr-12' : ''}`}
                 >
-                {/* 0. Mobile-First Quick Action Pills (Open Chat, Profile Boost, Mindset Poll) */}
+                {/* 0. Mobile-First Quick Action Pills (Waiting Reply, Open Chat, Profile Boost, Mindset Poll) */}
+                {awaitingReplyReq && activeChat?.id !== awaitingReplyReq.id && (
+                    <button
+                        onClick={() => {
+                            const isAcc = awaitingReplyReq.status === 'accepted';
+                            setActiveChat({
+                                id: awaitingReplyReq.id,
+                                otherUserId: awaitingReplyReq.otherUserId,
+                                name: awaitingReplyReq.otherUserName,
+                                imageUrl: awaitingReplyReq.otherUserLibasUrl || undefined,
+                                isAccepted: isAcc,
+                                otherUserMobile: isAcc ? awaitingReplyReq.otherUserMobile : undefined,
+                                otherUserEmail: isAcc ? awaitingReplyReq.otherUserEmail : undefined,
+                            });
+                            setActiveTab('messages');
+                        }}
+                        className="flex items-center gap-1.5 bg-emerald-600 text-white border border-emerald-400 px-3 py-2 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-wider shrink-0 hover:bg-emerald-700 active:scale-95 cursor-pointer animate-pulse"
+                        title={`Continue conversation with ${awaitingReplyReq.otherUserName}`}
+                    >
+                        <MessageCircle className="w-3 h-3 fill-white" />
+                        <span>💬 {(awaitingReplyReq.otherUserName || 'Candidate').split(' ')[0]} replied</span>
+                    </button>
+                )}
                 {isOpenChatActive && (
                     <button
                         onClick={() => setShowOpenChatSheet(true)}

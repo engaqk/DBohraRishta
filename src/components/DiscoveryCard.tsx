@@ -94,6 +94,7 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
     const [rejectCount, setRejectCount] = useState(0);
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [showIcebreakerModal, setShowIcebreakerModal] = useState(false);
+    const [showMatchBreakdown, setShowMatchBreakdown] = useState(false);
     const [icebreakerText, setIcebreakerText] = useState('');
     const [activePhotoIdx, setActivePhotoIdx] = useState(0);
     const [showLightbox, setShowLightbox] = useState(false);
@@ -539,10 +540,18 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                                     </p>
                                 )}
                             </div>
-                            <div className={`px-2.5 py-1.5 rounded-xl text-xs font-black shadow-lg shrink-0
-                                ${requestStatus === 'accepted' ? 'bg-[#D4AF37] text-white' : rejectCount > 0 ? 'bg-red-500 text-white' : 'bg-black/50 text-[#D4AF37] backdrop-blur-sm'}`}>
-                                {requestStatus === 'accepted' ? '✓ Accepted' : `${matchScore}% Match`}
-                            </div>
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowMatchBreakdown(true);
+                                }}
+                                title="Tap to see compatibility breakdown"
+                                className={`px-2.5 py-1.5 rounded-xl text-xs font-black shadow-lg shrink-0 cursor-pointer active:scale-95 transition-transform flex items-center gap-1
+                                ${requestStatus === 'accepted' ? 'bg-[#D4AF37] text-white' : rejectCount > 0 ? 'bg-red-500 text-white' : 'bg-black/60 hover:bg-black/80 text-[#D4AF37] backdrop-blur-sm border border-[#D4AF37]/40'}`}>
+                                <span>{requestStatus === 'accepted' ? '✓ Accepted' : `${matchScore}% Match`}</span>
+                                <span className="text-[10px] opacity-80">ⓘ</span>
+                            </button>
                         </div>
                     </div>
 
@@ -1026,6 +1035,109 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                     </div>
                 )
             }
+            {/* Compatibility Breakdown Modal */}
+            {showMatchBreakdown && (
+                <div
+                    className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4"
+                    onClick={(e) => { e.stopPropagation(); setShowMatchBreakdown(false); }}
+                >
+                    <div
+                        className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl border border-rose-100 animate-in slide-in-from-bottom-6 duration-200 text-left"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between gap-3 mb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#881337] to-[#9F1239] text-[#D4AF37] font-black text-sm flex items-center justify-center shadow-md shrink-0">
+                                    {matchScore}%
+                                </div>
+                                <div>
+                                    <h4 className="text-base font-black text-[#881337] leading-tight">Compatibility Breakdown</h4>
+                                    <p className="text-[11px] text-gray-500 font-medium">Alignment insights with {firstName}</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowMatchBreakdown(false)}
+                                className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 cursor-pointer"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Shared Mindset Poll Values */}
+                        <div className="mb-4">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                                Shared Mindset Values
+                            </p>
+                            {sharedPolls && sharedPolls.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                    {sharedPolls.map((sp, idx) => (
+                                        <span
+                                            key={idx}
+                                            className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-800 border border-indigo-200/80 text-xs font-bold px-3 py-1.5 rounded-xl"
+                                        >
+                                            <span>{sp.emoji}</span>
+                                            <span>{sp.label}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-xl p-3">
+                                    Answer the 1-Tap Mindset Polls in Discovery to unlock shared lifestyle &amp; family value highlights!
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Key Profile Alignment */}
+                        <div className="mb-5">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                                Profile &amp; Trust Highlights
+                            </p>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-2.5">
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">City / Jamaat</p>
+                                    <p className="font-bold text-gray-800 truncate">{city || location || hizratLocation || jamaat || 'Verified'}</p>
+                                </div>
+                                <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-2.5">
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Education</p>
+                                    <p className="font-bold text-gray-800 truncate">{education || educationDetails || 'Verified'}</p>
+                                </div>
+                                <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-2.5">
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Profession</p>
+                                    <p className="font-bold text-gray-800 truncate">{professionType || 'Verified'}</p>
+                                </div>
+                                <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-2.5">
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Verification</p>
+                                    <p className="font-bold text-emerald-700 truncate">
+                                        {isItsVerified ? '✓ ITS Verified' : 'Community Member'}
+                                        {selfieStatus === 'verified' ? ' • Selfie ✓' : ''}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowMatchBreakdown(false)}
+                                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer"
+                            >
+                                Close
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowMatchBreakdown(false);
+                                    router.push(`/profile?id=${id}`);
+                                }}
+                                className="flex-[1.5] py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-[#881337] to-[#9F1239] text-white shadow hover:shadow-md cursor-pointer"
+                            >
+                                View Full Biodata →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 });

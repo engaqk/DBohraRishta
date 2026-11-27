@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import { notifyInterestSent, notifyInterestDeclined } from '@/lib/emailService';
 import AdabERaddModal from '@/components/AdabERaddModal';
 import { computeMatchScore } from '@/lib/matchUtils';
+import { COMPATIBILITY_POLLS } from '@/lib/compatibilityPolls';
 
 
 function ProfileContent() {
@@ -27,6 +28,7 @@ function ProfileContent() {
     const [requestStatus, setRequestStatus] = useState<string | null>(null);
     const [openChatData, setOpenChatData] = useState<any>(null);
     const [showAdabModal, setShowAdabModal] = useState(false);
+    const [showMatchBreakdown, setShowMatchBreakdown] = useState(false);
 
     const isFastResponder = useMemo(() => {
         if (profile?.isOnline) return true;
@@ -182,6 +184,22 @@ function ProfileContent() {
         if (!viewerProfile || !profile || user?.uid === id) return null;
         return computeMatchScore(viewerProfile, profile);
     }, [viewerProfile, profile, id, user?.uid]);
+
+    const sharedPolls = useMemo(() => {
+        if (!viewerProfile?.pollResponses || !profile?.pollResponses) return [];
+        const list: { emoji: string; label: string }[] = [];
+        COMPATIBILITY_POLLS.forEach(p => {
+            const myAns = viewerProfile.pollResponses?.[p.id];
+            const theirAns = profile.pollResponses?.[p.id];
+            if (myAns && theirAns && myAns === theirAns) {
+                const opt = p.options.find(o => o.id === myAns);
+                if (opt) {
+                    list.push({ emoji: opt.emoji, label: opt.label });
+                }
+            }
+        });
+        return list;
+    }, [viewerProfile?.pollResponses, profile?.pollResponses]);
 
     // 💌 Icebreaker Content Validation
     const icebreakerError = useMemo(() => {
@@ -660,12 +678,17 @@ function ProfileContent() {
                                             </p>
                                         </div>
                                         {matchScore !== null && (
-                                            <div className="bg-emerald-500/20 backdrop-blur-sm border border-emerald-400/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-lg group relative">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowMatchBreakdown(true)}
+                                                title="Tap to see compatibility breakdown"
+                                                className="bg-emerald-500/25 hover:bg-emerald-500/40 active:scale-95 transition-all backdrop-blur-sm border border-emerald-400/40 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-lg cursor-pointer"
+                                            >
                                                 <Heart className="w-2.5 h-2.5 text-emerald-300 fill-emerald-300" />
-                                                <p className="text-emerald-50 text-[10px] font-black uppercase tracking-widest leading-none">
-                                                    {matchScore}% Match
-                                                </p>
-                                            </div>
+                                                <span className="text-emerald-50 text-[10px] font-black uppercase tracking-widest leading-none">
+                                                    {matchScore}% Match ⓘ
+                                                </span>
+                                            </button>
                                         )}
                                         {isPhotoVerified && (
                                             <div className="bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-lg">
@@ -1068,6 +1091,97 @@ function ProfileContent() {
                                 </p>
                             )}
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* Compatibility Breakdown Modal */}
+            {showMatchBreakdown && matchScore !== null && (
+                <div
+                    className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4"
+                    onClick={() => setShowMatchBreakdown(false)}
+                >
+                    <div
+                        className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl border border-rose-100 animate-in slide-in-from-bottom-6 duration-200 text-left"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between gap-3 mb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#881337] to-[#9F1239] text-[#D4AF37] font-black text-sm flex items-center justify-center shadow-md shrink-0">
+                                    {matchScore}%
+                                </div>
+                                <div>
+                                    <h4 className="text-base font-black text-[#881337] leading-tight">Compatibility Breakdown</h4>
+                                    <p className="text-[11px] text-gray-500 font-medium">Alignment insights with {displayName}</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowMatchBreakdown(false)}
+                                className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 cursor-pointer"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Shared Mindset Poll Values */}
+                        <div className="mb-4">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                                Shared Mindset Values
+                            </p>
+                            {sharedPolls && sharedPolls.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                    {sharedPolls.map((sp, idx) => (
+                                        <span
+                                            key={idx}
+                                            className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-800 border border-indigo-200/80 text-xs font-bold px-3 py-1.5 rounded-xl"
+                                        >
+                                            <span>{sp.emoji}</span>
+                                            <span>{sp.label}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-xl p-3">
+                                    Answer the 1-Tap Mindset Polls to unlock shared lifestyle &amp; family value highlights!
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Key Profile Alignment */}
+                        <div className="mb-5">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                                Profile &amp; Trust Highlights
+                            </p>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-2.5">
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">City / Jamaat</p>
+                                    <p className="font-bold text-gray-800 truncate">{jamaat || city || location || hizratLocation || 'Verified'}</p>
+                                </div>
+                                <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-2.5">
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Education</p>
+                                    <p className="font-bold text-gray-800 truncate">{profile?.education || profile?.educationDetails || 'Verified'}</p>
+                                </div>
+                                <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-2.5">
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Profession</p>
+                                    <p className="font-bold text-gray-800 truncate">{profile?.profession || profile?.professionType || 'Verified'}</p>
+                                </div>
+                                <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-2.5">
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Verification</p>
+                                    <p className="font-bold text-emerald-700 truncate">
+                                        {profile?.isItsVerified ? '✓ ITS Verified' : 'Community Member'}
+                                        {profile?.selfieStatus === 'verified' ? ' • Selfie ✓' : ''}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setShowMatchBreakdown(false)}
+                            className="w-full py-2.5 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer"
+                        >
+                            Close
+                        </button>
                     </div>
                 </div>
             )}

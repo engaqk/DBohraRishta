@@ -548,8 +548,8 @@ const DiscoveryCard = React.memo(function DiscoveryCard({
                                 }}
                                 title="Tap to see compatibility breakdown"
                                 className={`px-2.5 py-1.5 rounded-xl text-xs font-black shadow-lg shrink-0 cursor-pointer active:scale-95 transition-transform flex items-center gap-1
-                                ${requestStatus === 'accepted' ? 'bg-[#D4AF37] text-white' : rejectCount > 0 ? 'bg-red-500 text-white' : 'bg-black/60 hover:bg-black/80 text-[#D4AF37] backdrop-blur-sm border border-[#D4AF37]/40'}`}>
-                                <span>{requestStatus === 'accepted' ? '✓ Accepted' : `${matchScore}% Match`}</span>
+                                ${requestStatus === 'accepted' ? 'bg-[#D4AF37] text-white hover:bg-[#c29e2f]' : rejectCount > 0 ? 'bg-red-500 text-white' : 'bg-black/60 hover:bg-black/80 text-[#D4AF37] backdrop-blur-sm border border-[#D4AF37]/40'}`}>
+                                <span>{requestStatus === 'accepted' ? `✓ Accepted (${matchScore}%)` : `${matchScore}% Match`}</span>
                                 <span className="text-[10px] opacity-80">ⓘ</span>
                             </button>
                         </div>

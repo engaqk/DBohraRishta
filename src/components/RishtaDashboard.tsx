@@ -832,6 +832,7 @@ export default function RishtaDashboard() {
     const [showOnlyMutualBookmarks, setShowOnlyMutualBookmarks] = useState(false);
     const [seenProfileIds, setSeenProfileIds] = useState<Set<string>>(new Set());
     const [showOnlyUnseen, setShowOnlyUnseen] = useState(false);
+    const [showOnlyNewThisWeek, setShowOnlyNewThisWeek] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -2604,6 +2605,11 @@ export default function RishtaDashboard() {
                     if (showOnlyBookmarked) {
                         return matchesSearch && matchesEducation && matchesLocation && matchesMarital && bookmarkedProfileIds.has(p.id);
                     }
+                    if (showOnlyNewThisWeek) {
+                        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                        const createdAtTime = p.createdAt?.toMillis ? p.createdAt.toMillis() : (p.createdAt?.seconds ? p.createdAt.seconds * 1000 : new Date(p.createdAt || 0).getTime());
+                        return matchesSearch && matchesEducation && matchesLocation && matchesMarital && (createdAtTime >= sevenDaysAgo);
+                    }
                     if (showOnlyUnseen) {
                         const alreadyInteracted = allRequests.some(r => !r.isIncoming && r.to === p.id);
                         return matchesSearch && matchesEducation && matchesLocation && matchesMarital && !seenProfileIds.has(p.id) && !alreadyInteracted;
@@ -2759,11 +2765,29 @@ export default function RishtaDashboard() {
 
                                 <button
                                     onClick={() => {
+                                        const next = !showOnlyNewThisWeek;
+                                        setShowOnlyNewThisWeek(next);
+                                        if (next) {
+                                            setShowOnlyBookmarked(false);
+                                            setShowOnlyMutualBookmarks(false);
+                                            setShowOnlyUnseen(false);
+                                        }
+                                    }}
+                                    className={`px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-xs shrink-0 cursor-pointer ${showOnlyNewThisWeek ? 'bg-amber-600 text-white border-amber-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                                    title="Show profiles joined this week"
+                                >
+                                    <span>🆕</span>
+                                    <span className="hidden sm:inline">New This Week</span>
+                                </button>
+
+                                <button
+                                    onClick={() => {
                                         const next = !showOnlyUnseen;
                                         setShowOnlyUnseen(next);
                                         if (next) {
                                             setShowOnlyBookmarked(false);
                                             setShowOnlyMutualBookmarks(false);
+                                            setShowOnlyNewThisWeek(false);
                                         }
                                     }}
                                     className={`px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-xs shrink-0 cursor-pointer ${showOnlyUnseen ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
@@ -2775,10 +2799,12 @@ export default function RishtaDashboard() {
 
                                 <button
                                     onClick={() => {
-                                        setShowOnlyBookmarked(!showOnlyBookmarked);
-                                        if (!showOnlyBookmarked) {
+                                        const next = !showOnlyBookmarked;
+                                        setShowOnlyBookmarked(next);
+                                        if (next) {
                                             setShowOnlyMutualBookmarks(false);
                                             setShowOnlyUnseen(false);
+                                            setShowOnlyNewThisWeek(false);
                                         }
                                     }}
                                     className={`px-2.5 sm:px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-xs shrink-0 cursor-pointer ${showOnlyBookmarked ? 'bg-[#881337] text-white border-[#881337]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
@@ -2791,10 +2817,12 @@ export default function RishtaDashboard() {
                                 {mutualBookmarkIds.size > 0 && (
                                     <button
                                         onClick={() => {
-                                            setShowOnlyMutualBookmarks(!showOnlyMutualBookmarks);
-                                            if (!showOnlyMutualBookmarks) {
+                                            const next = !showOnlyMutualBookmarks;
+                                            setShowOnlyMutualBookmarks(next);
+                                            if (next) {
                                                 setShowOnlyBookmarked(false);
                                                 setShowOnlyUnseen(false);
+                                                setShowOnlyNewThisWeek(false);
                                             }
                                         }}
                                         className={`px-2.5 sm:px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1 border shadow-xs shrink-0 cursor-pointer ${
@@ -2876,7 +2904,17 @@ export default function RishtaDashboard() {
                             </div>
                         ) : filteredProfiles.length === 0 ? (
                             <div className="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100">
-                                {showOnlyUnseen ? (
+                                {showOnlyNewThisWeek ? (
+                                    <>
+                                        <p className="text-gray-700 font-bold">✨ No new candidate profiles joined in the last 7 days matching these filters.</p>
+                                        <button
+                                            onClick={() => setShowOnlyNewThisWeek(false)}
+                                            className="mt-4 px-5 py-2.5 bg-[#881337] text-white rounded-xl text-xs font-black shadow hover:bg-[#9F1239] transition-all cursor-pointer"
+                                        >
+                                            Show All Profiles
+                                        </button>
+                                    </>
+                                ) : showOnlyUnseen ? (
                                     <>
                                         <p className="text-gray-700 font-bold">✨ Alhamdulillah! You&apos;ve explored all matching unseen profiles.</p>
                                         <button

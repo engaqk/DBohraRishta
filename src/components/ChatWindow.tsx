@@ -3,8 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc, getDoc, setDoc, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { Send, ArrowLeft, Loader2, Phone, Mic, Square, Trash2, Play, Pause, User, ExternalLink, Search, Users, Lock, ShieldCheck, Sparkles } from 'lucide-react';
+import { Send, ArrowLeft, Loader2, Phone, Mic, Square, Trash2, Play, Pause, User, ExternalLink, Search, Users, Lock, ShieldCheck, Sparkles, Heart } from 'lucide-react';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 interface ChatWindowProps {
     connectionId: string;
@@ -145,6 +146,54 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
 
         return () => unsubscribe();
     }, [connectionId, user]);
+
+    // --- SECRET MUTUAL "READY TO INVOLVE PARENTS" LISTENER ---
+    const [readyForParents, setReadyForParents] = useState<{ [uid: string]: boolean }>({});
+    const [togglingParents, setTogglingParents] = useState(false);
+
+    useEffect(() => {
+        if (!connectionId) return;
+        const unsub = onSnapshot(doc(db, 'rishta_requests', connectionId), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                setReadyForParents(data?.readyForParents || {});
+            }
+        });
+        return () => unsub();
+    }, [connectionId]);
+
+    const myReadyForParents = Boolean(user && readyForParents[user.uid]);
+    const otherReadyForParents = Boolean(otherUserId && readyForParents[otherUserId]);
+    const mutualParentsReady = myReadyForParents && otherReadyForParents;
+
+    const handleToggleReadyForParents = async () => {
+        if (!user || togglingParents) return;
+        try {
+            setTogglingParents(true);
+            const nextVal = !myReadyForParents;
+            await setDoc(doc(db, 'rishta_requests', connectionId), {
+                readyForParents: {
+                    ...readyForParents,
+                    [user.uid]: nextVal
+                }
+            }, { merge: true });
+
+            if (nextVal) {
+                if (otherReadyForParents) {
+                    toast.success("Mubarak! Both of you are ready to involve parents! 🤲");
+                } else {
+                    toast.success("Saved privately! Confirmed only when they also click.", { icon: '🔒' });
+                }
+            } else {
+                toast("Removed parent readiness mark.");
+            }
+        } catch (err) {
+            console.error("Failed to toggle parent readiness:", err);
+            toast.error("Could not update status. Please try again.");
+        } finally {
+            setTogglingParents(false);
+        }
+    };
 
     const BAD_WORDS = ['porn', 'sex', 'nude', 'nudes', 'fuck', 'shit', 'bitch', 'ass', 'dick', 'pussy', 'slut', 'whore', 'boobs', 'tits', 'cock', 'cunt'];
     const [msgError, setMsgError] = useState("");
@@ -404,6 +453,22 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                 </div>
             </div>
 
+            {/* Mutual Parent Involvement Celebratory Banner */}
+            {mutualParentsReady && (
+                <div className="bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-800 text-white px-3.5 py-2 text-xs flex items-center justify-between gap-2 shadow-sm animate-in fade-in">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-base shrink-0">👨‍👩‍👧</span>
+                        <div className="min-w-0">
+                            <p className="font-black text-[11px] sm:text-xs leading-tight">Alhamdulillah! Both Ready to Involve Parents</p>
+                            <p className="text-[10px] text-emerald-100 leading-tight truncate">Both sides privately confirmed readiness for family elder introduction. 🤲</p>
+                        </div>
+                    </div>
+                    <span className="text-[10px] font-black bg-white/20 border border-white/30 px-2 py-0.5 rounded-full shrink-0">
+                        Mutual ✨
+                    </span>
+                </div>
+            )}
+
             {/* Unified 1-Line Contact Privacy & Interest Bar */}
             {isInterestAccepted ? (
                 <div className="bg-emerald-50 border-b border-emerald-200 px-3 py-1.5 text-xs text-emerald-900 flex flex-wrap items-center justify-between gap-2">
@@ -422,9 +487,27 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                             </span>
                         )}
                     </div>
-                    <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full shrink-0">
-                        Mutual Alignment
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        {!mutualParentsReady && (
+                            <button
+                                type="button"
+                                onClick={handleToggleReadyForParents}
+                                disabled={togglingParents}
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-lg transition-all flex items-center gap-1 shrink-0 cursor-pointer border ${
+                                    myReadyForParents
+                                        ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-2xs'
+                                        : 'bg-white hover:bg-emerald-100/60 text-emerald-900 border-emerald-300'
+                                }`}
+                                title="Mark your readiness to involve parents. 100% confidential until mutual."
+                            >
+                                <span>👨‍👩‍👧</span>
+                                <span>{myReadyForParents ? 'Parents Ready (Private 🔒)' : 'Involve Parents?'}</span>
+                            </button>
+                        )}
+                        <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full shrink-0">
+                            Mutual Alignment
+                        </span>
+                    </div>
                 </div>
             ) : (
                 <div className="bg-amber-50/95 border-b border-amber-200 px-3 py-1.5 text-xs text-amber-900 flex items-center justify-between gap-2">
@@ -434,12 +517,31 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                             Contact private until mutual acceptance
                         </span>
                     </div>
-                    <button
-                        onClick={() => router.push(`/profile?id=${otherUserId}&from=chat`)}
-                        className="text-[10px] font-black text-[#881337] bg-white hover:bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg shadow-2xs transition-colors shrink-0 cursor-pointer"
-                    >
-                        Send Interest
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        {!mutualParentsReady && (
+                            <button
+                                type="button"
+                                onClick={handleToggleReadyForParents}
+                                disabled={togglingParents}
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-lg transition-all flex items-center gap-1 shrink-0 cursor-pointer border ${
+                                    myReadyForParents
+                                        ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-2xs'
+                                        : 'bg-white hover:bg-rose-50 text-gray-700 border-gray-200'
+                                }`}
+                                title="Mark your readiness to involve parents. 100% confidential until mutual."
+                            >
+                                <span>👨‍👩‍👧</span>
+                                <span className="hidden xs:inline">{myReadyForParents ? 'Parents Ready (Private 🔒)' : 'Involve Parents?'}</span>
+                                <span className="xs:hidden">{myReadyForParents ? 'Parents 🔒' : 'Parents?'}</span>
+                            </button>
+                        )}
+                        <button
+                            onClick={() => router.push(`/profile?id=${otherUserId}&from=chat`)}
+                            className="text-[10px] font-black text-[#881337] bg-white hover:bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg shadow-2xs transition-colors shrink-0 cursor-pointer"
+                        >
+                            Send Interest
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -457,8 +559,34 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
                     </div>
                 )}
                 {!loading && messages.length === 0 && (
-                    <div className="text-center text-gray-400 text-sm p-4 mt-auto mb-auto">
-                        Alhamdulillah! Start the conversation.
+                    <div className="my-auto mx-auto max-w-sm w-full bg-white/95 backdrop-blur-sm border border-rose-200/80 rounded-2xl p-4 shadow-sm text-center">
+                        <div className="w-10 h-10 bg-rose-100 text-[#881337] rounded-full flex items-center justify-center mx-auto mb-2 text-lg font-bold shadow-2xs">
+                            💬
+                        </div>
+                        <h4 className="text-xs font-extrabold text-[#881337] uppercase tracking-wider mb-0.5">
+                            Start with Bohra Adab
+                        </h4>
+                        <p className="text-[11px] text-gray-500 mb-3">
+                            Tap any respectful icebreaker to begin:
+                        </p>
+                        <div className="flex flex-col gap-1.5 text-left">
+                            {[
+                                "Salam! Found your profile suitable and would love to introduce our family.",
+                                "Salam! Appreciated your education & background, let's connect Insha Allah.",
+                                "Salam e Jameel! Hope you're doing well, would like to discuss family details.",
+                                "Salam! Liked your mindset poll perspectives, looking forward to speaking."
+                            ].map((starter, i) => (
+                                <button
+                                    key={i}
+                                    type="button"
+                                    onClick={() => setNewMessage(starter)}
+                                    className="p-2.5 bg-rose-50/70 hover:bg-rose-100 text-gray-800 text-xs rounded-xl border border-rose-100 transition-all text-left flex items-start gap-2 active:scale-98 cursor-pointer group"
+                                >
+                                    <span className="text-rose-600 font-bold shrink-0 mt-0.5 text-xs">›</span>
+                                    <span className="leading-snug text-[11px] group-hover:text-[#881337]">{starter}</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 )}
                 {groupMessagesByDate(messages).map((group, groupIndex) => (
@@ -493,6 +621,23 @@ export default function ChatWindow({ connectionId, otherUserId, otherUserName, o
             {/* Quick Greetings & Emojis */}
             <div className="bg-white border-t border-rose-100 flex flex-col">
                 <div className="flex gap-2 p-2.5 px-3 overflow-x-auto scrollbar-hide border-b border-gray-100/80 bg-rose-50/40">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const icebreakers = [
+                                "Salam! Found your profile suitable and would love to introduce our family.",
+                                "Salam! Appreciated your education & background, let's connect Insha Allah.",
+                                "Salam e Jameel! Hope you're doing well, would like to discuss family details.",
+                                "Salam! Liked your mindset poll perspectives, looking forward to speaking."
+                            ];
+                            const random = icebreakers[Math.floor(Math.random() * icebreakers.length)];
+                            setNewMessage(random);
+                        }}
+                        className="text-xs bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3 py-1.5 rounded-full shadow-2xs text-amber-900 font-bold whitespace-nowrap transition-all active:scale-95 cursor-pointer flex items-center gap-1 shrink-0"
+                        title="Insert a polite conversation starter"
+                    >
+                        <span>💡 Icebreaker</span>
+                    </button>
                     {[
                         "Salam",
                         "Mubarak",

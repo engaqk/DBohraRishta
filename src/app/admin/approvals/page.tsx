@@ -1291,20 +1291,20 @@ export default function AdminVerificationPage() {
 
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 hidden md:grid grid-cols-12 gap-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'name', direction: p.key === 'name' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                                <div className="col-span-3 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'name', direction: p.key === 'name' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
                                     Profile / Name {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                                 </div>
-                                <div className="col-span-1 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'itsNumber', direction: p.key === 'itsNumber' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                                <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'itsNumber', direction: p.key === 'itsNumber' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
                                     ITS Number {sortConfig.key === 'itsNumber' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                                 </div>
                                 <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'location', direction: p.key === 'location' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
                                     Location {sortConfig.key === 'location' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                                 </div>
-                                <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'status', direction: p.key === 'status' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                                <div className="col-span-1 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'status', direction: p.key === 'status' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
                                     Status {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                                 </div>
-                                <div className="col-span-2 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'createdAt', direction: p.key === 'createdAt' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
-                                    Joined Date {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                <div className="col-span-1 cursor-pointer flex items-center gap-1 hover:text-[#881337]" onClick={() => setSortConfig(p => ({ key: 'createdAt', direction: p.key === 'createdAt' && p.direction === 'asc' ? 'desc' : 'asc' }))}>
+                                    Joined {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                                 </div>
                                 <div className="col-span-3 text-right">Actions</div>
                             </div>
@@ -1321,7 +1321,7 @@ export default function AdminVerificationPage() {
                                             <div className="flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 items-start md:items-center">
                                                 
                                                 {/* Profile Column */}
-                                                <div className="md:col-span-2 flex items-center gap-3 w-full md:w-auto">
+                                                <div className="md:col-span-3 flex items-center gap-3 w-full md:w-auto">
                                                     <div className="flex gap-1.5 relative">
                                                         <div 
                                                             className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shadow-sm cursor-zoom-in hover:scale-105 transition-transform"
@@ -1416,8 +1416,8 @@ export default function AdminVerificationPage() {
                                                 </div>
 
                                                 {/* Desktop Columns (Hidden on mobile) */}
-                                                <div className="hidden md:block md:col-span-1">
-                                                    <span className="text-xs font-mono font-bold text-gray-600">{u.itsNumber}</span>
+                                                <div className="hidden md:block md:col-span-2">
+                                                    <span className="text-xs font-mono font-bold text-gray-700 bg-gray-100/90 border border-gray-200 px-2 py-1 rounded-md">{u.itsNumber}</span>
                                                 </div>
 
                                                 <div className="hidden md:block md:col-span-2">
@@ -1427,14 +1427,14 @@ export default function AdminVerificationPage() {
                                                     </div>
                                                 </div>
 
-                                                <div className="hidden md:block md:col-span-2">
+                                                <div className="hidden md:block md:col-span-1">
                                                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-tighter ${getStatusColor(u.status)}`}>
                                                         {getStatusLabel(u.status)}
                                                     </span>
                                                 </div>
 
-                                                <div className="hidden md:block md:col-span-2">
-                                                    <p className="text-xs text-gray-500 font-medium">
+                                                <div className="hidden md:block md:col-span-1">
+                                                    <p className="text-xs text-gray-500 font-medium truncate">
                                                         {formatDate(u.createdAt)}
                                                     </p>
                                                 </div>
